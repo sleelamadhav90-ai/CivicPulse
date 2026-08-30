@@ -1,0 +1,6 @@
+{
+  "name": "CivicPulse",
+  "description": "AI-Powered National Development Intelligence & Digital Public Infrastructure Platform for Citizen Feedback, Gap Scoring, Policy Briefs, and Impact Measurement.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
