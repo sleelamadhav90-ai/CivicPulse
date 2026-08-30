@@ -9,15 +9,13 @@ import {
   Flame, 
   Eye, 
   EyeOff, 
-  Info,
   Navigation,
-  Droplet,
-  HeartPulse,
-  Route,
-  Zap,
-  GraduationCap
+  Droplets,
+  Activity,
+  Radio
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
+import { CityDemandHotspot } from '../utils/demandAggregation';
 
 export interface EvaluatedDistrict {
   district: District;
@@ -26,6 +24,7 @@ export interface EvaluatedDistrict {
   currentAccess: number;
   breakdown: ScoreBreakdown;
   matchedRequests: CitizenRequest[];
+  demandHotspot: CityDemandHotspot;
   priorityTier: {
     tier: 'Low' | 'Medium' | 'High' | 'Critical';
     color: string;
@@ -54,13 +53,13 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   evaluations,
   activeDistrictId,
   onSelectDistrict,
-  selectedCategory,
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedRegionPreset, setSelectedRegionPreset] = useState<string>('all');
   const [showLabels, setShowLabels] = useState<boolean>(true);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
   const [showStateBorders, setShowStateBorders] = useState<boolean>(true);
+  const [mapDisplayMode, setMapDisplayMode] = useState<'hotspots' | 'scores'>('hotspots');
   const [hoveredDistrict, setHoveredDistrict] = useState<EvaluatedDistrict | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
@@ -74,13 +73,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     const minLat = 7.6;
     const maxLat = 37.4;
 
-    // Conical-like slight curvature correction for authentic cartography
     const normalizedLon = (lon - minLon) / (maxLon - minLon);
     const normalizedLat = (lat - minLat) / (maxLat - minLat);
 
-    // Map to SVG coordinates (Canvas is 1000 x 1100)
-    // Left margin 60, right margin 60 -> width 880
-    // Top margin 60, bottom margin 60 -> height 980
     const x = 60 + normalizedLon * 860;
     const y = 1040 - normalizedLat * 960;
 
@@ -106,7 +101,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   }, [selectedRegionPreset]);
 
   return (
-    <div className="relative w-full h-[580px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between select-none shadow-inner">
+    <div className="relative w-full h-[600px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between select-none shadow-inner">
       {/* Top Map Action Bar */}
       <div className="z-20 p-3.5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
         {/* Region Presets */}
@@ -132,8 +127,34 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           ))}
         </div>
 
-        {/* Layer Toggles & Zoom Buttons */}
+        {/* Display Mode Toggle & Controls */}
         <div className="flex items-center space-x-2">
+          {/* Display Mode (Hotspots vs Scores) */}
+          <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+            <button
+              onClick={() => setMapDisplayMode('hotspots')}
+              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                mapDisplayMode === 'hotspots'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Flame className="w-3 h-3 text-amber-300" />
+              <span>Demand Hotspots</span>
+            </button>
+            <button
+              onClick={() => setMapDisplayMode('scores')}
+              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
+                mapDisplayMode === 'scores'
+                  ? 'bg-blue-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Activity className="w-3 h-3 text-blue-300" />
+              <span>Priority Scores</span>
+            </button>
+          </div>
+
           {/* Toggle Labels */}
           <button
             onClick={() => setShowLabels(!showLabels)}
@@ -211,6 +232,19 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         {/* Cartographic Coordinate Grid */}
         <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
+        {/* Prominent Overlay Banner: DEMAND HOTSPOTS */}
+        <div className="absolute top-4 left-6 z-10 pointer-events-none">
+          <div className="bg-slate-900/90 border border-slate-700/80 px-3.5 py-1.5 rounded-xl shadow-lg backdrop-blur-md flex items-center gap-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
+            <span className="text-xs font-black tracking-widest text-slate-100 uppercase">
+              DEMAND HOTSPOTS
+            </span>
+            <span className="text-[10px] text-slate-400 font-mono">
+              ({evaluations.length} Aggregated Clusters)
+            </span>
+          </div>
+        </div>
+
         {/* Ocean Labels */}
         <div className="absolute left-6 bottom-20 text-[11px] font-bold tracking-widest text-slate-600/60 uppercase select-none pointer-events-none font-serif">
           Arabian Sea
@@ -224,7 +258,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         <svg
           viewBox={currentViewBox}
-          className="w-full h-full max-h-[520px] transition-transform duration-500 ease-out"
+          className="w-full h-full max-h-[540px] transition-transform duration-500 ease-out"
           style={{ transform: `scale(${zoomLevel})` }}
         >
           <defs>
@@ -244,10 +278,6 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.08" />
               <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
             </radialGradient>
-            <radialGradient id="islandGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.3" />
-              <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
-            </radialGradient>
 
             {/* Landmass Shadow filter */}
             <filter id="landShadow" x="-10%" y="-10%" width="120%" height="120%">
@@ -255,7 +285,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             </filter>
           </defs>
 
-          {/* Group 1: Geographic Base Landmass of India (Accurate Vector Coordinates) */}
+          {/* Group 1: Geographic Base Landmass of India */}
           <g filter="url(#landShadow)">
             {/* India Main Landmass Silhouette */}
             <path
@@ -296,7 +326,6 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               stroke="#38bdf8"
               strokeWidth="2.2"
               strokeLinejoin="round"
-              className="transition-colors duration-300"
             />
 
             {/* Northern Crown: Jammu & Kashmir, Ladakh, Himachal & Uttarakhand */}
@@ -313,11 +342,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               fill="#1e293b"
               stroke="#0284c7"
               strokeWidth="1.2"
-              strokeDasharray={showStateBorders ? 'none' : '4,4'}
               opacity="0.85"
             />
 
-            {/* Western Region: Gujarat Peninsula, Kathiawar & Kutch */}
+            {/* Western Region: Gujarat Peninsula */}
             <path
               d="
                 M 215 370 
@@ -355,7 +383,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               opacity="0.85"
             />
 
-            {/* North-Eastern Seven Sisters (Assam, Meghalaya, Arunachal, etc.) */}
+            {/* North-Eastern Seven Sisters */}
             <path
               d="
                 M 740 330 
@@ -375,15 +403,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             {/* State Internal Boundary Guidelines */}
             {showStateBorders && (
               <g stroke="#334155" strokeWidth="0.9" strokeDasharray="3,3" fill="none">
-                {/* AP & Telangana Border Guideline */}
                 <path d="M 400 660 Q 460 670 510 650 Q 560 660 590 680" />
-                {/* Maharashtra Border Guideline */}
                 <path d="M 235 505 Q 330 520 430 510 Q 500 540 520 580" />
-                {/* Karnataka & Tamil Nadu Guideline */}
                 <path d="M 360 760 Q 430 790 480 810 Q 540 790 560 820" />
-                {/* Rajasthan & UP / Gangetic Belt */}
                 <path d="M 270 290 Q 370 330 460 320 Q 560 340 660 360" />
-                {/* Bihar & Bengal Guideline */}
                 <path d="M 580 360 Q 640 400 680 450 Q 710 520 670 580" />
               </g>
             )}
@@ -437,15 +460,19 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             </g>
           )}
 
-          {/* Group 3: Interactive City Nodes, Markers & Badges */}
+          {/* Group 3: Interactive Aggregated Demand Hotspots Nodes */}
           <g>
             {evaluations.map((item) => {
               const pos = projectGeoToSvg(item.district.lat, item.district.lon);
               const isSelected = item.district.id === activeDistrictId;
               const isHovered = hoveredDistrict?.district.id === item.district.id;
               const score = item.breakdown.total_score;
-              const isCritical = score >= 70;
-              const markerRadius = isSelected ? 16 : isHovered ? 14 : 11;
+              const hotspot = item.demandHotspot;
+              const isCritical = hotspot.urgencyLevel === 'Critical' || score >= 70;
+              const markerRadius = isSelected ? 17 : isHovered ? 15 : 12;
+
+              // Aggregated Demand Hotspot Label (e.g. 🔴 Water, 🔴 Roads, 🟠 Sanitation, 🟡 Electricity)
+              const hotspotLabel = hotspot.primaryBadgeLabel;
 
               return (
                 <g
@@ -468,13 +495,13 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                     setHoverPos(null);
                   }}
                 >
-                  {/* Pulsing Radar Ring for Critical Deficit Cities */}
+                  {/* Pulsing Radar Ring for Critical Demand Hotspots */}
                   {isCritical && (
                     <circle
-                      r={markerRadius + 8}
+                      r={markerRadius + 9}
                       fill="none"
-                      stroke={item.priorityTier.color}
-                      strokeWidth="2"
+                      stroke={hotspot.primaryDotColor}
+                      strokeWidth="2.2"
                       className="animate-ping opacity-60"
                     />
                   )}
@@ -482,7 +509,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                   {/* Outer Selection Highlight Ring */}
                   {isSelected && (
                     <circle
-                      r={markerRadius + 6}
+                      r={markerRadius + 7}
                       fill="none"
                       stroke="#38bdf8"
                       strokeWidth="2.5"
@@ -491,74 +518,110 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                     />
                   )}
 
-                  {/* Marker Node Background */}
+                  {/* Node Circle Background */}
                   <circle
                     r={markerRadius}
-                    fill={isSelected ? item.priorityTier.color : '#0f172a'}
-                    stroke={item.priorityTier.color}
+                    fill={isSelected ? hotspot.primaryDotColor : '#0f172a'}
+                    stroke={hotspot.primaryDotColor}
                     strokeWidth={isSelected ? 3 : 2.2}
                     className="transition-all duration-200 drop-shadow-md"
                   />
 
-                  {/* Score text inside the node */}
-                  <text
-                    textAnchor="middle"
-                    dy="4"
-                    fill={isSelected ? '#ffffff' : '#f8fafc'}
-                    fontSize={isSelected ? '11' : '10'}
-                    fontFamily="monospace"
-                    fontWeight="bold"
-                    className="select-none pointer-events-none"
-                  >
-                    {score}
-                  </text>
-
-                  {/* Citizen Demand Badge if active complaints present */}
-                  {item.demandCount > 0 && (
-                    <g transform={`translate(${markerRadius - 2}, ${-markerRadius + 2})`}>
-                      <circle r="7" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
-                      <text
-                        textAnchor="middle"
-                        dy="3"
-                        fill="#ffffff"
-                        fontSize="8"
-                        fontFamily="monospace"
-                        fontWeight="bold"
-                        className="select-none pointer-events-none"
-                      >
-                        {item.demandCount}
-                      </text>
-                    </g>
+                  {/* Central Node Display: Score or Category Icon */}
+                  {mapDisplayMode === 'scores' ? (
+                    <text
+                      textAnchor="middle"
+                      dy="4"
+                      fill={isSelected ? '#ffffff' : '#f8fafc'}
+                      fontSize={isSelected ? '11' : '10'}
+                      fontFamily="monospace"
+                      fontWeight="bold"
+                      className="select-none pointer-events-none"
+                    >
+                      {score}
+                    </text>
+                  ) : (
+                    /* Hotspot Dot Indicator */
+                    <circle
+                      r={isSelected ? 6 : 5}
+                      fill={isSelected ? '#ffffff' : hotspot.primaryDotColor}
+                      className="select-none pointer-events-none"
+                    />
                   )}
 
-                  {/* City Name Label Pill */}
+                  {/* Aggregated Citizen Requests Count Badge */}
+                  <g transform={`translate(${markerRadius - 2}, ${-markerRadius + 2})`}>
+                    <circle r="7.5" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
+                    <text
+                      textAnchor="middle"
+                      dy="3"
+                      fill="#ffffff"
+                      fontSize="8"
+                      fontFamily="monospace"
+                      fontWeight="bold"
+                      className="select-none pointer-events-none"
+                    >
+                      {item.demandCount > 0 ? item.demandCount : Math.min(99, Math.round(hotspot.totalCitizenRequests / 100))}
+                    </text>
+                  </g>
+
+                  {/* City & Aggregated Hotspot Category Label */}
                   {showLabels && (
                     <g
                       transform={`translate(0, ${markerRadius + 14})`}
                       className="pointer-events-none select-none transition-all duration-200"
                     >
-                      {/* Label Backdrop pill */}
-                      <rect
-                        x={-(item.district.name.length * 4.2 + 8)}
-                        y="-10"
-                        width={item.district.name.length * 8.4 + 16}
-                        height="18"
-                        rx="4"
-                        fill={isSelected ? '#1e293b' : '#090d16'}
-                        stroke={isSelected ? '#38bdf8' : '#334155'}
-                        strokeWidth={isSelected ? 1.5 : 0.8}
-                        opacity="0.95"
-                      />
-                      <text
-                        textAnchor="middle"
-                        dy="3"
-                        fill={isSelected ? '#38bdf8' : '#f1f5f9'}
-                        fontSize="10"
-                        fontFamily="system-ui, sans-serif"
-                        fontWeight={isSelected ? '700' : '600'}
-                      >
-                        {item.district.name}
-                      </text>
+                      {mapDisplayMode === 'hotspots' ? (
+                        /* Aggregated Hotspot Pill (e.g. 🔴 Water, 🔴 Roads, 🟠 Sanitation) */
+                        <g>
+                          <rect
+                            x={-((item.district.name.length + hotspot.primaryCategory.length) * 3.6 + 16)}
+                            y="-11"
+                            width={(item.district.name.length + hotspot.primaryCategory.length) * 7.2 + 32}
+                            height="20"
+                            rx="5"
+                            fill={isSelected ? '#1e293b' : '#090d16'}
+                            stroke={isSelected ? '#38bdf8' : hotspot.primaryDotColor}
+                            strokeWidth={isSelected ? 1.8 : 1.2}
+                            opacity="0.95"
+                          />
+                          <text
+                            textAnchor="middle"
+                            dy="3.5"
+                            fill="#f8fafc"
+                            fontSize="10"
+                            fontFamily="system-ui, sans-serif"
+                            fontWeight="bold"
+                          >
+                            {item.district.name}: {hotspotLabel}
+                          </text>
+                        </g>
+                      ) : (
+                        /* Standard City Name Label */
+                        <g>
+                          <rect
+                            x={-(item.district.name.length * 4.2 + 8)}
+                            y="-10"
+                            width={item.district.name.length * 8.4 + 16}
+                            height="18"
+                            rx="4"
+                            fill={isSelected ? '#1e293b' : '#090d16'}
+                            stroke={isSelected ? '#38bdf8' : '#334155'}
+                            strokeWidth={isSelected ? 1.5 : 0.8}
+                            opacity="0.95"
+                          />
+                          <text
+                            textAnchor="middle"
+                            dy="3"
+                            fill={isSelected ? '#38bdf8' : '#f1f5f9'}
+                            fontSize="10"
+                            fontFamily="system-ui, sans-serif"
+                            fontWeight={isSelected ? '700' : '600'}
+                          >
+                            {item.district.name}
+                          </text>
+                        </g>
+                      )}
                     </g>
                   )}
                 </g>
@@ -570,10 +633,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         {/* Hover Tooltip Overlay */}
         {hoveredDistrict && hoverPos && (
           <div
-            className="absolute z-30 pointer-events-none bg-slate-900/95 text-white border border-slate-700 rounded-xl p-3.5 shadow-2xl backdrop-blur-md w-64 space-y-2 transform -translate-x-1/2 -translate-y-full -mt-4 animate-in fade-in zoom-in-95 duration-150"
+            className="absolute z-30 pointer-events-none bg-slate-900/95 text-white border border-slate-700 rounded-xl p-3.5 shadow-2xl backdrop-blur-md w-72 space-y-2 transform -translate-x-1/2 -translate-y-full -mt-4 animate-in fade-in zoom-in-95 duration-150"
             style={{
-              left: Math.max(130, Math.min(window.innerWidth > 768 ? 600 : 300, hoverPos.x)),
-              top: Math.max(120, hoverPos.y),
+              left: Math.max(140, Math.min(window.innerWidth > 768 ? 620 : 320, hoverPos.x)),
+              top: Math.max(130, hoverPos.y),
             }}
           >
             <div className="flex items-start justify-between border-b border-slate-800 pb-2">
@@ -587,48 +650,53 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 </span>
               </div>
               <div className="text-right">
-                <span
-                  className="text-base font-extrabold font-mono"
-                  style={{ color: hoveredDistrict.priorityTier.color }}
-                >
-                  {hoveredDistrict.breakdown.total_score}
-                </span>
-                <span className="text-[9px] uppercase tracking-wider block font-bold text-slate-400">
-                  {hoveredDistrict.priorityTier.label}
+                <span className="text-xs px-2 py-0.5 rounded font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40">
+                  {hoveredDistrict.demandHotspot.primaryBadgeLabel}
                 </span>
               </div>
             </div>
 
-            {/* Quick Access Matrix */}
+            {/* Quick Aggregated Demand Metrics */}
             <div className="grid grid-cols-2 gap-1.5 text-[11px]">
               <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">Water Access:</span>
-                <span className="font-mono font-bold text-blue-300">{hoveredDistrict.district.water_access}%</span>
+                <span className="text-slate-400">Citizen Requests:</span>
+                <span className="font-mono font-bold text-blue-300">
+                  {hoveredDistrict.demandHotspot.totalCitizenRequests.toLocaleString()}
+                </span>
               </div>
               <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">Road Quality:</span>
-                <span className="font-mono font-bold text-amber-300">{hoveredDistrict.district.road_quality}%</span>
-              </div>
-              <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">Health Access:</span>
-                <span className="font-mono font-bold text-rose-300">{hoveredDistrict.district.health_access}%</span>
-              </div>
-              <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">Poverty Index:</span>
-                <span className="font-mono font-bold text-emerald-300">
-                  {(hoveredDistrict.district.poverty_index * 100).toFixed(0)}%
+                <span className="text-slate-400">High Priority:</span>
+                <span className="font-mono font-bold text-rose-400">
+                  {hoveredDistrict.demandHotspot.highPriorityCount.toLocaleString()}
                 </span>
               </div>
             </div>
 
-            {/* Active Citizen Feedback Telemetry */}
-            <div className="pt-1 flex items-center justify-between text-[11px] text-slate-300">
-              <span className="flex items-center gap-1 text-slate-400">
-                <Sparkles className="w-3 h-3 text-amber-400" /> Active Signals:
+            {/* Top Issue Bar */}
+            <div className="space-y-1">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Top Demand Issue:
               </span>
-              <span className="font-mono font-bold text-blue-400">
-                {hoveredDistrict.demandCount} citizen report{hoveredDistrict.demandCount === 1 ? '' : 's'}
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-slate-200">{hoveredDistrict.demandHotspot.topIssues[0]?.category}</span>
+                <span className="font-mono text-amber-400">{hoveredDistrict.demandHotspot.topIssues[0]?.percentage}%</span>
+              </div>
+              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full"
+                  style={{ width: `${hoveredDistrict.demandHotspot.topIssues[0]?.percentage || 40}%` }}
+                />
+              </div>
+            </div>
+
+            {/* AI Recommendation Snippet */}
+            <div className="p-2 bg-slate-800/60 rounded-lg border border-slate-700/60 text-[11px] text-slate-300">
+              <span className="text-amber-400 font-bold block text-[10px] uppercase tracking-wider flex items-center gap-1 mb-0.5">
+                <Sparkles className="w-3 h-3 text-amber-400" /> AI Recommendation
               </span>
+              <p className="line-clamp-2 italic text-slate-300">
+                "{hoveredDistrict.demandHotspot.aiRecommendation}"
+              </p>
             </div>
           </div>
         )}
@@ -638,30 +706,26 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       <div className="z-20 p-3 bg-slate-900/90 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
         <div className="flex items-center space-x-4">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Deficit Priority:
+            Demand Hotspots Legend:
           </span>
           <div className="flex items-center space-x-3 text-[11px]">
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shadow-sm animate-pulse" />
-              <span className="text-slate-200 font-medium">Critical (&ge;70)</span>
+              <span>🔴</span>
+              <span className="text-slate-200 font-medium">Critical Deficit (&ge;35%)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-sm" />
-              <span className="text-slate-200 font-medium">High (55-69)</span>
+              <span>🟠</span>
+              <span className="text-slate-200 font-medium">High Deficit (20-34%)</span>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm" />
-              <span className="text-slate-200 font-medium">Moderate (40-54)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-sm" />
-              <span className="text-slate-200 font-medium">Low (&lt;40)</span>
+              <span>🟡</span>
+              <span className="text-slate-200 font-medium">Moderate Deficit (10-19%)</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center space-x-2 text-[11px] text-slate-400">
-          <span>Click any city marker to inspect full municipal dossier</span>
+        <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
+          <span>Click any city hotspot to view aggregated telemetry dossier</span>
         </div>
       </div>
     </div>
