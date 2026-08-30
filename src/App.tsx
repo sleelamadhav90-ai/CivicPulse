@@ -10,11 +10,13 @@ import {
   Layers,
   RotateCcw
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from './types';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, GovernmentProject, ProjectLifecycleStatus, RecommendedProject } from './types';
 import { DISTRICTS_REGISTRY } from './data/districts';
 import { INITIAL_CITIZEN_REQUESTS } from './data/initialRequests';
+import { INITIAL_GOVERNMENT_PROJECTS } from './data/initialProjects';
 import { Sidebar, NavTab } from './components/Sidebar';
 import { Overview } from './components/Overview';
+import { PriorityEngine } from './components/PriorityEngine';
 import { CitizenIngestion } from './components/CitizenIngestion';
 import { HotspotMap } from './components/HotspotMap';
 import { PolicyLab } from './components/PolicyLab';
@@ -33,6 +35,16 @@ export default function App() {
       }
     } catch {}
     return INITIAL_CITIZEN_REQUESTS;
+  });
+
+  const [governmentProjects, setGovernmentProjects] = useState<GovernmentProject[]>(() => {
+    try {
+      const saved = localStorage.getItem('civicpulse_gov_projects');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch {}
+    return INITIAL_GOVERNMENT_PROJECTS;
   });
 
   // Default to 'overview' so the user immediately understands what CivicPulse does in 5-10 seconds
@@ -66,16 +78,125 @@ export default function App() {
     } catch {}
   }, [requests]);
 
+  // Persist government projects to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('civicpulse_gov_projects', JSON.stringify(governmentProjects));
+    } catch {}
+  }, [governmentProjects]);
+
   // Handle Add New Ingested Request
   const handleAddRequest = (newReq: CitizenRequest) => {
     setRequests((prev) => [newReq, ...prev]);
   };
 
+  // Update Government Project Status
+  const handleUpdateProjectStatus = (
+    projectId: string, 
+    newStatus: ProjectLifecycleStatus, 
+    note?: string
+  ) => {
+    setGovernmentProjects((prev) =>
+      prev.map((proj) => {
+        if (proj.id !== projectId) return proj;
+
+        let newProgress = proj.progress;
+        if (newStatus === 'Recommended') newProgress = 0;
+        else if (newStatus === 'Approved' && proj.progress === 0) newProgress = 15;
+        else if (newStatus === 'In Progress' && (proj.progress < 25 || proj.progress === 100)) newProgress = 50;
+        else if (newStatus === 'Completed') newProgress = 100;
+
+        const newHistoryEntry = {
+          status: newStatus,
+          timestamp: new Date().toISOString(),
+          note: note || `Status transitioned to ${newStatus}.`,
+          actor: 'Municipal Administration Authority'
+        };
+
+        return {
+          ...proj,
+          status: newStatus,
+          progress: newProgress,
+          completedDate: newStatus === 'Completed' ? new Date().toISOString().split('T')[0] : proj.completedDate,
+          history: [newHistoryEntry, ...proj.history]
+        };
+      })
+    );
+  };
+
+  // Convert AI Recommendation to a Government Project
+  const handleConvertToGovernmentProject = (recommended: RecommendedProject) => {
+    const existing = governmentProjects.find(p => p.districtId === recommended.districtId && p.category === recommended.category);
+    if (existing) {
+      handleUpdateProjectStatus(
+        existing.id, 
+        'Approved', 
+        `Sanctioned and converted from AI Recommendation with ₹${(existing.estimatedCostInr / 10000000).toFixed(1)} Cr allocation.`
+      );
+      setActiveTab('projects');
+      return;
+    }
+
+    const newProject: GovernmentProject = {
+      id: `gov-proj-${Date.now()}`,
+      title: `${recommended.title} — ${recommended.districtName}`,
+      district: recommended.districtName,
+      districtId: recommended.districtId,
+      state: recommended.state,
+      category: recommended.category,
+      priorityScore: recommended.priorityScore,
+      citizenRequestsCount: recommended.citizenRequestsCount,
+      population: recommended.targetBeneficiaries,
+      estimatedCostInr: recommended.estimatedBudgetInr,
+      status: 'Approved',
+      progress: 15,
+      department: recommended.category === 'Drainage' 
+        ? 'Municipal Administration & Urban Development (MA&UD)'
+        : recommended.category === 'Water'
+        ? 'Rural Water Supply & Sanitation (RWSS)'
+        : recommended.category === 'Roads'
+        ? 'Public Works Department (PWD)'
+        : recommended.category === 'Electricity'
+        ? 'State Energy Transmission Agency'
+        : recommended.category === 'Health' || recommended.category === 'Healthcare'
+        ? 'Health & Family Welfare Department'
+        : 'School Education Department',
+      officerInCharge: 'Nodal Executive Engineer',
+      startDate: 'Q2 2025',
+      targetDate: `Q${Math.min(4, Math.ceil(recommended.timelineMonths / 3))} 2025`,
+      beforeAccess: 30,
+      afterAccess: 88,
+      description: recommended.summaryReasoning,
+      keyReasoning: recommended.keyBulletPoints,
+      aiSummary: recommended.aiRecommendation,
+      sourceRecommendationId: recommended.id,
+      history: [
+        {
+          status: 'Recommended',
+          timestamp: new Date(Date.now() - 86400000 * 5).toISOString(),
+          note: `AI calculated priority score of ${recommended.priorityScore}/100 based on ${recommended.citizenRequestsCount} requests.`,
+          actor: 'CivicPulse AI Priority Engine'
+        },
+        {
+          status: 'Approved',
+          timestamp: new Date().toISOString(),
+          note: `Project officially sanctioned and converted to Government Project with ₹${(recommended.estimatedBudgetInr / 10000000).toFixed(1)} Cr capital allocation.`,
+          actor: 'State Planning Commission'
+        }
+      ]
+    };
+
+    setGovernmentProjects(prev => [newProject, ...prev]);
+    setActiveTab('projects');
+  };
+
   // Reset to demo baseline
   const handleResetData = () => {
     setRequests(INITIAL_CITIZEN_REQUESTS);
+    setGovernmentProjects(INITIAL_GOVERNMENT_PROJECTS);
     try {
       localStorage.removeItem('civicpulse_requests');
+      localStorage.removeItem('civicpulse_gov_projects');
     } catch {}
   };
 
@@ -113,6 +234,7 @@ export default function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         requestsCount={requests.length}
+        projectsCount={governmentProjects.length}
         onOpenMethodology={() => setMethodologyModalOpen(true)}
         isOpenMobile={mobileMenuOpen}
         onCloseMobile={() => setMobileMenuOpen(false)}
@@ -161,8 +283,28 @@ export default function App() {
               onNavigate={(tab) => setActiveTab(tab)}
               onSelectDistrictForPolicy={(districtId, category) => {
                 setPolicyTargetDistrictId(districtId);
-                setPolicyTargetCategory(category);
+                setPolicyTargetCategory(category as InfrastructureCategory);
               }}
+            />
+          )}
+
+          {activeTab === 'engine' && (
+            <PriorityEngine
+              districts={districts}
+              requests={requests}
+              onSelectProjectForPolicy={(districtId, category) => {
+                setPolicyTargetDistrictId(districtId);
+                setPolicyTargetCategory(category);
+                setActiveTab('insights');
+              }}
+              onNavigateToImpact={(districtId, category) => {
+                setPolicyTargetDistrictId(districtId);
+                setPolicyTargetCategory(category);
+                setActiveTab('impact');
+              }}
+              onNavigateToMap={() => setActiveTab('map')}
+              onConvertToGovernmentProject={handleConvertToGovernmentProject}
+              onNavigateToProjects={() => setActiveTab('projects')}
             />
           )}
 
@@ -200,15 +342,26 @@ export default function App() {
           {activeTab === 'projects' && (
             <ProjectsView
               districts={districts}
+              projects={governmentProjects}
+              onUpdateProjectStatus={handleUpdateProjectStatus}
               onNavigateToImpact={handleNavigateToImpact}
+              onNavigateToPolicyLab={(districtId, category) => {
+                setPolicyTargetDistrictId(districtId);
+                setPolicyTargetCategory(category);
+                setActiveTab('insights');
+              }}
+              onNavigateToEngine={() => setActiveTab('engine')}
             />
           )}
 
           {activeTab === 'impact' && (
             <ImpactSimulator
               districts={districts}
+              governmentProjects={governmentProjects}
               initialDistrictId={policyTargetDistrictId}
               initialCategory={policyTargetCategory}
+              onNavigateToProjects={() => setActiveTab('projects')}
+              onNavigateToEngine={() => setActiveTab('engine')}
             />
           )}
 
@@ -295,6 +448,7 @@ export default function App() {
                   <li><strong className="text-slate-900">Fuse:</strong> Merges citizen demand with national demographic, poverty, and infrastructure access baselines.</li>
                   <li><strong className="text-slate-900">Prioritize:</strong> The deterministic Priority Engine computes an auditable 0–100 score.</li>
                   <li><strong className="text-slate-900">Recommend:</strong> The AI Policy Lab generates executive briefs for public infrastructure funding.</li>
+                  <li><strong className="text-slate-900">Convert & Execute:</strong> Government converts recommendations to sanctioned projects across the 4 stages (Recommended ➔ Approved ➔ In Progress ➔ Completed).</li>
                   <li><strong className="text-slate-900">Measure:</strong> The Impact Simulator quantifies post-project access improvement and closes the loop.</li>
                 </ol>
               </div>
@@ -302,7 +456,7 @@ export default function App() {
               <div className="p-4 bg-slate-900 text-slate-100 rounded-xl space-y-1 font-mono text-xs">
                 <div className="text-slate-400 uppercase tracking-wider text-[10px]">Standardized National Priority Formula:</div>
                 <div className="text-amber-300 font-semibold">
-                  Score = (Demand × 0.35) + (InfraGap × 0.25) + (Severity × 0.15) + (Poverty × 0.15) + (Alignment × 0.10)
+                  Score = (Demand × 0.30) + (InfraGap × 0.25) + (Population × 0.20) + (Urgency × 0.15) + (GovPriority × 0.10)
                 </div>
               </div>
             </div>

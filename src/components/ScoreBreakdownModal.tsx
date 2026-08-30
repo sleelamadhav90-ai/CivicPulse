@@ -82,10 +82,10 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1.5">
             <div className="text-xs uppercase tracking-wider font-bold text-slate-700 flex items-center gap-1.5 font-sans">
               <Scale className="w-3.5 h-3.5 text-blue-600" />
-              Standardized Composite Formula
+              Standardized 5-Pillar Priority Formula
             </div>
             <div className="font-mono text-xs text-slate-800 bg-white p-2.5 rounded-lg border border-slate-200 overflow-x-auto">
-              Score = 0.35·(Demand) + 0.25·(Deficit Gap) + 0.15·(Severity) + 0.15·(Poverty Index) + 0.10·(Alignment)
+              Priority = 0.30·(Citizen Demand) + 0.25·(Infrastructure Gap) + 0.20·(Population Impact) + 0.15·(Urgency) + 0.10·(Government Priority)
             </div>
           </div>
 
@@ -93,7 +93,7 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
           <div className="space-y-3">
             <h4 className="text-xs uppercase tracking-wider text-slate-700 font-bold flex items-center gap-1.5">
               <Layers className="w-3.5 h-3.5 text-blue-600" />
-              Weighted Component Evaluation
+              5-Pillar Component Evaluation
             </h4>
 
             {/* 1. Demand Signal Volume */}
@@ -101,17 +101,17 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className="font-bold text-slate-800 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  1. Citizen Demand Volume (35% Weight)
+                  1. Citizen Demand Volume (30% Weight)
                 </span>
                 <span className="font-mono text-slate-600 text-xs">
-                  {breakdown.demand_score} pts × 0.35 = <strong className="text-slate-900">{(breakdown.demand_score * 0.35).toFixed(2)}</strong>
+                  {breakdown.demand_score} pts × 0.30 = <strong className="text-slate-900">{(breakdown.demand_score * 0.30).toFixed(2)}</strong>
                 </span>
               </div>
               <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
                 <div className="bg-blue-600 h-full rounded-full transition-all duration-500" style={{ width: `${breakdown.demand_score}%` }}></div>
               </div>
               <p className="text-xs text-slate-500 mt-1 font-mono">
-                min(20 × ln(1 + {breakdown.demand_count}), 100) — prioritizes persistent signal clustering.
+                min(22 × ln(1 + {breakdown.demand_count}), 100) — clusters multilingual voice & text signals.
               </p>
             </div>
 
@@ -134,12 +134,31 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
               </p>
             </div>
 
-            {/* 3. Severity / Urgency */}
+            {/* 3. Population Impact & Density */}
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
+              <div className="flex justify-between items-center text-xs mb-1.5">
+                <span className="font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-purple-600"></span>
+                  3. Population Impact & Density (20% Weight)
+                </span>
+                <span className="font-mono text-slate-600 text-xs">
+                  {breakdown.vuln_score} pts × 0.20 = <strong className="text-slate-900">{(breakdown.vuln_score * 0.20).toFixed(2)}</strong>
+                </span>
+              </div>
+              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                <div className="bg-purple-600 h-full rounded-full transition-all duration-500" style={{ width: `${breakdown.vuln_score}%` }}></div>
+              </div>
+              <p className="text-xs text-slate-500 mt-1 font-mono">
+                Population: {(district.population / 100000).toFixed(1)} Lakhs • Poverty Index: {(district.poverty_index * 100).toFixed(0)}%.
+              </p>
+            </div>
+
+            {/* 4. Urgency */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className="font-bold text-slate-800 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                  3. Individual Severity & Safety Urgency (15% Weight)
+                  4. Urgency & Safety Hazard (15% Weight)
                 </span>
                 <span className="font-mono text-slate-600 text-xs">
                   {breakdown.sev_score} pts × 0.15 = <strong className="text-amber-700">{(breakdown.sev_score * 0.15).toFixed(2)}</strong>
@@ -149,35 +168,16 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
                 <div className="bg-amber-500 h-full rounded-full transition-all duration-500" style={{ width: `${breakdown.sev_score}%` }}></div>
               </div>
               <p className="text-xs text-slate-500 mt-1 font-mono">
-                Extracted by Gemini from natural language / audio input (Scale 1–10).
+                Extracted by Gemini from natural language hazard reports (Scale 1–10).
               </p>
             </div>
 
-            {/* 4. Social Vulnerability */}
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-              <div className="flex justify-between items-center text-xs mb-1.5">
-                <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                  4. Social Vulnerability & Poverty (15% Weight)
-                </span>
-                <span className="font-mono text-slate-600 text-xs">
-                  {breakdown.vuln_score} pts × 0.15 = <strong className="text-slate-900">{(breakdown.vuln_score * 0.15).toFixed(2)}</strong>
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
-                <div className="bg-purple-600 h-full rounded-full transition-all duration-500" style={{ width: `${breakdown.vuln_score}%` }}></div>
-              </div>
-              <p className="text-xs text-slate-500 mt-1 font-mono">
-                District Multidimensional Poverty Index: {(district.poverty_index * 100).toFixed(0)}%.
-              </p>
-            </div>
-
-            {/* 5. Policy & Investment Alignment */}
+            {/* 5. Government Priority */}
             <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
               <div className="flex justify-between items-center text-xs mb-1.5">
                 <span className="font-bold text-slate-800 flex items-center gap-1.5">
                   <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                  5. National Policy & Capex Alignment (10% Weight)
+                  5. Government Priority & Capex Gap (10% Weight)
                 </span>
                 <span className="font-mono text-slate-600 text-xs">
                   {breakdown.align_score} pts × 0.10 = <strong className="text-emerald-700">{(breakdown.align_score * 0.10).toFixed(2)}</strong>

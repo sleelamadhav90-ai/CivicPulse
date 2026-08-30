@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Building2, 
   MapPin, 
@@ -9,6 +9,7 @@ import {
   AlertTriangle, 
   Radio, 
   Droplets, 
+  Droplet,
   Route, 
   Lightbulb, 
   HeartPulse, 
@@ -16,16 +17,21 @@ import {
   PlusCircle,
   BarChart3,
   Flame,
-  ShieldCheck
+  ShieldCheck,
+  Cpu,
+  Award,
+  ChevronDown,
+  ChevronUp,
+  Zap
 } from 'lucide-react';
-import { District, CitizenRequest } from '../types';
-import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
+import { District, CitizenRequest, RecommendedProject } from '../types';
+import { calculatePriorityScore, getPriorityTier, getAIRecommendedProjects } from '../utils/scoring';
 
 interface OverviewProps {
   districts: District[];
   requests: CitizenRequest[];
-  onNavigate: (tab: 'overview' | 'submit' | 'map' | 'insights' | 'projects' | 'impact' | 'settings') => void;
-  onSelectDistrictForPolicy: (districtId: string, category: 'Water' | 'Health' | 'Roads' | 'Education') => void;
+  onNavigate: (tab: 'overview' | 'engine' | 'submit' | 'map' | 'insights' | 'projects' | 'impact' | 'settings') => void;
+  onSelectDistrictForPolicy: (districtId: string, category: 'Water' | 'Health' | 'Roads' | 'Education' | 'Drainage' | 'Electricity') => void;
 }
 
 export const Overview: React.FC<OverviewProps> = ({
@@ -39,11 +45,15 @@ export const Overview: React.FC<OverviewProps> = ({
   const highPriorityCount = 1284;
   const resolvedCount = 8921;
 
+  // AI Recommended Projects generated from Priority Engine
+  const recommendedProjects = getAIRecommendedProjects(districts, requests);
+  const [expandedProjectId, setExpandedProjectId] = useState<string | null>('rec-01');
+
   // Calculate high-demand districts
   const rankedDistricts = districts.map((d) => {
-    const waterScore = calculatePriorityScore(d, 'Water', 8, requests.filter(r => r.district_id === d.id && r.category === 'Water').length + 8).total_score;
-    const roadScore = calculatePriorityScore(d, 'Roads', 7, requests.filter(r => r.district_id === d.id && r.category === 'Roads').length + 6).total_score;
-    const healthScore = calculatePriorityScore(d, 'Health', 9, requests.filter(r => r.district_id === d.id && r.category === 'Health').length + 5).total_score;
+    const waterScore = calculatePriorityScore(d, 'Water', 8, requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase() && r.category === 'Water').length + 8).total_score;
+    const roadScore = calculatePriorityScore(d, 'Roads', 7, requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase() && r.category === 'Roads').length + 6).total_score;
+    const healthScore = calculatePriorityScore(d, 'Health', 9, requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase() && r.category === 'Health').length + 5).total_score;
     const maxScore = Math.max(waterScore, roadScore, healthScore);
     const topCategory: 'Water' | 'Roads' | 'Health' = waterScore >= roadScore && waterScore >= healthScore ? 'Water' : roadScore >= healthScore ? 'Roads' : 'Health';
 
@@ -85,18 +95,18 @@ export const Overview: React.FC<OverviewProps> = ({
 
           <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
             <button
-              onClick={() => onNavigate('submit')}
+              onClick={() => onNavigate('engine')}
               className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4" />
-              <span>Submit Request</span>
+              <Cpu className="w-4 h-4" />
+              <span>Priority Engine</span>
             </button>
             <button
-              onClick={() => onNavigate('insights')}
+              onClick={() => onNavigate('submit')}
               className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
-              <span>View AI Insights</span>
+              <PlusCircle className="w-4 h-4 text-emerald-400" />
+              <span>Submit Request</span>
             </button>
           </div>
         </div>
@@ -132,7 +142,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
         {/* High Priority Card */}
         <div 
-          onClick={() => onNavigate('map')}
+          onClick={() => onNavigate('engine')}
           className="bg-white border border-slate-200 hover:border-rose-300 rounded-2xl p-6 shadow-xs transition-all cursor-pointer group"
         >
           <div className="flex items-center justify-between">
@@ -180,6 +190,165 @@ export const Overview: React.FC<OverviewProps> = ({
           <p className="mt-2 text-xs text-slate-500">
             Completed pipeline works verified with closed-loop surveys
           </p>
+        </div>
+      </div>
+
+      {/* FEATURE 4 HIGHLIGHT: AI Recommended Projects Section */}
+      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="px-2 py-0.5 text-xs font-mono font-bold uppercase rounded bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                <Cpu className="w-3.5 h-3.5 text-blue-600" />
+                FEATURE 4: AI PRIORITY ENGINE
+              </span>
+              <span className="text-xs text-slate-400 font-medium hidden sm:inline">•</span>
+              <span className="text-xs text-slate-500 font-medium hidden sm:inline">Priority = Demand + Gap + Density + Urgency + Policy</span>
+            </div>
+            <h2 className="text-xl font-black text-slate-900 mt-1 flex items-center gap-2">
+              <Award className="w-5 h-5 text-amber-500" />
+              AI Recommended Projects
+            </h2>
+            <p className="text-xs text-slate-600 mt-0.5">
+              Instead of simple complaint counts, CivicPulse calculates multi-factor priority scores connecting citizen voice + municipal data + infrastructure planning.
+            </p>
+          </div>
+
+          <button
+            onClick={() => onNavigate('engine')}
+            className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 cursor-pointer self-start sm:self-auto bg-blue-50 hover:bg-blue-100 px-3.5 py-2 rounded-xl transition-colors"
+          >
+            <span>Open Priority Engine</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        </div>
+
+        {/* AI Recommended Projects Table / Cards with Click-to-Reasoning */}
+        <div className="space-y-4">
+          {recommendedProjects.slice(0, 3).map((project) => {
+            const isExpanded = expandedProjectId === project.id;
+            const tier = getPriorityTier(project.priorityScore);
+
+            return (
+              <div 
+                key={project.id}
+                className="border border-slate-200 rounded-xl overflow-hidden transition-all bg-slate-50/40 hover:bg-slate-50"
+              >
+                {/* Main Row */}
+                <div 
+                  onClick={() => setExpandedProjectId(isExpanded ? null : project.id)}
+                  className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer"
+                >
+                  <div className="flex items-start sm:items-center space-x-3.5">
+                    {/* Medal / Rank */}
+                    <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-black text-base font-mono shadow-2xs shrink-0">
+                      {project.medal}
+                    </div>
+
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-500 font-mono">
+                          {project.category}
+                        </span>
+                        <span className="text-slate-300">•</span>
+                        <span className="text-xs font-semibold text-slate-600">
+                          {project.districtName}, {project.state}
+                        </span>
+                      </div>
+                      <h3 className="text-sm sm:text-base font-bold text-slate-900 mt-0.5">
+                        {project.title}
+                      </h3>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-200">
+                    <div className="text-left sm:text-right">
+                      <div className="text-lg sm:text-xl font-black font-mono tracking-tight" style={{ color: tier.color }}>
+                        {project.priorityScore}
+                        <span className="text-xs text-slate-400 font-normal font-sans">/100</span>
+                      </div>
+                      <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase font-mono border ${tier.badgeBg} ${tier.badgeText} ${tier.borderColor}`}>
+                        {project.priorityTier}
+                      </span>
+                    </div>
+
+                    <button 
+                      className="px-3 py-1.5 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-xs font-bold text-slate-700 hover:text-blue-700 rounded-lg flex items-center gap-1 shadow-2xs transition-colors"
+                    >
+                      <span>{isExpanded ? 'Hide' : 'Why high priority?'}</span>
+                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Expanded "Why is this high priority?" Drawer */}
+                {isExpanded && (
+                  <div className="p-5 bg-white border-t border-slate-200 space-y-4 animate-in fade-in duration-200">
+                    <div className="p-4 bg-slate-900 text-white rounded-xl font-mono text-xs sm:text-sm space-y-3 shadow-xs">
+                      <div className="text-xs font-sans uppercase font-bold text-slate-400">
+                        Why is this high priority?
+                      </div>
+
+                      <div className="space-y-1.5 font-semibold">
+                        {project.keyBulletPoints.map((point, idx) => (
+                          <div key={idx} className="flex items-center space-x-2">
+                            <span className="text-blue-400 font-bold text-base">
+                              {idx === 0 ? '•' : '+'}
+                            </span>
+                            <span className={idx === 0 ? 'text-white font-bold' : 'text-slate-200'}>
+                              {point.replace(/^\+\s*/, '')}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between text-xs font-sans">
+                        <span className="text-slate-300">Composite Priority Calculation:</span>
+                        <span className="font-mono font-black text-rose-300 bg-rose-500/20 px-2.5 py-0.5 rounded border border-rose-500/40">
+                          → HIGH PRIORITY ({project.priorityScore}/100)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* AI Recommendation & Action Buttons */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                      <div className="text-xs text-slate-600 flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0" />
+                        <span><strong>AI Action:</strong> {project.aiRecommendation}</span>
+                      </div>
+
+                      <div className="flex items-center gap-2 shrink-0 flex-wrap">
+                        <button
+                          onClick={() => {
+                            onSelectDistrictForPolicy(project.districtId, project.category);
+                            onNavigate('insights');
+                          }}
+                          className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                          <span>Policy Memo</span>
+                        </button>
+                        <button
+                          onClick={() => onNavigate('projects')}
+                          className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg shadow-2xs transition-colors flex items-center gap-1.5 cursor-pointer"
+                        >
+                          <Building2 className="w-3.5 h-3.5" />
+                          <span>Gov Projects</span>
+                        </button>
+                        <button
+                          onClick={() => onNavigate('engine')}
+                          className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <span>Priority Engine</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -373,7 +542,7 @@ export const Overview: React.FC<OverviewProps> = ({
               className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center justify-center space-x-2 cursor-pointer group"
             >
               <Sparkles className="w-4 h-4 text-amber-300 group-hover:scale-110 transition-transform" />
-              <span>View AI Insights & Policy Briefs</span>
+              <span>View AI Policy Briefs & Memos</span>
               <ArrowRight className="w-4 h-4" />
             </button>
             <p className="text-center text-[11px] text-slate-500">
@@ -417,16 +586,16 @@ export const Overview: React.FC<OverviewProps> = ({
 
           {/* Step 2 */}
           <div 
-            onClick={() => onNavigate('map')}
+            onClick={() => onNavigate('engine')}
             className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold font-mono text-xs flex items-center justify-center">2</span>
-              <MapPin className="w-4 h-4 text-rose-400" />
+              <Cpu className="w-4 h-4 text-rose-400" />
             </div>
-            <h4 className="font-bold text-sm text-white">2. Demand Hotspots</h4>
+            <h4 className="font-bold text-sm text-white">2. AI Priority Engine</h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Signals fuse with census data and baseline deficits into a 0–100 deterministic Priority Score.
+              Demand + Deficits + Population + Urgency + Capex = 0–100 auditable priority score.
             </p>
           </div>
 
@@ -464,3 +633,4 @@ export const Overview: React.FC<OverviewProps> = ({
     </div>
   );
 };
+

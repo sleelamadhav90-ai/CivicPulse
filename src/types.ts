@@ -87,6 +87,44 @@ export interface ScoreBreakdown {
   };
 }
 
+export interface PriorityFactorDetail {
+  factorName: 'Citizen Demand' | 'Infrastructure Gap' | 'Population Impact' | 'Urgency' | 'Government Priority';
+  score: number; // 0-100 scale
+  weight: number; // e.g. 0.30
+  weightedScore: number; // score * weight
+  bulletText: string; // e.g. "2,481 citizen requests"
+  metricValue: string; // e.g. "2,481 signals"
+  description: string; // e.g. "Multilingual voice & text complaint clustering from Ward 12 & 14"
+  badgeColor: string;
+}
+
+export interface RecommendedProject {
+  id: string;
+  rank: number;
+  medal: string; // "🥇 1", "🥈 2", "🥉 3", "#4", etc.
+  title: string;
+  category: InfrastructureCategory;
+  districtName: string;
+  districtId: string;
+  state: string;
+  priorityScore: number; // e.g. 94
+  priorityTier: 'Critical' | 'High' | 'Moderate' | 'Stable';
+  citizenRequestsCount: number;
+  summaryReasoning: string;
+  factors: {
+    citizenDemand: PriorityFactorDetail;
+    infrastructureGap: PriorityFactorDetail;
+    populationImpact: PriorityFactorDetail;
+    urgency: PriorityFactorDetail;
+    governmentPriority: PriorityFactorDetail;
+  };
+  keyBulletPoints: string[]; // ["2,481 citizen requests", "+ High population density", "+ Poor infrastructure index", "+ Frequent flooding reports", "+ Existing investment gap"]
+  aiRecommendation: string;
+  estimatedBudgetInr: number;
+  targetBeneficiaries: number;
+  timelineMonths: number;
+}
+
 export interface PolicyBrief {
   id: string;
   district: string;
@@ -98,6 +136,42 @@ export interface PolicyBrief {
   population: number;
   poverty_index: number;
   brief_text: string;
+}
+
+export type ProjectLifecycleStatus = 'Recommended' | 'Approved' | 'In Progress' | 'Completed';
+
+export interface ProjectHistoryEntry {
+  status: ProjectLifecycleStatus;
+  timestamp: string;
+  note: string;
+  actor: string;
+}
+
+export interface GovernmentProject {
+  id: string;
+  title: string;
+  district: string;
+  districtId: string;
+  state: string;
+  category: InfrastructureCategory;
+  priorityScore: number;
+  citizenRequestsCount: number;
+  population: number;
+  estimatedCostInr: number;
+  status: ProjectLifecycleStatus;
+  progress: number; // 0 to 100
+  department: string;
+  officerInCharge: string;
+  startDate: string;
+  targetDate: string;
+  completedDate?: string;
+  beforeAccess: number;
+  afterAccess: number;
+  description: string;
+  keyReasoning: string[];
+  aiSummary: string;
+  sourceRecommendationId?: string;
+  history: ProjectHistoryEntry[];
 }
 
 export interface ImpactProject {

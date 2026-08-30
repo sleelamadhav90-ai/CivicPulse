@@ -12,16 +12,19 @@ import {
   Info,
   Layers,
   Flame,
-  CheckCircle2
+  CheckCircle2,
+  Cpu,
+  Award
 } from 'lucide-react';
 import { District, CitizenRequest } from '../types';
 
-export type NavTab = 'overview' | 'submit' | 'map' | 'insights' | 'projects' | 'impact' | 'settings';
+export type NavTab = 'overview' | 'engine' | 'map' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
   setActiveTab: (tab: NavTab) => void;
   requestsCount: number;
+  projectsCount?: number;
   onOpenMethodology: () => void;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
@@ -31,17 +34,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   requestsCount,
+  projectsCount = 6,
   onOpenMethodology,
   isOpenMobile,
   onCloseMobile,
 }) => {
   const navItems = [
     { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏠', badge: null },
-    { id: 'submit' as NavTab, label: 'Submit Request', icon: FileEdit, emoji: '📝', badge: `${requestsCount}` },
+    { id: 'engine' as NavTab, label: 'Priority Engine', icon: Cpu, emoji: '⚡', badge: '94/100' },
     { id: 'map' as NavTab, label: 'Demand Map', icon: MapPin, emoji: '📍', badge: 'Hotspots' },
-    { id: 'insights' as NavTab, label: 'AI Insights', icon: Sparkles, emoji: '🤖', badge: 'Gemini' },
-    { id: 'projects' as NavTab, label: 'Projects', icon: Hammer, emoji: '🏗️', badge: '6 Works' },
-    { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp, emoji: '📊', badge: 'ROI' },
+    { id: 'submit' as NavTab, label: 'Submit Request', icon: FileEdit, emoji: '📝', badge: `${requestsCount}` },
+    { id: 'insights' as NavTab, label: 'AI Policy Lab', icon: Sparkles, emoji: '🤖', badge: 'Gemini' },
+    { id: 'projects' as NavTab, label: 'Gov Projects', icon: Hammer, emoji: '🏗️', badge: `${projectsCount}` },
+    { id: 'impact' as NavTab, label: 'Impact Dashboard', icon: TrendingUp, emoji: '📊', badge: '4.2M' },
     { id: 'settings' as NavTab, label: 'Settings', icon: Settings, emoji: '⚙️', badge: null },
   ];
 
