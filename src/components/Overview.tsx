@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { District, CitizenRequest, RecommendedProject } from '../types';
 import { calculatePriorityScore, getPriorityTier, getAIRecommendedProjects } from '../utils/scoring';
+import { ArchitectureBlueprint } from './ArchitectureBlueprint';
 
 interface OverviewProps {
   districts: District[];
@@ -552,9 +553,12 @@ export const Overview: React.FC<OverviewProps> = ({
         </div>
       </div>
 
+      {/* Architecture & Extensibility Section */}
+      <ArchitectureBlueprint onNavigate={onNavigate} />
+
       {/* 4-Step Closed-Loop Explanation Card (Understanding in 5-10 seconds) */}
-      <div className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-4">
+      <div className="bg-gradient-to-br from-slate-900 via-slate-850 to-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-xs space-y-6 border border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800/80 pb-4">
           <div>
             <span className="text-xs uppercase font-mono tracking-widest text-blue-400 font-bold">
               The Digital Public Infrastructure Loop
@@ -572,7 +576,7 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Step 1 */}
           <div 
             onClick={() => onNavigate('submit')}
-            className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all cursor-pointer space-y-2"
+            className="p-4 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-400 transition-all cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold font-mono text-xs flex items-center justify-center">1</span>
@@ -587,7 +591,7 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Step 2 */}
           <div 
             onClick={() => onNavigate('engine')}
-            className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all cursor-pointer space-y-2"
+            className="p-4 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-400 transition-all cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold font-mono text-xs flex items-center justify-center">2</span>
@@ -602,7 +606,7 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Step 3 */}
           <div 
             onClick={() => onNavigate('insights')}
-            className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all cursor-pointer space-y-2"
+            className="p-4 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-400 transition-all cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold font-mono text-xs flex items-center justify-center">3</span>
@@ -617,7 +621,7 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Step 4 */}
           <div 
             onClick={() => onNavigate('impact')}
-            className="p-4 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700 hover:border-blue-500 transition-all cursor-pointer space-y-2"
+            className="p-4 rounded-xl bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 hover:border-blue-400 transition-all cursor-pointer space-y-2"
           >
             <div className="flex items-center justify-between">
               <span className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 font-bold font-mono text-xs flex items-center justify-center">4</span>

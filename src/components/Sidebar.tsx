@@ -120,24 +120,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </nav>
         </div>
 
-        {/* Bottom System Audit & Methodology Badge */}
-        <div className="p-4 border-t border-slate-100 space-y-3">
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+        {/* Bottom System Audit & Architecture Badge */}
+        <div className="p-4 border-t border-slate-100 space-y-2.5">
+          <div className="p-3 bg-slate-50/90 rounded-xl border border-slate-200/80 text-xs">
             <div className="flex items-center justify-between mb-1">
               <span className="font-bold text-slate-800 text-[11px]">DPI Core Engine</span>
-              <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span className="flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span className="text-[10px] font-mono text-emerald-700 font-semibold">Active</span>
+              </span>
             </div>
             <p className="text-[11px] text-slate-500 leading-tight">
-              Deterministic priority math + Gemini multilingual voice parser.
+              Tri-pillar architecture: Citizens ➔ AI Engine ➔ Government.
             </p>
           </div>
 
           <button
             onClick={onOpenMethodology}
-            className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+            className="w-full py-2.5 bg-slate-100/80 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200/60"
           >
             <Info className="w-3.5 h-3.5 text-blue-600" />
-            <span>How It Works</span>
+            <span>Architecture & Scale</span>
           </button>
         </div>
       </aside>

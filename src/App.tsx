@@ -427,23 +427,67 @@ export default function App() {
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-sm text-slate-700 max-h-[75vh] overflow-y-auto leading-relaxed">
-              <h2 className="text-xl font-bold tracking-tight text-slate-900">
-                CivicPulse Core Architecture & Methodology
-              </h2>
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl space-y-1.5">
+            <div className="p-6 space-y-5 text-sm text-slate-700 max-h-[75vh] overflow-y-auto leading-relaxed">
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold tracking-tight text-slate-900">
+                  CivicPulse System Architecture & Extensible Topology
+                </h2>
+                <p className="text-xs text-slate-500">
+                  A modular prototype designed to scale from municipal wards to multilateral BRICS infrastructure cooperation.
+                </p>
+              </div>
+
+              {/* ASCII / Monospace 3-Pillar Diagram */}
+              <div className="p-4 rounded-xl bg-slate-900 text-slate-200 font-mono text-[11px] overflow-x-auto shadow-xs border border-slate-800">
+                <div className="text-blue-400 font-bold uppercase tracking-wider text-[10px] pb-2 border-b border-slate-800">
+                  Decoupled Tri-Pillar Architecture:
+                </div>
+                <pre className="mt-2 text-slate-300">
+{`                    CIVICPULSE
+                        │
+        ┌───────────────┼───────────────┐
+        ↓               ↓               ↓
+    Citizens          AI Engine      Government
+        │               │               │
+   Voice/Text      Classification    Dashboard
+        │           Prioritization       │
+        ↓               │               ↓
+   Requests ────────────┼────────── Projects
+                        │
+                        ↓
+                 Demand Hotspots
+                        │
+                        ↓
+                   Impact Data`}
+                </pre>
+              </div>
+
+              {/* Extensibility Hierarchy */}
+              <div className="p-4 bg-emerald-50/70 border border-emerald-200 rounded-xl space-y-2 text-xs">
+                <span className="font-bold text-emerald-900 uppercase tracking-wider block">
+                  Hierarchical Scalability (Without Core Architecture Changes)
+                </span>
+                <p className="text-slate-800 leading-relaxed">
+                  <strong>Current Working Prototype:</strong> <span className="font-mono text-emerald-800">India → Andhra Pradesh / Maharashtra → District → Municipality</span>
+                </p>
+                <p className="text-slate-800 leading-relaxed">
+                  <strong>Extensible BRICS Scale:</strong> <span className="font-mono text-emerald-800">India / Brazil / Russia / China / South Africa / UAE / Egypt</span> (re-uses the identical citizen ingestion, mathematical priority engine, and government execution pipeline by simply loading regional boundary GIS datasets).
+                </p>
+              </div>
+
+              <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-1.5">
                 <span className="text-xs uppercase tracking-wider text-blue-700 font-bold block">Key Architectural Principle</span>
-                <p className="text-slate-800 text-xs sm:text-sm">
+                <p className="text-slate-800 text-xs">
                   <strong className="text-blue-950">Separation of Intelligence from Decision Logic:</strong> Gemini is used as the Multilingual Ingestion & Synthesis Layer (translating local dialects, categorizing, and drafting memos). The Priority Score is calculated by an immutable, deterministic mathematical formula to guarantee transparent fiscal auditability.
                 </p>
               </div>
 
-              <div className="space-y-2.5">
+              <div className="space-y-2">
                 <span className="text-xs uppercase tracking-wider text-slate-500 font-bold block">
                   The Closed-Loop DPI Cycle:
                 </span>
-                <ol className="list-decimal list-inside space-y-2 text-slate-700 pl-1 text-xs sm:text-sm">
-                  <li><strong className="text-slate-900">Listen:</strong> Citizens speak in native regional dialects (Telugu, Hindi, Marathi, etc.) or submit text.</li>
+                <ol className="list-decimal list-inside space-y-1.5 text-slate-700 pl-1 text-xs">
+                  <li><strong className="text-slate-900">Listen:</strong> Citizens speak in native regional dialects (Telugu, Hindi, Marathi) or submit text.</li>
                   <li><strong className="text-slate-900">Understand:</strong> Gemini extracts category, location, and urgency; normalizes to district coordinates.</li>
                   <li><strong className="text-slate-900">Fuse:</strong> Merges citizen demand with national demographic, poverty, and infrastructure access baselines.</li>
                   <li><strong className="text-slate-900">Prioritize:</strong> The deterministic Priority Engine computes an auditable 0–100 score.</li>
