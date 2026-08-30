@@ -12,6 +12,7 @@ export function getCategoryAccess(district: District, category: InfrastructureCa
   switch (category) {
     case 'Water':
       return district.water_access;
+    case 'Healthcare':
     case 'Health':
       return district.health_access;
     case 'Roads':
@@ -19,7 +20,11 @@ export function getCategoryAccess(district: District, category: InfrastructureCa
     case 'Education':
       return district.education_access;
     case 'Electricity':
-      return 60; // default baseline if needed
+      return 58; // baseline grid stability
+    case 'Sanitation':
+      return Math.round((district.water_access + district.health_access) / 2);
+    case 'Other':
+      return 60;
     default:
       return district.water_access;
   }

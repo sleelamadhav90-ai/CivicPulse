@@ -2,6 +2,27 @@ import { District } from '../types';
 
 export const DISTRICTS_REGISTRY: District[] = [
   {
+    id: 'vijayawada',
+    name: 'Vijayawada',
+    state: 'Andhra Pradesh',
+    lat: 16.5062,
+    lon: 80.6480,
+    population: 1477000,
+    poverty_index: 0.35,
+    water_access: 72,
+    health_access: 76,
+    road_quality: 64,
+    education_access: 80,
+    planned_investment: 85000000, // ₹8.5 Cr
+    existing_facilities: {
+      phc_clinics: 24,
+      water_plants: 12,
+      schools: 180,
+      paved_roads_km: 560,
+    },
+    zone: 'South',
+  },
+  {
     id: 'guntur',
     name: 'Guntur',
     state: 'Andhra Pradesh',

@@ -20,22 +20,34 @@ export interface District {
   zone: 'South' | 'West' | 'North' | 'East' | 'Central';
 }
 
-export type InfrastructureCategory = 'Water' | 'Health' | 'Roads' | 'Education' | 'Electricity';
+export type InfrastructureCategory = 
+  | 'Roads' 
+  | 'Water' 
+  | 'Electricity' 
+  | 'Healthcare' 
+  | 'Health'
+  | 'Sanitation' 
+  | 'Education' 
+  | 'Other';
+
+export type RequestStatus = 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged';
 
 export interface CitizenRequest {
-  id: string;
+  id: string; // e.g. "CP-10482"
   timestamp: string;
   original_text: string;
   language: string;
   category: InfrastructureCategory;
-  location: string; // Normalized district name
+  issue_title?: string; // e.g. "Street Lighting"
+  location: string; // e.g. "Vijayawada"
   severity: number; // 1 to 10
+  priority_tier?: 'Low' | 'Medium' | 'High' | 'Critical';
   summary_en: string;
   urgency_reasoning?: string;
   affected_group?: string;
   audio_url?: string;
   source_type: 'voice' | 'text' | 'sample';
-  status: 'Logged' | 'Under Review' | 'Prioritized' | 'Funded' | 'Resolved';
+  status: RequestStatus;
 }
 
 export interface ScoreBreakdown {

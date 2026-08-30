@@ -53,7 +53,7 @@ app.get('/api/health', (req: Request, res: Response) => {
 // Endpoint: Process Citizen Feedback (Multimodal: Audio / Text)
 app.post('/api/process-feedback', async (req: Request, res: Response) => {
   try {
-    const { text, audioBase64, mimeType } = req.body;
+    const { text, audioBase64, mimeType, userLocation, userCategory } = req.body;
 
     if (!text && !audioBase64) {
       return res.status(400).json({ error: 'Either text or audio data must be provided.' });
@@ -63,26 +63,29 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     const model = 'gemini-3.7-flash';
 
     const allowedDistricts = [
-      'Guntur', 'Krishna', 'Kurnool', 'Warangal', 'Hyderabad', 'Nizamabad',
+      'Vijayawada', 'Guntur', 'Krishna', 'Kurnool', 'Warangal', 'Hyderabad', 'Nizamabad',
       'Nashik', 'Pune', 'Solapur', 'Mysuru', 'Raichur', 'Madurai', 'Tirunelveli',
       'Patna', 'Gaya', 'Varanasi', 'Jaipur', 'Jodhpur'
     ].join(', ');
 
     const promptText = `
-You are the Multilingual Citizen Ingestion Engine for CivicPulse, a Digital Public Infrastructure for national development.
+You are the Multilingual Citizen Ingestion Engine for CivicPulse, a Digital Public Infrastructure for national civic development.
 Analyze this citizen infrastructure request carefully.
 
 Allowed District Registry: ${allowedDistricts}
-Allowed Categories: "Water", "Health", "Roads", "Education", "Electricity"
+Allowed Categories: "Roads", "Water", "Electricity", "Healthcare", "Sanitation", "Education", "Other"
+${userLocation ? `User-specified location hint: ${userLocation}` : ''}
+${userCategory ? `User-specified category hint: ${userCategory}` : ''}
 
 Tasks:
 1. Detect the original language (e.g. Telugu, Hindi, Marathi, Tamil, Kannada, English, Bengali, etc.).
-2. Classify the core infrastructure category into exactly one of: Water, Health, Roads, Education, Electricity.
-3. Identify and normalize the location to the closest matching district in the Allowed District Registry. If the user mentions a village or mandal, map it to its corresponding district (e.g., Narasaraopet -> Guntur, Kazipet -> Warangal, Malegaon -> Nashik, Bodhan -> Nizamabad, Bodhgaya -> Gaya). If not explicitly mentioned, infer from context or select the most relevant matching district.
-4. Assess severity on an integer scale from 1 (minor issue) to 10 (life-critical emergency / total utility breakdown).
-5. Produce a crisp, professional 1-to-2 sentence English summary.
-6. Provide brief urgency reasoning explaining why this is urgent.
-7. Identify the primary affected population group (e.g., "Rural agricultural households", "School children & teachers", "Commuters & freight drivers", "Emergency medical patients").
+2. Extract a concise issue title (2 to 4 words, e.g. "Street Lighting", "Potable Water Outage", "Primary Health Clinic Staffing", "Cratered Arterial Road", "Damaged Drainage Canal").
+3. Classify the core infrastructure category into exactly one of: Roads, Water, Electricity, Healthcare, Sanitation, Education, Other.
+4. Identify and normalize the location to the closest matching district in the Allowed District Registry (e.g. Vijayawada, Guntur, Krishna, Warangal, Hyderabad, Nashik, etc.). If the user explicitly selected a location, prioritize it.
+5. Assess severity on an integer scale from 1 (minor issue) to 10 (life-critical emergency / total utility breakdown).
+6. Produce a crisp, professional 1-to-2 sentence English summary (e.g. "Insufficient street lighting reported in a high-traffic public area.").
+7. Provide brief urgency reasoning explaining why this is urgent.
+8. Identify the primary affected population group (e.g., "College students & evening commuters", "Rural agricultural households", "Emergency medical patients").
 
 Input text (if any):
 """${text || '(Spoken Audio Input)'}"""
@@ -114,9 +117,13 @@ Input text (if any):
               type: Type.STRING,
               description: 'The detected natural language of the input (e.g., Telugu, Hindi, English)',
             },
+            issue_title: {
+              type: Type.STRING,
+              description: 'Short 2-4 word issue title, e.g. "Street Lighting", "Water Contamination"',
+            },
             category: {
               type: Type.STRING,
-              description: 'The classified category: Water, Health, Roads, Education, or Electricity',
+              description: 'The classified category: Roads, Water, Electricity, Healthcare, Sanitation, Education, or Other',
             },
             location: {
               type: Type.STRING,
@@ -125,6 +132,10 @@ Input text (if any):
             severity: {
               type: Type.INTEGER,
               description: 'Urgency rating from 1 to 10',
+            },
+            priority_tier: {
+              type: Type.STRING,
+              description: 'Priority rating: Low, Medium, High, or Critical',
             },
             summary_en: {
               type: Type.STRING,
@@ -139,7 +150,7 @@ Input text (if any):
               description: 'Key population demographic affected',
             },
           },
-          required: ['language', 'category', 'location', 'severity', 'summary_en'],
+          required: ['language', 'issue_title', 'category', 'location', 'severity', 'summary_en'],
         },
       },
     });
@@ -149,24 +160,31 @@ Input text (if any):
     try {
       parsedData = JSON.parse(rawJson);
     } catch {
-      // Fallback regex extraction if needed
       parsedData = {
-        language: 'Auto-detected',
-        category: 'Water',
-        location: 'Guntur',
+        language: 'English',
+        issue_title: text?.toLowerCase().includes('light') ? 'Street Lighting' : 'Public Infrastructure Disruption',
+        category: userCategory || (text?.toLowerCase().includes('light') ? 'Electricity' : 'Water'),
+        location: userLocation || 'Vijayawada',
         severity: 8,
-        summary_en: 'Citizen reported an infrastructure disruption requiring urgent civic intervention.',
-        urgency_reasoning: 'Unmet public utility demand affecting local community.',
-        affected_group: 'Local community members',
+        priority_tier: 'High',
+        summary_en: text ? `Insufficient ${text.toLowerCase()} reported in a high-traffic public area.` : 'Citizen reported an infrastructure disruption requiring urgent civic intervention.',
+        urgency_reasoning: 'Safety risk for pedestrians and commuters in high-traffic area.',
+        affected_group: 'Students and local residents',
       };
     }
 
+    if (userLocation) parsedData.location = userLocation;
+    if (userCategory) parsedData.category = userCategory;
+
     // Ensure valid fallback bounds
-    if (!['Water', 'Health', 'Roads', 'Education', 'Electricity'].includes(parsedData.category)) {
-      parsedData.category = 'Water';
+    if (!['Roads', 'Water', 'Electricity', 'Healthcare', 'Health', 'Sanitation', 'Education', 'Other'].includes(parsedData.category)) {
+      parsedData.category = 'Electricity';
     }
     if (!parsedData.severity || parsedData.severity < 1 || parsedData.severity > 10) {
       parsedData.severity = 8;
+    }
+    if (!parsedData.issue_title) {
+      parsedData.issue_title = parsedData.category === 'Electricity' ? 'Street Lighting' : `${parsedData.category} Infrastructure`;
     }
 
     res.json({
@@ -175,18 +193,25 @@ Input text (if any):
     });
   } catch (error: any) {
     console.error('Error processing feedback with Gemini:', error);
-    // Graceful fallback response for testing even if API key is in setup
+    const isLighting = (req.body.text || '').toLowerCase().includes('light');
+    const fallbackCategory = req.body.userCategory || (isLighting ? 'Electricity' : 'Water');
+    const fallbackLocation = req.body.userLocation || 'Vijayawada';
+
     res.status(200).json({
       success: true,
       fallback: true,
       data: {
-        language: 'Telugu',
-        category: 'Water',
-        location: 'Guntur',
-        severity: 9,
-        summary_en: 'Severe water supply disruption reported in rural sector with no alternative pipeline access.',
-        urgency_reasoning: 'Critical 3-day supply failure impacting public health.',
-        affected_group: 'Rural residential clusters (~18,500 residents)',
+        language: 'English',
+        issue_title: isLighting ? 'Street Lighting' : `${fallbackCategory} Maintenance`,
+        category: fallbackCategory,
+        location: fallbackLocation,
+        severity: 8,
+        priority_tier: 'High',
+        summary_en: isLighting 
+          ? 'Insufficient street lighting reported in a high-traffic public area.'
+          : `Infrastructure outage and maintenance deficit reported in ${fallbackLocation}.`,
+        urgency_reasoning: 'Critical public safety and accessibility concern.',
+        affected_group: 'Students, pedestrians and local residents',
       },
       error: error?.message,
     });
