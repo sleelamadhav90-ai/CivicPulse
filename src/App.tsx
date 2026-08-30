@@ -106,7 +106,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0c0d10] text-[#e2e8f0] flex flex-col font-sans selection:bg-white/20 selection:text-white">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-blue-100 selection:text-blue-900">
       {/* Top Navbar */}
       <Navbar
         activeTab={activeTab}
@@ -160,24 +160,24 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800/50 bg-[#0c0d10] py-4 mt-12 text-slate-500">
+      <footer className="border-t border-slate-200 bg-white py-4 mt-12 text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center space-x-3 text-[10px] uppercase tracking-widest text-slate-500">
-            <span className="font-light tracking-[0.2em] text-white">CIVICPULSE</span>
+          <div className="flex items-center space-x-3 text-xs text-slate-600">
+            <span className="font-semibold tracking-wider text-slate-900">CIVICPULSE</span>
             <span>•</span>
             <span>Deterministic DPI Platform</span>
             <span>•</span>
-            <span className="hidden sm:inline">National Development Intelligence</span>
+            <span className="hidden sm:inline text-slate-500">National Development Intelligence</span>
           </div>
 
-          <div className="flex items-center space-x-6 text-[10px] tracking-wide">
-            <div className="flex items-center gap-2 text-slate-400">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]"></div>
+          <div className="flex items-center space-x-6 text-xs">
+            <div className="flex items-center gap-2 text-slate-600">
+              <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
               <span>System Operational • Mathematical DPI Core</span>
             </div>
             <button
               onClick={() => setMethodologyModalOpen(true)}
-              className="text-slate-400 hover:text-white uppercase tracking-wider text-[10px] transition-colors cursor-pointer"
+              className="text-blue-600 hover:text-blue-800 font-medium text-xs transition-colors cursor-pointer"
             >
               Methodology & Audit
             </button>
@@ -196,57 +196,57 @@ export default function App() {
 
       {/* Engine Methodology Modal */}
       {methodologyModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0c0d10]/80 backdrop-blur-md animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-[#111318] border border-slate-800 rounded-lg shadow-2xl overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-800/50 bg-[#0c0d10]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in">
+          <div className="relative w-full max-w-2xl bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50">
               <div className="flex items-center space-x-2.5">
-                <span className="text-[10px] uppercase tracking-[0.2em] text-slate-500">SYSTEM ARCHITECTURE</span>
+                <span className="text-xs uppercase tracking-widest font-semibold text-slate-500">SYSTEM ARCHITECTURE</span>
               </div>
               <button
                 onClick={() => setMethodologyModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-white rounded transition-colors cursor-pointer"
+                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4 text-xs text-slate-300 max-h-[75vh] overflow-y-auto leading-relaxed">
-              <h2 className="text-xl font-light tracking-tight text-white">
+            <div className="p-6 space-y-4 text-sm text-slate-700 max-h-[75vh] overflow-y-auto leading-relaxed">
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
                 CivicPulse Core Architecture & Methodology
               </h2>
-              <div className="p-4 bg-white/[0.02] border border-slate-800 rounded-lg space-y-1">
-                <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold block">Key Architectural Principle</span>
-                <p className="text-slate-300">
-                  <strong className="text-white">Separation of Intelligence from Decision Logic:</strong> Gemini is used as the Multilingual Ingestion & Synthesis Layer (translating local dialects, categorizing, and drafting memos). The Priority Score is calculated by an immutable, deterministic mathematical formula to guarantee transparent fiscal auditability.
+              <div className="p-4 bg-blue-50/70 border border-blue-100 rounded-lg space-y-1.5">
+                <span className="text-xs uppercase tracking-wider text-blue-700 font-semibold block">Key Architectural Principle</span>
+                <p className="text-slate-800 text-xs sm:text-sm">
+                  <strong className="text-blue-950">Separation of Intelligence from Decision Logic:</strong> Gemini is used as the Multilingual Ingestion & Synthesis Layer (translating local dialects, categorizing, and drafting memos). The Priority Score is calculated by an immutable, deterministic mathematical formula to guarantee transparent fiscal auditability.
                 </p>
               </div>
 
-              <div className="space-y-2">
-                <span className="text-[10px] uppercase tracking-widest text-slate-500 font-semibold block">
+              <div className="space-y-2.5">
+                <span className="text-xs uppercase tracking-wider text-slate-500 font-semibold block">
                   The Closed-Loop DPI Cycle:
                 </span>
-                <ol className="list-decimal list-inside space-y-1.5 text-slate-300 pl-1">
-                  <li><strong className="text-slate-100">Listen:</strong> Citizens speak in native regional dialects (Telugu, Hindi, Marathi, etc.) or submit text.</li>
-                  <li><strong className="text-slate-100">Understand:</strong> Gemini extracts category, location, and urgency; normalizes to district coordinates.</li>
-                  <li><strong className="text-slate-100">Fuse:</strong> Merges citizen demand with national demographic, poverty, and infrastructure access baselines.</li>
-                  <li><strong className="text-slate-100">Prioritize:</strong> The deterministic Priority Engine computes an auditable 0–100 score.</li>
-                  <li><strong className="text-slate-100">Recommend:</strong> The AI Policy Lab generates executive briefs for public infrastructure funding.</li>
-                  <li><strong className="text-slate-100">Measure:</strong> The Impact Simulator quantifies post-project access improvement and closes the loop.</li>
+                <ol className="list-decimal list-inside space-y-2 text-slate-700 pl-1 text-xs sm:text-sm">
+                  <li><strong className="text-slate-900">Listen:</strong> Citizens speak in native regional dialects (Telugu, Hindi, Marathi, etc.) or submit text.</li>
+                  <li><strong className="text-slate-900">Understand:</strong> Gemini extracts category, location, and urgency; normalizes to district coordinates.</li>
+                  <li><strong className="text-slate-900">Fuse:</strong> Merges citizen demand with national demographic, poverty, and infrastructure access baselines.</li>
+                  <li><strong className="text-slate-900">Prioritize:</strong> The deterministic Priority Engine computes an auditable 0–100 score.</li>
+                  <li><strong className="text-slate-900">Recommend:</strong> The AI Policy Lab generates executive briefs for public infrastructure funding.</li>
+                  <li><strong className="text-slate-900">Measure:</strong> The Impact Simulator quantifies post-project access improvement and closes the loop.</li>
                 </ol>
               </div>
 
-              <div className="p-3.5 bg-[#08090c] rounded-lg border border-slate-800 space-y-1 font-mono text-[11px]">
-                <div className="text-slate-500 uppercase tracking-widest text-[9px]">Standardized National Priority Formula:</div>
-                <div className="text-slate-200">
+              <div className="p-4 bg-slate-900 text-slate-100 rounded-lg space-y-1 font-mono text-xs">
+                <div className="text-slate-400 uppercase tracking-wider text-[10px]">Standardized National Priority Formula:</div>
+                <div className="text-amber-300 font-semibold">
                   Score = (Demand × 0.35) + (InfraGap × 0.25) + (Severity × 0.15) + (Poverty × 0.15) + (Alignment × 0.10)
                 </div>
               </div>
             </div>
 
-            <div className="px-6 py-3 border-t border-slate-800/50 bg-[#0c0d10] flex justify-end">
+            <div className="px-6 py-3 border-t border-slate-100 bg-slate-50 flex justify-end">
               <button
                 onClick={() => setMethodologyModalOpen(false)}
-                className="px-4 py-2 text-[10px] uppercase tracking-widest font-semibold text-slate-900 bg-slate-100 hover:bg-white rounded transition-colors cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-900 rounded-lg transition-colors cursor-pointer"
               >
                 Close
               </button>
