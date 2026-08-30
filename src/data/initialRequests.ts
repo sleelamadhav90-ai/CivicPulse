@@ -103,12 +103,30 @@ export const INITIAL_CITIZEN_REQUESTS: CitizenRequest[] = [
 
 export const SAMPLE_CITIZEN_PROMPTS = [
   {
+    title: 'English — Drainage & Road Flooding',
+    language: 'English',
+    category: 'Drainage' as any,
+    district: 'Vijayawada',
+    text: 'Our area has no proper drainage and during rain the entire road gets flooded.',
+    audio_label: 'English Audio Note #0',
+    description: 'Inadequate stormwater drainage causing street inundation',
+  },
+  {
+    title: 'English — College Street Lighting',
+    language: 'English',
+    category: 'Electricity',
+    district: 'Vijayawada',
+    text: 'There is no street lighting near our college.',
+    audio_label: 'English Audio Note #1',
+    description: 'Dark corridors creating safety concerns for students',
+  },
+  {
     title: 'Telugu — Guntur Water Crisis',
     language: 'Telugu',
     category: 'Water',
     district: 'Guntur',
     text: 'మా గ్రామంలో మూడు రోజులుగా తాగునీటి సరఫరా పూర్తిగా నిలిచిపోయింది. ప్రజలు 5 కి.మీ దూరం నడిచి బావుల వద్దకు వెళ్లాల్సి వస్తోంది (Guntur).',
-    audio_label: 'Telugu Audio Note #1',
+    audio_label: 'Telugu Audio Note #2',
     description: 'Acute drinking water disruption in drought-prone sector',
   },
   {
@@ -117,7 +135,7 @@ export const SAMPLE_CITIZEN_PROMPTS = [
     category: 'Health',
     district: 'Warangal',
     text: 'వరంగల్ లోని ప్రాథమిక ఆరోగ్య కేంద్రంలో డాక్టర్లు, స్టాఫ్ లేరు. అత్యవసర రోగులు 35 కి.మీ ప్రయాణించాల్సి వస్తోంది.',
-    audio_label: 'Telugu Audio Note #2',
+    audio_label: 'Telugu Audio Note #3',
     description: 'Medical staff shortage and unavailable emergency beds',
   },
   {
@@ -126,7 +144,7 @@ export const SAMPLE_CITIZEN_PROMPTS = [
     category: 'Roads',
     district: 'Nashik',
     text: 'नाशिक ग्रामीण भागातील मुख्य रस्ता अत्यंत खड्डेमय झाला आहे. गेल्या आठवड्यात अपघात झाले असून रुग्णवाहिका अडकून पडतात.',
-    audio_label: 'Marathi Audio Note #3',
+    audio_label: 'Marathi Audio Note #4',
     description: 'Severe arterial pothole damage and transit bottleneck',
   },
   {
@@ -135,7 +153,7 @@ export const SAMPLE_CITIZEN_PROMPTS = [
     category: 'Water',
     district: 'Gaya',
     text: 'गया जिले में भीषण जल संकट है, चापाकल सूख चुके हैं और महिलाओं को 4 किमी दूर से पीने का पानी लाना पड़ रहा है।',
-    audio_label: 'Hindi Audio Note #4',
+    audio_label: 'Hindi Audio Note #5',
     description: 'Severe aquifer table depletion and handpump failure',
   },
   {
@@ -144,7 +162,7 @@ export const SAMPLE_CITIZEN_PROMPTS = [
     category: 'Education',
     district: 'Raichur',
     text: 'The government school building in Raichur has damaged roof tiles and lacks clean drinking water and toilets for 600 students.',
-    audio_label: 'English Audio Note #5',
+    audio_label: 'English Audio Note #6',
     description: 'Dilapidated classroom infrastructure & sanitation deficit',
   },
 ];

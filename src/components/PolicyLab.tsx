@@ -167,8 +167,8 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Select Infrastructure Category:
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {(['Water', 'Health', 'Roads', 'Education'] as InfrastructureCategory[]).map((cat) => (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {(['Drainage', 'Water', 'Health', 'Roads', 'Electricity', 'Education'] as InfrastructureCategory[]).map((cat) => (
                     <button
                       key={cat}
                       type="button"
@@ -182,9 +182,11 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
                           : 'bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200'
                       }`}
                     >
+                      {cat === 'Drainage' && <Droplet className="w-3.5 h-3.5 text-cyan-600" />}
                       {cat === 'Water' && <Droplet className="w-3.5 h-3.5 text-blue-600" />}
                       {cat === 'Health' && <HeartPulse className="w-3.5 h-3.5 text-rose-600" />}
                       {cat === 'Roads' && <Route className="w-3.5 h-3.5 text-amber-600" />}
+                      {cat === 'Electricity' && <Zap className="w-3.5 h-3.5 text-yellow-600" />}
                       {cat === 'Education' && <GraduationCap className="w-3.5 h-3.5 text-purple-600" />}
                       <span>{cat}</span>
                     </button>

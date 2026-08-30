@@ -69,23 +69,24 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     ].join(', ');
 
     const promptText = `
-You are the Multilingual Citizen Ingestion Engine for CivicPulse, a Digital Public Infrastructure for national civic development.
-Analyze this citizen infrastructure request carefully.
+You are the AI Civic Infrastructure Diagnostic Engine for CivicPulse.
+Analyze this citizen infrastructure request and extract structured diagnostic intelligence.
 
 Allowed District Registry: ${allowedDistricts}
-Allowed Categories: "Roads", "Water", "Electricity", "Healthcare", "Sanitation", "Education", "Other"
 ${userLocation ? `User-specified location hint: ${userLocation}` : ''}
 ${userCategory ? `User-specified category hint: ${userCategory}` : ''}
 
 Tasks:
 1. Detect the original language (e.g. Telugu, Hindi, Marathi, Tamil, Kannada, English, Bengali, etc.).
-2. Extract a concise issue title (2 to 4 words, e.g. "Street Lighting", "Potable Water Outage", "Primary Health Clinic Staffing", "Cratered Arterial Road", "Damaged Drainage Canal").
-3. Classify the core infrastructure category into exactly one of: Roads, Water, Electricity, Healthcare, Sanitation, Education, Other.
-4. Identify and normalize the location to the closest matching district in the Allowed District Registry (e.g. Vijayawada, Guntur, Krishna, Warangal, Hyderabad, Nashik, etc.). If the user explicitly selected a location, prioritize it.
-5. Assess severity on an integer scale from 1 (minor issue) to 10 (life-critical emergency / total utility breakdown).
-6. Produce a crisp, professional 1-to-2 sentence English summary (e.g. "Insufficient street lighting reported in a high-traffic public area.").
-7. Provide brief urgency reasoning explaining why this is urgent.
-8. Identify the primary affected population group (e.g., "College students & evening commuters", "Rural agricultural households", "Emergency medical patients").
+2. Extract the core Category (e.g. "Drainage", "Roads", "Water", "Electricity", "Healthcare", "Sanitation", "Education", "Other").
+3. Identify the concise Problem statement (e.g. "Flooding caused by inadequate drainage", "Insufficient street lighting near educational institution").
+4. Determine Urgency ("LOW", "MEDIUM", "HIGH", "CRITICAL").
+5. Identify the exact Affected Infrastructure (e.g. "Stormwater drainage", "Street lighting grid", "Potable water pipeline", "Arterial roadway").
+6. Determine the Estimated Impact ("Low", "Medium", "High", "Critical").
+7. Formulate a precise Recommended Action (e.g. "Upgrade drainage infrastructure and improve stormwater capacity.", "Install high-illumination LED streetlights and stabilize transformer feed.").
+8. Identify and normalize the location to the closest matching district in the Allowed District Registry (e.g. Vijayawada, Guntur, Krishna, Warangal, Hyderabad, Nashik, etc.).
+9. Provide an integer severity rating from 1 to 10.
+10. Identify the primary affected population group (e.g., "College students & evening pedestrians", "Local residents and motorists").
 
 Input text (if any):
 """${text || '(Spoken Audio Input)'}"""
@@ -117,13 +118,29 @@ Input text (if any):
               type: Type.STRING,
               description: 'The detected natural language of the input (e.g., Telugu, Hindi, English)',
             },
-            issue_title: {
-              type: Type.STRING,
-              description: 'Short 2-4 word issue title, e.g. "Street Lighting", "Water Contamination"',
-            },
             category: {
               type: Type.STRING,
-              description: 'The classified category: Roads, Water, Electricity, Healthcare, Sanitation, Education, or Other',
+              description: 'The category, e.g. Drainage, Roads, Water, Electricity, Healthcare, Sanitation, Education, Other',
+            },
+            problem: {
+              type: Type.STRING,
+              description: 'The specific problem diagnosis, e.g. "Flooding caused by inadequate drainage"',
+            },
+            urgency: {
+              type: Type.STRING,
+              description: 'Urgency level: LOW, MEDIUM, HIGH, or CRITICAL',
+            },
+            affected_infrastructure: {
+              type: Type.STRING,
+              description: 'Specific affected physical infrastructure, e.g. "Stormwater drainage"',
+            },
+            estimated_impact: {
+              type: Type.STRING,
+              description: 'Estimated public impact: Low, Medium, High, or Critical',
+            },
+            recommended_action: {
+              type: Type.STRING,
+              description: 'Actionable policy/engineering recommendation, e.g. "Upgrade drainage infrastructure and improve stormwater capacity."',
             },
             location: {
               type: Type.STRING,
@@ -132,10 +149,6 @@ Input text (if any):
             severity: {
               type: Type.INTEGER,
               description: 'Urgency rating from 1 to 10',
-            },
-            priority_tier: {
-              type: Type.STRING,
-              description: 'Priority rating: Low, Medium, High, or Critical',
             },
             summary_en: {
               type: Type.STRING,
@@ -150,7 +163,7 @@ Input text (if any):
               description: 'Key population demographic affected',
             },
           },
-          required: ['language', 'issue_title', 'category', 'location', 'severity', 'summary_en'],
+          required: ['language', 'category', 'problem', 'urgency', 'affected_infrastructure', 'estimated_impact', 'recommended_action', 'location', 'severity'],
         },
       },
     });
@@ -160,31 +173,46 @@ Input text (if any):
     try {
       parsedData = JSON.parse(rawJson);
     } catch {
+      const isDrainage = (text || '').toLowerCase().includes('drain') || (text || '').toLowerCase().includes('flood');
+      const isLighting = (text || '').toLowerCase().includes('light');
+
       parsedData = {
         language: 'English',
-        issue_title: text?.toLowerCase().includes('light') ? 'Street Lighting' : 'Public Infrastructure Disruption',
-        category: userCategory || (text?.toLowerCase().includes('light') ? 'Electricity' : 'Water'),
+        category: isDrainage ? 'Drainage' : isLighting ? 'Electricity' : (userCategory || 'Water'),
+        problem: isDrainage 
+          ? 'Flooding caused by inadequate drainage' 
+          : isLighting 
+          ? 'Insufficient street lighting near college' 
+          : 'Public infrastructure deficit requiring intervention',
+        urgency: 'HIGH',
+        affected_infrastructure: isDrainage 
+          ? 'Stormwater drainage' 
+          : isLighting 
+          ? 'Street lighting & electrical grid' 
+          : 'Public municipal utilities',
+        estimated_impact: 'High',
+        recommended_action: isDrainage
+          ? 'Upgrade drainage infrastructure and improve stormwater capacity.'
+          : isLighting
+          ? 'Install high-illumination LED streetlights and expand grid coverage.'
+          : 'Inspect facility and schedule capital rehabilitation.',
         location: userLocation || 'Vijayawada',
         severity: 8,
-        priority_tier: 'High',
-        summary_en: text ? `Insufficient ${text.toLowerCase()} reported in a high-traffic public area.` : 'Citizen reported an infrastructure disruption requiring urgent civic intervention.',
-        urgency_reasoning: 'Safety risk for pedestrians and commuters in high-traffic area.',
-        affected_group: 'Students and local residents',
+        summary_en: text ? `Citizen reported: ${text}` : 'Citizen reported an infrastructure disruption requiring urgent civic intervention.',
+        urgency_reasoning: 'Safety risk and public health concern.',
+        affected_group: 'Local community and commuters',
       };
     }
 
-    if (userLocation) parsedData.location = userLocation;
-    if (userCategory) parsedData.category = userCategory;
+    if (userLocation && !parsedData.location) parsedData.location = userLocation;
+    if (!parsedData.urgency) parsedData.urgency = 'HIGH';
+    if (!parsedData.estimated_impact) parsedData.estimated_impact = 'High';
+    if (!parsedData.affected_infrastructure) parsedData.affected_infrastructure = `${parsedData.category || 'Municipal'} infrastructure`;
+    if (!parsedData.recommended_action) parsedData.recommended_action = `Upgrade and rehabilitate ${parsedData.category || 'civic'} facilities.`;
+    if (!parsedData.problem) parsedData.problem = parsedData.summary_en || 'Public infrastructure deficit';
 
-    // Ensure valid fallback bounds
-    if (!['Roads', 'Water', 'Electricity', 'Healthcare', 'Health', 'Sanitation', 'Education', 'Other'].includes(parsedData.category)) {
-      parsedData.category = 'Electricity';
-    }
     if (!parsedData.severity || parsedData.severity < 1 || parsedData.severity > 10) {
-      parsedData.severity = 8;
-    }
-    if (!parsedData.issue_title) {
-      parsedData.issue_title = parsedData.category === 'Electricity' ? 'Street Lighting' : `${parsedData.category} Infrastructure`;
+      parsedData.severity = parsedData.urgency === 'CRITICAL' ? 10 : parsedData.urgency === 'HIGH' ? 8 : 6;
     }
 
     res.json({
@@ -193,8 +221,9 @@ Input text (if any):
     });
   } catch (error: any) {
     console.error('Error processing feedback with Gemini:', error);
+    const isDrainage = (req.body.text || '').toLowerCase().includes('drain') || (req.body.text || '').toLowerCase().includes('flood');
     const isLighting = (req.body.text || '').toLowerCase().includes('light');
-    const fallbackCategory = req.body.userCategory || (isLighting ? 'Electricity' : 'Water');
+    const fallbackCategory = isDrainage ? 'Drainage' : isLighting ? 'Electricity' : (req.body.userCategory || 'Water');
     const fallbackLocation = req.body.userLocation || 'Vijayawada';
 
     res.status(200).json({
@@ -202,16 +231,33 @@ Input text (if any):
       fallback: true,
       data: {
         language: 'English',
-        issue_title: isLighting ? 'Street Lighting' : `${fallbackCategory} Maintenance`,
         category: fallbackCategory,
+        problem: isDrainage 
+          ? 'Flooding caused by inadequate drainage' 
+          : isLighting 
+          ? 'Insufficient street lighting near college' 
+          : `${fallbackCategory} infrastructure disruption`,
+        urgency: 'HIGH',
+        affected_infrastructure: isDrainage 
+          ? 'Stormwater drainage' 
+          : isLighting 
+          ? 'Street lighting' 
+          : `${fallbackCategory} system`,
+        estimated_impact: 'High',
+        recommended_action: isDrainage
+          ? 'Upgrade drainage infrastructure and improve stormwater capacity.'
+          : isLighting
+          ? 'Install high-illumination street lighting and stabilize power feed.'
+          : `Schedule repair and modernization for ${fallbackCategory} network.`,
         location: fallbackLocation,
         severity: 8,
-        priority_tier: 'High',
-        summary_en: isLighting 
+        summary_en: isDrainage 
+          ? 'Inadequate stormwater drainage resulting in recurrent roadway flooding during monsoon rains.'
+          : isLighting 
           ? 'Insufficient street lighting reported in a high-traffic public area.'
           : `Infrastructure outage and maintenance deficit reported in ${fallbackLocation}.`,
         urgency_reasoning: 'Critical public safety and accessibility concern.',
-        affected_group: 'Students, pedestrians and local residents',
+        affected_group: 'Residents, students and daily commuters',
       },
       error: error?.message,
     });

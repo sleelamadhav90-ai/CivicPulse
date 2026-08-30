@@ -10,6 +10,7 @@ import {
   Globe2, 
   MapPin, 
   Droplet, 
+  Droplets,
   HeartPulse, 
   Route, 
   GraduationCap, 
@@ -24,9 +25,14 @@ import {
   FileText,
   Clock,
   Check,
-  Building2
+  Building2,
+  ShieldAlert,
+  Wrench,
+  Activity,
+  Users,
+  Cpu
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, AIAnalysisResult } from '../types';
 import { SAMPLE_CITIZEN_PROMPTS } from '../data/initialRequests';
 import { calculatePriorityScore } from '../utils/scoring';
 
@@ -39,6 +45,7 @@ interface CitizenIngestionProps {
 }
 
 const CATEGORY_LIST: { id: InfrastructureCategory; label: string; icon: any; color: string; bg: string }[] = [
+  { id: 'Drainage', label: 'Drainage', icon: Droplets, color: 'text-cyan-600', bg: 'bg-cyan-50 hover:bg-cyan-100 border-cyan-200' },
   { id: 'Roads', label: 'Roads', icon: Route, color: 'text-amber-600', bg: 'bg-amber-50 hover:bg-amber-100 border-amber-200' },
   { id: 'Water', label: 'Water', icon: Droplet, color: 'text-blue-600', bg: 'bg-blue-50 hover:bg-blue-100 border-blue-200' },
   { id: 'Electricity', label: 'Electricity', icon: Zap, color: 'text-yellow-600', bg: 'bg-yellow-50 hover:bg-yellow-100 border-yellow-200' },
@@ -55,10 +62,10 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   onOpenScoreModal,
   onNavigateToHotspots,
 }) => {
-  // Form State
-  const [problemDescription, setProblemDescription] = useState('There is no street lighting near our college.');
+  // Form State - Defaulting to the new drainage scenario for instant demonstration
+  const [problemDescription, setProblemDescription] = useState('Our area has no proper drainage and during rain the entire road gets flooded.');
   const [selectedLocation, setSelectedLocation] = useState('Vijayawada');
-  const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory>('Electricity');
+  const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory>('Drainage');
   const [submissionMode, setSubmissionMode] = useState<'voice' | 'text'>('text');
 
   // Audio / Voice Recording State
@@ -83,6 +90,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     request: CitizenRequest;
     scoreBreakdown: ScoreBreakdown;
     district: District;
+    aiAnalysis: AIAnalysisResult;
   } | null>(null);
 
   // Refs for media recording
@@ -199,7 +207,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     setErrorMessage(null);
   };
 
-  // Submit Request Action
+  // Submit Request Action with AI Diagnostic Analysis
   const handleSubmitRequest = async () => {
     const inputContent = problemDescription.trim();
     if (!inputContent && !audioBase64) {
@@ -231,10 +239,20 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         (d) => d.name.toLowerCase() === (extracted.location || selectedLocation).toLowerCase()
       ) || districts.find(d => d.name.toLowerCase() === 'vijayawada') || districts[0];
 
-      const finalCategory: InfrastructureCategory = selectedCategory || extracted.category || 'Electricity';
-      const severity = extracted.severity || 8;
+      // Structured AI outputs
+      const isDrainage = inputContent.toLowerCase().includes('drain') || inputContent.toLowerCase().includes('flood');
+      const isLighting = inputContent.toLowerCase().includes('light');
+      
+      const finalCategory: InfrastructureCategory = (extracted.category as InfrastructureCategory) || selectedCategory || (isDrainage ? 'Drainage' : 'Electricity');
+      const problem = extracted.problem || (isDrainage ? 'Flooding caused by inadequate drainage' : isLighting ? 'Insufficient street lighting near educational institution' : 'Infrastructure deficit requiring civic remediation');
+      const urgency = (extracted.urgency as 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL') || 'HIGH';
+      const affectedInfrastructure = extracted.affected_infrastructure || (isDrainage ? 'Stormwater drainage' : isLighting ? 'Street lighting grid' : `${finalCategory} network`);
+      const estimatedImpact = (extracted.estimated_impact as 'Low' | 'Medium' | 'High' | 'Critical') || 'High';
+      const recommendedAction = extracted.recommended_action || (isDrainage ? 'Upgrade drainage infrastructure and improve stormwater capacity.' : isLighting ? 'Install high-illumination LED streetlights and expand grid coverage.' : `Rehabilitate and modernise ${finalCategory} infrastructure.`);
+
+      const severity = extracted.severity || (urgency === 'CRITICAL' ? 10 : urgency === 'HIGH' ? 8 : 6);
       const priorityTier = extracted.priority_tier || (severity >= 8 ? 'High' : severity >= 6 ? 'Medium' : 'Low');
-      const issueTitle = extracted.issue_title || (finalCategory === 'Electricity' ? 'Street Lighting' : `${finalCategory} Disruption`);
+      const issueTitle = problem.length > 30 ? problem.substring(0, 30) + '...' : problem;
       
       const randomIdSuffix = Math.floor(10000 + Math.random() * 90000);
       const formattedId = `CP-${randomIdSuffix}`;
@@ -251,6 +269,15 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         priorDemand
       );
 
+      const aiAnalysis: AIAnalysisResult = {
+        category: finalCategory,
+        problem,
+        urgency,
+        affected_infrastructure: affectedInfrastructure,
+        estimated_impact: estimatedImpact,
+        recommended_action: recommendedAction,
+      };
+
       const newRequest: CitizenRequest = {
         id: formattedId,
         timestamp: new Date().toISOString(),
@@ -261,12 +288,18 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         location: matchedDistrict.name,
         severity,
         priority_tier: priorityTier,
-        summary_en: extracted.summary_en || `Insufficient ${issueTitle.toLowerCase()} reported in a high-traffic public area.`,
+        summary_en: extracted.summary_en || `${problem} in ${matchedDistrict.name}.`,
         urgency_reasoning: extracted.urgency_reasoning || 'Public safety and accessibility priority.',
-        affected_group: extracted.affected_group || 'College students and local pedestrians',
+        affected_group: extracted.affected_group || 'Local residents and daily commuters',
         audio_url: recordedAudioUrl || undefined,
         source_type: audioBase64 ? 'voice' : 'text',
         status: 'Submitted',
+        problem,
+        urgency,
+        affected_infrastructure: affectedInfrastructure,
+        estimated_impact: estimatedImpact,
+        recommended_action: recommendedAction,
+        ai_analysis: aiAnalysis,
       };
 
       onAddRequest(newRequest);
@@ -282,6 +315,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         request: newRequest,
         scoreBreakdown,
         district: matchedDistrict,
+        aiAnalysis,
       });
 
       setIsProcessing(false);
@@ -309,15 +343,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2.5">
-              <span className="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-50 text-blue-700 border border-blue-200">
-                CITIZEN PORTAL
+              <span className="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-md bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                <Cpu className="w-3.5 h-3.5 text-blue-600" />
+                AI DIAGNOSTIC INGESTION
               </span>
               <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">
                 Citizen Request Submission
               </h1>
             </div>
             <p className="text-sm text-slate-600 mt-1.5 leading-relaxed">
-              Report local civic infrastructure deficits directly. Your request is automatically categorized, summarized by AI, and fed into the national priority index.
+              CivicPulse uses AI to diagnose civic complaints into structured engineering tasks (Category, Problem, Urgency, Affected Infrastructure, Impact, and Recommended Action) to eliminate administrative bottleneck.
             </p>
           </div>
 
@@ -334,11 +369,24 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <div className="flex items-center justify-between mb-2.5">
               <span className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                Quick Sample Scenarios:
+                Quick Diagnostic Scenarios:
               </span>
-              <span className="text-xs text-slate-400">Click to autofill form</span>
+              <span className="text-xs text-slate-400">Click to autofill prompt</span>
             </div>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setProblemDescription('Our area has no proper drainage and during rain the entire road gets flooded.');
+                  setSelectedLocation('Vijayawada');
+                  setSelectedCategory('Drainage');
+                  setSubmissionMode('text');
+                }}
+                className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-cyan-50 text-cyan-800 border border-cyan-300 hover:bg-cyan-100 transition-colors cursor-pointer flex items-center gap-1.5"
+              >
+                <span>🌊 Drainage & Road Flooding (Feature 2 Demo)</span>
+              </button>
+
               <button
                 type="button"
                 onClick={() => {
@@ -393,12 +441,12 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <textarea
               value={problemDescription}
               onChange={(e) => setProblemDescription(e.target.value)}
-              placeholder='e.g., "There is no street lighting near our college."'
+              placeholder='e.g., "Our area has no proper drainage and during rain the entire road gets flooded."'
               rows={3}
               className="w-full bg-slate-50 border border-slate-200 rounded-xl p-4 text-sm sm:text-base text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all font-sans leading-relaxed shadow-2xs"
             />
             <p className="text-xs text-slate-500">
-              You can write in English or any Indian regional language (Telugu, Hindi, Marathi, etc.).
+              You can write in English or any Indian regional language (Telugu, Hindi, Marathi, etc.). AI will analyze and categorize the civic deficit automatically.
             </p>
           </div>
 
@@ -461,7 +509,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <label className="block text-base font-bold text-slate-900">
               Category
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5">
               {CATEGORY_LIST.map((cat) => {
                 const isSelected = selectedCategory === cat.id;
                 const IconComp = cat.icon;
@@ -602,7 +650,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
               {isProcessing ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                  <span>Analyzing with AI...</span>
+                  <span>Extracting AI Diagnostic Intelligence...</span>
                 </>
               ) : (
                 <>
@@ -614,7 +662,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
           </div>
         </div>
       ) : (
-        /* AFTER SUBMISSION: The Clean Citizen Confirmation Receipt & Status Tracker */
+        /* AFTER SUBMISSION: The Clean Citizen Confirmation Receipt with Feature 2 AI Diagnostic Output */
         <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in">
           {/* Header Receipt Status */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-6 border-b border-slate-100 gap-4">
@@ -628,7 +676,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   <span className="text-emerald-600">✓</span>
                 </h2>
                 <p className="text-xs text-slate-500 font-mono mt-0.5">
-                  Logged on {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date().toLocaleTimeString()}
+                  Logged on {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} at {new Date().toLocaleTimeString()} • Location: <strong className="text-slate-700">{submittedReceipt.location}</strong>
                 </p>
               </div>
             </div>
@@ -641,52 +689,110 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             </div>
           </div>
 
-          {/* Structured Details Card matching the prompt specs */}
-          <div className="bg-slate-50 rounded-2xl p-5 sm:p-6 border border-slate-200 space-y-4">
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Category</span>
-                <span className="text-sm font-bold text-slate-900 mt-0.5 block">
-                  {submittedReceipt.category}
-                </span>
+          {/* Original Input Card */}
+          <div className="p-4 bg-slate-50 rounded-xl border border-slate-200/80 text-xs">
+            <span className="font-bold text-slate-600 uppercase tracking-wider block mb-1">Citizen Input</span>
+            <p className="text-slate-800 italic text-sm font-serif">"{submittedReceipt.originalText}"</p>
+          </div>
+
+          {/* FEATURE 2: AI OUTPUT DIAGNOSTIC CARD */}
+          <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white rounded-2xl p-6 sm:p-7 shadow-md border border-slate-800 space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3.5">
+              <div className="flex items-center space-x-2">
+                <div className="p-1.5 bg-blue-500/20 text-blue-400 rounded-lg border border-blue-400/30">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+                    <span>AI Output</span>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono border border-emerald-500/30">
+                      Live Diagnostic
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-400">Automated multi-attribute classification for civic engineering triage</p>
+                </div>
               </div>
 
-              <div>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Issue</span>
-                <span className="text-sm font-bold text-slate-900 mt-0.5 block">
-                  {submittedReceipt.issueTitle}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Location</span>
-                <span className="text-sm font-bold text-slate-900 mt-0.5 flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5 text-rose-500" />
-                  {submittedReceipt.location}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block">Priority</span>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-extrabold mt-0.5 ${
-                  submittedReceipt.priorityTier === 'High' || submittedReceipt.priorityTier === 'Critical'
-                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                }`}>
-                  {submittedReceipt.priorityTier}
-                </span>
+              <div className="text-right">
+                <span className="text-[10px] uppercase tracking-wider text-slate-400 block font-semibold">Diagnostic Model</span>
+                <span className="text-xs font-mono text-blue-300 font-bold">gemini-3.7-flash</span>
               </div>
             </div>
 
-            {/* AI Summary Section */}
-            <div className="pt-4 border-t border-slate-200">
-              <span className="text-xs font-bold text-blue-700 uppercase tracking-wider flex items-center gap-1.5 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                AI Summary:
-              </span>
-              <p className="text-sm text-slate-800 font-sans leading-relaxed bg-white p-3.5 rounded-xl border border-slate-200/80">
-                {submittedReceipt.aiSummary}
-              </p>
+            {/* The 6 Specified AI Output Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Field 1: Category */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  Category
+                </span>
+                <span className="text-base font-extrabold text-white mt-1">
+                  {submittedReceipt.aiAnalysis.category}
+                </span>
+              </div>
+
+              {/* Field 2: Problem */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-400" />
+                  Problem
+                </span>
+                <span className="text-sm font-bold text-amber-200 mt-1">
+                  {submittedReceipt.aiAnalysis.problem}
+                </span>
+              </div>
+
+              {/* Field 3: Urgency */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Activity className="w-3.5 h-3.5 text-rose-400" />
+                  Urgency
+                </span>
+                <div className="mt-1 flex items-center gap-2">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-md text-xs font-black tracking-wider uppercase ${
+                    submittedReceipt.aiAnalysis.urgency === 'HIGH' || submittedReceipt.aiAnalysis.urgency === 'CRITICAL'
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  }`}>
+                    {submittedReceipt.aiAnalysis.urgency}
+                  </span>
+                  <span className="text-xs text-slate-400">Severity Score: {submittedReceipt.request.severity}/10</span>
+                </div>
+              </div>
+
+              {/* Field 4: Affected Infrastructure */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Wrench className="w-3.5 h-3.5 text-blue-400" />
+                  Affected Infrastructure
+                </span>
+                <span className="text-sm font-bold text-white mt-1">
+                  {submittedReceipt.aiAnalysis.affected_infrastructure}
+                </span>
+              </div>
+
+              {/* Field 5: Estimated Impact */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Users className="w-3.5 h-3.5 text-emerald-400" />
+                  Estimated Impact
+                </span>
+                <span className="text-sm font-bold text-emerald-300 mt-1">
+                  {submittedReceipt.aiAnalysis.estimated_impact}
+                </span>
+              </div>
+
+              {/* Field 6: Recommended Action */}
+              <div className="bg-slate-800/70 border border-slate-700/60 rounded-xl p-4 flex flex-col justify-between md:col-span-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
+                  Recommended Action
+                </span>
+                <p className="text-sm font-medium text-slate-100 mt-1 leading-relaxed bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+                  {submittedReceipt.aiAnalysis.recommended_action}
+                </p>
+              </div>
             </div>
           </div>
 

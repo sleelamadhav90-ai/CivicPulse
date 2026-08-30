@@ -21,6 +21,7 @@ export interface District {
 }
 
 export type InfrastructureCategory = 
+  | 'Drainage'
   | 'Roads' 
   | 'Water' 
   | 'Electricity' 
@@ -31,6 +32,15 @@ export type InfrastructureCategory =
   | 'Other';
 
 export type RequestStatus = 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged';
+
+export interface AIAnalysisResult {
+  category: string;
+  problem: string;
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  affected_infrastructure: string;
+  estimated_impact: 'Low' | 'Medium' | 'High' | 'Critical';
+  recommended_action: string;
+}
 
 export interface CitizenRequest {
   id: string; // e.g. "CP-10482"
@@ -48,6 +58,14 @@ export interface CitizenRequest {
   audio_url?: string;
   source_type: 'voice' | 'text' | 'sample';
   status: RequestStatus;
+
+  // AI Analysis (Feature 2)
+  problem?: string;
+  urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  affected_infrastructure?: string;
+  estimated_impact?: 'Low' | 'Medium' | 'High' | 'Critical';
+  recommended_action?: string;
+  ai_analysis?: AIAnalysisResult;
 }
 
 export interface ScoreBreakdown {
