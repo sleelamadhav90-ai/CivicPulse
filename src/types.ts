@@ -17,7 +17,7 @@ export interface District {
     schools: number;
     paved_roads_km: number;
   };
-  zone: 'South' | 'West' | 'North' | 'East' | 'Central';
+  zone: 'South' | 'West' | 'North' | 'East' | 'Central' | 'Northeast';
 }
 
 export type InfrastructureCategory = 

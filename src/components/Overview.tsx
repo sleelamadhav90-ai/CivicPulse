@@ -256,7 +256,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 <MapPin className="w-4 h-4" />
               </div>
               <div className="text-xs text-slate-700">
-                <strong className="text-slate-900 block font-semibold">12 Districts Fully Mapped</strong>
+                <strong className="text-slate-900 block font-semibold">{districts.length} Cities & Municipal Districts Fully Mapped</strong>
                 Weighted formula incorporates citizen density, poverty index, and baseline access.
               </div>
             </div>
