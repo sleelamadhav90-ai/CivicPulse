@@ -233,7 +233,7 @@ export default function App() {
     <>
       {!hasEntered && <AtlasLanding onEnter={() => setHasEntered(true)} />}
       
-      <div className={`min-h-screen bg-[#faf9f6] text-[#2d2d2d] flex font-sans selection:bg-[#e07a5f]/20 selection:text-[#e07a5f] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+      <div className={`min-h-screen bg-[#f4f1ea] text-[#1a237e] flex font-sans selection:bg-[#d97706]/20 selection:text-[#d97706] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
@@ -248,30 +248,30 @@ export default function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#2d2d2d]/10 px-4 py-3 flex items-center justify-between">
+        <header className="lg:hidden sticky top-0 z-30 bg-[#f4f1ea]/95 backdrop-blur-md border-b-2 border-[#1a237e] px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 bg-[#2d2d2d]/5 text-[#2d2d2d] hover:bg-[#2d2d2d]/10 transition-colors cursor-pointer"
+              className="p-2 bg-[#1a237e]/5 text-[#1a237e] hover:bg-[#1a237e]/10 transition-colors cursor-pointer"
               aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#e07a5f] flex items-center justify-center text-white">
+              <div className="w-8 h-8 bg-[#1a237e] flex items-center justify-center text-[#f4f1ea]">
                 <Building2 className="w-4 h-4" />
               </div>
-              <span className="font-serif font-semibold text-[#2d2d2d] tracking-tight text-base">CivicPulse</span>
+              <span className="font-serif font-bold text-[#1a237e] tracking-tight text-base uppercase">Civic Pulse</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-sans font-semibold px-2.5 py-1 bg-[#2d2d2d]/5 text-[#2d2d2d] border border-[#2d2d2d]/10 uppercase tracking-wider">
+            <span className="text-[10px] font-sans font-semibold px-2 py-1 bg-[#1a237e]/5 text-[#1a237e] border border-[#1a237e] uppercase tracking-wider">
               {requests.length} Signals
             </span>
             <button
               onClick={() => setMethodologyModalOpen(true)}
-              className="p-1.5 bg-[#2d2d2d]/5 text-[#57534e] hover:text-[#2d2d2d]"
+              className="p-1.5 bg-[#1a237e]/5 text-[#1a237e]/70 hover:text-[#1a237e]"
               title="Methodology"
             >
               <Info className="w-4 h-4" />

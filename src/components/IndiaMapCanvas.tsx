@@ -32,15 +32,15 @@ interface IndiaMapCanvasProps {
 }
 
 const CATEGORY_STYLES: Record<string, { color: string; bg: string; icon: string; border: string }> = {
-  Water: { color: '#2d2d2d', bg: '#f5f5f4', icon: '💧', border: '#57534e' },
-  Drainage: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🌊', border: '#57534e' },
-  Roads: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🛣️', border: '#57534e' },
-  Electricity: { color: '#2d2d2d', bg: '#f5f5f4', icon: '⚡', border: '#57534e' },
-  Health: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🏥', border: '#57534e' },
-  Healthcare: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🏥', border: '#57534e' },
-  Sanitation: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🗑️', border: '#57534e' },
-  Education: { color: '#2d2d2d', bg: '#f5f5f4', icon: '🎓', border: '#57534e' },
-  Other: { color: '#2d2d2d', bg: '#f5f5f4', icon: '📍', border: '#57534e' },
+  Water: { color: '#1a237e', bg: '#f4f1ea', icon: '💧', border: '#1a237e' },
+  Drainage: { color: '#1a237e', bg: '#f4f1ea', icon: '🌊', border: '#1a237e' },
+  Roads: { color: '#1a237e', bg: '#f4f1ea', icon: '🛣️', border: '#1a237e' },
+  Electricity: { color: '#1a237e', bg: '#f4f1ea', icon: '⚡', border: '#1a237e' },
+  Health: { color: '#1a237e', bg: '#f4f1ea', icon: '🏥', border: '#1a237e' },
+  Healthcare: { color: '#1a237e', bg: '#f4f1ea', icon: '🏥', border: '#1a237e' },
+  Sanitation: { color: '#1a237e', bg: '#f4f1ea', icon: '🗑️', border: '#1a237e' },
+  Education: { color: '#1a237e', bg: '#f4f1ea', icon: '🎓', border: '#1a237e' },
+  Other: { color: '#1a237e', bg: '#f4f1ea', icon: '📍', border: '#1a237e' },
 };
 
 const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot) => {
@@ -165,8 +165,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         
         {/* Minimal Atlas Map Overlay */}
         <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png"
-          attribution="&copy; <a href='https://www.openstreetmap.org/copyright'>OSM</a> &copy; <a href='https://carto.com/'>CARTO</a>"
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+          maxZoom={19}
         />
 
         {/* Render heatmap glowing blurs under the pins */}
@@ -174,10 +175,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           const score = item.breakdown.total_score;
           if (score < 40) return null;
           
-          let color = '#e07a5f'; // default terracotta
-          if (score >= 80) color = '#bc4749'; // critical red
-          else if (score >= 60) color = '#e07a5f'; // terracotta
-          else color = '#386641'; // deep green (positive)
+          let color = '#d97706'; // default saffron
+          if (score >= 80) color = '#c84b31'; // critical red
+          else if (score >= 60) color = '#d97706'; // saffron
+          else color = '#2e7d32'; // deep green (positive)
 
           return (
             <CircleMarker
@@ -186,7 +187,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               radius={score >= 80 ? 40 : score >= 60 ? 30 : 20}
               pathOptions={{
                 fillColor: color,
-                fillOpacity: 0.25,
+                fillOpacity: 0.35,
                 stroke: false,
                 className: 'mix-blend-screen pointer-events-none blur-[12px]'
               }}
@@ -213,34 +214,34 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               }}
             >
               {/* Tooltip shows purely on hover for quick info */}
-              <Tooltip direction="top" offset={[0, -50]} className="bg-[#faf9f6] border border-[#2d2d2d]/20 text-[#2d2d2d] rounded-none shadow-none !p-0">
-                <div className="px-3 py-2 text-xs font-sans font-semibold flex flex-col gap-1">
+              <Tooltip direction="top" offset={[0, -50]} className="bg-[#f4f1ea] border border-[#1a237e] text-[#1a237e] rounded-none shadow-[2px_2px_0px_#1a237e] !p-0">
+                <div className="px-3 py-2 text-xs font-sans font-bold flex flex-col gap-1">
                   <div className="flex justify-between items-center gap-4">
                     <span>{item.district.name}</span>
-                    <span className="font-mono text-[10px] bg-[#2d2d2d]/5 text-[#2d2d2d] px-1.5 border border-[#2d2d2d]/10 uppercase tracking-widest">{item.demandCount} Req</span>
+                    <span className="font-mono text-[10px] bg-[#1a237e] text-[#f4f1ea] px-1.5 border border-[#1a237e] uppercase tracking-widest">{item.demandCount} Req</span>
                   </div>
-                  <span className="text-[10px] text-[#57534e] font-sans uppercase tracking-widest">Priority: {item.breakdown.total_score}/100</span>
+                  <span className="text-[10px] text-[#1a237e]/70 font-sans uppercase tracking-widest">Priority: {item.breakdown.total_score}/100</span>
                 </div>
               </Tooltip>
 
               {/* Popup replaces the permanent modal, natively dismissible! */}
               <Popup offset={[0, -50]} className="custom-popup" maxWidth={380} minWidth={320} autoPanPadding={[20, 20]}>
-                <div className="bg-[#faf9f6] border border-[#2d2d2d]/20 shadow-none overflow-hidden text-[#2d2d2d] -m-4">
+                <div className="bg-[#f4f1ea] border-2 border-[#1a237e] shadow-[4px_4px_0px_#1a237e] overflow-hidden text-[#1a237e] -m-4">
                   <div className="p-4 space-y-4">
                     {/* Header */}
-                    <div className="flex items-start justify-between border-b border-[#2d2d2d]/10 pb-3">
+                    <div className="flex items-start justify-between border-b-2 border-double border-[#1a237e] pb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-[#2d2d2d]/5 border border-[#2d2d2d]/10 flex items-center justify-center text-[#e07a5f]">
+                        <div className="w-8 h-8 bg-[#1a237e]/5 border border-[#1a237e] flex items-center justify-center text-[#c84b31]">
                           <Bot className="w-4 h-4" />
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[11px] font-sans font-bold uppercase tracking-[0.2em] text-[#2d2d2d] flex items-center gap-1">
-                              <FileText className="w-3 h-3 text-[#e07a5f]" />
-                              Insight Report
+                            <span className="text-[11px] font-sans font-bold uppercase tracking-[0.2em] text-[#1a237e] flex items-center gap-1">
+                              <FileText className="w-3 h-3 text-[#c84b31]" />
+                              Gazette Report
                             </span>
                           </div>
-                          <span className="text-[10px] text-[#57534e] font-sans tracking-wide uppercase">
+                          <span className="text-[10px] text-[#1a237e]/70 font-mono tracking-wide uppercase">
                             ID: {evidence.reportId} • {item.district.name}
                           </span>
                         </div>
@@ -248,57 +249,57 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                     </div>
 
                     {/* Sub-Tabs */}
-                    <div className="flex gap-2 border-b border-[#2d2d2d]/10 pb-1 text-[10px] font-sans uppercase tracking-widest font-semibold">
-                      <button className="pb-1 text-[#e07a5f] border-b-2 border-[#e07a5f] flex items-center gap-1">
+                    <div className="flex gap-2 border-b border-[#1a237e]/20 pb-1 text-[10px] font-sans uppercase tracking-widest font-semibold">
+                      <button className="pb-1 text-[#c84b31] border-b-2 border-[#c84b31] flex items-center gap-1">
                         <FileText className="w-3 h-3" /> Report
                       </button>
-                      <button className="pb-1 text-[#57534e] hover:text-[#2d2d2d] flex items-center gap-1">
+                      <button className="pb-1 text-[#1a237e]/60 hover:text-[#1a237e] flex items-center gap-1">
                         <Camera className="w-3 h-3" /> Photo
                       </button>
-                      <button className="pb-1 text-[#57534e] hover:text-[#2d2d2d] flex items-center gap-1">
+                      <button className="pb-1 text-[#1a237e]/60 hover:text-[#1a237e] flex items-center gap-1">
                         <Hammer className="w-3 h-3" /> Action
                       </button>
                     </div>
 
                     {/* Tab 1: Detailed Report Breakdown */}
                     <div className="space-y-3 text-xs font-sans">
-                      <div className="grid grid-cols-2 gap-2 text-[10px] bg-[#2d2d2d]/5 p-3 border border-[#2d2d2d]/10 uppercase tracking-wide">
+                      <div className="grid grid-cols-2 gap-2 text-[10px] bg-white p-3 border border-[#1a237e]/20 uppercase tracking-wide font-mono">
                         <div>
-                          <span className="text-[#57534e] block text-[9px] tracking-widest">Channel:</span>
-                          <strong className="text-[#2d2d2d]">WhatsApp AI</strong>
+                          <span className="text-[#1a237e]/60 block text-[9px] tracking-widest">Source:</span>
+                          <strong className="text-[#1a237e]">WhatsApp AI</strong>
                         </div>
                         <div>
-                          <span className="text-[#57534e] block text-[9px] tracking-widest">District:</span>
-                          <strong className="text-[#2d2d2d]">{item.district.name}</strong>
+                          <span className="text-[#1a237e]/60 block text-[9px] tracking-widest">District:</span>
+                          <strong className="text-[#1a237e]">{item.district.name}</strong>
                         </div>
                         <div className="col-span-2">
-                          <span className="text-[#57534e] block text-[9px] tracking-widest">Coordinates:</span>
-                          <strong className="text-[#e07a5f] font-mono">{item.district.lat.toFixed(4)}, {item.district.lon.toFixed(4)}</strong>
+                          <span className="text-[#1a237e]/60 block text-[9px] tracking-widest">Coordinates:</span>
+                          <strong className="text-[#c84b31] font-mono">{item.district.lat.toFixed(4)}, {item.district.lon.toFixed(4)}</strong>
                         </div>
                       </div>
 
                       {/* Tags & Description */}
                       <div>
                         <div className="flex items-center gap-1.5 mb-2">
-                          <span className="text-[10px] font-mono px-2 py-0.5 border border-[#2d2d2d]/20 text-[#e07a5f] uppercase tracking-widest font-bold">
+                          <span className="text-[10px] font-mono px-2 py-0.5 border border-[#1a237e]/20 bg-[#1a237e]/5 text-[#c84b31] uppercase tracking-widest font-bold">
                             {evidence.tag}
                           </span>
                         </div>
-                        <p className="text-[#2d2d2d] text-xs font-serif italic bg-white p-3 border border-[#2d2d2d]/10">
+                        <p className="text-[#1a237e] text-xs font-mono italic bg-white p-3 border-l-2 border-[#1a237e]">
                           "{evidence.sub}"
                         </p>
                       </div>
 
                       {/* Footer Actions */}
-                      <div className="flex flex-col gap-3 pt-3 border-t border-[#2d2d2d]/10">
-                        <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold text-[#57534e]">
+                      <div className="flex flex-col gap-3 pt-3 border-t border-[#1a237e]/20">
+                        <div className="flex items-center justify-between text-[10px] uppercase tracking-widest font-bold text-[#1a237e]/70">
                           <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3.5 h-3.5 text-[#2d2d2d]" />
-                            {evidence.commentsCount} Comments
+                            <MessageSquare className="w-3.5 h-3.5 text-[#1a237e]" />
+                            {evidence.commentsCount} Annotations
                           </span>
-                          <span className="font-sans text-[#386641] flex items-center gap-1">
+                          <span className="font-sans text-[#2e7d32] flex items-center gap-1">
                             <TrendingUp className="w-3.5 h-3.5" />
-                            {evidence.upvotes} Upvotes
+                            {evidence.upvotes} Consensus
                           </span>
                         </div>
                         
@@ -308,10 +309,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                               e.stopPropagation();
                               onSelectHotspotForPolicy(item.district, item.category);
                             }}
-                            className="w-full mt-2 bg-[#2d2d2d] hover:bg-[#e07a5f] text-[#faf9f6] py-2 flex items-center justify-center gap-2 text-xs uppercase tracking-widest font-bold transition-colors border border-[#2d2d2d]"
+                            className="w-full mt-2 bg-[#1a237e] hover:bg-[#c84b31] text-[#f4f1ea] py-2 flex items-center justify-center gap-2 text-xs uppercase tracking-widest font-bold transition-colors border border-[#1a237e]"
                           >
                             <Sparkles className="w-3.5 h-3.5" />
-                            Run Policy Simulation
+                            Draft Policy
                           </button>
                         )}
                       </div>

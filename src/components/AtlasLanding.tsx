@@ -7,55 +7,66 @@ interface AtlasLandingProps {
 
 export const AtlasLanding: React.FC<AtlasLandingProps> = ({ onEnter }) => {
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#faf9f6] text-[#2d2d2d] overflow-hidden selection:bg-[#e07a5f]/20 selection:text-[#e07a5f]">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center sm:text-left sm:items-start max-w-4xl mx-auto w-full relative">
-        <h1 className="text-sm font-sans tracking-[0.2em] font-bold text-[#e07a5f] uppercase mb-4 sm:mb-8 border-b border-[#2d2d2d]/10 pb-4 w-full">
-          CivicPulse
-        </h1>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#f4f1ea] text-[#1a237e] overflow-hidden selection:bg-[#d97706]/20 selection:text-[#d97706]">
+      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center sm:text-left sm:items-start max-w-5xl mx-auto w-full relative">
+        
+        {/* Newspaper Header Style */}
+        <div className="w-full text-center border-b-4 border-double border-[#1a237e] pb-6 mb-10 sm:mb-16">
+          <h1 className="text-sm font-sans tracking-[0.3em] font-bold text-[#c84b31] uppercase mb-2">
+            The Government & Citizen Initiative
+          </h1>
+          <div className="text-6xl sm:text-8xl font-serif font-bold tracking-tight text-[#1a237e] uppercase">
+            Civic Pulse
+          </div>
+          <div className="flex items-center justify-center gap-4 text-xs font-mono tracking-widest uppercase text-[#1a237e]/70 mt-4 border-t border-[#1a237e]/20 pt-4">
+            <span>Vol. I — India</span>
+            <span className="w-1.5 h-1.5 bg-[#d97706] rounded-full"></span>
+            <span>2026 Edition</span>
+            <span className="w-1.5 h-1.5 bg-[#d97706] rounded-full"></span>
+            <span>Public Infrastructure Atlas</span>
+          </div>
+        </div>
         
         <div className="w-full flex flex-col sm:flex-row gap-12 sm:gap-24 items-start">
           <div className="flex-1">
-            <h2 className="text-5xl sm:text-7xl font-serif font-medium leading-[1.1] text-[#2d2d2d] mb-6 tracking-tight">
-              Understanding<br/>
-              what communities<br/>
-              need.
+            <h2 className="text-4xl sm:text-5xl font-mono font-medium leading-[1.3] text-[#1a237e] mb-8">
+              A Living Atlas mapping<br/>
+              the <span className="text-[#c84b31]">infrastructure needs</span><br/>
+              of our communities.
             </h2>
-            <div className="flex items-center gap-4 text-sm font-sans tracking-widest uppercase text-[#57534e] mb-12">
-              <span>India</span>
-              <span className="w-1 h-1 bg-[#e07a5f] rounded-full"></span>
-              <span>2026</span>
-            </div>
             
             <button
               onClick={onEnter}
-              className="group flex items-center gap-3 text-sm font-sans uppercase tracking-widest font-semibold border-b-2 border-[#2d2d2d] pb-2 hover:text-[#e07a5f] hover:border-[#e07a5f] transition-all cursor-pointer"
+              className="group flex items-center gap-3 text-sm font-sans uppercase tracking-widest font-semibold border border-[#1a237e] px-8 py-4 hover:bg-[#1a237e] hover:text-[#f4f1ea] transition-all cursor-pointer"
             >
-              Explore the Atlas
+              Examine the Atlas
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
 
-          <div className="sm:w-[320px] shrink-0 border border-[#2d2d2d]/20 bg-white/50 p-6 flex flex-col gap-8 shadow-sm">
-            <div className="text-center font-serif text-lg tracking-wide border-b border-[#2d2d2d]/10 pb-4">
-              INDIA DEVELOPMENT<br/>ATLAS
+          <div className="sm:w-[360px] shrink-0 border border-[#1a237e] bg-[#f4f1ea] p-8 flex flex-col gap-8 shadow-[8px_8px_0px_#1a237e]">
+            <div className="text-center font-serif text-xl tracking-wide border-b border-[#1a237e]/20 pb-4 uppercase font-bold text-[#1a237e]">
+              National Data Summary
             </div>
             
-            <div className="flex justify-center py-4">
-              <Map className="w-24 h-24 text-[#e07a5f]/20 stroke-1" />
+            <div className="flex justify-center py-6 relative">
+              {/* Ashoka Chakra inspired dashed rotating ring */}
+              <div className="absolute inset-0 m-auto w-32 h-32 border-[3px] border-dashed border-[#1a237e]/20 rounded-full animate-[spin_60s_linear_infinite]"></div>
+              <Map className="w-20 h-20 text-[#1a237e] stroke-1 relative z-10" />
             </div>
 
-            <div className="flex flex-col gap-4 font-sans text-sm tracking-wide text-[#57534e]">
-              <div className="flex justify-between items-center border-b border-[#2d2d2d]/10 pb-2">
-                <span className="font-semibold text-[#2d2d2d]">12,482</span>
-                <span className="text-xs uppercase">Citizen Signals</span>
+            <div className="flex flex-col gap-4 font-mono text-base tracking-wide text-[#1a237e]">
+              <div className="flex justify-between items-center border-b border-[#1a237e]/20 pb-2">
+                <span className="font-bold">12,482</span>
+                <span className="text-xs font-sans uppercase tracking-widest text-[#1a237e]/70">Citizen Signals</span>
               </div>
-              <div className="flex justify-between items-center border-b border-[#2d2d2d]/10 pb-2">
-                <span className="font-semibold text-[#2d2d2d]">147</span>
-                <span className="text-xs uppercase">Demand Hotspots</span>
+              <div className="flex justify-between items-center border-b border-[#1a237e]/20 pb-2">
+                <span className="font-bold">147</span>
+                <span className="text-xs font-sans uppercase tracking-widest text-[#1a237e]/70">Demand Hotspots</span>
               </div>
               <div className="flex justify-between items-center pb-2">
-                <span className="font-semibold text-[#e07a5f]">38</span>
-                <span className="text-xs uppercase">Priority Districts</span>
+                <span className="font-bold text-[#c84b31]">38</span>
+                <span className="text-xs font-sans uppercase tracking-widest text-[#c84b31]">Priority Districts</span>
               </div>
             </div>
           </div>
