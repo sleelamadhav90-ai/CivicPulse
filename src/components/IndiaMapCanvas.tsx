@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -115,6 +115,14 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onSelectHotspotForPolicy,
 }) => {
   const [selectedCalloutTab, setSelectedCalloutTab] = useState<'report' | 'photo' | 'action'>('report');
+  const [geoData, setGeoData] = useState<any>(null);
+  
+  useEffect(() => {
+    fetch('/india_states_official_simplified.geojson')
+      .then(res => res.json())
+      .then(data => setGeoData(data))
+      .catch(err => console.error("Failed to load India bounds:", err));
+  }, []);
   
   // Calculate map center based on active district or all evaluations
   const mapCenter = useMemo<[number, number]>(() => {
@@ -155,17 +163,27 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     <div className="w-full h-full relative z-0" style={{ minHeight: '600px' }}>
       <MapContainer 
         center={mapCenter} 
-        zoom={6} 
-        style={{ width: '100%', height: '100%', background: '#0f172a' }}
+        zoom={5} 
+        scrollWheelZoom={false}
+        style={{ width: '100%', height: '100%', background: '#dcdcdc' }} // light grey background like the image
         zoomControl={false}
       >
-        <MapController center={mapCenter} zoom={6} />
+        <MapController center={mapCenter} zoom={activeDistrictId ? 6 : 5} />
         
-        {/* Dark Mode CartoDB Map Tiles for perfect grid aesthetics */}
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
-        />
+        {/* Official India Political Map Overlay */}
+        
+        {geoData && (
+          <GeoJSON 
+            data={geoData} 
+            style={{
+              color: '#000000', // thick black border like the image
+              weight: 2.5, 
+              opacity: 1, 
+              fillColor: '#3498db', // solid blue fill like the image
+              fillOpacity: 1 
+            }}
+          />
+        )}
 
         {/* Render heatmap glowing blurs under the pins */}
         {evaluations.map((item) => {
@@ -222,7 +240,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               </Tooltip>
 
               {/* Popup replaces the permanent modal, natively dismissible! */}
-              <Popup offset={[0, -50]} className="custom-popup" maxWidth={380} minWidth={320}>
+              <Popup offset={[0, -50]} className="custom-popup" maxWidth={380} minWidth={320} autoPanPadding={[20, 20]}>
                 <div className="bg-slate-900 border border-slate-700/90 rounded-2xl shadow-2xl overflow-hidden text-white -m-4">
                   <div className="p-4 space-y-3.5">
                     {/* Header */}
