@@ -11,8 +11,31 @@ import {
   EyeOff, 
   Navigation,
   Droplets,
+  Droplet,
   Activity,
-  Radio
+  Radio,
+  FileText,
+  Camera,
+  MessageSquare,
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  Send,
+  Zap,
+  Route,
+  HeartPulse,
+  GraduationCap,
+  Hammer,
+  Bot,
+  Compass,
+  Maximize2,
+  Share2,
+  ExternalLink,
+  ChevronRight,
+  TrendingUp,
+  Sliders,
+  ShieldCheck,
+  User
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
@@ -43,30 +66,102 @@ interface IndiaMapCanvasProps {
 // Region viewbox presets for instant focus
 const REGION_PRESETS = [
   { id: 'all', label: 'All India', viewBox: '0 0 1000 1100' },
-  { id: 'south', label: 'South (AP/TS/KA/TN/KL)', viewBox: '150 480 700 600' },
-  { id: 'north', label: 'North (Delhi/UP/RJ/PB)', viewBox: '100 50 650 550' },
+  { id: 'south', label: 'South (AP/TS/KA/TN)', viewBox: '150 480 700 600' },
   { id: 'west', label: 'West (MH/GJ)', viewBox: '50 350 600 550' },
-  { id: 'east', label: 'East (BR/WB/OD/NE)', viewBox: '400 200 600 600' },
+  { id: 'north', label: 'North (Delhi/UP/PB)', viewBox: '100 50 650 550' },
+  { id: 'east', label: 'East (WB/OD/BR)', viewBox: '400 200 600 600' },
 ];
+
+// Category styling dictionary
+const CATEGORY_STYLES: Record<string, { color: string; bg: string; icon: string; border: string }> = {
+  Water: { color: '#0284c7', bg: '#e0f2fe', icon: '💧', border: '#38bdf8' },
+  Drainage: { color: '#0d9488', bg: '#ccfbf1', icon: '🌊', border: '#2dd4bf' },
+  Roads: { color: '#ea580c', bg: '#ffedd5', icon: '🛣️', border: '#fb923c' },
+  Electricity: { color: '#ca8a04', bg: '#fef9c3', icon: '⚡', border: '#facc15' },
+  Health: { color: '#e11d48', bg: '#ffe4e6', icon: '🏥', border: '#fb7185' },
+  Healthcare: { color: '#e11d48', bg: '#ffe4e6', icon: '🏥', border: '#fb7185' },
+  Sanitation: { color: '#059669', bg: '#d1fae5', icon: '🗑️', border: '#34d399' },
+  Education: { color: '#7c3aed', bg: '#ede9fe', icon: '🎓', border: '#a78bfa' },
+  Other: { color: '#475569', bg: '#f1f5f9', icon: '📍', border: '#94a3b8' },
+};
+
+// Rich mock photo and report data generator for Qlue/Jakarta Smart City style callouts
+const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot) => {
+  const images = {
+    Water: {
+      title: 'Drinking Water Pipeline Fracture & Ingress',
+      tag: '#WaterContamination',
+      sub: 'Main municipal feeder pipe ruptured near crossroad; muddy water entering overhead tanks.',
+      officer: 'Er. Rajesh Kumar, Executive Engineer (Water Works)',
+      actionDate: '28 Aug 2026',
+      status: 'In Sanction Tender'
+    },
+    Drainage: {
+      title: 'Monsoon Stormwater Drain Overflow',
+      tag: '#DrainageBlockage',
+      sub: 'Severe silt accumulation causing 1.5 ft waterlogging across residential streets.',
+      officer: 'Smt. Priya Sharma, Municipal Health Officer',
+      actionDate: '29 Aug 2026',
+      status: 'Desilting Sanctioned'
+    },
+    Roads: {
+      title: 'Heavy Arterial Pothole Grid Failure',
+      tag: '#RoadSafetyDeficit',
+      sub: 'Multiple deep craters along 4.2 km main transit corridor impeding bus connectivity.',
+      officer: 'K. Venkatesh, Superintending Engineer (R&B)',
+      actionDate: '26 Aug 2026',
+      status: 'Work Order Issued'
+    },
+    Electricity: {
+      title: 'Substation Voltage Drop & Streetlight Outage',
+      tag: '#GridReliability',
+      sub: '14 consecutive street poles dark for 3 weeks creating severe nighttime hazard.',
+      officer: 'T. N. Murthy, Assistant Divisional Engineer (APSPDCL)',
+      actionDate: '27 Aug 2026',
+      status: 'Under AI Prioritization'
+    },
+    Health: {
+      title: 'Primary Health Clinic Staff & Bed Deficit',
+      tag: '#PrimaryHealthAccess',
+      sub: 'Single doctor handling 180+ outpatients daily without functioning diagnostics.',
+      officer: 'Dr. Anita Desai, District Medical & Health Officer',
+      actionDate: '25 Aug 2026',
+      status: 'Policy Lab Review'
+    },
+  };
+
+  const defaultEvidence = images[category as keyof typeof images] || images.Water;
+  return {
+    ...defaultEvidence,
+    reportId: `CP-${district.name.substring(0, 3).toUpperCase()}-${Math.floor(1000 + (district.lat * 100) % 9000)}`,
+    reporter: 'CivicPulse Citizen Network (Verified Voice/WhatsApp)',
+    timestamp: 'Today, 02:34 PM',
+    commentsCount: Math.max(4, Math.round(hotspot.totalCitizenRequests / 450)),
+    upvotes: Math.max(120, Math.round(hotspot.totalCitizenRequests * 1.8)),
+  };
+};
 
 export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   evaluations,
   activeDistrictId,
   onSelectDistrict,
+  selectedCategory,
+  onSelectHotspotForPolicy,
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [selectedRegionPreset, setSelectedRegionPreset] = useState<string>('all');
   const [showLabels, setShowLabels] = useState<boolean>(true);
   const [showHeatmap, setShowHeatmap] = useState<boolean>(true);
   const [showStateBorders, setShowStateBorders] = useState<boolean>(true);
-  const [mapDisplayMode, setMapDisplayMode] = useState<'hotspots' | 'scores'>('hotspots');
+  const [mapViewMode, setMapViewMode] = useState<'smartcity' | 'heatmap' | 'scores'>('smartcity');
+  const [selectedCalloutTab, setSelectedCalloutTab] = useState<'report' | 'photo' | 'action'>('report');
+  const [showModalReport, setShowModalReport] = useState<boolean>(false);
   const [hoveredDistrict, setHoveredDistrict] = useState<EvaluatedDistrict | null>(null);
   const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Calibrated projection function from Latitude / Longitude to India SVG Canvas Coordinate System (0-1000 X, 0-1100 Y)
-  // India bounds: Lon 68.0°E to 97.5°E (width: 29.5 deg), Lat 8.0°N to 37.2°N (height: 29.2 deg)
   const projectGeoToSvg = (lat: number, lon: number): { x: number; y: number } => {
     const minLon = 68.0;
     const maxLon = 97.4;
@@ -100,14 +195,55 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     return preset ? preset.viewBox : '0 0 1000 1100';
   }, [selectedRegionPreset]);
 
+  // Selected district details
+  const activeEval = useMemo(() => {
+    return evaluations.find((e) => e.district.id === activeDistrictId) || evaluations[0];
+  }, [evaluations, activeDistrictId]);
+
+  const activeEvidence = useMemo(() => {
+    if (!activeEval) return null;
+    return getReportEvidence(activeEval.district, activeEval.demandHotspot.primaryCategory, activeEval.demandHotspot);
+  }, [activeEval]);
+
+  // Top overall demand category share across filtered cities
+  const categoryStats = useMemo(() => {
+    const counts: Record<string, number> = {
+      Water: 0,
+      Drainage: 0,
+      Roads: 0,
+      Electricity: 0,
+      Health: 0,
+    };
+    evaluations.forEach((e) => {
+      const cat = e.demandHotspot.primaryCategory;
+      if (counts[cat] !== undefined) {
+        counts[cat] += e.demandHotspot.totalCitizenRequests;
+      } else {
+        counts.Water += e.demandHotspot.totalCitizenRequests;
+      }
+    });
+    const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+    return {
+      counts,
+      total,
+      waterPct: Math.round((counts.Water / total) * 100),
+      drainagePct: Math.round((counts.Drainage / total) * 100),
+      roadsPct: Math.round((counts.Roads / total) * 100),
+      electricityPct: Math.round((counts.Electricity / total) * 100),
+      healthPct: Math.round((counts.Health / total) * 100),
+    };
+  }, [evaluations]);
+
   return (
-    <div className="relative w-full h-[600px] bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between select-none shadow-inner">
-      {/* Top Map Action Bar */}
-      <div className="z-20 p-3.5 bg-slate-900/90 backdrop-blur-md border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-3">
-        {/* Region Presets */}
+    <div className="relative w-full bg-slate-950 rounded-2xl border border-slate-800 overflow-hidden flex flex-col justify-between select-none shadow-2xl">
+      {/* ============================================================ */}
+      {/* 1. TOP SMART CITY CONTROL BAR & VIEW MODES                   */}
+      {/* ============================================================ */}
+      <div className="z-20 p-3.5 bg-slate-900/95 backdrop-blur-md border-b border-slate-800/90 flex flex-wrap items-center justify-between gap-3">
+        {/* Left: Region Filter Pills */}
         <div className="flex items-center space-x-1.5 overflow-x-auto pb-1 sm:pb-0">
           <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1 flex items-center gap-1">
-            <Navigation className="w-3 h-3 text-blue-400" /> Focus:
+            <Navigation className="w-3.5 h-3.5 text-sky-400" /> Focus:
           </span>
           {REGION_PRESETS.map((preset) => (
             <button
@@ -118,8 +254,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               }}
               className={`px-2.5 py-1 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                 selectedRegionPreset === preset.id
-                  ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
+                  ? 'bg-sky-600 text-white shadow-sm ring-1 ring-sky-400 font-bold'
+                  : 'bg-slate-800/80 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-700/60'
               }`}
             >
               {preset.label}
@@ -127,167 +263,239 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           ))}
         </div>
 
-        {/* Display Mode Toggle & Controls */}
+        {/* Right: Map Visual Modes (Smart City Pins / Heatmap / Scores) */}
         <div className="flex items-center space-x-2">
-          {/* Display Mode (Hotspots vs Scores) */}
-          <div className="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+          {/* Mode Switcher */}
+          <div className="flex bg-slate-800 p-0.5 rounded-xl border border-slate-700 text-xs">
             <button
-              onClick={() => setMapDisplayMode('hotspots')}
-              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                mapDisplayMode === 'hotspots'
-                  ? 'bg-rose-600 text-white shadow-xs'
+              onClick={() => setMapViewMode('smartcity')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapViewMode === 'smartcity'
+                  ? 'bg-sky-500 text-white shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="Smart City Qlue-Style Teardrop Pins & Category Badges"
             >
-              <Flame className="w-3 h-3 text-amber-300" />
-              <span>Demand Hotspots</span>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>Smart Pins</span>
             </button>
             <button
-              onClick={() => setMapDisplayMode('scores')}
-              className={`px-2.5 py-1 rounded-md font-bold transition-all cursor-pointer flex items-center gap-1 ${
-                mapDisplayMode === 'scores'
+              onClick={() => setMapViewMode('heatmap')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapViewMode === 'heatmap'
+                  ? 'bg-amber-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title="GIS Kernel Density Heatmap (Continuous Contour Field)"
+            >
+              <Flame className="w-3.5 h-3.5" />
+              <span>GIS Heatmap</span>
+            </button>
+            <button
+              onClick={() => setMapViewMode('scores')}
+              className={`px-3 py-1 rounded-lg font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                mapViewMode === 'scores'
                   ? 'bg-blue-600 text-white shadow-xs'
                   : 'text-slate-400 hover:text-slate-200'
               }`}
+              title="5-Pillar Priority Score Nodes"
             >
-              <Activity className="w-3 h-3 text-blue-300" />
-              <span>Priority Scores</span>
+              <Activity className="w-3.5 h-3.5" />
+              <span>Scores</span>
             </button>
           </div>
 
-          {/* Toggle Labels */}
-          <button
-            onClick={() => setShowLabels(!showLabels)}
-            title="Toggle City Name Labels"
-            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-              showLabels
-                ? 'bg-slate-800 text-blue-300 border border-blue-500/30'
-                : 'bg-slate-900 text-slate-500 border border-slate-800'
-            }`}
-          >
-            {showLabels ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-            <span className="hidden sm:inline">Labels</span>
-          </button>
+          {/* Quick Toggle Overlays */}
+          <div className="hidden sm:flex items-center space-x-1 pl-1">
+            <button
+              onClick={() => setShowLabels(!showLabels)}
+              title="Toggle City Name Labels"
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                showLabels
+                  ? 'bg-slate-800 text-sky-300 border border-sky-500/30'
+                  : 'bg-slate-900 text-slate-500 border border-slate-800'
+              }`}
+            >
+              {showLabels ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            </button>
 
-          {/* Toggle Heat Halo */}
-          <button
-            onClick={() => setShowHeatmap(!showHeatmap)}
-            title="Toggle Deficit Heatmap Glow"
-            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-              showHeatmap
-                ? 'bg-slate-800 text-amber-300 border border-amber-500/30'
-                : 'bg-slate-900 text-slate-500 border border-slate-800'
-            }`}
-          >
-            <Flame className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">Heat</span>
-          </button>
-
-          {/* Toggle State Boundaries */}
-          <button
-            onClick={() => setShowStateBorders(!showStateBorders)}
-            title="Toggle State Boundary Lines"
-            className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
-              showStateBorders
-                ? 'bg-slate-800 text-indigo-300 border border-indigo-500/30'
-                : 'bg-slate-900 text-slate-500 border border-slate-800'
-            }`}
-          >
-            <Layers className="w-3.5 h-3.5" />
-            <span className="hidden sm:inline">States</span>
-          </button>
+            <button
+              onClick={() => setShowHeatmap(!showHeatmap)}
+              title="Toggle Density Heat Halos"
+              className={`p-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer ${
+                showHeatmap
+                  ? 'bg-slate-800 text-amber-300 border border-amber-500/30'
+                  : 'bg-slate-900 text-slate-500 border border-slate-800'
+              }`}
+            >
+              <Flame className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
           <div className="h-4 w-px bg-slate-800 mx-1" />
 
-          {/* Zoom In / Out / Reset */}
-          <button
-            onClick={handleZoomIn}
-            title="Zoom In"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
-          >
-            <ZoomIn className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleZoomOut}
-            title="Zoom Out"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
-          >
-            <ZoomOut className="w-3.5 h-3.5" />
-          </button>
-          <button
-            onClick={handleResetZoom}
-            title="Reset Map View"
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-          </button>
+          {/* Zoom Controls */}
+          <div className="flex items-center space-x-1">
+            <button
+              onClick={handleZoomIn}
+              title="Zoom In"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
+            >
+              <ZoomIn className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              title="Zoom Out"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
+            >
+              <ZoomOut className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={handleResetZoom}
+              title="Reset View"
+              className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700/60 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Main SVG Vector Canvas */}
+      {/* ============================================================ */}
+      {/* 2. MAIN SVG MAP CANVAS WITH FLOATING SMART CITY CALLOUTS      */}
+      {/* ============================================================ */}
       <div 
         ref={containerRef}
-        className="relative flex-1 w-full h-full overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing"
+        className="relative flex-1 w-full min-h-[520px] max-h-[620px] overflow-hidden flex items-center justify-center cursor-grab active:cursor-grabbing bg-slate-950"
       >
         {/* Cartographic Coordinate Grid */}
-        <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
+        <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none" />
 
-        {/* Prominent Overlay Banner: DEMAND HOTSPOTS */}
-        <div className="absolute top-4 left-6 z-10 pointer-events-none">
-          <div className="bg-slate-900/90 border border-slate-700/80 px-3.5 py-1.5 rounded-xl shadow-lg backdrop-blur-md flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping" />
-            <span className="text-xs font-black tracking-widest text-slate-100 uppercase">
-              DEMAND HOTSPOTS
-            </span>
-            <span className="text-[10px] text-slate-400 font-mono">
-              ({evaluations.length} Aggregated Clusters)
-            </span>
+        {/* Top-Left Smart City Banner (Image 1 Style) */}
+        <div className="absolute top-4 left-4 z-10 pointer-events-none">
+          <div className="bg-slate-900/90 border border-slate-700/80 px-3.5 py-2 rounded-2xl shadow-xl backdrop-blur-md flex items-center gap-3">
+            <div className="w-7 h-7 rounded-xl bg-gradient-to-tr from-amber-500 to-sky-500 p-0.5 flex items-center justify-center shadow-xs">
+              <div className="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+                <Bot className="w-4 h-4 text-sky-400" />
+              </div>
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[11px] font-black tracking-widest text-slate-100 uppercase">
+                  INDIA SMART GIS HOTSPOTS
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              </div>
+              <p className="text-[10px] text-slate-400 font-mono">
+                {evaluations.length} Municipal Clusters • 12,480 Citizen Grievances
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Ocean Labels */}
-        <div className="absolute left-6 bottom-20 text-[11px] font-bold tracking-widest text-slate-600/60 uppercase select-none pointer-events-none font-serif">
+        {/* Top-Right Mini Infrastructure Analytics Donut (Image 2 Style) */}
+        <div className="absolute top-4 right-4 z-10 pointer-events-none hidden lg:block">
+          <div className="bg-slate-900/90 border border-slate-700/80 p-3 rounded-2xl shadow-xl backdrop-blur-md space-y-2 w-48">
+            <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-1.5">
+              <span>Category Demand</span>
+              <span className="font-mono text-sky-400">100%</span>
+            </div>
+            
+            <div className="space-y-1.5 text-[11px]">
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-sky-400" /> Water
+                </span>
+                <span className="font-mono font-bold text-slate-200">{categoryStats.waterPct}%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-orange-400" /> Roads
+                </span>
+                <span className="font-mono font-bold text-slate-200">{categoryStats.roadsPct}%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-teal-400" /> Drainage
+                </span>
+                <span className="font-mono font-bold text-slate-200">{categoryStats.drainagePct}%</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="flex items-center gap-1 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-yellow-400" /> Power
+                </span>
+                <span className="font-mono font-bold text-slate-200">{categoryStats.electricityPct}%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Ocean Names in Cartographic Style */}
+        <div className="absolute left-6 bottom-16 text-[11px] font-bold tracking-widest text-slate-600/50 uppercase select-none pointer-events-none font-serif">
           Arabian Sea
         </div>
-        <div className="absolute right-12 bottom-36 text-[11px] font-bold tracking-widest text-slate-600/60 uppercase select-none pointer-events-none font-serif">
+        <div className="absolute right-12 bottom-28 text-[11px] font-bold tracking-widest text-slate-600/50 uppercase select-none pointer-events-none font-serif">
           Bay of Bengal
         </div>
-        <div className="absolute left-1/2 -translate-x-1/2 bottom-3 text-[10px] font-bold tracking-widest text-slate-600/60 uppercase select-none pointer-events-none font-serif">
+        <div className="absolute left-1/2 -translate-x-1/2 bottom-2 text-[10px] font-bold tracking-widest text-slate-600/50 uppercase select-none pointer-events-none font-serif">
           Indian Ocean
         </div>
 
+        {/* SVG Map */}
         <svg
           viewBox={currentViewBox}
-          className="w-full h-full max-h-[540px] transition-transform duration-500 ease-out"
+          className="w-full h-full max-h-[560px] transition-transform duration-500 ease-out"
           style={{ transform: `scale(${zoomLevel})` }}
         >
           <defs>
-            {/* Deficit Heatmap Glow Gradients */}
-            <radialGradient id="criticalGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#f43f5e" stopOpacity="0.45" />
-              <stop offset="60%" stopColor="#f43f5e" stopOpacity="0.15" />
-              <stop offset="100%" stopColor="#f43f5e" stopOpacity="0" />
+            {/* Multi-tier Gaussian Density Heatmap Radial Gradients (Image 3 Style: Green -> Yellow -> Orange -> Red) */}
+            <radialGradient id="heatGaussianPeak" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#ffffff" stopOpacity="1" />
+              <stop offset="10%" stopColor="#fef08a" stopOpacity="0.95" />
+              <stop offset="25%" stopColor="#ef4444" stopOpacity="0.85" />
+              <stop offset="55%" stopColor="#f97316" stopOpacity="0.55" />
+              <stop offset="80%" stopColor="#eab308" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
             </radialGradient>
-            <radialGradient id="highGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#f59e0b" stopOpacity="0.4" />
-              <stop offset="60%" stopColor="#f59e0b" stopOpacity="0.1" />
-              <stop offset="100%" stopColor="#f59e0b" stopOpacity="0" />
+
+            <radialGradient id="heatGaussianModerate" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#fef08a" stopOpacity="0.9" />
+              <stop offset="20%" stopColor="#f59e0b" stopOpacity="0.75" />
+              <stop offset="50%" stopColor="#eab308" stopOpacity="0.45" />
+              <stop offset="80%" stopColor="#10b981" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
             </radialGradient>
-            <radialGradient id="moderateGlow" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.35" />
-              <stop offset="60%" stopColor="#3b82f6" stopOpacity="0.08" />
-              <stop offset="100%" stopColor="#3b82f6" stopOpacity="0" />
+
+            <radialGradient id="heatGaussianBaseline" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stopColor="#6ee7b7" stopOpacity="0.75" />
+              <stop offset="40%" stopColor="#10b981" stopOpacity="0.55" />
+              <stop offset="70%" stopColor="#06b6d4" stopOpacity="0.25" />
+              <stop offset="100%" stopColor="#06b6d4" stopOpacity="0" />
             </radialGradient>
+
+            {/* Glowing blur filter for pins */}
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+              <feMerge>
+                <feMergeNode in="coloredBlur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
 
             {/* Landmass Shadow filter */}
             <filter id="landShadow" x="-10%" y="-10%" width="120%" height="120%">
-              <feDropShadow dx="0" dy="8" stdDeviation="12" floodColor="#0284c7" floodOpacity="0.12" />
+              <feDropShadow dx="0" dy="10" stdDeviation="14" floodColor="#0284c7" floodOpacity="0.18" />
+            </filter>
+
+            {/* Pin Drop Shadow */}
+            <filter id="pinShadow" x="-30%" y="-30%" width="160%" height="160%">
+              <feDropShadow dx="0" dy="4" stdDeviation="4" floodColor="#000000" floodOpacity="0.6" />
             </filter>
           </defs>
 
           {/* Group 1: Geographic Base Landmass of India */}
           <g filter="url(#landShadow)">
-            {/* India Main Landmass Silhouette */}
+            {/* Main Silhouette */}
             <path
               d="
                 M 330 65 
@@ -322,13 +530,13 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 C 310 100, 320 80, 330 65 
                 Z
               "
-              fill="#0f172a"
+              fill="#0b1329"
               stroke="#38bdf8"
-              strokeWidth="2.2"
+              strokeWidth="2.4"
               strokeLinejoin="round"
             />
 
-            {/* Northern Crown: Jammu & Kashmir, Ladakh, Himachal & Uttarakhand */}
+            {/* Northern Crown */}
             <path
               d="
                 M 330 65 
@@ -339,32 +547,13 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 C 380 175, 350 150, 330 115 
                 Z
               "
-              fill="#1e293b"
-              stroke="#0284c7"
-              strokeWidth="1.2"
-              opacity="0.85"
-            />
-
-            {/* Western Region: Gujarat Peninsula */}
-            <path
-              d="
-                M 215 370 
-                C 205 400, 190 425, 165 435 
-                C 140 445, 110 440, 85 460 
-                C 65 480, 60 510, 75 525 
-                C 90 535, 105 520, 130 505 
-                C 155 490, 185 495, 215 500 
-                C 235 505, 250 490, 255 460 
-                C 260 420, 240 385, 215 370 
-                Z
-              "
-              fill="#1e293b"
+              fill="#111c44"
               stroke="#0284c7"
               strokeWidth="1.2"
               opacity="0.9"
             />
 
-            {/* Southern Peninsula: Andhra Pradesh, Telangana, Karnataka, Tamil Nadu, Kerala */}
+            {/* Southern Peninsula Focus Area */}
             <path
               d="
                 M 290 560 
@@ -377,32 +566,15 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 C 580 620, 480 600, 380 580 
                 Z
               "
-              fill="#172554"
-              stroke="#3b82f6"
-              strokeWidth="1.4"
-              opacity="0.85"
-            />
-
-            {/* North-Eastern Seven Sisters */}
-            <path
-              d="
-                M 740 330 
-                C 775 320, 820 305, 860 310 
-                C 890 315, 915 340, 920 370 
-                C 925 405, 905 440, 880 460 
-                C 855 480, 820 485, 800 500 
-                C 780 480, 770 430, 760 380 
-                Z
-              "
-              fill="#1e293b"
-              stroke="#0284c7"
-              strokeWidth="1.2"
-              opacity="0.85"
+              fill="#0f1f4d"
+              stroke="#38bdf8"
+              strokeWidth="1.6"
+              opacity="0.9"
             />
 
             {/* State Internal Boundary Guidelines */}
             {showStateBorders && (
-              <g stroke="#334155" strokeWidth="0.9" strokeDasharray="3,3" fill="none">
+              <g stroke="#1e293b" strokeWidth="1.2" strokeDasharray="4,4" fill="none">
                 <path d="M 400 660 Q 460 670 510 650 Q 560 660 590 680" />
                 <path d="M 235 505 Q 330 520 430 510 Q 500 540 520 580" />
                 <path d="M 360 760 Q 430 790 480 810 Q 540 790 560 820" />
@@ -411,56 +583,61 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               </g>
             )}
 
-            {/* Andaman & Nicobar Islands */}
+            {/* Islands */}
             <g opacity="0.8">
               <ellipse cx="880" cy="820" rx="6" ry="16" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
               <ellipse cx="886" cy="870" rx="5" ry="14" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
               <ellipse cx="890" cy="920" rx="7" ry="12" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-              <text x="910" y="875" fill="#64748b" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
-                Andaman & Nicobar
-              </text>
-            </g>
-
-            {/* Lakshadweep Islands */}
-            <g opacity="0.8">
               <circle cx="280" cy="850" r="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
               <circle cx="275" cy="880" r="4" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-              <circle cx="270" cy="910" r="5" fill="#0284c7" stroke="#38bdf8" strokeWidth="1" />
-              <text x="180" y="885" fill="#64748b" fontSize="10" fontFamily="sans-serif" fontWeight="bold">
-                Lakshadweep
-              </text>
             </g>
           </g>
 
-          {/* Group 2: Ambient Priority Deficit Heat Halos */}
-          {showHeatmap && (
-            <g className="pointer-events-none">
+          {/* ============================================================ */}
+          {/* Group 2: CONTINUOUS DENSITY HEATMAP LAYER (São Paulo style)  */}
+          {/* ============================================================ */}
+          {(showHeatmap || mapViewMode === 'heatmap') && (
+            <g className="pointer-events-none" style={{ mixBlendMode: 'screen' }}>
               {evaluations.map((item) => {
                 const pos = projectGeoToSvg(item.district.lat, item.district.lon);
                 const score = item.breakdown.total_score;
-                const radius = Math.max(38, Math.min(85, 30 + score * 0.65 + item.demandCount * 6));
-                const glowFill =
+                const radius = Math.max(48, Math.min(110, 40 + score * 0.8 + item.demandCount * 6));
+                
+                const gradientFill =
                   score >= 70
-                    ? 'url(#criticalGlow)'
-                    : score >= 55
-                    ? 'url(#highGlow)'
-                    : 'url(#moderateGlow)';
+                    ? 'url(#heatGaussianPeak)'
+                    : score >= 50
+                    ? 'url(#heatGaussianModerate)'
+                    : 'url(#heatGaussianBaseline)';
 
                 return (
-                  <circle
-                    key={`glow-${item.district.id}`}
-                    cx={pos.x}
-                    cy={pos.y}
-                    r={radius}
-                    fill={glowFill}
-                    className="transition-all duration-500"
-                  />
+                  <g key={`heat-${item.district.id}`}>
+                    {/* Outer Heat Contour Ring */}
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={radius * 1.25}
+                      fill={gradientFill}
+                      opacity={mapViewMode === 'heatmap' ? 0.95 : 0.65}
+                      className="transition-all duration-500"
+                    />
+                    {/* Inner Core Hotspot */}
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={radius * 0.65}
+                      fill={gradientFill}
+                      opacity="0.8"
+                    />
+                  </g>
                 );
               })}
             </g>
           )}
 
-          {/* Group 3: Interactive Aggregated Demand Hotspots Nodes */}
+          {/* ============================================================ */}
+          {/* Group 3: SMART CITY TEARDROP PINS (Qlue / Jakarta Style)      */}
+          {/* ============================================================ */}
           <g>
             {evaluations.map((item) => {
               const pos = projectGeoToSvg(item.district.lat, item.district.lon);
@@ -469,14 +646,20 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               const score = item.breakdown.total_score;
               const hotspot = item.demandHotspot;
               const isCritical = hotspot.urgencyLevel === 'Critical' || score >= 70;
-              const markerRadius = isSelected ? 17 : isHovered ? 15 : 12;
+              const catStyle = CATEGORY_STYLES[hotspot.primaryCategory] || CATEGORY_STYLES.Water;
 
-              // Aggregated Demand Hotspot Label (e.g. 🔴 Water, 🔴 Roads, 🟠 Sanitation, 🟡 Electricity)
-              const hotspotLabel = hotspot.primaryBadgeLabel;
+              // Pin Color by priority & category
+              const pinColor = isCritical 
+                ? '#ef4444' 
+                : score >= 55 
+                ? '#f97316' 
+                : score >= 40 
+                ? '#eab308' 
+                : '#10b981';
 
               return (
                 <g
-                  key={`city-${item.district.id}`}
+                  key={`smart-pin-${item.district.id}`}
                   transform={`translate(${pos.x}, ${pos.y})`}
                   className="cursor-pointer group"
                   onClick={() => onSelectDistrict(item.district.id)}
@@ -495,133 +678,104 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                     setHoverPos(null);
                   }}
                 >
-                  {/* Pulsing Radar Ring for Critical Demand Hotspots */}
+                  {/* Pulsing Radar Ring for Critical Urgent Hotspots */}
                   {isCritical && (
                     <circle
-                      r={markerRadius + 9}
+                      cx="0"
+                      cy="-22"
+                      r="22"
                       fill="none"
-                      stroke={hotspot.primaryDotColor}
-                      strokeWidth="2.2"
-                      className="animate-ping opacity-60"
+                      stroke={pinColor}
+                      strokeWidth="2.5"
+                      className="animate-ping opacity-75"
                     />
                   )}
 
-                  {/* Outer Selection Highlight Ring */}
+                  {/* Active Selection Halo Ring */}
                   {isSelected && (
                     <circle
-                      r={markerRadius + 7}
+                      cx="0"
+                      cy="-22"
+                      r="24"
                       fill="none"
                       stroke="#38bdf8"
-                      strokeWidth="2.5"
-                      strokeDasharray="4,2"
+                      strokeWidth="3"
+                      strokeDasharray="4,3"
                       className="animate-spin origin-center"
                     />
                   )}
 
-                  {/* Node Circle Background */}
-                  <circle
-                    r={markerRadius}
-                    fill={isSelected ? hotspot.primaryDotColor : '#0f172a'}
-                    stroke={hotspot.primaryDotColor}
-                    strokeWidth={isSelected ? 3 : 2.2}
-                    className="transition-all duration-200 drop-shadow-md"
-                  />
-
-                  {/* Central Node Display: Score or Category Icon */}
-                  {mapDisplayMode === 'scores' ? (
-                    <text
-                      textAnchor="middle"
-                      dy="4"
-                      fill={isSelected ? '#ffffff' : '#f8fafc'}
-                      fontSize={isSelected ? '11' : '10'}
-                      fontFamily="monospace"
-                      fontWeight="bold"
-                      className="select-none pointer-events-none"
-                    >
-                      {score}
-                    </text>
-                  ) : (
-                    /* Hotspot Dot Indicator */
-                    <circle
-                      r={isSelected ? 6 : 5}
-                      fill={isSelected ? '#ffffff' : hotspot.primaryDotColor}
-                      className="select-none pointer-events-none"
+                  {/* TEARDROP PIN (Image 1 Style) */}
+                  <g filter={(isCritical || isSelected) ? "url(#glow)" : "url(#pinShadow)"} transform={`scale(${isSelected ? 1.25 : isHovered ? 1.15 : 1})`}>
+                    {/* Teardrop Base Vector pointing at (0,0) */}
+                    <path
+                      d="M 0 0 C -11 -14 -16 -23 -16 -32 C -16 -41 -9 -48 0 -48 C 9 -48 16 -41 16 -32 C 16 -23 11 -14 0 0 Z"
+                      fill={pinColor}
+                      stroke="#ffffff"
+                      strokeWidth={isSelected ? "2.5" : "1.8"}
+                      className="transition-all duration-200"
                     />
-                  )}
 
-                  {/* Aggregated Citizen Requests Count Badge */}
-                  <g transform={`translate(${markerRadius - 2}, ${-markerRadius + 2})`}>
-                    <circle r="7.5" fill="#ef4444" stroke="#ffffff" strokeWidth="1.5" />
-                    <text
-                      textAnchor="middle"
-                      dy="3"
+                    {/* Inner White Badge Disc */}
+                    <circle
+                      cx="0"
+                      cy="-32"
+                      r="10.5"
                       fill="#ffffff"
-                      fontSize="8"
-                      fontFamily="monospace"
-                      fontWeight="bold"
+                    />
+
+                    {/* Center Emoji / Category Icon */}
+                    <text
+                      x="0"
+                      y="-28"
+                      textAnchor="middle"
+                      fontSize="11"
                       className="select-none pointer-events-none"
                     >
-                      {item.demandCount > 0 ? item.demandCount : Math.min(99, Math.round(hotspot.totalCitizenRequests / 100))}
+                      {catStyle.icon}
                     </text>
+
+                    {/* Top-Right Notification Counter Badge */}
+                    <g transform="translate(10, -44)">
+                      <circle r="6.5" fill="#1e293b" stroke="#ffffff" strokeWidth="1.2" />
+                      <text
+                        textAnchor="middle"
+                        dy="2.5"
+                        fill="#ffffff"
+                        fontSize="7.5"
+                        fontFamily="monospace"
+                        fontWeight="black"
+                        className="select-none pointer-events-none"
+                      >
+                        {item.demandCount > 0 ? item.demandCount : Math.min(99, Math.round(hotspot.totalCitizenRequests / 120))}
+                      </text>
+                    </g>
                   </g>
 
-                  {/* City & Aggregated Hotspot Category Label */}
+                  {/* City Label Pill under Pin */}
                   {showLabels && (
-                    <g
-                      transform={`translate(0, ${markerRadius + 14})`}
-                      className="pointer-events-none select-none transition-all duration-200"
-                    >
-                      {mapDisplayMode === 'hotspots' ? (
-                        /* Aggregated Hotspot Pill (e.g. 🔴 Water, 🔴 Roads, 🟠 Sanitation) */
-                        <g>
-                          <rect
-                            x={-((item.district.name.length + hotspot.primaryCategory.length) * 3.6 + 16)}
-                            y="-11"
-                            width={(item.district.name.length + hotspot.primaryCategory.length) * 7.2 + 32}
-                            height="20"
-                            rx="5"
-                            fill={isSelected ? '#1e293b' : '#090d16'}
-                            stroke={isSelected ? '#38bdf8' : hotspot.primaryDotColor}
-                            strokeWidth={isSelected ? 1.8 : 1.2}
-                            opacity="0.95"
-                          />
-                          <text
-                            textAnchor="middle"
-                            dy="3.5"
-                            fill="#f8fafc"
-                            fontSize="10"
-                            fontFamily="system-ui, sans-serif"
-                            fontWeight="bold"
-                          >
-                            {item.district.name}: {hotspotLabel}
-                          </text>
-                        </g>
-                      ) : (
-                        /* Standard City Name Label */
-                        <g>
-                          <rect
-                            x={-(item.district.name.length * 4.2 + 8)}
-                            y="-10"
-                            width={item.district.name.length * 8.4 + 16}
-                            height="18"
-                            rx="4"
-                            fill={isSelected ? '#1e293b' : '#090d16'}
-                            stroke={isSelected ? '#38bdf8' : '#334155'}
-                            strokeWidth={isSelected ? 1.5 : 0.8}
-                            opacity="0.95"
-                          />
-                          <text
-                            textAnchor="middle"
-                            dy="3"
-                            fill={isSelected ? '#38bdf8' : '#f1f5f9'}
-                            fontSize="10"
-                            fontFamily="system-ui, sans-serif"
-                            fontWeight={isSelected ? '700' : '600'}
-                          >
-                            {item.district.name}
-                          </text>
-                        </g>
-                      )}
+                    <g transform="translate(0, 10)" className="pointer-events-none select-none">
+                      <rect
+                        x={-(item.district.name.length * 3.8 + 12)}
+                        y="-8"
+                        width={item.district.name.length * 7.6 + 24}
+                        height="17"
+                        rx="4.5"
+                        fill={isSelected ? '#1e293b' : '#090d16'}
+                        stroke={isSelected ? '#38bdf8' : '#334155'}
+                        strokeWidth={isSelected ? 1.6 : 0.8}
+                        opacity="0.95"
+                      />
+                      <text
+                        textAnchor="middle"
+                        dy="4"
+                        fill={isSelected ? '#38bdf8' : '#f1f5f9'}
+                        fontSize="9.5"
+                        fontFamily="system-ui, sans-serif"
+                        fontWeight={isSelected ? '800' : '600'}
+                      >
+                        {item.district.name}
+                      </text>
                     </g>
                   )}
                 </g>
@@ -630,102 +784,199 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           </g>
         </svg>
 
-        {/* Hover Tooltip Overlay */}
-        {hoveredDistrict && hoverPos && (
-          <div
-            className="absolute z-30 pointer-events-none bg-slate-900/95 text-white border border-slate-700 rounded-xl p-3.5 shadow-2xl backdrop-blur-md w-72 space-y-2 transform -translate-x-1/2 -translate-y-full -mt-4 animate-in fade-in zoom-in-95 duration-150"
-            style={{
-              left: Math.max(140, Math.min(window.innerWidth > 768 ? 620 : 320, hoverPos.x)),
-              top: Math.max(130, hoverPos.y),
-            }}
-          >
-            <div className="flex items-start justify-between border-b border-slate-800 pb-2">
-              <div>
-                <h4 className="text-sm font-bold text-white flex items-center gap-1.5">
-                  <MapPin className="w-3.5 h-3.5 text-rose-400" />
-                  {hoveredDistrict.district.name}
-                </h4>
-                <span className="text-[11px] text-slate-400 font-medium">
-                  {hoveredDistrict.district.state} ({hoveredDistrict.district.zone} Zone)
-                </span>
+        {/* ============================================================ */}
+        {/* 3. RICH "INFORMASI LAPORAN" / CIVIC REPORT CALLOUT (IMAGE 1)  */}
+        {/* ============================================================ */}
+        {activeEval && activeEvidence && (
+          <div className="absolute left-4 bottom-14 z-30 max-w-[340px] sm:max-w-[380px] bg-slate-900/95 border border-slate-700/90 rounded-2xl shadow-2xl backdrop-blur-xl p-4 text-white space-y-3.5 animate-in fade-in slide-in-from-bottom-3 duration-200">
+            {/* Header: Report Title & Mascot Avatar */}
+            <div className="flex items-start justify-between border-b border-slate-800 pb-2.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/40 flex items-center justify-center text-sky-400">
+                  <Bot className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs font-black uppercase tracking-wider text-slate-100 flex items-center gap-1">
+                      <FileText className="w-3.5 h-3.5 text-sky-400" />
+                      INFORMASI LAPORAN
+                    </span>
+                    <span className="text-[10px] font-mono font-bold bg-sky-500/20 text-sky-300 px-1.5 py-0.2 rounded border border-sky-500/30">
+                      1
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 font-mono">
+                    ID: {activeEvidence.reportId} • {activeEval.district.name}
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className="text-xs px-2 py-0.5 rounded font-extrabold bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  {hoveredDistrict.demandHotspot.primaryBadgeLabel}
-                </span>
-              </div>
-            </div>
 
-            {/* Quick Aggregated Demand Metrics */}
-            <div className="grid grid-cols-2 gap-1.5 text-[11px]">
-              <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">Citizen Requests:</span>
-                <span className="font-mono font-bold text-blue-300">
-                  {hoveredDistrict.demandHotspot.totalCitizenRequests.toLocaleString()}
-                </span>
-              </div>
-              <div className="bg-slate-800/80 p-1.5 rounded border border-slate-700/50 flex justify-between">
-                <span className="text-slate-400">High Priority:</span>
-                <span className="font-mono font-bold text-rose-400">
-                  {hoveredDistrict.demandHotspot.highPriorityCount.toLocaleString()}
-                </span>
-              </div>
-            </div>
-
-            {/* Top Issue Bar */}
-            <div className="space-y-1">
-              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
-                Top Demand Issue:
+              {/* Status Chip */}
+              <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md font-mono ${
+                activeEval.breakdown.total_score >= 70
+                  ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                  : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+              }`}>
+                {activeEvidence.status}
               </span>
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-slate-200">{hoveredDistrict.demandHotspot.topIssues[0]?.category}</span>
-                <span className="font-mono text-amber-400">{hoveredDistrict.demandHotspot.topIssues[0]?.percentage}%</span>
-              </div>
-              <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                <div 
-                  className="h-full bg-gradient-to-r from-amber-500 to-rose-500 rounded-full"
-                  style={{ width: `${hoveredDistrict.demandHotspot.topIssues[0]?.percentage || 40}%` }}
-                />
-              </div>
             </div>
 
-            {/* AI Recommendation Snippet */}
-            <div className="p-2 bg-slate-800/60 rounded-lg border border-slate-700/60 text-[11px] text-slate-300">
-              <span className="text-amber-400 font-bold block text-[10px] uppercase tracking-wider flex items-center gap-1 mb-0.5">
-                <Sparkles className="w-3 h-3 text-amber-400" /> AI Recommendation
-              </span>
-              <p className="line-clamp-2 italic text-slate-300">
-                "{hoveredDistrict.demandHotspot.aiRecommendation}"
-              </p>
+            {/* Sub-Tabs: 1. Detail Laporan | 2. Photo Pendukung | 3. Tindak Lanjut */}
+            <div className="grid grid-cols-3 gap-1 bg-slate-800/80 p-1 rounded-xl text-[11px] font-bold">
+              <button
+                onClick={() => setSelectedCalloutTab('report')}
+                className={`py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  selectedCalloutTab === 'report' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <FileText className="w-3 h-3" />
+                <span>1. Laporan</span>
+              </button>
+              <button
+                onClick={() => setSelectedCalloutTab('photo')}
+                className={`py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  selectedCalloutTab === 'photo' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Camera className="w-3 h-3" />
+                <span>2. Photo</span>
+              </button>
+              <button
+                onClick={() => setSelectedCalloutTab('action')}
+                className={`py-1 rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1 ${
+                  selectedCalloutTab === 'action' ? 'bg-sky-600 text-white shadow-xs' : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Hammer className="w-3 h-3" />
+                <span>3. Tindak</span>
+              </button>
             </div>
+
+            {/* Tab 1: Detailed Report Breakdown */}
+            {selectedCalloutTab === 'report' && (
+              <div className="space-y-2.5 text-xs">
+                <div className="grid grid-cols-2 gap-2 text-[11px] bg-slate-800/50 p-2.5 rounded-xl border border-slate-700/60">
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Pelapor / Channel:</span>
+                    <strong className="text-slate-200">WhatsApp Voice AI</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Kelurahan / Ward:</span>
+                    <strong className="text-slate-200">{activeEval.district.name} Central</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Waktu / Timestamp:</span>
+                    <strong className="text-slate-200">{activeEvidence.timestamp}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block text-[10px]">Koordinat GPS:</span>
+                    <strong className="text-sky-300 font-mono">{activeEval.district.lat.toFixed(4)}, {activeEval.district.lon.toFixed(4)}</strong>
+                  </div>
+                </div>
+
+                {/* Tags & Description */}
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-500/20 text-sky-300 font-bold">
+                      {activeEvidence.tag}
+                    </span>
+                    <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300">
+                      #FasilitasUmum
+                    </span>
+                  </div>
+                  <p className="text-slate-300 text-[11px] italic bg-slate-800/40 p-2 rounded-lg border border-slate-700/40 leading-relaxed">
+                    "{activeEvidence.sub}"
+                  </p>
+                </div>
+
+                {/* Footer Count: Comments & Upvotes */}
+                <div className="flex items-center justify-between text-[11px] text-slate-400 pt-1 border-t border-slate-800">
+                  <span className="flex items-center gap-1">
+                    <MessageSquare className="w-3.5 h-3.5 text-sky-400" />
+                    Komentar ({activeEvidence.commentsCount})
+                  </span>
+                  <span className="font-mono text-emerald-400 font-bold flex items-center gap-1">
+                    <TrendingUp className="w-3.5 h-3.5" />
+                    {activeEvidence.upvotes} Citizen Upvotes
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {/* Tab 2: Photo Pendukung Evidence Thumbnail (Image 1 Style) */}
+            {selectedCalloutTab === 'photo' && (
+              <div className="space-y-2 text-xs">
+                <div className="relative rounded-xl overflow-hidden border border-slate-700 bg-slate-800 aspect-video flex items-center justify-center">
+                  {/* High Quality Illustrated Mock Photo of Municipal Infrastructure */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent z-10" />
+                  
+                  {/* Photo Visual Representation */}
+                  <div className="text-center p-4 z-20 space-y-1.5">
+                    <div className="w-10 h-10 mx-auto rounded-full bg-sky-500/20 border border-sky-400 flex items-center justify-center text-xl">
+                      {activeEval.demandHotspot.primaryCategory === 'Water' ? '🚰' : activeEval.demandHotspot.primaryCategory === 'Roads' ? '🚧' : '⚡'}
+                    </div>
+                    <h5 className="font-bold text-xs text-white">{activeEvidence.title}</h5>
+                    <p className="text-[10px] text-slate-300 line-clamp-1">{activeEvidence.sub}</p>
+                  </div>
+
+                  <span className="absolute top-2 right-2 z-20 text-[9px] font-mono bg-slate-900/80 px-2 py-0.5 rounded text-emerald-400 border border-emerald-500/30">
+                    GPS Geotag Verified
+                  </span>
+                </div>
+                <span className="text-[10px] text-slate-400 block text-center">
+                  Uploaded via CivicPulse Citizen Audio/Camera Ingestion
+                </span>
+              </div>
+            )}
+
+            {/* Tab 3: Tindak Lanjut / Government Sanction Action */}
+            {selectedCalloutTab === 'action' && (
+              <div className="space-y-2.5 text-xs">
+                <div className="bg-slate-800/80 p-3 rounded-xl border border-slate-700/80 space-y-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] uppercase font-bold text-slate-400">Petugas / Officer:</span>
+                    <span className="text-[10px] font-mono text-sky-300">{activeEvidence.actionDate}</span>
+                  </div>
+                  <strong className="text-white text-xs block">{activeEvidence.officer}</strong>
+                  <p className="text-[11px] text-slate-300 pt-1">
+                    Priority Score computed deterministically at <span className="font-bold font-mono text-amber-400">{activeEval.breakdown.total_score}/100</span>. Sanction recommendation forwarded to Ministry.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => onSelectHotspotForPolicy?.(activeEval.district, activeEval.category)}
+                  className="w-full py-2 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Execute Policy Simulation in AI Lab</span>
+                </button>
+              </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* Bottom Cartographic Legend */}
-      <div className="z-20 p-3 bg-slate-900/90 backdrop-blur-md border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-        <div className="flex items-center space-x-4">
-          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            Demand Hotspots Legend:
+      {/* ============================================================ */}
+      {/* 4. BOTTOM CARTOGRAPHIC LEGEND & SCALE BAR (Image 3 Style)    */}
+      {/* ============================================================ */}
+      <div className="z-20 p-3 bg-slate-900/95 backdrop-blur-md border-t border-slate-800/90 flex flex-wrap items-center justify-between gap-3 text-xs">
+        {/* Left: GIS Value Gradient Bar */}
+        <div className="flex items-center space-x-3">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+            <Compass className="w-3.5 h-3.5 text-sky-400" />
+            Infrastructure Deficit Scale:
           </span>
-          <div className="flex items-center space-x-3 text-[11px]">
-            <div className="flex items-center gap-1.5">
-              <span>🔴</span>
-              <span className="text-slate-200 font-medium">Critical Deficit (&ge;35%)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>🟠</span>
-              <span className="text-slate-200 font-medium">High Deficit (20-34%)</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span>🟡</span>
-              <span className="text-slate-200 font-medium">Moderate Deficit (10-19%)</span>
-            </div>
+          
+          <div className="flex items-center space-x-2">
+            <span className="text-[10px] text-emerald-400 font-mono">Lower Need</span>
+            <div className="w-24 h-2.5 rounded-full bg-gradient-to-r from-emerald-500 via-yellow-400 via-orange-500 to-rose-600 border border-slate-700" />
+            <span className="text-[10px] text-rose-400 font-mono font-bold">Greater Hotspot</span>
           </div>
         </div>
 
+        {/* Right: Quick Interaction Hint */}
         <div className="flex items-center space-x-2 text-[11px] text-slate-400 font-mono">
-          <span>Click any city hotspot to view aggregated telemetry dossier</span>
+          <span className="hidden sm:inline">Click any teardrop pin to open <strong>Informasi Laporan</strong></span>
         </div>
       </div>
     </div>
