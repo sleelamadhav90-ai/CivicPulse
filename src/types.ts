@@ -1,3 +1,67 @@
+export type CountryCode = 'IN' | 'BR' | 'ZA' | 'RU' | 'CN';
+
+export interface AdminHierarchy {
+  level1: string; // e.g. "Country"
+  level2: string; // e.g. "State" / "Province"
+  level3: string; // e.g. "District" / "Municipality"
+  level4: string; // e.g. "City / Village" / "Ward" / "Bairro"
+}
+
+export interface LanguageOption {
+  code: string;
+  name: string;
+  nativeName: string;
+  flagEmoji: string;
+}
+
+export interface CountryConnector {
+  id: string;
+  name: string;
+  category: 'demographics' | 'infrastructure' | 'investment' | 'voice' | 'governance';
+  status: 'Connected' | 'Configured' | 'Available';
+  provider: string;
+  endpoint: string;
+  lastSync: string;
+  recordsCount: string;
+}
+
+export interface CountryConfig {
+  code: CountryCode;
+  name: string;
+  flag: string;
+  tagline: string;
+  currencySymbol: string;
+  currencyCode: string;
+  currencyRateToInr: number; // For budget conversions
+  hierarchy: AdminHierarchy;
+  languages: LanguageOption[];
+  connectors: CountryConnector[];
+  coordinates: { lat: number; lng: number; zoom: number };
+  sampleCities: string[];
+  totalPopulation: string;
+  signalCount: string;
+  defaultCategories: string[];
+}
+
+export interface UniversalCivicSchema {
+  requestId: string; // e.g. "CP-GLOBAL-9021"
+  countryCode: CountryCode;
+  region: string;
+  location: string;
+  category: string;
+  problem: string;
+  severity: number; // 1-10
+  affectedPopulation: number;
+  timestamp: string;
+  evidenceType: 'Audio Voice' | 'Text SMS' | 'Photo Report' | 'WhatsApp';
+  originalLanguage: string;
+  originalText: string;
+  canonicalEnglishText: string;
+  infrastructureGapPct: number;
+  priorityScore: number;
+  status: RequestStatus;
+}
+
 export interface District {
   id: string;
   name: string;
@@ -10,14 +74,14 @@ export interface District {
   health_access: number; // 0 to 100
   road_quality: number; // 0 to 100
   education_access: number; // 0 to 100
-  planned_investment: number; // in INR (e.g. 5000000 = 50 Lakhs)
+  planned_investment: number; // in local currency
   existing_facilities: {
     phc_clinics: number;
     water_plants: number;
     schools: number;
     paved_roads_km: number;
   };
-  zone: 'South' | 'West' | 'North' | 'East' | 'Central' | 'Northeast';
+  zone: string;
 }
 
 export type InfrastructureCategory = 

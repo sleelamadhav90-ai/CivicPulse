@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   Building2, 
   Menu, 
@@ -8,12 +8,14 @@ import {
   CheckCircle2, 
   Info,
   Layers,
-  RotateCcw
+  RotateCcw,
+  Globe
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, GovernmentProject, ProjectLifecycleStatus, RecommendedProject } from './types';
-import { DISTRICTS_REGISTRY } from './data/districts';
-import { INITIAL_CITIZEN_REQUESTS } from './data/initialRequests';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, GovernmentProject, ProjectLifecycleStatus, RecommendedProject, CountryCode } from './types';
+import { DISTRICTS_REGISTRY, getDistrictsForCountry } from './data/districts';
+import { INITIAL_CITIZEN_REQUESTS, getRequestsForCountry } from './data/initialRequests';
 import { INITIAL_GOVERNMENT_PROJECTS } from './data/initialProjects';
+import { GLOBAL_COUNTRIES } from './data/globalConfig';
 import { Sidebar, NavTab } from './components/Sidebar';
 import { Overview } from './components/Overview';
 import { PriorityEngine } from './components/PriorityEngine';
@@ -26,19 +28,23 @@ import { SettingsView } from './components/SettingsView';
 import { ScoreBreakdownModal } from './components/ScoreBreakdownModal';
 import { AtlasLanding } from './components/AtlasLanding';
 import { PublicInfrastructureBlocks } from './components/PublicInfrastructureBlocks';
+import { GlobalHeader } from './components/GlobalHeader';
+import { GlobalWorldMapCanvas } from './components/GlobalWorldMapCanvas';
+import { GlobalConnectorsView } from './components/GlobalConnectorsView';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
-  const [districts] = useState<District[]>(DISTRICTS_REGISTRY);
-  const [requests, setRequests] = useState<CitizenRequest[]>(() => {
-    try {
-      const saved = localStorage.getItem('civicpulse_requests');
-      if (saved) {
-        return JSON.parse(saved);
-      }
-    } catch {}
-    return INITIAL_CITIZEN_REQUESTS;
-  });
+  const [selectedCountryCode, setSelectedCountryCode] = useState<CountryCode>('IN');
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
+
+  const districts = useMemo(() => getDistrictsForCountry(selectedCountryCode), [selectedCountryCode]);
+
+  const [customRequests, setCustomRequests] = useState<CitizenRequest[]>([]);
+  
+  const requests = useMemo(() => {
+    const defaultCountryRequests = getRequestsForCountry(selectedCountryCode);
+    return [...customRequests, ...defaultCountryRequests];
+  }, [selectedCountryCode, customRequests]);
 
   const [governmentProjects, setGovernmentProjects] = useState<GovernmentProject[]>(() => {
     try {
@@ -50,8 +56,8 @@ export default function App() {
     return INITIAL_GOVERNMENT_PROJECTS;
   });
 
-  // Default to 'map' so the Open Civic Map is the primary interface!
-  const [activeTab, setActiveTab] = useState<NavTab>('map');
+  // Default to 'world' so the Global Civic Map is immediately shown
+  const [activeTab, setActiveTab] = useState<NavTab>('world');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Policy Lab Target State
@@ -90,7 +96,7 @@ export default function App() {
 
   // Handle Add New Ingested Request
   const handleAddRequest = (newReq: CitizenRequest) => {
-    setRequests((prev) => [newReq, ...prev]);
+    setCustomRequests((prev) => [newReq, ...prev]);
   };
 
   // Update Government Project Status
@@ -195,7 +201,7 @@ export default function App() {
 
   // Reset to demo baseline
   const handleResetData = () => {
-    setRequests(INITIAL_CITIZEN_REQUESTS);
+    setCustomRequests([]);
     setGovernmentProjects(INITIAL_GOVERNMENT_PROJECTS);
     try {
       localStorage.removeItem('civicpulse_requests');
@@ -234,57 +240,91 @@ export default function App() {
     <>
       {!hasEntered && <AtlasLanding onEnter={() => setHasEntered(true)} />}
       
-      <div className={`min-h-screen bg-[#f4f1ea] text-[#1a237e] flex font-sans selection:bg-[#d97706]/20 selection:text-[#d97706] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
-        {/* Sidebar Navigation */}
-      <Sidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        requestsCount={requests.length}
-        projectsCount={governmentProjects.length}
-        onOpenMethodology={() => setMethodologyModalOpen(true)}
-        isOpenMobile={mobileMenuOpen}
-        onCloseMobile={() => setMobileMenuOpen(false)}
-      />
+      {/* Global Header Bar */}
+      <div className={`min-h-screen bg-[#F7F5EF] text-[#171717] flex flex-col font-sans selection:bg-[#D65A3A]/20 selection:text-[#D65A3A] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+        
+        <GlobalHeader
+          selectedCountryCode={selectedCountryCode}
+          onSelectCountry={(code) => setSelectedCountryCode(code)}
+          selectedLanguage={selectedLanguage}
+          onSelectLanguage={(lang) => setSelectedLanguage(lang)}
+          isWorldAtlasActive={activeTab === 'world'}
+          onToggleWorldAtlas={() => setActiveTab(activeTab === 'world' ? 'map' : 'world')}
+          onNavigateToConnectors={() => setActiveTab('connectors')}
+          onNavigateToSchema={() => setActiveTab('connectors')}
+        />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
-        {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-30 bg-[#f4f1ea]/95 backdrop-blur-md border-b-2 border-[#1a237e] px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <button
-              onClick={() => setMobileMenuOpen(true)}
-              className="p-2 bg-[#1a237e]/5 text-[#1a237e] hover:bg-[#1a237e]/10 transition-colors cursor-pointer"
-              aria-label="Open Navigation Menu"
-            >
-              <Menu className="w-5 h-5" />
-            </button>
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-[#1a237e] flex items-center justify-center text-[#f4f1ea]">
-                <Building2 className="w-4 h-4" />
+        <div className="flex-1 flex min-w-0">
+          {/* Sidebar Navigation */}
+          <Sidebar
+            activeTab={activeTab}
+            setActiveTab={setActiveTab}
+            requestsCount={requests.length}
+            projectsCount={governmentProjects.length}
+            onOpenMethodology={() => setMethodologyModalOpen(true)}
+            isOpenMobile={mobileMenuOpen}
+            onCloseMobile={() => setMobileMenuOpen(false)}
+          />
+
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0">
+            {/* Mobile Header */}
+            <header className="lg:hidden sticky top-12 z-30 bg-[#F7F5EF]/95 backdrop-blur-md border-b border-[#171717] px-4 py-3 flex items-center justify-between font-mono text-xs">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setMobileMenuOpen(true)}
+                  className="p-2 bg-[#171717] text-white hover:bg-[#D65A3A] transition-colors cursor-pointer"
+                  aria-label="Open Navigation Menu"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="flex items-center space-x-2">
+                  <div className="w-7 h-7 bg-[#D65A3A] flex items-center justify-center text-white font-serif font-bold">
+                    CP
+                  </div>
+                  <span className="font-serif font-bold text-[#171717] tracking-tight text-base uppercase">Civic Pulse</span>
+                </div>
               </div>
-              <span className="font-serif font-bold text-[#1a237e] tracking-tight text-base uppercase">Civic Pulse</span>
-            </div>
-          </div>
 
-          <div className="flex items-center space-x-2">
-            <span className="text-[10px] font-sans font-semibold px-2 py-1 bg-[#1a237e]/5 text-[#1a237e] border border-[#1a237e] uppercase tracking-wider">
-              {requests.length} Signals
-            </span>
-            <button
-              onClick={() => setMethodologyModalOpen(true)}
-              className="p-1.5 bg-[#1a237e]/5 text-[#1a237e]/70 hover:text-[#1a237e]"
-              title="Methodology"
-            >
-              <Info className="w-4 h-4" />
-            </button>
-          </div>
-        </header>
+              <div className="flex items-center space-x-2">
+                <span className="text-[10px] font-mono font-bold px-2 py-1 bg-[#171717] text-white border border-[#171717] uppercase tracking-wider">
+                  {GLOBAL_COUNTRIES[selectedCountryCode].flag} {selectedCountryCode}
+                </span>
+                <button
+                  onClick={() => setMethodologyModalOpen(true)}
+                  className="p-1.5 bg-[#171717]/10 text-[#171717] hover:text-[#D65A3A]"
+                  title="Methodology"
+                >
+                  <Info className="w-4 h-4" />
+                </button>
+              </div>
+            </header>
 
-        {/* Dynamic View Panel */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {activeTab === 'blocks' && (
-            <PublicInfrastructureBlocks />
-          )}
+            {/* Dynamic View Panel */}
+            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+              {activeTab === 'world' && (
+                <GlobalWorldMapCanvas
+                  selectedCountryCode={selectedCountryCode}
+                  onSelectCountry={(code) => setSelectedCountryCode(code)}
+                  onEnterCountryAtlas={(code) => {
+                    setSelectedCountryCode(code);
+                    setActiveTab('map');
+                  }}
+                />
+              )}
+
+              {activeTab === 'connectors' && (
+                <GlobalConnectorsView
+                  selectedCountryCode={selectedCountryCode}
+                  onSelectCountry={(code) => setSelectedCountryCode(code)}
+                  selectedLanguage={selectedLanguage}
+                  onSelectLanguage={(langCode) => setSelectedLanguage(langCode)}
+                />
+              )}
+
+              {activeTab === 'blocks' && (
+                <PublicInfrastructureBlocks />
+              )}
 
           {activeTab === 'overview' && (
             <Overview
@@ -334,6 +374,7 @@ export default function App() {
               requests={requests}
               onSelectHotspotForPolicy={handleSelectHotspotForPolicy}
               onOpenScoreModal={handleOpenScoreModal}
+              selectedCountryCode={selectedCountryCode}
             />
           )}
 
@@ -526,6 +567,7 @@ export default function App() {
           </div>
         </div>
       )}
+        </div>
       </div>
     </>
   );

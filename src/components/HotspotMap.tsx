@@ -1,8 +1,9 @@
-import React, { useState, useMemo } from 'react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
 import { getCityDemandHotspot } from '../utils/demandAggregation';
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState } from './IndiaMapCanvas';
+import { GLOBAL_COUNTRIES } from '../data/globalConfig';
 import { Layers, CheckSquare, Square, Info, Compass, Sliders, Database } from 'lucide-react';
 
 interface HotspotMapProps {
@@ -10,6 +11,7 @@ interface HotspotMapProps {
   requests: CitizenRequest[];
   onSelectHotspotForPolicy: (district: District, category: InfrastructureCategory) => void;
   onOpenScoreModal: (breakdown: ScoreBreakdown, district: District, category: InfrastructureCategory) => void;
+  selectedCountryCode?: CountryCode;
 }
 
 const CATEGORIES: (InfrastructureCategory | 'All')[] = [
@@ -20,10 +22,21 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   districts,
   requests,
   onSelectHotspotForPolicy,
+  selectedCountryCode = 'IN',
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory | 'All'>('All');
   const [activeDistrictId, setActiveDistrictId] = useState<string>(districts[0]?.id || 'vijayawada');
-  const [layersPanelOpen, setLayersPanelOpen] = useState(true);
+  const [layersPanelOpen, setLayersPanelOpen] = useState(false);
+  const [legendOpen, setLegendOpen] = useState(false);
+
+  const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
+
+  // Update active district if the district list changes (e.g. on country switch)
+  useEffect(() => {
+    if (districts.length > 0 && !districts.some(d => d.id === activeDistrictId)) {
+      setActiveDistrictId(districts[0].id);
+    }
+  }, [districts, activeDistrictId]);
 
   // Exact Layers specified in prompt
   const [layers, setLayers] = useState<MapLayerState>({
@@ -69,23 +82,101 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   const activeLayersCount = Object.values(layers).filter(Boolean).length;
 
   return (
-    <div className="relative w-full h-[calc(100vh-2rem)] flex flex-col bg-[#F7F5EF] border border-[#171717]">
+    <div className="relative w-full h-[calc(100vh-2rem)] flex flex-col bg-[#0f172a] border border-[#171717]">
       {/* Top Atlas Header Bar */}
-      <div className="z-20 bg-[#F7F5EF] border-b border-[#171717] px-4 py-2.5 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+      <div className="z-20 bg-[#F7F5EF] border-b border-[#171717] px-4 py-2 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
         <div className="flex items-center space-x-3">
-          <span className="font-serif text-base font-bold text-[#171717]">
-            OPEN CIVIC MAP & ATLAS
+          <span className="font-serif text-base font-bold text-[#171717] flex items-center gap-2">
+            <span>{countryConfig.flag}</span>
+            <span>{countryConfig.name.toUpperCase()} CIVIC MAP</span>
           </span>
-          <span className="text-[10px] px-2 py-0.5 bg-[#D65A3A] text-white font-mono font-bold uppercase tracking-widest">
-            {activeLayersCount} DATASETS COMBINED
+          <span className="text-[10px] px-2 py-0.5 bg-[#D65A3A] text-white font-mono font-bold uppercase tracking-widest hidden sm:inline">
+            {activeLayersCount} DATASETS ACTIVE
           </span>
-          <span className="hidden md:inline text-[11px] text-[#171717]/70 font-sans">
-            India Stack × Bloomberg Data Viz
+          <span className="hidden lg:inline text-[11px] text-[#171717]/70 font-sans">
+            {countryConfig.hierarchy.level2} / {countryConfig.hierarchy.level3} Layer
           </span>
         </div>
 
-        {/* Category Filters */}
-        <div className="flex flex-wrap gap-1 items-center">
+        {/* Category Filters & Layer Popover Toggle */}
+        <div className="flex flex-wrap gap-1.5 items-center">
+          {/* Layer Popover Button in Header */}
+          <div className="relative">
+            <button
+              onClick={() => setLayersPanelOpen(!layersPanelOpen)}
+              className={`px-3 py-1 text-[11px] font-mono font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center gap-1.5 border ${
+                layersPanelOpen
+                  ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-sm'
+                  : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
+              }`}
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Layers</span>
+              <span className="bg-[#171717] text-white text-[9px] px-1.5 py-0.2 rounded-full font-bold">
+                {activeLayersCount}
+              </span>
+            </button>
+
+            {/* LAYERS DROPDOWN POPOVER */}
+            {layersPanelOpen && (
+              <div className="absolute top-full right-0 mt-2 z-30 w-72 bg-[#F7F5EF] border border-[#171717] shadow-[6px_6px_0px_rgba(0,0,0,0.4)] font-mono text-xs p-3 space-y-2">
+                <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2 mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Layers className="w-4 h-4 text-[#D65A3A]" />
+                    <span className="font-bold text-[#171717] uppercase tracking-wider text-[11px]">
+                      DATASET LAYERS
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => setLayersPanelOpen(false)}
+                    className="text-[10px] text-[#171717]/60 hover:text-[#171717] font-bold"
+                  >
+                    ✕ CLOSE
+                  </button>
+                </div>
+
+                <div className="text-[10px] text-[#171717]/70 font-sans italic mb-2">
+                  Toggle overlays to view on physical satellite canvas:
+                </div>
+
+                {[
+                  { key: 'citizen_demand', label: 'Citizen Demand Signals', checked: layers.citizen_demand, color: '#D65A3A' },
+                  { key: 'infrastructure', label: 'Infrastructure Deficits', checked: layers.infrastructure, color: '#285943' },
+                  { key: 'population', label: 'Population Heatmaps', checked: layers.population, color: '#D9A441' },
+                  { key: 'projects', label: 'Government Projects', checked: layers.projects, color: '#171717' },
+                  { key: 'healthcare', label: 'Healthcare Facilities', checked: layers.healthcare, color: '#285943' },
+                  { key: 'education', label: 'Education Hubs', checked: layers.education, color: '#285943' },
+                  { key: 'roads', label: 'Road Transit Networks', checked: layers.roads, color: '#171717' },
+                  { key: 'digital', label: 'Digital Fiber Nodes', checked: layers.digital, color: '#D65A3A' },
+                ].map((item) => (
+                  <button
+                    key={item.key}
+                    onClick={() => toggleLayer(item.key as keyof MapLayerState)}
+                    className={`w-full flex items-center justify-between p-2 border transition-all cursor-pointer ${
+                      item.checked 
+                        ? 'bg-white border-[#171717] text-[#171717] font-bold' 
+                        : 'bg-[#F7F5EF] border-[#171717]/20 text-[#171717]/60 hover:border-[#171717]/40'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-2">
+                      {item.checked ? (
+                        <CheckSquare className="w-3.5 h-3.5" style={{ color: item.color }} />
+                      ) : (
+                        <Square className="w-3.5 h-3.5 text-[#171717]/40" />
+                      )}
+                      <span className="text-[11px]">{item.label}</span>
+                    </div>
+                    {item.checked && (
+                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: item.color }}></span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="h-4 w-[1px] bg-[#171717]/20 mx-1 hidden sm:block"></div>
+
           {CATEGORIES.map((cat) => (
             <button
               key={cat}
@@ -103,7 +194,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
       </div>
 
       {/* Main Map Canvas Area */}
-      <div className="flex-1 w-full h-full z-10 bg-[#F7F5EF] relative">
+      <div className="flex-1 w-full h-full z-10 bg-[#0f172a] relative">
         <IndiaMapCanvas
           evaluations={districtEvaluations}
           activeDistrictId={activeDistrictId}
@@ -111,86 +202,47 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           selectedCategory={selectedCategory}
           layers={layers}
           onSelectHotspotForPolicy={onSelectHotspotForPolicy}
+          selectedCountryCode={selectedCountryCode}
         />
 
-        {/* ATLAS LAYERS TOGGLE PANEL */}
-        <div className="absolute top-4 left-4 z-20 w-72 bg-[#F7F5EF] border border-[#171717] shadow-[4px_4px_0px_#171717] font-mono text-xs">
-          <div className="p-3 bg-white border-b border-[#171717] flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Layers className="w-4 h-4 text-[#D65A3A]" />
-              <span className="font-bold text-[#171717] uppercase tracking-wider text-[11px]">
-                PUBLIC DATASET LAYERS
+        {/* BOTTOM COMPACT FLOATING LEGEND STRIP */}
+        <div className="absolute bottom-4 left-4 z-20 font-mono text-xs">
+          <div className="bg-[#171717]/90 text-white border border-[#333] px-3 py-1.5 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] backdrop-blur-sm flex items-center gap-3">
+            <div className="flex items-center gap-3 text-[10px]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] inline-block"></span>
+                <span className="text-gray-200">Critical Demand</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441] inline-block"></span>
+                <span className="text-gray-200">High Population</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#285943] inline-block"></span>
+                <span className="text-gray-200">Verified Asset</span>
               </span>
             </div>
+
             <button
-              onClick={() => setLayersPanelOpen(!layersPanelOpen)}
-              className="text-[10px] text-[#171717]/70 hover:text-[#171717] underline cursor-pointer"
+              onClick={() => setLegendOpen(!legendOpen)}
+              className="text-[10px] text-gray-400 hover:text-white underline cursor-pointer ml-2 flex items-center gap-1"
             >
-              {layersPanelOpen ? 'Collapse' : 'Expand'}
+              <Info className="w-3 h-3 text-[#D65A3A]" />
+              <span>{legendOpen ? 'Hide Info' : 'Atlas Info'}</span>
             </button>
           </div>
 
-          {layersPanelOpen && (
-            <div className="p-3 space-y-2 bg-[#F7F5EF]">
-              <div className="text-[10px] text-[#171717]/60 font-sans italic border-b border-[#171717]/10 pb-1 mb-2">
-                Turn layers on/off to combine public infrastructure datasets:
+          {/* Expanded Info Drawer if requested */}
+          {legendOpen && (
+            <div className="mt-2 bg-[#171717]/95 text-white border border-[#333] p-3 shadow-[4px_4px_0px_rgba(0,0,0,0.6)] backdrop-blur-md max-w-sm space-y-1.5 font-sans text-[11px]">
+              <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider">
+                ATLAS FUSION STATUS
               </div>
-
-              {[
-                { key: 'citizen_demand', label: 'Citizen Demand', checked: layers.citizen_demand, color: '#D65A3A' },
-                { key: 'infrastructure', label: 'Infrastructure', checked: layers.infrastructure, color: '#285943' },
-                { key: 'population', label: 'Population', checked: layers.population, color: '#D9A441' },
-                { key: 'projects', label: 'Government Projects', checked: layers.projects, color: '#171717' },
-                { key: 'healthcare', label: 'Healthcare', checked: layers.healthcare, color: '#285943' },
-                { key: 'education', label: 'Education', checked: layers.education, color: '#285943' },
-                { key: 'roads', label: 'Roads', checked: layers.roads, color: '#171717' },
-                { key: 'digital', label: 'Digital Connectivity', checked: layers.digital, color: '#D65A3A' },
-              ].map((item) => (
-                <button
-                  key={item.key}
-                  onClick={() => toggleLayer(item.key as keyof MapLayerState)}
-                  className={`w-full flex items-center justify-between p-1.5 border transition-all cursor-pointer ${
-                    item.checked 
-                      ? 'bg-white border-[#171717] text-[#171717] font-bold' 
-                      : 'bg-[#F7F5EF] border-[#171717]/20 text-[#171717]/60'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2">
-                    {item.checked ? (
-                      <CheckSquare className="w-3.5 h-3.5" style={{ color: item.color }} />
-                    ) : (
-                      <Square className="w-3.5 h-3.5 text-[#171717]/40" />
-                    )}
-                    <span className="text-[11px]">{item.label}</span>
-                  </div>
-                  {item.checked && (
-                    <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: item.color }}></span>
-                  )}
-                </button>
-              ))}
+              <p className="text-gray-300 leading-relaxed">
+                Combines citizen voice signals, Jal Jeevan Mission API, PWD road asset registries, and census baselines into a single unified public map interface.
+              </p>
             </div>
           )}
-        </div>
-
-        {/* Bottom Legend & Atlas Fusion Statement */}
-        <div className="absolute bottom-6 left-4 z-20 bg-[#F7F5EF] border border-[#171717] p-4 shadow-[4px_4px_0px_#171717] font-mono text-xs max-w-sm hidden sm:block">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-[#D65A3A] border-b border-[#171717]/20 pb-1 mb-2">
-            ATLAS FUSION STATUS
-          </div>
-          <div className="text-[11px] text-[#171717]/80 leading-relaxed font-sans mb-3">
-            Combines citizen voice signals, Jal Jeevan Mission API, PWD road asset registries, and census baselines into a single unified public map interface.
-          </div>
-          <div className="flex items-center gap-3 text-[10px] font-mono border-t border-[#171717]/10 pt-2">
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-[#D65A3A]"></span> Critical Demand
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-[#D9A441]"></span> High Population
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-[#285943]"></span> Verified Asset
-            </span>
-          </div>
         </div>
       </div>
     </div>

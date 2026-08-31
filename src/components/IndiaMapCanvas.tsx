@@ -6,8 +6,9 @@ import {
   Bot, FileText, Camera, Hammer, MessageSquare, TrendingUp, Flame, ChevronRight, Layers, Sparkles,
   Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
+import { GLOBAL_COUNTRIES } from '../data/globalConfig';
 
 export interface EvaluatedDistrict {
   district: District;
@@ -42,6 +43,7 @@ interface IndiaMapCanvasProps {
   selectedCategory: InfrastructureCategory | 'All';
   layers: MapLayerState;
   onSelectHotspotForPolicy?: (district: District, category: InfrastructureCategory) => void;
+  selectedCountryCode?: CountryCode;
 }
 
 const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot) => {
@@ -115,14 +117,20 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   selectedCategory,
   layers,
   onSelectHotspotForPolicy,
+  selectedCountryCode = 'IN',
 }) => {
-  // Calculate map center based on active district or all evaluations
+  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'physical_topo' | 'physical_shaded' | 'vector_voyager'>('physical_satellite');
+  const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
+
+  // Calculate map center based on active district, country evaluations, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
     const active = evaluations.find(e => e.district.id === activeDistrictId);
     if (active) return [active.district.lat, active.district.lon];
     if (evaluations.length > 0) return [evaluations[0].district.lat, evaluations[0].district.lon];
-    return [16.5062, 80.6480]; // Andhra Pradesh / Telangana central focus
-  }, [activeDistrictId, evaluations]);
+    return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
+  }, [activeDistrictId, evaluations, countryConfig]);
+
+  const defaultZoom = countryConfig.coordinates.zoom || 5;
 
   // Custom marker icon creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand') => {
@@ -165,23 +173,118 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative z-0 bg-[#F7F5EF]" style={{ minHeight: '600px' }}>
+    <div className="w-full h-full relative z-0 bg-[#0f172a]" style={{ minHeight: '600px' }}>
+      {/* FLOATING PHYSICAL MAP VIEW SELECTOR */}
+      <div className="absolute top-4 right-4 z-20 bg-[#171717]/90 text-white border border-[#333] p-1.5 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] flex items-center gap-1 font-mono text-[11px] backdrop-blur-sm">
+        <span className="text-[10px] text-gray-400 font-bold px-2 uppercase tracking-wider hidden sm:inline">PHYSICAL MAP:</span>
+        <button
+          onClick={() => setBaseTileMode('physical_satellite')}
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+            baseTileMode === 'physical_satellite'
+              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
+              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+          }`}
+          title="High-resolution physical satellite & terrain imagery with administrative overlays"
+        >
+          <span>🛰️</span>
+          <span>Satellite</span>
+        </button>
+        <button
+          onClick={() => setBaseTileMode('physical_topo')}
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+            baseTileMode === 'physical_topo'
+              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
+              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+          }`}
+          title="Physical topographic contours, elevation profiles, and relief"
+        >
+          <span>🏔️</span>
+          <span>Topo Relief</span>
+        </button>
+        <button
+          onClick={() => setBaseTileMode('physical_shaded')}
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+            baseTileMode === 'physical_shaded'
+              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
+              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+          }`}
+          title="Shaded physical terrain & geographic landscape view"
+        >
+          <span>🏞️</span>
+          <span>Terrain</span>
+        </button>
+        <button
+          onClick={() => setBaseTileMode('vector_voyager')}
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+            baseTileMode === 'vector_voyager'
+              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
+              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+          }`}
+          title="Standard vector administrative road atlas"
+        >
+          <span>🗺️</span>
+          <span>Vector</span>
+        </button>
+      </div>
+
       <MapContainer 
         center={mapCenter} 
-        zoom={6} 
+        zoom={defaultZoom} 
         scrollWheelZoom={true}
-        style={{ width: '100%', height: '100%', background: '#F7F5EF' }}
+        style={{ width: '100%', height: '100%', background: '#0f172a' }}
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
-        <MapController center={mapCenter} zoom={activeDistrictId ? 7 : 6} />
+        <MapController center={mapCenter} zoom={activeDistrictId ? (defaultZoom + 1) : defaultZoom} />
         
-        {/* Open Public Atlas Canvas Base Layer */}
-        <TileLayer
-          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
-          maxZoom={19}
-        />
+        {/* DYNAMIC BASE TILE LAYERS */}
+        {baseTileMode === 'physical_satellite' && (
+          <>
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+              maxZoom={19}
+            />
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              attribution='&copy; Esri'
+              maxZoom={19}
+              opacity={0.85}
+            />
+          </>
+        )}
+
+        {baseTileMode === 'physical_topo' && (
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
+            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+            maxZoom={19}
+          />
+        )}
+
+        {baseTileMode === 'physical_shaded' && (
+          <>
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}"
+              attribution='Tiles &copy; Esri &mdash; Source: US National Park Service'
+              maxZoom={19}
+            />
+            <TileLayer
+              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+              attribution='&copy; Esri'
+              maxZoom={19}
+              opacity={0.7}
+            />
+          </>
+        )}
+
+        {baseTileMode === 'vector_voyager' && (
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            maxZoom={19}
+          />
+        )}
 
         {/* LAYER: POPULATION DENSITY HEATMAP */}
         {layers.population && evaluations.map((item) => (

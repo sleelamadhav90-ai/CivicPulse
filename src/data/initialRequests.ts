@@ -167,6 +167,156 @@ export const SAMPLE_CITIZEN_PROMPTS = [
   },
 ];
 
+export const BRAZIL_CITIZEN_REQUESTS: CitizenRequest[] = [
+  {
+    id: 'req-br-001',
+    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
+    original_text: 'A tubulação principal de água rompeu perto da favela, estamos sem água potável há 3 dias.',
+    language: 'Portuguese',
+    category: 'Water',
+    location: 'São Paulo',
+    severity: 9,
+    summary_en: 'Main clean water pipeline breach in São Paulo favela cluster leaving 125,000 without drinking water.',
+    urgency_reasoning: 'Contamination risk to municipal water supply and acute health hazard.',
+    affected_group: 'Favela community residents (~125,000 citizens)',
+    source_type: 'voice',
+    status: 'Prioritized',
+  },
+  {
+    id: 'req-br-002',
+    timestamp: new Date(Date.now() - 1000 * 60 * 40).toISOString(),
+    original_text: 'Falta de médicos e leitos de emergência no posto de saúde do SUS em Salvador.',
+    language: 'Portuguese',
+    category: 'Health',
+    location: 'Salvador',
+    severity: 8,
+    summary_en: 'Critical shortage of doctors and emergency beds at SUS Primary Healthcare clinic in Salvador.',
+    urgency_reasoning: 'Patients forced to travel 45 km to regional hospital.',
+    affected_group: 'Low-income urban families (~35,000 citizens)',
+    source_type: 'text',
+    status: 'Prioritized',
+  },
+  {
+    id: 'req-br-003',
+    timestamp: new Date(Date.now() - 1000 * 60 * 90).toISOString(),
+    original_text: 'Asfalto destruído e iluminação quebrada na zona norte do Rio de Janeiro.',
+    language: 'Portuguese',
+    category: 'Roads',
+    location: 'Rio de Janeiro',
+    severity: 7,
+    summary_en: 'Severe road pothole damage and street lighting failure along public transit corridor.',
+    urgency_reasoning: 'Transit delays and safety concerns for night commuters.',
+    affected_group: 'Bus passengers & commuters (~50,000 citizens)',
+    source_type: 'text',
+    status: 'Under Review',
+  },
+];
+
+export const SOUTH_AFRICA_CITIZEN_REQUESTS: CitizenRequest[] = [
+  {
+    id: 'req-za-001',
+    timestamp: new Date(Date.now() - 1000 * 60 * 20).toISOString(),
+    original_text: 'Substation transformer explosion in Soweto leaving 85,000 residents without power for 3 days.',
+    language: 'Zulu / English',
+    category: 'Electricity',
+    location: 'Johannesburg',
+    severity: 9,
+    summary_en: 'Soweto Block 4 substation explosion causing blackout across 85,000 households.',
+    urgency_reasoning: 'Load-shedding grid overload causing severe winter power deficit.',
+    affected_group: 'Soweto municipal wards (~85,000 residents)',
+    source_type: 'text',
+    status: 'Prioritized',
+  },
+  {
+    id: 'req-za-002',
+    timestamp: new Date(Date.now() - 1000 * 60 * 60).toISOString(),
+    original_text: 'Clean water reservoir pipe leak in Khayelitsha township with no municipal water tankers arriving.',
+    language: 'Xhosa / English',
+    category: 'Water',
+    location: 'Cape Town',
+    severity: 8,
+    summary_en: 'Khayelitsha township experiencing severe water pressure loss and leaking feeder mains.',
+    urgency_reasoning: 'Sanitation hazard in densely populated informal settlement.',
+    affected_group: 'Township households (~42,000 residents)',
+    source_type: 'voice',
+    status: 'Prioritized',
+  },
+];
+
+export const RUSSIA_CITIZEN_REQUESTS: CitizenRequest[] = [
+  {
+    id: 'req-ru-001',
+    timestamp: new Date(Date.now() - 1000 * 60 * 10).toISOString(),
+    original_text: 'Труба отопления прорвалась на улице Баумана, в домах нет тепла в мороз.',
+    language: 'Russian',
+    category: 'Drainage',
+    location: 'Kazan',
+    severity: 10,
+    summary_en: 'Central heating pipeline rupture on Bauman Street leaving apartment blocks cold in sub-zero weather.',
+    urgency_reasoning: 'Sub-zero freezing temperatures pose immediate severe thermal threat.',
+    affected_group: 'Vakhitovsky District residents (~42,000 citizens)',
+    source_type: 'voice',
+    status: 'Prioritized',
+  },
+  {
+    id: 'req-ru-002',
+    timestamp: new Date(Date.now() - 1000 * 60 * 50).toISOString(),
+    original_text: 'Глубокие выбоины и разрушение асфальтового покрытия в Кировском районе.',
+    language: 'Russian',
+    category: 'Roads',
+    location: 'Saint Petersburg',
+    severity: 7,
+    summary_en: 'Arterial transit road damage impeding bus lines and municipal ambulances.',
+    urgency_reasoning: 'Heavy snowmelt damage creating road transit bottlenecks.',
+    affected_group: 'Commuters & cargo transit (~60,000 citizens)',
+    source_type: 'text',
+    status: 'Under Review',
+  },
+];
+
+export const CHINA_CITIZEN_REQUESTS: CitizenRequest[] = [
+  {
+    id: 'req-cn-001',
+    timestamp: new Date(Date.now() - 1000 * 60 * 25).toISOString(),
+    original_text: '天河区地铁站入口积水严重，地下排水管淤堵导致排水不畅。',
+    language: 'Mandarin',
+    category: 'Drainage',
+    location: 'Guangzhou',
+    severity: 8,
+    summary_en: 'Tianhe Metro Station entrance waterlogged due to clogged underground culverts after torrential monsoon.',
+    urgency_reasoning: 'Metro transit disruption affecting 210,000 daily commuters.',
+    affected_group: 'Metro commuters & urban businesses (~210,000 citizens)',
+    source_type: 'voice',
+    status: 'Prioritized',
+  },
+  {
+    id: 'req-cn-002',
+    timestamp: new Date(Date.now() - 1000 * 60 * 75).toISOString(),
+    original_text: '南山区老旧小区自来水水压过低，楼顶水箱供水中断。',
+    language: 'Mandarin',
+    category: 'Water',
+    location: 'Shenzhen',
+    severity: 8,
+    summary_en: 'Nanshan residential sector low water pressure causing high-rise water supply outages.',
+    urgency_reasoning: 'Inadequate pressure pumps in older urban residential blocks.',
+    affected_group: 'Urban high-rise residents (~65,000 citizens)',
+    source_type: 'text',
+    status: 'Prioritized',
+  },
+];
+
+export const COUNTRY_CITIZEN_REQUESTS: Record<import('../types').CountryCode, CitizenRequest[]> = {
+  IN: INITIAL_CITIZEN_REQUESTS,
+  BR: BRAZIL_CITIZEN_REQUESTS,
+  ZA: SOUTH_AFRICA_CITIZEN_REQUESTS,
+  RU: RUSSIA_CITIZEN_REQUESTS,
+  CN: CHINA_CITIZEN_REQUESTS,
+};
+
+export function getRequestsForCountry(code: import('../types').CountryCode): CitizenRequest[] {
+  return COUNTRY_CITIZEN_REQUESTS[code] || INITIAL_CITIZEN_REQUESTS;
+}
+
 export const COMPLETED_IMPACT_PROJECTS: ImpactProject[] = [
   {
     id: 'proj-001',
