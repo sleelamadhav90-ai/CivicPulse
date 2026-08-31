@@ -1,18 +1,20 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Eczar", serif;
-  --font-sans: "Inter", sans-serif;
-  --font-mono: "Karma", serif;
+  --font-serif: "DM Serif Display", Georgia, serif;
+  --font-sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-handwriting: "Caveat", "Architects Daughter", cursive;
 }
 
 /* Base styles for the atlas layout */
 body {
-  background-color: #f4f1ea;
-  color: #1a237e;
+  background-color: #F7F5EF;
+  color: #171717;
+  font-family: var(--font-sans);
 }
 
-/* Leaflet Overrides */
+/* Leaflet Overrides for Open Civic Atlas theme */
 .leaflet-popup-content-wrapper {
   background: transparent !important;
   box-shadow: none !important;
@@ -23,8 +25,8 @@ body {
   width: auto !important;
 }
 .leaflet-popup-tip {
-  background: #f4f1ea !important; 
-  border: 1px solid #1a237e !important;
+  background: #F7F5EF !important; 
+  border: 1px solid #171717 !important;
   border-top: none !important;
   border-left: none !important;
 }
@@ -33,13 +35,13 @@ body {
   border: none;
 }
 .leaflet-container {
-  background: #faf9f6 !important;
-  font-family: inherit !important;
+  background: #F7F5EF !important;
+  font-family: var(--font-mono) !important;
   z-index: 10;
 }
 .custom-popup .leaflet-popup-close-button {
-  color: #57534e !important;
-  top: 16px !important;
-  right: 16px !important;
+  color: #171717 !important;
+  top: 12px !important;
+  right: 12px !important;
   z-index: 20 !important;
 }

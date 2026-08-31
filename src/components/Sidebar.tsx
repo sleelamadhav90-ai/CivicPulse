@@ -8,17 +8,14 @@ import {
   Hammer, 
   TrendingUp, 
   Settings, 
-  Radio, 
   Info,
   Layers,
-  Flame,
-  CheckCircle2,
   Cpu,
-  Award
+  Box,
+  Share2
 } from 'lucide-react';
-import { District, CitizenRequest } from '../types';
 
-export type NavTab = 'overview' | 'engine' | 'map' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
+export type NavTab = 'map' | 'blocks' | 'overview' | 'engine' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -40,9 +37,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const navItems = [
-    { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏠', badge: null },
+    { id: 'map' as NavTab, label: 'Open Civic Map', icon: MapPin, emoji: '🗺️', badge: 'Primary Atlas' },
+    { id: 'blocks' as NavTab, label: 'Infrastructure Blocks', icon: Box, emoji: '🧱', badge: '8 Reusable' },
+    { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏛️', badge: null },
     { id: 'engine' as NavTab, label: 'Priority Engine', icon: Cpu, emoji: '⚡', badge: '94/100' },
-    { id: 'map' as NavTab, label: 'Demand Map', icon: MapPin, emoji: '📍', badge: 'Hotspots' },
     { id: 'submit' as NavTab, label: 'Submit Request', icon: FileEdit, emoji: '📝', badge: `${requestsCount}` },
     { id: 'insights' as NavTab, label: 'AI Policy Lab', icon: Sparkles, emoji: '🤖', badge: 'Gemini' },
     { id: 'projects' as NavTab, label: 'Gov Projects', icon: Hammer, emoji: '🏗️', badge: `${projectsCount}` },
@@ -56,34 +54,33 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 z-40 bg-[#1a237e]/20 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-[#171717]/40 backdrop-blur-xs lg:hidden"
         />
       )}
 
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#f4f1ea] border-r-2 border-[#1a237e] flex flex-col justify-between transition-transform duration-200 ease-in-out
+        fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#F7F5EF] border-r border-[#171717] flex flex-col justify-between transition-transform duration-200 ease-in-out
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Brand & Logo Header */}
+        {/* Brand Header */}
         <div>
-          <div className="p-6 border-b-4 border-double border-[#1a237e] flex flex-col items-center justify-center text-center">
-            <div className="w-12 h-12 mb-3 relative flex items-center justify-center">
-               <div className="absolute inset-0 border-[3px] border-dashed border-[#1a237e]/40 rounded-full animate-[spin_60s_linear_infinite]"></div>
-               <Building2 className="w-5 h-5 text-[#c84b31] relative z-10" />
+          <div className="p-5 border-b border-[#171717] bg-white flex flex-col items-center justify-center text-center">
+            <div className="w-10 h-10 mb-2 border border-[#171717] bg-[#D65A3A] text-white flex items-center justify-center font-serif font-bold text-lg shadow-[2px_2px_0px_#171717]">
+              CP
             </div>
             <div>
-              <span className="text-2xl font-serif font-bold tracking-tight text-[#1a237e] block leading-tight uppercase">
-                Civic Pulse
+              <span className="text-xl font-serif font-bold tracking-tight text-[#171717] block leading-tight uppercase">
+                CIVICPULSE
               </span>
-              <span className="text-[10px] font-sans uppercase tracking-[0.2em] text-[#1a237e]/70 block leading-tight mt-2 border-t border-[#1a237e]/20 pt-2">
-                India Atlas
+              <span className="text-[10px] font-mono uppercase tracking-widest text-[#171717]/70 block leading-tight mt-1 border-t border-[#171717]/10 pt-1">
+                CIVIC INFRASTRUCTURE BLOCKS
               </span>
             </div>
           </div>
 
-          {/* Nav Items List */}
-          <nav className="p-3.5 space-y-1.5" aria-label="Main Navigation">
+          {/* Navigation Items List */}
+          <nav className="p-3 space-y-1" aria-label="Main Navigation">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -93,21 +90,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     setActiveTab(item.id);
                     if (onCloseMobile) onCloseMobile();
                   }}
-                  className={`w-full flex items-center justify-between px-3.5 py-3 text-xs font-sans font-semibold tracking-wide uppercase transition-all cursor-pointer ${
+                  className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-[#1a237e] text-[#f4f1ea] shadow-[2px_2px_0px_rgba(200,75,49,1)]'
-                      : 'text-[#1a237e]/70 hover:text-[#1a237e] hover:bg-[#1a237e]/5'
+                      ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
+                      : 'text-[#171717]/80 hover:text-[#171717] hover:bg-[#171717]/5'
                   }`}
                 >
-                  <div className="flex items-center space-x-3">
-                    <span className="text-base">{item.emoji}</span>
+                  <div className="flex items-center space-x-2.5">
+                    <span className="text-sm">{item.emoji}</span>
                     <span>{item.label}</span>
                   </div>
                   {item.badge && (
-                    <span className={`text-[10px] px-2 py-0.5 font-mono ${
+                    <span className={`text-[9px] px-1.5 py-0.5 font-mono ${
                       isActive
-                        ? 'bg-[#c84b31] text-[#f4f1ea]'
-                        : 'bg-[#1a237e]/10 text-[#1a237e]'
+                        ? 'bg-[#D65A3A] text-white'
+                        : 'bg-[#171717]/10 text-[#171717]'
                     }`}>
                       {item.badge}
                     </span>
@@ -119,26 +116,26 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Bottom System Audit & Architecture Badge */}
-        <div className="p-4 border-t-2 border-[#1a237e] space-y-3 bg-[#f4f1ea]">
-          <div className="p-3 border border-[#1a237e] bg-white text-xs shadow-[2px_2px_0px_rgba(26,35,126,0.3)]">
-            <div className="flex items-center justify-between mb-2 border-b border-[#1a237e]/10 pb-2">
-              <span className="font-sans uppercase tracking-[0.2em] font-bold text-[#1a237e] text-[9px]">Data Stream</span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#2e7d32] animate-pulse"></span>
-                <span className="text-[9px] font-sans uppercase tracking-widest text-[#2e7d32] font-bold">Live</span>
+        <div className="p-4 border-t border-[#171717] space-y-3 bg-[#F7F5EF]">
+          <div className="p-3 border border-[#171717] bg-white text-xs shadow-[2px_2px_0px_#171717]">
+            <div className="flex items-center justify-between mb-1.5 border-b border-[#171717]/10 pb-1.5">
+              <span className="font-mono uppercase tracking-widest font-bold text-[#D65A3A] text-[9px]">DESIGN SYSTEM</span>
+              <span className="flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#285943] animate-pulse"></span>
+                <span className="text-[9px] font-mono uppercase tracking-widest text-[#285943] font-bold">Active</span>
               </span>
             </div>
-            <p className="text-[10px] font-mono text-[#1a237e]/80 leading-relaxed">
-              Tracking citizen demand against global baseline metrics.
+            <p className="text-[10px] font-mono text-[#171717]/80 leading-relaxed">
+              India Stack × Bloomberg data viz × open infrastructure.
             </p>
           </div>
 
           <button
             onClick={onOpenMethodology}
-            className="w-full py-2.5 bg-[#f4f1ea] hover:bg-[#1a237e]/5 text-[#1a237e] font-sans font-semibold text-[10px] tracking-widest uppercase transition-colors flex items-center justify-center gap-2 cursor-pointer border border-[#1a237e]"
+            className="w-full py-2 bg-[#F7F5EF] hover:bg-[#171717]/5 text-[#171717] font-mono font-bold text-[10px] tracking-widest uppercase transition-colors flex items-center justify-center gap-2 cursor-pointer border border-[#171717]"
           >
-            <Info className="w-3.5 h-3.5 text-[#c84b31]" />
-            <span>Architecture & Scale</span>
+            <Info className="w-3.5 h-3.5 text-[#D65A3A]" />
+            <span>Architecture Specs</span>
           </button>
         </div>
       </aside>

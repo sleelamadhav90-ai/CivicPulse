@@ -25,6 +25,7 @@ import { ImpactSimulator } from './components/ImpactSimulator';
 import { SettingsView } from './components/SettingsView';
 import { ScoreBreakdownModal } from './components/ScoreBreakdownModal';
 import { AtlasLanding } from './components/AtlasLanding';
+import { PublicInfrastructureBlocks } from './components/PublicInfrastructureBlocks';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -49,8 +50,8 @@ export default function App() {
     return INITIAL_GOVERNMENT_PROJECTS;
   });
 
-  // Default to 'hotspots' so the user immediately sees the Atlas map
-  const [activeTab, setActiveTab] = useState<NavTab>('hotspots');
+  // Default to 'map' so the Open Civic Map is the primary interface!
+  const [activeTab, setActiveTab] = useState<NavTab>('map');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Policy Lab Target State
@@ -281,6 +282,10 @@ export default function App() {
 
         {/* Dynamic View Panel */}
         <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+          {activeTab === 'blocks' && (
+            <PublicInfrastructureBlocks />
+          )}
+
           {activeTab === 'overview' && (
             <Overview
               districts={districts}
@@ -381,26 +386,26 @@ export default function App() {
         </main>
 
         {/* Global Footer */}
-        <footer className="border-t border-slate-200 bg-white py-4 mt-8 text-slate-500">
+        <footer className="border-t border-[#171717] bg-[#F7F5EF] py-4 mt-8 text-[#171717]/70 font-mono text-xs">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-3 text-xs text-slate-600">
-              <span className="font-bold tracking-wider text-slate-900">CIVICPULSE</span>
+            <div className="flex items-center space-x-3 text-xs text-[#171717]">
+              <span className="font-serif font-bold tracking-wider text-[#171717] uppercase">CIVICPULSE</span>
               <span>•</span>
-              <span>AI-Powered Civic Infrastructure Intelligence</span>
+              <span>REUSABLE CIVIC INFRASTRUCTURE BLOCKS</span>
               <span>•</span>
-              <span className="hidden sm:inline text-slate-500">Multilingual Ingestion + Deterministic Prioritization</span>
+              <span className="hidden sm:inline text-[#D65A3A] font-semibold">India Stack × Open Atlas</span>
             </div>
 
             <div className="flex items-center space-x-6 text-xs">
-              <div className="flex items-center gap-2 text-slate-600">
-                <div className="w-2 h-2 rounded-full bg-emerald-500"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-[#285943]"></div>
                 <span>Engine Active</span>
               </div>
               <button
                 onClick={() => setMethodologyModalOpen(true)}
-                className="text-blue-600 hover:text-blue-800 font-semibold text-xs transition-colors cursor-pointer"
+                className="text-[#D65A3A] hover:underline font-bold text-xs transition-colors cursor-pointer"
               >
-                Methodology & Audit
+                Architecture Specs
               </button>
             </div>
           </div>

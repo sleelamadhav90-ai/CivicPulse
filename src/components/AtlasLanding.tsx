@@ -1,5 +1,5 @@
 import React from 'react';
-import { ArrowRight, Map } from 'lucide-react';
+import { ArrowRight, Map, Box, Layers } from 'lucide-react';
 
 interface AtlasLandingProps {
   onEnter: () => void;
@@ -7,67 +7,111 @@ interface AtlasLandingProps {
 
 export const AtlasLanding: React.FC<AtlasLandingProps> = ({ onEnter }) => {
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col bg-[#f4f1ea] text-[#1a237e] overflow-hidden selection:bg-[#d97706]/20 selection:text-[#d97706]">
-      <div className="flex-1 flex flex-col items-center justify-center p-8 text-center sm:text-left sm:items-start max-w-5xl mx-auto w-full relative">
+    <div className="fixed inset-0 z-[100] flex flex-col bg-[#F7F5EF] text-[#171717] overflow-y-auto selection:bg-[#D65A3A]/20 selection:text-[#D65A3A] font-sans">
+      <div className="flex-1 flex flex-col items-center justify-center p-6 sm:p-12 max-w-6xl mx-auto w-full relative my-auto">
         
-        {/* Newspaper Header Style */}
-        <div className="w-full text-center border-b-4 border-double border-[#1a237e] pb-6 mb-10 sm:mb-16">
-          <h1 className="text-sm font-sans tracking-[0.3em] font-bold text-[#c84b31] uppercase mb-2">
-            The Government & Citizen Initiative
-          </h1>
-          <div className="text-6xl sm:text-8xl font-serif font-bold tracking-tight text-[#1a237e] uppercase">
-            Civic Pulse
+        {/* Newspaper & Open Atlas Header Style */}
+        <div className="w-full text-center border-b border-[#171717] pb-6 mb-8 sm:mb-12">
+          <div className="inline-block bg-[#D65A3A] text-white px-3 py-1 text-[10px] font-mono tracking-widest uppercase font-bold mb-3">
+            INDIA STACK × BLOOMBERG DATA VISUALIZATION × OPEN INFRASTRUCTURE
           </div>
-          <div className="flex items-center justify-center gap-4 text-xs font-mono tracking-widest uppercase text-[#1a237e]/70 mt-4 border-t border-[#1a237e]/20 pt-4">
-            <span>Vol. I — India</span>
-            <span className="w-1.5 h-1.5 bg-[#d97706] rounded-full"></span>
-            <span>2026 Edition</span>
-            <span className="w-1.5 h-1.5 bg-[#d97706] rounded-full"></span>
-            <span>Public Infrastructure Atlas</span>
+          <h1 className="text-5xl sm:text-7xl font-serif font-bold tracking-tight text-[#171717] uppercase">
+            CIVICPULSE
+          </h1>
+          <div className="flex items-center justify-center gap-4 text-xs font-mono tracking-wider uppercase text-[#171717]/80 mt-3 border-t border-[#171717]/10 pt-3">
+            <span>Vol. I — Open Civic Intelligence Layer</span>
+            <span>•</span>
+            <span>8 Reusable Infrastructure Blocks</span>
+            <span>•</span>
+            <span className="text-[#D65A3A] font-bold">Public Atlas</span>
           </div>
         </div>
         
-        <div className="w-full flex flex-col sm:flex-row gap-12 sm:gap-24 items-start">
-          <div className="flex-1">
-            <h2 className="text-4xl sm:text-5xl font-mono font-medium leading-[1.3] text-[#1a237e] mb-8">
-              A Living Atlas mapping<br/>
-              the <span className="text-[#c84b31]">infrastructure needs</span><br/>
-              of our communities.
-            </h2>
+        <div className="w-full grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          
+          {/* Main Hero Card */}
+          <div className="lg:col-span-7 border border-[#171717] bg-white p-8 sm:p-10 flex flex-col justify-between shadow-[6px_6px_0px_#171717]">
+            <div className="space-y-6">
+              <span className="text-xs font-mono uppercase tracking-widest text-[#285943] font-bold flex items-center gap-2">
+                <Box className="w-4 h-4 text-[#285943]" />
+                REUSABLE CIVIC INFRASTRUCTURE MODULES
+              </span>
+              
+              <h2 className="text-3xl sm:text-4xl font-serif font-bold leading-tight text-[#171717]">
+                CivicPulse isn't one application.<br />
+                It's a collection of <span className="text-[#D65A3A] underline decoration-[#D65A3A]/30 underline-offset-4">reusable civic infrastructure blocks</span>.
+              </h2>
+              
+              <p className="text-sm font-sans text-[#171717]/80 leading-relaxed max-w-xl">
+                Combining native voice ingestion in regional dialects, deterministic AI priority scoring, census demography baselines, and open public mapping.
+              </p>
+
+              {/* Connected ASCII-Style Blocks Preview */}
+              <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 font-mono text-[11px] text-[#171717]">
+                <div className="flex items-center justify-between text-[10px] text-[#171717]/60 border-b border-[#171717]/10 pb-1 mb-2">
+                  <span>ARCHITECTURE PREVIEW</span>
+                  <span className="text-[#D65A3A] font-bold">DECOUPLED BLOCKS</span>
+                </div>
+                <div className="flex items-center justify-around gap-2 text-center text-[10px] font-bold">
+                  <span className="p-1.5 border border-[#171717] bg-white">VOICE</span>
+                  <span>→</span>
+                  <span className="p-1.5 border border-[#D65A3A] bg-[#D65A3A]/10 text-[#D65A3A]">AI LAYER</span>
+                  <span>→</span>
+                  <span className="p-1.5 border border-[#285943] bg-[#285943]/10 text-[#285943]">DATASETS</span>
+                  <span>→</span>
+                  <span className="p-1.5 border border-[#D9A441] bg-[#D9A441]/15 text-[#171717]">PRIORITY AI</span>
+                </div>
+              </div>
+            </div>
             
-            <button
-              onClick={onEnter}
-              className="group flex items-center gap-3 text-sm font-sans uppercase tracking-widest font-semibold border border-[#1a237e] px-8 py-4 hover:bg-[#1a237e] hover:text-[#f4f1ea] transition-all cursor-pointer"
-            >
-              Examine the Atlas
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </button>
+            <div className="pt-8">
+              <button
+                onClick={onEnter}
+                className="group w-full sm:w-auto flex items-center justify-center gap-3 text-xs font-mono uppercase tracking-widest font-bold bg-[#171717] text-[#F7F5EF] px-8 py-4 hover:bg-[#D65A3A] transition-colors cursor-pointer border border-[#171717]"
+              >
+                OPEN CIVIC MAP & BLOCKS
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </button>
+            </div>
           </div>
 
-          <div className="sm:w-[360px] shrink-0 border border-[#1a237e] bg-[#f4f1ea] p-8 flex flex-col gap-8 shadow-[8px_8px_0px_#1a237e]">
-            <div className="text-center font-serif text-xl tracking-wide border-b border-[#1a237e]/20 pb-4 uppercase font-bold text-[#1a237e]">
-              National Data Summary
-            </div>
-            
-            <div className="flex justify-center py-6 relative">
-              {/* Ashoka Chakra inspired dashed rotating ring */}
-              <div className="absolute inset-0 m-auto w-32 h-32 border-[3px] border-dashed border-[#1a237e]/20 rounded-full animate-[spin_60s_linear_infinite]"></div>
-              <Map className="w-20 h-20 text-[#1a237e] stroke-1 relative z-10" />
+          {/* Right Metrics & Atlas Layer Box */}
+          <div className="lg:col-span-5 border border-[#171717] bg-[#F7F5EF] p-8 flex flex-col justify-between shadow-[6px_6px_0px_#171717]">
+            <div className="space-y-6">
+              <div className="text-center font-serif text-xl border-b border-[#171717]/20 pb-3 uppercase font-bold text-[#171717]">
+                Public Dataset Layers
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
+                <div className="p-2.5 bg-white border border-[#171717]/20">
+                  <span className="text-[9px] text-[#D65A3A] block font-bold">☑ CITIZEN DEMAND</span>
+                  <span className="font-bold">12,482 Signals</span>
+                </div>
+                <div className="p-2.5 bg-white border border-[#171717]/20">
+                  <span className="text-[9px] text-[#285943] block font-bold">☑ INFRASTRUCTURE</span>
+                  <span className="font-bold">18,450 Assets</span>
+                </div>
+                <div className="p-2.5 bg-white border border-[#171717]/20">
+                  <span className="text-[9px] text-[#D9A441] block font-bold">☑ POPULATION</span>
+                  <span className="font-bold">4.2M Citizens</span>
+                </div>
+                <div className="p-2.5 bg-white border border-[#171717]/20">
+                  <span className="text-[9px] text-[#171717] block font-bold">☐ GOVT PROJECTS</span>
+                  <span className="font-bold">38 Sanctioned</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-white border border-[#171717]/20 text-xs font-sans space-y-2">
+                <div className="font-serif font-bold text-[#171717]">Combinatorial Intelligence</div>
+                <p className="text-[#171717]/80 text-[11px] leading-relaxed">
+                  Turn layers on and off dynamically to observe how public datasets fuse into deterministic priority scores across water, roads, drainage, and power.
+                </p>
+              </div>
             </div>
 
-            <div className="flex flex-col gap-4 font-mono text-base tracking-wide text-[#1a237e]">
-              <div className="flex justify-between items-center border-b border-[#1a237e]/20 pb-2">
-                <span className="font-bold">12,482</span>
-                <span className="text-xs font-sans uppercase tracking-widest text-[#1a237e]/70">Citizen Signals</span>
-              </div>
-              <div className="flex justify-between items-center border-b border-[#1a237e]/20 pb-2">
-                <span className="font-bold">147</span>
-                <span className="text-xs font-sans uppercase tracking-widest text-[#1a237e]/70">Demand Hotspots</span>
-              </div>
-              <div className="flex justify-between items-center pb-2">
-                <span className="font-bold text-[#c84b31]">38</span>
-                <span className="text-xs font-sans uppercase tracking-widest text-[#c84b31]">Priority Districts</span>
-              </div>
+            <div className="pt-6 border-t border-[#171717]/20 flex items-center justify-between text-xs font-mono text-[#171717]/70">
+              <span>Status: Operational</span>
+              <span className="text-[#285943] font-bold">● Live API Grid</span>
             </div>
           </div>
         </div>
@@ -75,3 +119,4 @@ export const AtlasLanding: React.FC<AtlasLandingProps> = ({ onEnter }) => {
     </div>
   );
 };
+
