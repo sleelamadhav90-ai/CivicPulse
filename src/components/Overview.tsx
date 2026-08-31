@@ -27,11 +27,12 @@ import {
 import { District, CitizenRequest, RecommendedProject } from '../types';
 import { calculatePriorityScore, getPriorityTier, getAIRecommendedProjects } from '../utils/scoring';
 import { ArchitectureBlueprint } from './ArchitectureBlueprint';
+import { CivicRelationshipFlow } from './CivicRelationshipFlow';
 
 interface OverviewProps {
   districts: District[];
   requests: CitizenRequest[];
-  onNavigate: (tab: 'overview' | 'engine' | 'submit' | 'map' | 'insights' | 'projects' | 'impact' | 'settings') => void;
+  onNavigate: (tab: 'map' | 'blocks' | 'overview' | 'engine' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings') => void;
   onSelectDistrictForPolicy: (districtId: string, category: 'Water' | 'Health' | 'Roads' | 'Education' | 'Drainage' | 'Electricity') => void;
 }
 
@@ -69,74 +70,77 @@ export const Overview: React.FC<OverviewProps> = ({
   const topDistricts = rankedDistricts.slice(0, 4);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Hero Welcome Header */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
+    <div className="space-y-8 animate-in fade-in duration-300 font-sans">
+      {/* Hero Header */}
+      <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[6px_6px_0px_#171717]">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200 rounded-lg">
-                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                Live Civic Intelligence
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-widest text-white bg-[#D65A3A]">
+                <Sparkles className="w-3.5 h-3.5" />
+                RELATIONAL CIVIC INTELLIGENCE
               </span>
-              <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                • Real-time national telemetry
+              <span className="text-xs text-[#171717]/70 font-mono hidden sm:inline">
+                • Public Signals → Public Data → Public Decisions
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-              CivicPulse
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#171717] tracking-tight uppercase">
+              CIVICPULSE OVERVIEW
             </h1>
-            <p className="text-base sm:text-lg font-medium text-slate-600 max-w-2xl">
-              AI-powered civic infrastructure intelligence
+            <p className="text-base sm:text-lg font-serif font-semibold text-[#D65A3A]">
+              Don't make the UI cards the star. Make the relationships between things the star.
             </p>
-            <p className="text-xs sm:text-sm text-slate-500 max-w-3xl leading-relaxed">
-              Synthesizes multilingual citizen demand with regional infrastructure deficit data to deterministically prioritize capital public works, generate ministerial briefs, and track verified impact.
+            <p className="text-xs sm:text-sm text-[#171717]/80 max-w-3xl leading-relaxed font-sans">
+              CivicPulse connects citizen voice signals with census demography, Jal Jeevan Mission API access deficits, and PWD road registries to deterministically prioritize capital infrastructure works.
             </p>
           </div>
 
-          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3">
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 font-mono text-xs">
             <button
-              onClick={() => onNavigate('engine')}
-              className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => onNavigate('map')}
+              className="w-full sm:w-auto px-5 py-3 bg-[#171717] hover:bg-[#D65A3A] text-white font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-[2px_2px_0px_#171717]"
             >
-              <Cpu className="w-4 h-4" />
-              <span>Priority Engine</span>
+              <MapPin className="w-4 h-4 text-[#D65A3A]" />
+              <span>Open Civic Map</span>
             </button>
             <button
-              onClick={() => onNavigate('submit')}
-              className="w-full sm:w-auto px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              onClick={() => onNavigate('blocks')}
+              className="w-full sm:w-auto px-5 py-3 bg-[#F7F5EF] hover:bg-[#171717]/10 text-[#171717] font-bold border border-[#171717] uppercase tracking-wider transition-colors flex items-center justify-center gap-2 cursor-pointer"
             >
-              <PlusCircle className="w-4 h-4 text-emerald-400" />
-              <span>Submit Request</span>
+              <Cpu className="w-4 h-4 text-[#285943]" />
+              <span>8 Modular Blocks</span>
             </button>
           </div>
         </div>
       </div>
 
+      {/* CORE PHILOSOPHY FEATURE: THE RELATIONSHIP GRAPH FLOW */}
+      <CivicRelationshipFlow />
+
       {/* 3 Core Metric Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 font-mono">
         {/* Requests Card */}
         <div 
           onClick={() => onNavigate('submit')}
-          className="bg-white border border-slate-200 hover:border-blue-300 rounded-2xl p-6 shadow-xs transition-all cursor-pointer group"
+          className="bg-white border border-[#171717] hover:border-[#D65A3A] p-5 shadow-[4px_4px_0px_#171717] transition-all cursor-pointer group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider font-bold text-slate-500">
-              Total Citizen Requests
+          <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-[#171717]/70">
+              CITIZEN VOICE SIGNALS
             </span>
-            <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Radio className="w-4 h-4" />
+            <div className="w-7 h-7 bg-[#D65A3A] text-white flex items-center justify-center font-bold">
+              <Radio className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl sm:text-4xl font-extrabold text-slate-900 font-mono tracking-tight">
+            <span className="text-3xl sm:text-4xl font-serif font-bold text-[#171717]">
               {totalBaseRequests.toLocaleString()}
             </span>
-            <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              +142 this week
+            <span className="text-[10px] font-bold text-[#285943] bg-[#285943]/10 px-2 py-0.5 border border-[#285943]/30">
+              +142 THIS WEEK
             </span>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-[11px] font-sans text-[#171717]/80">
             Multilingual voice & text reports across 12 target districts
           </p>
         </div>
@@ -144,25 +148,25 @@ export const Overview: React.FC<OverviewProps> = ({
         {/* High Priority Card */}
         <div 
           onClick={() => onNavigate('engine')}
-          className="bg-white border border-slate-200 hover:border-rose-300 rounded-2xl p-6 shadow-xs transition-all cursor-pointer group"
+          className="bg-white border border-[#171717] hover:border-[#D65A3A] p-5 shadow-[4px_4px_0px_#171717] transition-all cursor-pointer group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider font-bold text-slate-500">
-              High Priority Deficits
+          <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-[#171717]/70">
+              HIGH PRIORITY DEFICITS
             </span>
-            <div className="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Flame className="w-4 h-4" />
+            <div className="w-7 h-7 bg-[#D65A3A] text-white flex items-center justify-center font-bold">
+              <Flame className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl sm:text-4xl font-extrabold text-rose-600 font-mono tracking-tight">
+            <span className="text-3xl sm:text-4xl font-serif font-bold text-[#D65A3A]">
               {highPriorityCount.toLocaleString()}
             </span>
-            <span className="text-xs font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-              Score ≥ 70 / 100
+            <span className="text-[10px] font-bold text-[#D65A3A] bg-[#D65A3A]/10 px-2 py-0.5 border border-[#D65A3A]/30">
+              SCORE ≥ 70 / 100
             </span>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-[11px] font-sans text-[#171717]/80">
             Critical infrastructure hot spots needing urgent capital allocation
           </p>
         </div>
@@ -170,25 +174,25 @@ export const Overview: React.FC<OverviewProps> = ({
         {/* Resolved Card */}
         <div 
           onClick={() => onNavigate('projects')}
-          className="bg-white border border-slate-200 hover:border-emerald-300 rounded-2xl p-6 shadow-xs transition-all cursor-pointer group"
+          className="bg-white border border-[#171717] hover:border-[#285943] p-5 shadow-[4px_4px_0px_#171717] transition-all cursor-pointer group"
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs uppercase tracking-wider font-bold text-slate-500">
-              Resolved & Commissioned
+          <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+            <span className="text-[10px] uppercase tracking-widest font-bold text-[#171717]/70">
+              COMMISSIONED CAPITAL WORKS
             </span>
-            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <CheckCircle2 className="w-4 h-4" />
+            <div className="w-7 h-7 bg-[#285943] text-white flex items-center justify-center font-bold">
+              <CheckCircle2 className="w-3.5 h-3.5" />
             </div>
           </div>
           <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-3xl sm:text-4xl font-extrabold text-emerald-600 font-mono tracking-tight">
+            <span className="text-3xl sm:text-4xl font-serif font-bold text-[#285943]">
               {resolvedCount.toLocaleString()}
             </span>
-            <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-              71.5% Resolution
+            <span className="text-[10px] font-bold text-[#285943] bg-[#285943]/10 px-2 py-0.5 border border-[#285943]/30">
+              71.5% RESOLUTION
             </span>
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-[11px] font-sans text-[#171717]/80">
             Completed pipeline works verified with closed-loop surveys
           </p>
         </div>

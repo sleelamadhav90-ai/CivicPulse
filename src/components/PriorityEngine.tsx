@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, RecommendedProject } from '../types';
 import { getAIRecommendedProjects, SCORING_WEIGHTS, getPriorityTier } from '../utils/scoring';
+import { CivicRelationshipFlow } from './CivicRelationshipFlow';
 
 interface PriorityEngineProps {
   districts: District[];
@@ -164,6 +165,9 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
           </p>
         </div>
       </div>
+
+      {/* Relational Flow Diagram: Citizen Signals -> Public Data -> Public Decisions */}
+      <CivicRelationshipFlow />
 
       {/* Main Split Layout: AI Recommended Projects Leaderboard + Deep Reasoning Drawer */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
