@@ -24,8 +24,10 @@ import { ProjectsView } from './components/ProjectsView';
 import { ImpactSimulator } from './components/ImpactSimulator';
 import { SettingsView } from './components/SettingsView';
 import { ScoreBreakdownModal } from './components/ScoreBreakdownModal';
+import { AtlasLanding } from './components/AtlasLanding';
 
 export default function App() {
+  const [hasEntered, setHasEntered] = useState(false);
   const [districts] = useState<District[]>(DISTRICTS_REGISTRY);
   const [requests, setRequests] = useState<CitizenRequest[]>(() => {
     try {
@@ -47,8 +49,8 @@ export default function App() {
     return INITIAL_GOVERNMENT_PROJECTS;
   });
 
-  // Default to 'overview' so the user immediately understands what CivicPulse does in 5-10 seconds
-  const [activeTab, setActiveTab] = useState<NavTab>('overview');
+  // Default to 'hotspots' so the user immediately sees the Atlas map
+  const [activeTab, setActiveTab] = useState<NavTab>('hotspots');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Policy Lab Target State
@@ -228,8 +230,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* Sidebar Navigation */}
+    <>
+      {!hasEntered && <AtlasLanding onEnter={() => setHasEntered(true)} />}
+      
+      <div className={`min-h-screen bg-[#faf9f6] text-[#2d2d2d] flex font-sans selection:bg-[#e07a5f]/20 selection:text-[#e07a5f] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+        {/* Sidebar Navigation */}
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
@@ -243,30 +248,30 @@ export default function App() {
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Mobile Header */}
-        <header className="lg:hidden sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center justify-between shadow-2xs">
+        <header className="lg:hidden sticky top-0 z-30 bg-[#faf9f6]/95 backdrop-blur-md border-b border-[#2d2d2d]/10 px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
-              className="p-2 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+              className="p-2 bg-[#2d2d2d]/5 text-[#2d2d2d] hover:bg-[#2d2d2d]/10 transition-colors cursor-pointer"
               aria-label="Open Navigation Menu"
             >
               <Menu className="w-5 h-5" />
             </button>
             <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
+              <div className="w-8 h-8 bg-[#e07a5f] flex items-center justify-center text-white">
                 <Building2 className="w-4 h-4" />
               </div>
-              <span className="font-extrabold text-slate-900 tracking-tight text-base">CivicPulse</span>
+              <span className="font-serif font-semibold text-[#2d2d2d] tracking-tight text-base">CivicPulse</span>
             </div>
           </div>
 
           <div className="flex items-center space-x-2">
-            <span className="text-xs font-semibold px-2.5 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+            <span className="text-xs font-sans font-semibold px-2.5 py-1 bg-[#2d2d2d]/5 text-[#2d2d2d] border border-[#2d2d2d]/10 uppercase tracking-wider">
               {requests.length} Signals
             </span>
             <button
               onClick={() => setMethodologyModalOpen(true)}
-              className="p-1.5 rounded-lg bg-slate-100 text-slate-600 hover:text-slate-900"
+              className="p-1.5 bg-[#2d2d2d]/5 text-[#57534e] hover:text-[#2d2d2d]"
               title="Methodology"
             >
               <Info className="w-4 h-4" />
@@ -516,6 +521,7 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

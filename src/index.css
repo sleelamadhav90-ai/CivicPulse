@@ -1,12 +1,18 @@
 @import "tailwindcss";
 
-/* Base styles for the dark dashboard layout */
-body {
-  background-color: #0f172a;
-  color: #f8fafc;
+@theme {
+  --font-serif: "Playfair Display", serif;
+  --font-sans: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 }
 
-/* Leaflet Dark Mode Popup Overrides */
+/* Base styles for the atlas layout */
+body {
+  background-color: #faf9f6;
+  color: #2d2d2d;
+}
+
+/* Leaflet Overrides */
 .leaflet-popup-content-wrapper {
   background: transparent !important;
   box-shadow: none !important;
@@ -17,8 +23,8 @@ body {
   width: auto !important;
 }
 .leaflet-popup-tip {
-  background: #0f172a !important; /* matches tailwind slate-900 */
-  border: 1px solid rgba(51, 65, 85, 0.9) !important;
+  background: #faf9f6 !important; 
+  border: 1px solid #d6d3d1 !important;
   border-top: none !important;
   border-left: none !important;
 }
@@ -27,12 +33,12 @@ body {
   border: none;
 }
 .leaflet-container {
-  background: #0f172a !important;
+  background: #faf9f6 !important;
   font-family: inherit !important;
   z-index: 10;
 }
 .custom-popup .leaflet-popup-close-button {
-  color: #94a3b8 !important;
+  color: #57534e !important;
   top: 16px !important;
   right: 16px !important;
   z-index: 20 !important;
