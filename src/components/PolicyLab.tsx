@@ -87,7 +87,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
         throw new Error(resData.error || 'Failed to generate policy brief.');
       }
     } catch (err: any) {
-      console.error('Error generating policy brief:', err);
+      console.warn('Policy brief generation failed or used fallback.');
       setErrorMessage(err.message || 'Error communicating with Gemini API.');
     } finally {
       setIsGenerating(false);

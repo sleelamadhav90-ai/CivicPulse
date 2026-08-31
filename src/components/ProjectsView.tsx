@@ -46,6 +46,8 @@ interface ProjectsViewProps {
 
 const LIFECYCLE_STATUSES: ProjectLifecycleStatus[] = ['Recommended', 'Approved', 'In Progress', 'Completed'];
 
+import { SitePlanRenderer } from './SitePlanRenderer';
+
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   districts,
   projects,
@@ -518,32 +520,51 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
         {/* Right Column (5 cols): Deep Government Project Dossier */}
         <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
+          <div className="bg-[#f4f1ea] border-2 border-[#1a237e] shadow-[4px_4px_0px_#1a237e] p-6 space-y-6 relative overflow-hidden">
             {/* Header */}
-            <div className="pb-4 border-b border-slate-100 space-y-1">
-              <span className="text-[11px] font-mono font-bold uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                PROJECT ADMINISTRATIVE DOSSIER
-              </span>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">
+            <div className="pb-4 border-b-2 border-[#1a237e] space-y-2 relative z-10">
+              <div className="flex justify-between items-start">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-[0.2em] text-[#c84b31] flex items-center gap-1.5 bg-[#1a237e]/5 px-2 py-1 border border-[#1a237e]/20">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  PROJECT DOSSIER
+                </span>
+                <span className="text-[10px] font-mono text-[#1a237e]/60 tracking-widest uppercase">
+                  ID: {selectedProject.id.split('-')[0]}
+                </span>
+              </div>
+              <h3 className="text-2xl font-serif font-black text-[#1a237e] tracking-tight uppercase leading-tight">
                 {selectedProject.title}
               </h3>
-              <p className="text-xs text-slate-500">
-                {selectedProject.district}, {selectedProject.state} • Sanctioned Department: <strong className="text-slate-800">{selectedProject.department}</strong>
+              <p className="text-xs text-[#1a237e]/80 font-mono">
+                {selectedProject.district}, {selectedProject.state} • DEPT: <strong className="text-[#1a237e]">{selectedProject.department}</strong>
               </p>
             </div>
 
+            {/* Architectural Site Plan Layout */}
+            <div className="space-y-2">
+               <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#1a237e] flex items-center gap-1.5">
+                <Building className="w-3.5 h-3.5 text-[#c84b31]" />
+                Architectural Master Plan
+              </h4>
+              <SitePlanRenderer 
+                category={selectedProject.category} 
+                seed={selectedProject.id}
+                lat={districts.find(d => d.id === selectedProject.districtId)?.lat}
+                lon={districts.find(d => d.id === selectedProject.districtId)?.lon}
+              />
+            </div>
+
             {/* Prominent Lifecycle Status Box */}
-            <div className="p-4 rounded-xl border bg-gradient-to-br from-slate-900 to-slate-800 text-white space-y-4 shadow-xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-mono uppercase text-slate-400 font-bold">
+            <div className="p-4 border-2 border-[#1a237e] bg-white text-[#1a237e] space-y-4 relative shadow-[2px_2px_0px_rgba(26,35,126,0.2)]">
+              <div className="flex items-center justify-between border-b border-[#1a237e]/20 pb-3">
+                <span className="text-xs font-mono uppercase text-[#1a237e]/60 font-bold tracking-widest">
                   Current Status
                 </span>
-                <span className={`px-2.5 py-0.5 rounded text-xs font-mono font-bold uppercase border ${
-                  selectedProject.status === 'Recommended' ? 'bg-purple-500/20 text-purple-300 border-purple-500/40' :
-                  selectedProject.status === 'Approved' ? 'bg-blue-500/20 text-blue-300 border-blue-500/40' :
-                  selectedProject.status === 'In Progress' ? 'bg-amber-500/20 text-amber-300 border-amber-500/40' :
-                  'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                <span className={`px-2.5 py-0.5 text-xs font-mono font-bold uppercase border ${
+                  selectedProject.status === 'Recommended' ? 'bg-[#1a237e]/10 text-[#1a237e] border-[#1a237e]/40' :
+                  selectedProject.status === 'Approved' ? 'bg-[#c84b31]/10 text-[#c84b31] border-[#c84b31]/40' :
+                  selectedProject.status === 'In Progress' ? 'bg-[#d97706]/10 text-[#d97706] border-[#d97706]/40' :
+                  'bg-[#2e7d32]/10 text-[#2e7d32] border-[#2e7d32]/40'
                 }`}>
                   ● {selectedProject.status}
                 </span>
@@ -551,7 +572,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
               {/* Status Radio Flow in Dark Box */}
               <div className="space-y-2">
-                <div className="text-xs text-slate-300 font-medium">
+                <div className="text-[10px] text-[#1a237e]/70 font-sans tracking-widest uppercase font-bold">
                   Click to transition status:
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -561,17 +582,17 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                       <button
                         key={st}
                         onClick={() => handleStatusChangeClick(selectedProject, st)}
-                        className={`p-2 rounded-lg text-xs font-mono font-bold flex items-center justify-between transition-all cursor-pointer border ${
+                        className={`p-2 text-[10px] font-mono font-bold flex items-center justify-between transition-all cursor-pointer border-2 ${
                           isActive
-                            ? 'bg-blue-600 text-white border-blue-400 shadow-xs'
-                            : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:bg-slate-700 hover:text-white'
+                            ? 'bg-[#1a237e] text-[#f4f1ea] border-[#1a237e] shadow-[2px_2px_0px_#c84b31]'
+                            : 'bg-white text-[#1a237e]/60 border-[#1a237e]/20 hover:border-[#1a237e] hover:text-[#1a237e]'
                         }`}
                       >
-                        <span className="flex items-center gap-1.5">
+                        <span className="flex items-center gap-1.5 uppercase tracking-widest">
                           <span>{isActive ? '●' : '○'}</span>
                           <span>{st}</span>
                         </span>
-                        {isActive && <Check className="w-3.5 h-3.5" />}
+                        {isActive && <Check className="w-3 h-3" />}
                       </button>
                     );
                   })}
@@ -579,25 +600,25 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               </div>
 
               {/* Officer in Charge */}
-              <div className="pt-2 border-t border-slate-700/80 flex items-center justify-between text-xs font-sans">
-                <span className="text-slate-400">Nodal Officer:</span>
-                <span className="font-semibold text-slate-200">{selectedProject.officerInCharge}</span>
+              <div className="pt-3 border-t border-[#1a237e]/20 flex items-center justify-between text-xs font-mono uppercase tracking-widest">
+                <span className="text-[#1a237e]/60 font-bold text-[9px]">Nodal Officer:</span>
+                <span className="font-bold text-[#1a237e]">{selectedProject.officerInCharge}</span>
               </div>
             </div>
 
             {/* The Complaint → AI Analysis → Recommendation → Project Chain Details */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <Activity className="w-3.5 h-3.5 text-blue-600" />
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#1a237e] flex items-center gap-1.5">
+                <Activity className="w-3.5 h-3.5 text-[#c84b31]" />
                 Audit Trail & Evidence Chain
               </h4>
 
-              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-2">
-                <div className="font-bold text-slate-900">Why was this converted into a Project?</div>
-                <div className="space-y-1.5 text-slate-600">
+              <div className="p-4 bg-white border border-[#1a237e]/20 text-xs space-y-3">
+                <div className="font-bold text-[#1a237e] uppercase tracking-widest font-sans text-[10px] border-b border-[#1a237e]/10 pb-2">Why was this sanctioned?</div>
+                <div className="space-y-2 text-[#1a237e]/80 font-mono text-[11px] leading-relaxed">
                   {selectedProject.keyReasoning.map((item, idx) => (
                     <div key={idx} className="flex items-start space-x-2">
-                      <span className="text-blue-600 font-bold">•</span>
+                      <span className="text-[#c84b31] font-bold mt-0.5">▪</span>
                       <span>{item}</span>
                     </div>
                   ))}
@@ -607,45 +628,50 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
             {/* Status History Timeline */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
-                <History className="w-3.5 h-3.5 text-blue-600" />
-                Administrative Status Log
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-[#1a237e] flex items-center gap-1.5">
+                <History className="w-3.5 h-3.5 text-[#c84b31]" />
+                Administrative Log
               </h4>
 
               <div className="space-y-2">
                 {selectedProject.history.map((h, i) => (
-                  <div key={i} className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
+                  <div key={i} className="p-3 bg-white border-l-2 border-[#1a237e] border-t border-b border-r border-[#1a237e]/10 text-xs space-y-1.5">
                     <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold font-mono uppercase border ${getStatusBadgeClass(h.status)}`}>
+                      <span className={`px-2 py-0.5 text-[9px] font-bold font-mono uppercase border ${
+                          h.status === 'Recommended' ? 'bg-[#1a237e]/5 text-[#1a237e] border-[#1a237e]/20' :
+                          h.status === 'Approved' ? 'bg-[#c84b31]/5 text-[#c84b31] border-[#c84b31]/20' :
+                          h.status === 'In Progress' ? 'bg-[#d97706]/5 text-[#d97706] border-[#d97706]/20' :
+                          'bg-[#2e7d32]/5 text-[#2e7d32] border-[#2e7d32]/20'
+                        }`}>
                         {h.status}
                       </span>
-                      <span className="text-[10px] text-slate-400 font-mono">
+                      <span className="text-[10px] text-[#1a237e]/50 font-mono tracking-widest">
                         {new Date(h.timestamp).toLocaleDateString()}
                       </span>
                     </div>
-                    <p className="text-slate-700 font-medium">{h.note}</p>
-                    <div className="text-[10px] text-slate-500 italic">By: {h.actor}</div>
+                    <p className="text-[#1a237e] font-medium font-sans text-[11px]">{h.note}</p>
+                    <div className="text-[9px] text-[#1a237e]/50 italic font-mono uppercase tracking-widest">By: {h.actor}</div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Action Buttons */}
-            <div className="space-y-2 pt-2 border-t border-slate-100">
+            <div className="space-y-3 pt-4 border-t-2 border-[#1a237e] border-dashed">
               <button
                 onClick={() => onNavigateToPolicyLab(selectedProject.districtId, selectedProject.category)}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-[#1a237e] hover:bg-[#c84b31] text-[#f4f1ea] font-bold text-[10px] uppercase tracking-[0.2em] shadow-[2px_2px_0px_#c84b31] hover:shadow-[2px_2px_0px_#1a237e] transition-all flex items-center justify-center gap-2 cursor-pointer border border-[#1a237e]"
               >
                 <FileText className="w-4 h-4" />
-                <span>View Ministerial Policy Brief</span>
+                <span>Open Policy Brief</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
 
               <button
                 onClick={() => onNavigateToImpact(selectedProject.districtId, selectedProject.category)}
-                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-white hover:bg-[#1a237e]/5 text-[#1a237e] border border-[#1a237e] font-bold text-[10px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-2 cursor-pointer"
               >
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <TrendingUp className="w-4 h-4 text-[#2e7d32]" />
                 <span>Verify Access Uplift ({selectedProject.beforeAccess}% → {selectedProject.afterAccess}%)</span>
               </button>
             </div>

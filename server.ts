@@ -60,7 +60,7 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-3.7-flash';
+    const model = 'gemini-2.5-flash';
 
     const allowedDistricts = [
       'Vijayawada', 'Guntur', 'Krishna', 'Kurnool', 'Warangal', 'Hyderabad', 'Nizamabad',
@@ -220,7 +220,7 @@ Input text (if any):
       data: parsedData,
     });
   } catch (error: any) {
-    console.error('Error processing feedback with Gemini:', error);
+    console.warn('Gemini API unavailable, using fallback.');
     const isDrainage = (req.body.text || '').toLowerCase().includes('drain') || (req.body.text || '').toLowerCase().includes('flood');
     const isLighting = (req.body.text || '').toLowerCase().includes('light');
     const fallbackCategory = isDrainage ? 'Drainage' : isLighting ? 'Electricity' : (req.body.userCategory || 'Water');
@@ -270,7 +270,7 @@ app.post('/api/generate-policy-brief', async (req: Request, res: Response) => {
     const { district, category, demandCount, priorityScore, currentAccess, population, povertyIndex, plannedInvestment } = req.body;
 
     const ai = getGenAI();
-    const model = 'gemini-3.7-flash';
+    const model = 'gemini-2.5-flash';
 
     const prompt = `
 You are the Senior Chief Public Policy & Infrastructure Advisor for the National Development Planning Board (BRICS Digital Public Infrastructure Taskforce).
@@ -308,7 +308,7 @@ Keep the tone formal, highly authoritative, concise, and actionable for minister
       brief: response.text || 'Policy brief generated successfully.',
     });
   } catch (error: any) {
-    console.error('Error generating policy brief:', error);
+    console.warn('Gemini API unavailable for policy brief, using fallback stub.');
     res.json({
       success: true,
       brief: `### Executive Policy Brief: Urgent ${req.body.category || 'Water'} Infrastructure Allocation for ${req.body.district || 'Guntur'}
