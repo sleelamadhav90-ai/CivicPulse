@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -115,14 +115,6 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onSelectHotspotForPolicy,
 }) => {
   const [selectedCalloutTab, setSelectedCalloutTab] = useState<'report' | 'photo' | 'action'>('report');
-  const [geoData, setGeoData] = useState<any>(null);
-  
-  useEffect(() => {
-    fetch('/india_states_official_simplified.geojson')
-      .then(res => res.json())
-      .then(data => setGeoData(data))
-      .catch(err => console.error("Failed to load India bounds:", err));
-  }, []);
   
   // Calculate map center based on active district or all evaluations
   const mapCenter = useMemo<[number, number]>(() => {
@@ -164,26 +156,18 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       <MapContainer 
         center={mapCenter} 
         zoom={5} 
-        scrollWheelZoom={false}
-        style={{ width: '100%', height: '100%', background: '#dcdcdc' }} // light grey background like the image
+        scrollWheelZoom={true}
+        style={{ width: '100%', height: '100%', background: '#0f172a' }}
         zoomControl={false}
       >
+        <ZoomControl position="bottomright" />
         <MapController center={mapCenter} zoom={activeDistrictId ? 6 : 5} />
         
-        {/* Official India Political Map Overlay */}
-        
-        {geoData && (
-          <GeoJSON 
-            data={geoData} 
-            style={{
-              color: '#000000', // thick black border like the image
-              weight: 2.5, 
-              opacity: 1, 
-              fillColor: '#3498db', // solid blue fill like the image
-              fillOpacity: 1 
-            }}
-          />
-        )}
+        {/* Global Physical Map (Satellite) with NO political boundaries */}
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution="Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community"
+        />
 
         {/* Render heatmap glowing blurs under the pins */}
         {evaluations.map((item) => {
