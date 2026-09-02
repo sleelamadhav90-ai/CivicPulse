@@ -1,4 +1,4 @@
-import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType } from '../types';
+import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile } from '../types';
 
 export const SCORING_WEIGHTS = {
   citizenDemand: 0.30,
@@ -358,6 +358,112 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     };
 
+      // Generate Demographic & Equity Profile ("Who is Affected?")
+      let demographics: DemographicProfile;
+      if (item.category === 'Water') {
+        demographics = {
+          ruralPct: 72,
+          urbanPct: 28,
+          affectedGroups: [
+            { groupName: 'Women & Primary Caregivers', percentage: 46, impactNote: 'Spend 2.5 hrs/day fetching drinking water from distant pumps', iconEmoji: '👩' },
+            { groupName: 'Children & Students', percentage: 31, impactNote: 'School attendance drops due to waterborne illnesses', iconEmoji: '🎒' },
+            { groupName: 'Elderly Residents (60+)', percentage: 23, impactNote: 'High physical strain carrying heavy water containers', iconEmoji: '👵' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 74, middleIncomePct: 22, highIncomePct: 4 },
+          vulnerabilityIndicators: [
+            { label: 'High Rural Poverty', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+            { label: 'Severe Ground Water Salinity', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+          ],
+          equityAssessment: `Disproportionately impacts 12 rural villages where 78% of households lack indoor piped water.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      } else if (item.category === 'Roads') {
+        demographics = {
+          ruralPct: 62,
+          urbanPct: 38,
+          affectedGroups: [
+            { groupName: 'Students & Bus Commuters', percentage: 42, impactNote: 'Missed school buses and unsafe bicycle transit through potholes', iconEmoji: '🎒' },
+            { groupName: 'Farmers & Daily-Wage Laborers', percentage: 35, impactNote: 'Agricultural crop spoilage during transit delays', iconEmoji: '🌾' },
+            { groupName: 'Elderly Patients & Ambulances', percentage: 23, impactNote: '2.4x delay in emergency medical transit to regional hospital', iconEmoji: '🚑' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 68, middleIncomePct: 26, highIncomePct: 6 },
+          vulnerabilityIndicators: [
+            { label: 'Public Transit Dependent', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
+            { label: 'Single Access Route Corridor', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
+          ],
+          equityAssessment: `High impact on students and elderly residents relying on public bus routes across ${item.affectedAreasCount} underserved villages.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      } else if (item.category === 'Health' || item.category === 'Healthcare') {
+        demographics = {
+          ruralPct: 80,
+          urbanPct: 20,
+          affectedGroups: [
+            { groupName: 'Maternal & Infant Patients', percentage: 38, impactNote: 'Stockout of essential prenatal supplements & pediatric vaccines', iconEmoji: '👶' },
+            { groupName: 'Elderly Chronic Care Patients', percentage: 34, impactNote: 'Unable to secure monthly diabetes & hypertension medication', iconEmoji: '👵' },
+            { groupName: 'Agricultural Daily Laborers', percentage: 28, impactNote: 'Untreated occupational injuries due to doctor absence', iconEmoji: '👨‍🌾' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 82, middleIncomePct: 15, highIncomePct: 3 },
+          vulnerabilityIndicators: [
+            { label: 'Zero Private Care Alternatives', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+            { label: 'High BPL Population Concentration', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+          ],
+          equityAssessment: `Critical health deficit in low-income rural blocks where 82% rely exclusively on public primary health centers.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      } else if (item.category === 'Drainage') {
+        demographics = {
+          ruralPct: 30,
+          urbanPct: 70,
+          affectedGroups: [
+            { groupName: 'Low-Income Ward Residents', percentage: 52, impactNote: 'Flash monsoon flooding & sewage water entering informal housing', iconEmoji: '🏘️' },
+            { groupName: 'Small Marketplace Vendors', percentage: 28, impactNote: 'Stagnant waterlogging causing market closures and stock loss', iconEmoji: '🏪' },
+            { groupName: 'Schoolchildren & Pedestrians', percentage: 20, impactNote: 'Hazardous walking paths due to open sewer overflow', iconEmoji: '🎒' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 71, middleIncomePct: 24, highIncomePct: 5 },
+          vulnerabilityIndicators: [
+            { label: 'High Urban Density Slums', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+            { label: 'Monsoon Outfall Hazard', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+          ],
+          equityAssessment: `Concentrated in dense low-income urban wards lacking automated stormwater outfalls.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      } else if (item.category === 'Electricity') {
+        demographics = {
+          ruralPct: 65,
+          urbanPct: 35,
+          affectedGroups: [
+            { groupName: 'Smallholder Farmers', percentage: 45, impactNote: 'Transformer coil burnout causing pump motor failure & crop drying', iconEmoji: '⚡' },
+            { groupName: 'Students Preparing for Exams', percentage: 30, impactNote: 'Unannounced feeder outages during evening study hours', iconEmoji: '📚' },
+            { groupName: 'Women & Night Pedestrians', percentage: 25, impactNote: 'Unlit highway bypass corridors raising public safety risks', iconEmoji: '🌙' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 62, middleIncomePct: 32, highIncomePct: 6 },
+          vulnerabilityIndicators: [
+            { label: 'Feeder Overload Deficit', badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+            { label: 'Agricultural Power Spike Hazard', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
+          ],
+          equityAssessment: `High agricultural impact on smallholder farmers suffering pump motor burnouts.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      } else {
+        demographics = {
+          ruralPct: 78,
+          urbanPct: 22,
+          affectedGroups: [
+            { groupName: 'Female Students (Ages 10-16)', percentage: 48, impactNote: 'Absence of dedicated sanitation facilities leads to high dropout rates', iconEmoji: '👧' },
+            { groupName: 'First-Generation Learners', percentage: 32, impactNote: 'Lack of digital classroom displays and evening lighting', iconEmoji: '📚' },
+            { groupName: 'Primary Educators', percentage: 20, impactNote: 'Inadequate basic infrastructure for quality classroom instruction', iconEmoji: '👩‍🏫' },
+          ],
+          incomeTierBreakdown: { lowIncomePct: 79, middleIncomePct: 18, highIncomePct: 3 },
+          vulnerabilityIndicators: [
+            { label: 'Female Student Retention Risk', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+            { label: 'Rural Digital Divide', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
+          ],
+          equityAssessment: `Addressing sanitation and digital gaps directly improves female student retention and rural literacy.`,
+          piiProtectionNote: 'Aggregated population-level equity metrics (PII Compliant).'
+        };
+      }
+
     return {
       id: item.id,
       rank,
@@ -404,6 +510,7 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
         coverageIncreasePct: Math.round(item.deficitPct * 0.38),
         demandReductionPct: Math.min(85, Math.round(18 + (item.priorityScore * 0.4))),
       },
+      demographics,
     };
   });
 }

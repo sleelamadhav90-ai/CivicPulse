@@ -97,6 +97,30 @@ export type InfrastructureCategory =
 
 export type RequestStatus = 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged';
 
+export interface DemographicGroupImpact {
+  groupName: string; // e.g. "Students (Ages 5-18)", "Elderly Residents (60+)", "Women & Primary Caregivers", "Daily-Wage Workers"
+  percentage: number; // e.g. 42
+  impactNote: string; // e.g. "School attendance disrupted & delayed water collection"
+  iconEmoji: string; // e.g. "🎒"
+}
+
+export interface DemographicProfile {
+  ruralPct: number; // e.g. 62
+  urbanPct: number; // e.g. 38
+  affectedGroups: DemographicGroupImpact[];
+  incomeTierBreakdown: {
+    lowIncomePct: number; // e.g. 68
+    middleIncomePct: number; // e.g. 26
+    highIncomePct: number; // e.g. 6
+  };
+  vulnerabilityIndicators: {
+    label: string;
+    badgeColor: string;
+  }[];
+  equityAssessment: string; // e.g. "Disproportionately impacts 18 rural villages where 74% of households lack private vehicle access."
+  piiProtectionNote?: string;
+}
+
 export interface AIAnalysisResult {
   category: string;
   problem: string;
@@ -227,6 +251,8 @@ export interface RecommendedProject {
     coverageIncreasePct: number;
     demandReductionPct: number;
   };
+  // Demographic & equity breakdown ("Who is Affected?")
+  demographics?: DemographicProfile;
 }
 
 export interface PolicyBrief {

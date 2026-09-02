@@ -404,6 +404,41 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </p>
                   </div>
 
+                  {/* WHO IS AFFECTED? Demographic & Equity Profile Box */}
+                  {project.demographics && (
+                    <div className="p-3 bg-[#F7F5EF] border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
+                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] flex items-center gap-1">
+                          <Users className="w-3 h-3 text-[#D65A3A]" />
+                          WHO IS AFFECTED?
+                        </span>
+                        <span className="text-[9px] font-mono bg-emerald-100 text-emerald-900 border border-emerald-400 px-1.5 py-0.2 font-bold flex items-center gap-0.5">
+                          <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                          PII Protected
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 text-xs font-mono">
+                        <p className="text-[11px] text-[#171717] font-medium italic leading-snug">
+                          "{project.demographics.equityAssessment}"
+                        </p>
+
+                        <div className="flex flex-wrap gap-1 pt-1">
+                          {project.demographics.affectedGroups.map((grp, idx) => (
+                            <span key={idx} className="bg-white text-[#171717] px-1.5 py-0.5 border border-[#171717]/30 text-[9px] font-bold">
+                              {grp.iconEmoji} {grp.groupName} ({grp.percentage}%)
+                            </span>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-between items-center text-[9px] text-[#171717]/70 pt-1 border-t border-[#171717]/10">
+                          <span>🌾 {project.demographics.ruralPct}% Rural / 🏙️ {project.demographics.urbanPct}% Urban</span>
+                          <span className="font-bold text-amber-800">Low Income: {project.demographics.incomeTierBreakdown.lowIncomePct}%</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Quick Stats Row */}
                   <div className="grid grid-cols-3 gap-2 text-center p-2 bg-[#F7F5EF] border border-[#171717]/30 text-xs font-mono">
                     <div>
@@ -685,6 +720,80 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 </ul>
               </div>
             </div>
+
+            {/* DEMOGRAPHIC DATA & EQUITY PROFILE PANEL (WHO IS AFFECTED?) */}
+            {evidenceModalProject.demographics && (
+              <div className="bg-white border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#171717]">
+                <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#D65A3A] flex items-center gap-1.5">
+                    <Users className="w-4 h-4 text-[#D65A3A]" />
+                    WHO IS AFFECTED? DEMOGRAPHIC & EQUITY ANALYSIS
+                  </span>
+                  <span className="text-[9px] font-mono bg-emerald-100 text-emerald-900 border border-emerald-400 px-2 py-0.5 font-bold flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-emerald-700" />
+                    PII PROTECTED
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-mono">
+                  {/* Affected Demographic Groups */}
+                  <div className="space-y-2 bg-[#F7F5EF] p-3 border border-[#171717]/30">
+                    <span className="text-[10px] text-[#171717]/80 font-bold uppercase block border-b border-[#171717]/10 pb-1">
+                      PRIMARY IMPACTED POPULATION
+                    </span>
+                    <div className="space-y-2">
+                      {evidenceModalProject.demographics.affectedGroups.map((group, idx) => (
+                        <div key={idx} className="space-y-1">
+                          <div className="flex justify-between font-bold text-[#171717]">
+                            <span className="flex items-center gap-1">
+                              <span>{group.iconEmoji}</span> {group.groupName}
+                            </span>
+                            <span className="text-[#D65A3A]">{group.percentage}%</span>
+                          </div>
+                          <p className="text-[10px] text-[#171717]/70 italic font-sans">
+                            "{group.impactNote}"
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Density & Income Breakdown */}
+                  <div className="space-y-2 bg-[#F7F5EF] p-3 border border-[#171717]/30">
+                    <span className="text-[10px] text-[#171717]/80 font-bold uppercase block border-b border-[#171717]/10 pb-1">
+                      EQUITY & VULNERABILITY METRICS
+                    </span>
+
+                    <div className="space-y-1 text-[11px]">
+                      <div className="flex justify-between font-bold">
+                        <span>Rural vs Urban:</span>
+                        <span>🌾 {evidenceModalProject.demographics.ruralPct}% Rural / 🏙️ {evidenceModalProject.demographics.urbanPct}% Urban</span>
+                      </div>
+                      <div className="flex justify-between font-bold">
+                        <span>Low-Income Household (BPL):</span>
+                        <span className="text-amber-800">{evidenceModalProject.demographics.incomeTierBreakdown.lowIncomePct}% Concentration</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#171717]/10 space-y-1">
+                      <span className="text-[9px] text-[#171717]/70 font-bold block">VULNERABILITY FLAGS:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {evidenceModalProject.demographics.vulnerabilityIndicators.map((vuln, idx) => (
+                          <span key={idx} className={`px-1.5 py-0.5 text-[9px] font-bold border ${vuln.badgeColor}`}>
+                            ⚠️ {vuln.label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-2.5 bg-[#F7F5EF] border border-[#171717]/40 text-[11px] font-mono space-y-1">
+                  <span className="text-[9px] font-bold text-[#D65A3A] uppercase block">EQUITY ASSESSMENT:</span>
+                  <p className="text-[#171717] italic">"{evidenceModalProject.demographics.equityAssessment}"</p>
+                </div>
+              </div>
+            )}
 
             {/* ORIGINAL CITIZEN VOICE SIGNALS */}
             <div className="bg-[#171717] text-[#F7F5EF] border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#D65A3A]">

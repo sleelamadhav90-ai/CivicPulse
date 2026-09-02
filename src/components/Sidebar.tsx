@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const navItems = [
     { id: 'briefing' as NavTab, label: 'Gov Briefing', icon: FileText, emoji: '📰', badge: 'Daily' },
     { id: 'map' as NavTab, label: 'Policy Map', icon: MapPin, emoji: '🗺️', badge: 'Main' },
-    { id: 'patterns' as NavTab, label: 'Pattern Intelligence', icon: Cpu, emoji: '🔎', badge: 'AI Signals' },
+    { id: 'patterns' as NavTab, label: 'Community Signals', icon: Cpu, emoji: '🔎', badge: '327 Issues' },
     { id: 'engine' as NavTab, label: 'Recommendations', icon: Sparkles, emoji: '💡', badge: 'AI Portal' },
     { id: 'world' as NavTab, label: 'Global World Atlas', icon: MapPin, emoji: '🌍', badge: 'BRICS / Global' },
     { id: 'connectors' as NavTab, label: 'Country Connectors', icon: Box, emoji: '🔌', badge: 'Adapters' },
