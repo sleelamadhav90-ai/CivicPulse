@@ -95,6 +95,41 @@ export type InfrastructureCategory =
   | 'Education' 
   | 'Other';
 
+export type AssetCondition = '🟢 Good' | '⚠️ Poor' | '⚠️ Damaged' | '🔴 Critical' | '❌ Non-functional';
+
+export interface InfrastructureAsset {
+  id: string;
+  name: string; // e.g. "Primary Health Centre (PHC)", "Government High School", "Water Filtration Plant #3"
+  category: InfrastructureCategory;
+  districtId: string;
+  districtName: string;
+  location: string; // e.g. "Village Mangalagiri / Ward 12"
+  capacity: string; // e.g. "30 beds", "500 students", "100,000 L", "8.5 km", "12 MVA Substation"
+  condition: AssetCondition;
+  utilizationPct: number; // e.g. 92, 115, 45, 98
+  nearestFacilityDistanceKm?: number; // e.g. 18.2 km
+  travelTimeMinutes?: number; // e.g. 45 min
+  staffOrEquipmentStatus?: string; // e.g. "2 Medical Officers missing, 1 Oxygen Concentrator broken"
+  coverageRadiusKm?: number;
+  servedPopulation: number;
+  lastInspectedDate?: string;
+}
+
+export interface InfrastructureAudit {
+  assetName: string;
+  assetCategory: InfrastructureCategory;
+  location: string;
+  capacity: string;
+  condition: AssetCondition;
+  utilizationPct: number;
+  nearestFacilityDistanceKm?: number;
+  travelTimeMinutes?: number;
+  servedPopulation: number;
+  auditFinding: string;
+  interventionRationale: string;
+  interventionType: InterventionType;
+}
+
 export type RequestStatus = 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged';
 
 export interface DemographicGroupImpact {
@@ -253,6 +288,11 @@ export interface RecommendedProject {
   };
   // Demographic & equity breakdown ("Who is Affected?")
   demographics?: DemographicProfile;
+  // Infrastructure Data Audit ("What exists? What condition/capacity?")
+  infrastructureAudit?: InfrastructureAudit;
+  infrastructureAssetsList?: InfrastructureAsset[];
+  // Investment & Government Plan Data Audit ("What has been planned & spent?")
+  investmentAudit?: InvestmentAuditSummary;
 }
 
 export interface PolicyBrief {
@@ -320,3 +360,78 @@ export interface ImpactProject {
   completion_date: string;
   status: 'Completed' | 'In Progress' | 'Proposed';
 }
+
+// ==========================================
+// INVESTMENT & GOVERNMENT PLAN DATA TYPES
+// ==========================================
+
+export type InvestmentQuadrantType = 
+  | 'RED_HIGH_NEED_LOW_INVESTMENT'      // 🔴 High Need + Low Investment (Severe Gap)
+  | 'YELLOW_HIGH_INVESTMENT_POOR_OUTCOME'// 🟡 High Investment + Poor Outcomes (Audit / Fix Required)
+  | 'GREEN_HIGH_NEED_ADEQUATE_INVESTMENT'// 🟢 High Need + Adequate Investment (On Track / Monitor)
+  | 'GREY_LOW_NEED_LOW_INVESTMENT';      // ⚪ Low Need + Low Investment (Baseline)
+
+export type AnomalySignalType = 
+  | 'HIGH_SPENT_LOW_COMPLETION'        // ₹39 Cr spent but only 40% completed
+  | 'PROJECT_DELAYS_OVERRUNS'          // Repeated timelines extended
+  | 'UNUTILIZED_FUNDS'                 // Large allocated balance unreleased/unspent
+  | 'HIGH_COMPLAINTS_POST_COMPLETION'  // Project completed but complaints surged
+  | 'FUNDING_MISMATCH'                 // High demand area receives minimal allocation
+  | 'DUPLICATE_SCHEME_OVERLAP';        // Multiple schemes targeting same sector
+
+export interface InvestmentAnomalySignal {
+  id: string;
+  title: string;
+  type: AnomalySignalType;
+  severity: 'CRITICAL' | 'HIGH' | 'MEDIUM';
+  districtId: string;
+  districtName: string;
+  department: string;
+  schemeName: string;
+  allocatedInr: number;
+  spentInr: number;
+  unspentInr: number;
+  projectsCount: number;
+  completedCount: number;
+  delayedCount: number;
+  citizenComplaintsCount: number;
+  outcomeTrend: string; // e.g. "Road complaints increased +31% despite ₹20 Cr expenditure"
+  aiInvestigationNote: string;
+  recommendedActionType: InterventionType;
+}
+
+export interface InvestmentSchemeData {
+  schemeId: string;
+  schemeName: string; // e.g. "Jal Jeevan Mission (JJM)", "Pradhan Mantri Gram Sadak Yojana (PMGSY)"
+  department: string;
+  category: InfrastructureCategory;
+  stateAllocationInr: number;
+  releasedInr: number;
+  spentInr: number;
+  remainingInr: number;
+  utilizationPct: number; // e.g. 78%
+  totalProjects: number;
+  completedProjects: number;
+  delayedProjects: number;
+  pendingProjects: number;
+  citizenComplaintsCount: number;
+  quadrant: InvestmentQuadrantType;
+  primaryAnomaly?: InvestmentAnomalySignal;
+}
+
+export interface InvestmentAuditSummary {
+  schemeName: string;
+  department: string;
+  allocatedInr: number;
+  releasedInr: number;
+  spentInr: number;
+  unutilizedInr: number;
+  totalProjects: number;
+  completedProjects: number;
+  delayedProjects: number;
+  citizenComplaints: number;
+  auditFinding: string;
+  investmentGapRationale: string;
+  quadrant: InvestmentQuadrantType;
+}
+

@@ -1,4 +1,6 @@
-import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile } from '../types';
+import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile, InfrastructureAudit } from '../types';
+import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
+import { getInvestmentAuditByCategory } from '../data/investmentData';
 
 export const SCORING_WEIGHTS = {
   citizenDemand: 0.30,
@@ -464,6 +466,70 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
         };
       }
 
+      // Generate Infrastructure Audit ("What exists? What condition/capacity?")
+      let infrastructureAudit: InfrastructureAudit;
+      if (item.interventionType === 'BUILD') {
+        infrastructureAudit = {
+          assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Centre (PHC)' : item.category === 'Water' ? 'Water Pumping & Storage Hub' : item.category === 'Roads' ? 'Paved Access Road' : 'Community Infrastructure Facility',
+          assetCategory: item.category,
+          location: `${item.districtName} Rural Belt (Sector 4)`,
+          capacity: item.category === 'Healthcare' || item.category === 'Health' ? '0 local beds' : item.category === 'Water' ? '0 piped connections' : '0 paved km',
+          condition: '❌ Non-functional',
+          utilizationPct: 0,
+          nearestFacilityDistanceKm: 18.2,
+          travelTimeMinutes: 45,
+          servedPopulation: item.beneficiaries,
+          auditFinding: `Nearest facility is 18.2 km away (~45 min transit time) serving ${item.beneficiaries.toLocaleString()} residents without local coverage.`,
+          interventionRationale: `NO LOCAL INFRASTRUCTURE → 🏗 BUILD: New facility required because ${item.beneficiaries.toLocaleString()} residents have zero local access within a 15 km radius, while regional facilities operate at capacity.`,
+          interventionType: 'BUILD'
+        };
+      } else if (item.interventionType === 'FIX') {
+        infrastructureAudit = {
+          assetName: item.category === 'Roads' ? 'MDR-44 Hospital Transit Route' : item.category === 'Water' ? 'RO Filtration Plant #2' : 'Substation Feeder Line',
+          assetCategory: item.category,
+          location: `${item.districtName} Ward Corridor`,
+          capacity: item.category === 'Roads' ? '8 km stretch' : '50,000 L/day',
+          condition: '⚠️ Damaged',
+          utilizationPct: 95,
+          nearestFacilityDistanceKm: 0,
+          travelTimeMinutes: 28,
+          servedPopulation: item.beneficiaries,
+          auditFinding: `Infrastructure exists but is severely damaged with 48+ major structural defects causing 2.4x transit delays and emergency hazards.`,
+          interventionRationale: `INFRASTRUCTURE BROKEN → 🔧 FIX: Structural overhaul required to repair heavy monsoon damage, restore safety compliance, and eliminate emergency transit bottlenecks.`,
+          interventionType: 'FIX'
+        };
+      } else if (item.interventionType === 'UPGRADE') {
+        infrastructureAudit = {
+          assetName: item.category === 'Water' ? 'Overhead Water Reservoir Tank' : item.category === 'Electricity' ? '33/11kV Substation' : 'Government Primary School',
+          assetCategory: item.category,
+          location: `${item.districtName} Sector 9`,
+          capacity: item.category === 'Water' ? '100,000 L design limit' : '12 MVA capacity',
+          condition: '🔴 Critical',
+          utilizationPct: 115,
+          nearestFacilityDistanceKm: 3.5,
+          travelTimeMinutes: 10,
+          servedPopulation: item.beneficiaries,
+          auditFinding: `Facility is operating at 115% capacity overload with severe demand outpacing original design specifications.`,
+          interventionRationale: `CAPACITY EXCEEDED → ⬆ UPGRADE: Capacity expansion required to expand throughput by 40% and prevent structural/feeder failure under peak load.`,
+          interventionType: 'UPGRADE'
+        };
+      } else { // POLICY
+        infrastructureAudit = {
+          assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Center (30 beds)' : 'Public Utility & Distribution Center',
+          assetCategory: item.category,
+          location: `${item.districtName} Sector 2`,
+          capacity: '30 beds (Good Physical Condition)',
+          condition: '🟢 Good',
+          utilizationPct: 78,
+          nearestFacilityDistanceKm: 2.1,
+          travelTimeMinutes: 8,
+          servedPopulation: item.beneficiaries,
+          auditFinding: `Physical facility condition and bed capacity are good (78% utilization), but 2 Medical Officers are missing and vaccine stockouts disrupt patient care.`,
+          interventionRationale: `INFRASTRUCTURE ADEQUATE BUT SERVICE FAILING → 📋 POLICY: Operational policy overhaul, staffing deployment, and inventory supply chain reform required without CapEx construction.`,
+          interventionType: 'POLICY'
+        };
+      }
+
     return {
       id: item.id,
       rank,
@@ -511,6 +577,8 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
         demandReductionPct: Math.min(85, Math.round(18 + (item.priorityScore * 0.4))),
       },
       demographics,
+      infrastructureAudit,
+      investmentAudit: getInvestmentAuditByCategory(item.category),
     };
   });
 }

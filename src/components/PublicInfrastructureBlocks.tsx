@@ -139,39 +139,58 @@ export interface DemographicBaseline {
     id: 'infra_data',
     name: 'INFRASTRUCTURE DATA MODULE',
     category: 'dataset',
-    tagline: 'Jal Jeevan & PWD Asset Register Layer',
-    description: 'Connects to state infrastructure asset registers tracking pipe coverage %, power transformer downtime, road defect density, and clinic bed ratios.',
-    codeSnippet: `// Infrastructure Gap Schema
-export interface InfraAccessMetrics {
-  waterAccessPct: number;
-  drainageCoveragePct: number;
-  roadQualityScore: number;
-  powerReliabilityPct: number;
+    tagline: 'State Asset Register, Condition & Capacity Audit Engine',
+    description: 'Integrates real infrastructure asset registers tracking capacity (beds, students, L/day, km), physical condition (🟢 Good, ⚠️ Poor, ⚠️ Damaged, 🔴 Critical, ❌ Non-functional), and utilization rates to drive 4 intervention types: BUILD, FIX, UPGRADE, or POLICY.',
+    codeSnippet: `// Infrastructure Asset Register & Gap Schema
+export interface InfrastructureAsset {
+  id: string; // e.g. "PHC-VJA-401"
+  name: string; // e.g. "Primary Health Centre"
+  category: 'Healthcare' | 'Water' | 'Roads' | 'Education' | 'Electricity';
+  location: string; // e.g. "Village Mangalagiri Sector 4"
+  capacity: string; // e.g. "30 beds", "100,000 L", "500 students"
+  condition: '🟢 Good' | '⚠️ Poor' | '⚠️ Damaged' | '🔴 Critical' | '❌ Non-functional';
+  utilizationPct: number; // e.g. 92%
+  nearestDistanceKm: number; // e.g. 18.2 km
+  travelTimeMinutes: number; // e.g. 45 min
+}
+
+export function evaluateInterventionType(asset: InfrastructureAsset): 'BUILD' | 'FIX' | 'UPGRADE' | 'POLICY' {
+  if (asset.nearestDistanceKm > 10 || asset.utilizationPct === 0) return 'BUILD';
+  if (asset.condition === '⚠️ Damaged' || asset.condition === '🔴 Critical') return 'FIX';
+  if (asset.utilizationPct > 90) return 'UPGRADE';
+  return 'POLICY';
 }`,
     metrics: [
-      { label: 'Asset Pins', value: '18,450' },
-      { label: 'Connected APIs', value: '5 State Depts' },
-      { label: 'Sync Status', value: 'Real-time' }
+      { label: 'Tracked Assets', value: '18,450 Pins' },
+      { label: 'Action Types', value: '4 Deterministic' },
+      { label: 'Asset Depts', value: 'PWD / Jal Jeevan / Health' }
     ],
     accentColor: '#285943'
   },
   investment: {
     id: 'investment',
-    name: 'INVESTMENT MODULE',
+    name: 'INVESTMENT & SCHEME DATA MODULE',
     category: 'dataset',
-    tagline: 'Capital Outlay & Budgetary Sanctions Registry',
-    description: 'Tracks sanctioned municipal budgets, state capital expenditure (CapEx), and multilateral development fund disbursements across infrastructure sectors.',
-    codeSnippet: `// Fiscal Budget Allocation Model
-export interface SectorBudget {
-  category: string;
-  allocatedInr: number;
-  disbursedInr: number;
-  fiscalYear: '2025-26';
+    tagline: 'State Scheme Capital Outlay & 5-Question Audit Engine',
+    description: 'Aggregates state scheme allocations (Jal Jeevan, PMGSY, NHM, Swachh Bharat), funds released, actual expenditure, and unspent balances. Answers 5 critical questions: Where is money going? Is money spent? Is spending producing results? Are investments reaching places in need? Where are anomalies?',
+    codeSnippet: `// Investment & Plan Data Scheme Schema
+export interface InvestmentSchemeData {
+  schemeName: string; // e.g. "Jal Jeevan Mission (JJM)"
+  department: string; // e.g. "Rural Water Supply & Sanitation"
+  stateAllocationInr: number; // e.g. ₹50 Cr
+  releasedInr: number;        // e.g. ₹45 Cr
+  spentInr: number;           // e.g. ₹39 Cr
+  remainingInr: number;       // e.g. ₹11 Cr
+  totalProjects: number;      // e.g. 120
+  completedProjects: number;  // e.g. 82
+  delayedProjects: number;    // e.g. 25
+  citizenComplaintsCount: number; // e.g. 4,820
+  quadrant: 'RED_HIGH_NEED_LOW_INVESTMENT' | 'YELLOW_HIGH_INVESTMENT_POOR_OUTCOME' | 'GREEN_ADEQUATE' | 'GREY_BASELINE';
 }`,
     metrics: [
-      { label: 'Total Tracked', value: '₹480 Cr' },
-      { label: 'Sanctioned Projects', value: '38 Active' },
-      { label: 'Audit Trail', value: 'Immutable' }
+      { label: 'State Budget Tracked', value: '₹120 Cr' },
+      { label: 'Active Schemes', value: '5 Key Programs' },
+      { label: 'AI Audit Signals', value: '5 Live Anomaly Flags' }
     ],
     accentColor: '#285943'
   },

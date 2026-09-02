@@ -13,10 +13,11 @@ import {
   Cpu,
   Box,
   Share2,
-  FileText
+  FileText,
+  DollarSign
 } from 'lucide-react';
 
-export type NavTab = 'world' | 'briefing' | 'map' | 'connectors' | 'blocks' | 'overview' | 'patterns' | 'engine' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
+export type NavTab = 'world' | 'briefing' | 'map' | 'patterns' | 'engine' | 'investment' | 'connectors' | 'blocks' | 'overview' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -42,6 +43,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'map' as NavTab, label: 'Policy Map', icon: MapPin, emoji: '🗺️', badge: 'Main' },
     { id: 'patterns' as NavTab, label: 'Community Signals', icon: Cpu, emoji: '🔎', badge: '327 Issues' },
     { id: 'engine' as NavTab, label: 'Recommendations', icon: Sparkles, emoji: '💡', badge: 'AI Portal' },
+    { id: 'investment' as NavTab, label: 'Investment Audit', icon: DollarSign, emoji: '💰', badge: '₹120 Cr' },
     { id: 'world' as NavTab, label: 'Global World Atlas', icon: MapPin, emoji: '🌍', badge: 'BRICS / Global' },
     { id: 'connectors' as NavTab, label: 'Country Connectors', icon: Box, emoji: '🔌', badge: 'Adapters' },
     { id: 'blocks' as NavTab, label: 'Infrastructure Blocks', icon: Box, emoji: '🧱', badge: '8 Reusable' },

@@ -28,6 +28,7 @@ import {
   Hammer,
   Wrench,
   ArrowUpCircle,
+  DollarSign,
   FileCheck,
   X,
   Check,
@@ -439,6 +440,65 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </div>
                   )}
 
+                  {/* INFRASTRUCTURE AUDIT (WHAT EXISTS VS CITIZEN GAP) */}
+                  {project.infrastructureAudit && (
+                    <div className="p-3 bg-white border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
+                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717] flex items-center gap-1">
+                          <Building2 className="w-3.5 h-3.5 text-[#D65A3A]" />
+                          INFRASTRUCTURE AUDIT (CONDITION & CAPACITY)
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 border border-[#171717] bg-[#F7F5EF]">
+                          {project.infrastructureAudit.condition}
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5 font-mono text-xs">
+                        <div className="flex justify-between items-center text-[11px] font-bold text-[#171717]">
+                          <span>{project.infrastructureAudit.assetName}</span>
+                          <span className="text-[#D65A3A]">{project.infrastructureAudit.capacity}</span>
+                        </div>
+
+                        <div className="p-2 bg-[#F7F5EF] border border-[#171717]/20 text-[10px] leading-relaxed">
+                          <span className="font-bold block text-[#171717] mb-0.5">🔍 AI Evidence Comparison:</span>
+                          <p className="text-[#171717]/80">{project.infrastructureAudit.auditFinding}</p>
+                        </div>
+
+                        <div className="p-2 bg-[#171717] text-[#F7F5EF] text-[10px] font-bold flex items-center gap-1.5">
+                          <span className="text-amber-400">ACTION RATIONALE:</span>
+                          <span className="text-white">{project.infrastructureAudit.interventionRationale}</span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* INVESTMENT & GOVERNMENT PLAN DATA AUDIT */}
+                  {project.investmentAudit && (
+                    <div className="p-3 bg-[#F7F5EF] border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
+                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
+                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717] flex items-center gap-1">
+                          <DollarSign className="w-3.5 h-3.5 text-[#D65A3A]" />
+                          INVESTMENT & PLAN DATA AUDIT
+                        </span>
+                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 border border-[#171717] bg-white text-[#D65A3A]">
+                          ₹{(project.investmentAudit.spentInr / 10000000).toFixed(1)} Cr SPENT
+                        </span>
+                      </div>
+
+                      <div className="space-y-1 font-mono text-[10px]">
+                        <div className="flex justify-between items-center font-bold text-[#171717]">
+                          <span>{project.investmentAudit.schemeName}</span>
+                          <span className="text-[#171717]/70">{project.investmentAudit.completedProjects} Done / {project.investmentAudit.delayedProjects} Stalled</span>
+                        </div>
+
+                        <p className="text-[#171717]/80 bg-white p-2 border border-[#171717]/15 leading-relaxed">
+                          <span className="font-bold text-[#D65A3A]">💰 Scheme Gap Trace: </span>
+                          {project.investmentAudit.auditFinding}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Quick Stats Row */}
                   <div className="grid grid-cols-3 gap-2 text-center p-2 bg-[#F7F5EF] border border-[#171717]/30 text-xs font-mono">
                     <div>
@@ -791,6 +851,108 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 <div className="p-2.5 bg-[#F7F5EF] border border-[#171717]/40 text-[11px] font-mono space-y-1">
                   <span className="text-[9px] font-bold text-[#D65A3A] uppercase block">EQUITY ASSESSMENT:</span>
                   <p className="text-[#171717] italic">"{evidenceModalProject.demographics.equityAssessment}"</p>
+                </div>
+              </div>
+            )}
+
+            {/* INFRASTRUCTURE DATA AUDIT PANEL ("WHAT EXISTS? WHAT CONDITION/CAPACITY?") */}
+            {evidenceModalProject.infrastructureAudit && (
+              <div className="bg-[#171717] text-[#F7F5EF] border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#D65A3A] font-mono">
+                <div className="flex items-center justify-between border-b border-white/20 pb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#D65A3A] flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-[#D65A3A]" />
+                    INFRASTRUCTURE ASSET AUDIT & ACTION TYPE JUSTIFICATION
+                  </span>
+                  <span className="text-[9px] bg-white text-[#171717] px-2 py-0.5 font-bold">
+                    {evidenceModalProject.infrastructureAudit.condition}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">ASSET & LOCATION</span>
+                    <span className="font-bold text-white block">{evidenceModalProject.infrastructureAudit.assetName}</span>
+                    <span className="text-[10px] text-slate-300">{evidenceModalProject.infrastructureAudit.location}</span>
+                  </div>
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">CAPACITY & UTILIZATION</span>
+                    <span className="font-bold text-white block">{evidenceModalProject.infrastructureAudit.capacity}</span>
+                    <span className="text-[10px] text-amber-300">Utilization: {evidenceModalProject.infrastructureAudit.utilizationPct}%</span>
+                  </div>
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">PROXIMITY & COVERAGE</span>
+                    <span className="font-bold text-white block">{evidenceModalProject.infrastructureAudit.nearestFacilityDistanceKm} km nearest</span>
+                    <span className="text-[10px] text-slate-300">~{evidenceModalProject.infrastructureAudit.travelTimeMinutes} min travel time</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white text-[#171717] space-y-1 text-xs">
+                  <span className="text-[9px] font-bold text-[#D65A3A] uppercase block tracking-wider">
+                    COMPARE CITIZEN COMPLAINT VS INFRASTRUCTURE REALITY
+                  </span>
+                  <p className="font-medium text-[11px] leading-relaxed">
+                    {evidenceModalProject.infrastructureAudit.auditFinding}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-[#D65A3A] text-white space-y-1 text-xs font-bold shadow-[2px_2px_0px_#ffffff]">
+                  <span className="text-[9px] uppercase tracking-wider block text-amber-100">
+                    INTERVENTION DECISION TYPE ({evidenceModalProject.infrastructureAudit.interventionType})
+                  </span>
+                  <p className="text-white text-[11px] leading-relaxed">
+                    {evidenceModalProject.infrastructureAudit.interventionRationale}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* INVESTMENT & GOVERNMENT PLAN DATA AUDIT PANEL */}
+            {evidenceModalProject.investmentAudit && (
+              <div className="bg-[#171717] text-[#F7F5EF] border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#D65A3A] font-mono">
+                <div className="flex items-center justify-between border-b border-white/20 pb-2">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#D65A3A] flex items-center gap-1.5">
+                    <DollarSign className="w-4 h-4 text-[#D65A3A]" />
+                    INVESTMENT & PLAN DATA AUDIT (SCHEME CAPITAL & GAP TRACE)
+                  </span>
+                  <span className="text-[9px] bg-amber-400 text-[#171717] px-2 py-0.5 font-bold">
+                    ₹{(evidenceModalProject.investmentAudit.spentInr / 10000000).toFixed(1)} Cr EXPENDED
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">SCHEME & DEPT</span>
+                    <span className="font-bold text-white block">{evidenceModalProject.investmentAudit.schemeName}</span>
+                    <span className="text-[10px] text-slate-300">{evidenceModalProject.investmentAudit.department}</span>
+                  </div>
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">EXPENDITURE VS ALLOCATION</span>
+                    <span className="font-bold text-white block">₹{(evidenceModalProject.investmentAudit.spentInr / 10000000).toFixed(1)} Cr Spent</span>
+                    <span className="text-[10px] text-amber-300">Unspent: ₹{(evidenceModalProject.investmentAudit.unutilizedInr / 10000000).toFixed(1)} Cr</span>
+                  </div>
+                  <div className="bg-white/10 p-2.5 border border-white/10 space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">PROJECT TRACK RECORD</span>
+                    <span className="font-bold text-white block">{evidenceModalProject.investmentAudit.completedProjects} Completed</span>
+                    <span className="text-[10px] text-amber-400 font-bold">{evidenceModalProject.investmentAudit.delayedProjects} Stalled Contracts</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-white text-[#171717] space-y-1 text-xs">
+                  <span className="text-[9px] font-bold text-[#D65A3A] uppercase block tracking-wider">
+                    COMPARE SCHEME SPENDING VS CITIZEN GROUND NEED
+                  </span>
+                  <p className="font-medium text-[11px] leading-relaxed">
+                    {evidenceModalProject.investmentAudit.auditFinding}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-[#D65A3A] text-white space-y-1 text-xs font-bold shadow-[2px_2px_0px_#ffffff]">
+                  <span className="text-[9px] uppercase tracking-wider block text-amber-100">
+                    INVESTMENT GAP RATIONALE:
+                  </span>
+                  <p className="text-white text-[11px] leading-relaxed font-normal">
+                    {evidenceModalProject.investmentAudit.investmentGapRationale}
+                  </p>
                 </div>
               </div>
             )}

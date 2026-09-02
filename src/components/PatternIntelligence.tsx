@@ -37,9 +37,11 @@ import {
   ChevronRight,
   HelpCircle,
   FolderTree,
-  ShieldCheck
+  ShieldCheck,
+  DollarSign
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, DemographicProfile } from '../types';
+import { District, CitizenRequest, InfrastructureCategory, DemographicProfile, InfrastructureAudit, InvestmentAuditSummary } from '../types';
+import { getInvestmentAuditByCategory } from '../data/investmentData';
 
 export type PatternCategory = 'ALL' | 'Emerging' | 'Trend' | 'Cluster' | 'Cross-Domain' | 'Anomaly' | 'Recurring';
 
@@ -118,6 +120,8 @@ export interface CommunityIssueCluster {
   mergedWith?: string[];
   splitFrom?: string;
   demographics?: DemographicProfile;
+  infrastructureAudit?: InfrastructureAudit;
+  investmentAudit?: InvestmentAuditSummary;
 }
 
 interface PatternIntelligenceProps {
@@ -1259,6 +1263,123 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
                 </div>
               </div>
             )}
+
+            {/* INFRASTRUCTURE DATA AUDIT PANEL ("WHAT EXISTS? WHAT CONDITION/CAPACITY?") */}
+            {selectedCluster.infrastructureAudit && (
+              <div className="bg-white border-2 border-[#171717] p-5 space-y-4 shadow-[4px_4px_0px_#171717] font-mono">
+                <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-5 h-5 text-[#D65A3A]" />
+                    <div>
+                      <span className="text-xs font-extrabold text-[#171717] uppercase block tracking-wider">
+                        INFRASTRUCTURE ASSET AUDIT (CONDITION & CAPACITY)
+                      </span>
+                      <p className="text-[10px] text-[#171717]/70">
+                        Cross-referencing citizen request signals against official asset registries & capacity metrics.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-[#171717] text-[#F7F5EF] px-2 py-0.5 font-bold">
+                    ASSET LOGGED
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                  <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">EXISTING INFRASTRUCTURE</span>
+                    <span className="font-bold text-[#171717] block">{selectedCluster.infrastructureAudit.assetName}</span>
+                    <span className="text-[10px] text-[#171717]/70">{selectedCluster.infrastructureAudit.location}</span>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">CONDITION & CAPACITY</span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[#171717]">{selectedCluster.infrastructureAudit.capacity}</span>
+                      <span className="text-[9px] bg-white border border-[#171717] px-1 py-0.2 font-bold">
+                        {selectedCluster.infrastructureAudit.condition}
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-amber-800 font-bold block">Utilization: {selectedCluster.infrastructureAudit.utilizationPct}%</span>
+                  </div>
+                  <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                    <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">PROXIMITY & TRAVEL TIME</span>
+                    <span className="font-bold text-[#171717] block">{selectedCluster.infrastructureAudit.nearestFacilityDistanceKm} km distance</span>
+                    <span className="text-[10px] text-[#171717]/70">~{selectedCluster.infrastructureAudit.travelTimeMinutes} min travel time</span>
+                  </div>
+                </div>
+
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] space-y-1 text-xs">
+                  <span className="text-[9px] font-bold text-[#D65A3A] uppercase block tracking-wider">
+                    CITIZEN CLAIM VS INFRASTRUCTURE REALITY EVIDENCE
+                  </span>
+                  <p className="text-[#171717] font-medium leading-relaxed">
+                    {selectedCluster.infrastructureAudit.auditFinding}
+                  </p>
+                </div>
+
+                <div className="p-3 bg-[#171717] text-[#F7F5EF] space-y-1 text-xs font-bold shadow-[2px_2px_0px_#D65A3A]">
+                  <span className="text-[9px] text-amber-400 uppercase tracking-wider block">
+                    RECOMMENDED ACTION TYPE: {selectedCluster.infrastructureAudit.interventionType}
+                  </span>
+                  <p className="text-white text-[11px] font-normal leading-relaxed">
+                    {selectedCluster.infrastructureAudit.interventionRationale}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* GOVERNMENT SCHEME & INVESTMENT TRACE PANEL */}
+            {(() => {
+              const inv = selectedCluster.investmentAudit || getInvestmentAuditByCategory(selectedCluster.category);
+              return (
+                <div className="bg-white border-2 border-[#171717] p-5 space-y-4 shadow-[4px_4px_0px_#171717] font-mono">
+                  <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2">
+                    <div className="flex items-center gap-2">
+                      <DollarSign className="w-5 h-5 text-[#D65A3A]" />
+                      <div>
+                        <span className="text-xs font-extrabold text-[#171717] uppercase block tracking-wider">
+                          GOVERNMENT PLAN & SCHEME INVESTMENT TRACE
+                        </span>
+                        <p className="text-[10px] text-[#171717]/70">
+                          Cross-referencing citizen cluster demand against active government allocations & spending.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] bg-[#D65A3A] text-white px-2 py-0.5 font-bold">
+                      SCHEME AUDIT
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                      <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">SCHEME & DEPARTMENT</span>
+                      <span className="font-bold text-[#171717] block">{inv.schemeName}</span>
+                      <span className="text-[10px] text-[#171717]/70">{inv.department}</span>
+                    </div>
+
+                    <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                      <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">STATE EXPENDITURE</span>
+                      <span className="font-bold text-[#171717] block">₹{(inv.spentInr / 10000000).toFixed(1)} Cr Expended</span>
+                      <span className="text-[10px] text-emerald-800 font-bold">Allocated: ₹{(inv.allocatedInr / 10000000).toFixed(1)} Cr</span>
+                    </div>
+
+                    <div className="bg-[#F7F5EF] p-3 border border-[#171717] space-y-1">
+                      <span className="text-[9px] text-[#D65A3A] uppercase block font-bold">DELAYS & STALLED CONTRACTS</span>
+                      <span className="font-bold text-amber-800 block">{inv.delayedProjects} Projects Stalled</span>
+                      <span className="text-[10px] text-[#171717]/70">{inv.completedProjects} Completed</span>
+                    </div>
+                  </div>
+
+                  <div className="p-3 bg-[#171717] text-[#F7F5EF] space-y-1 text-xs">
+                    <span className="text-[9px] font-bold text-amber-300 uppercase block tracking-wider">
+                      INVESTMENT GAP FINDING:
+                    </span>
+                    <p className="text-white font-normal text-[11px] leading-relaxed">
+                      {inv.auditFinding}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* GEOGRAPHIC AGGREGATION MAP / HOTSPOT BREAKDOWN */}
             <div className="bg-[#171717] text-[#F7F5EF] border-2 border-[#171717] p-5 space-y-4 shadow-[4px_4px_0px_#D65A3A] font-mono">

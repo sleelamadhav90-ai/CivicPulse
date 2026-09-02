@@ -33,6 +33,7 @@ import { GlobalWorldMapCanvas } from './components/GlobalWorldMapCanvas';
 import { GlobalConnectorsView } from './components/GlobalConnectorsView';
 import { GovernmentBriefing } from './components/GovernmentBriefing';
 import { PatternIntelligence } from './components/PatternIntelligence';
+import { InvestmentIntelligence } from './components/InvestmentIntelligence';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -371,6 +372,18 @@ export default function App() {
               onNavigateToMap={() => setActiveTab('map')}
               onConvertToGovernmentProject={handleConvertToGovernmentProject}
               onNavigateToProjects={() => setActiveTab('projects')}
+            />
+          )}
+
+          {activeTab === 'investment' && (
+            <InvestmentIntelligence
+              districts={districts}
+              onNavigateToEngine={() => setActiveTab('engine')}
+              onNavigateToPolicyLab={(districtId, category) => {
+                setPolicyTargetDistrictId(districtId);
+                setPolicyTargetCategory(category);
+                setActiveTab('insights');
+              }}
             />
           )}
 
