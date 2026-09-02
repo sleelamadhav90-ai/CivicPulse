@@ -1,53 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   Mic, 
-  MicOff, 
-  Upload, 
   Send, 
   Sparkles, 
   CheckCircle2, 
-  AlertCircle, 
   Globe2, 
-  MapPin, 
-  Droplet, 
-  Droplets,
   HeartPulse, 
-  Route, 
-  GraduationCap, 
-  Zap,
-  Trash2,
-  Volume2,
-  RotateCcw,
-  ArrowRight,
-  Info,
-  Layers,
-  Radio,
-  FileText,
-  Clock,
+  Layers, 
+  Radio, 
+  ShieldAlert, 
+  Cpu, 
+  MessageSquare, 
+  Camera, 
+  ChevronRight, 
+  BarChart3, 
+  TrendingUp, 
+  Languages,
   Check,
   Building2,
-  ShieldAlert,
-  Wrench,
-  Activity,
-  Users,
-  Cpu,
-  CornerDownRight,
-  Edit3,
-  Play,
-  Pause,
-  MessageSquare,
-  Camera,
-  Image as ImageIcon,
-  ChevronRight,
-  Search,
-  CheckSquare,
-  BarChart3,
-  TrendingUp,
-  ShieldCheck,
-  Sliders,
-  Sparkle
+  HelpCircle,
+  FileText
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, AIAnalysisResult } from '../types';
+import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
 import { calculatePriorityScore } from '../utils/scoring';
 
 interface CitizenIngestionProps {
@@ -81,37 +55,10 @@ export interface ChatMessage {
 
 const SAMPLE_CHAT_SCENARIOS = [
   {
-    id: 'road-damage',
-    title: '💬 Scenario A: Road Damage (Chat Conversation)',
-    description: 'Conversational flow gathering location and duration naturally.',
-    messages: [
-      { id: 'm1', sender: 'citizen', text: 'The road near our village is completely damaged.', timestamp: '10:00 AM', language: 'English' },
-      { id: 'm2', sender: 'ai', text: 'I understand. Is this the road near the primary school in Krishna district?', timestamp: '10:00 AM', language: 'English', quickOptions: ['Yes', 'No, near market area', 'No, near hospital'] },
-      { id: 'm3', sender: 'citizen', text: 'Yes', timestamp: '10:01 AM', language: 'English' },
-      { id: 'm4', sender: 'ai', text: 'How long has this problem existed?', timestamp: '10:01 AM', language: 'English', quickOptions: ['Around 3 months', '2 weeks', 'Over a year'] },
-      { id: 'm5', sender: 'citizen', text: 'Around 3 months', timestamp: '10:02 AM', language: 'English' },
-      {
-        id: 'm6',
-        sender: 'ai',
-        text: "Got it. I've recorded this as a road infrastructure issue.",
-        timestamp: '10:02 AM',
-        language: 'English',
-        isConfirmationCard: true,
-        extractedEntity: {
-          category: 'Roads',
-          subcategory: 'Pothole & Surface Damage',
-          location: 'Near Village Primary School',
-          duration: '3 months',
-          urgency: 'HIGH 🔴',
-          affectedGroup: 'School students & local farmers'
-        }
-      }
-    ] as ChatMessage[]
-  },
-  {
     id: 'street-lighting',
-    title: '💡 Scenario B: Street Lighting (Instant Structured Extraction)',
-    description: 'Single statement parsed into structured request.',
+    title: '💡 Scenario A: Street Lighting (English)',
+    description: 'Direct citizen report parsed instantly into structured request.',
+    language: 'English',
     messages: [
       { id: 'm1', sender: 'citizen', text: "The street lights near our school haven't worked for two weeks.", timestamp: '10:15 AM', language: 'English' },
       {
@@ -122,7 +69,7 @@ const SAMPLE_CHAT_SCENARIOS = [
         language: 'English',
         isConfirmationCard: true,
         extractedEntity: {
-          category: 'Electricity / Street Lighting',
+          category: 'Electricity / Infrastructure',
           subcategory: 'Street Lighting Grid Outage',
           location: 'XYZ School Area, Vijayawada',
           duration: '2 weeks',
@@ -133,25 +80,60 @@ const SAMPLE_CHAT_SCENARIOS = [
     ] as ChatMessage[]
   },
   {
-    id: 'hospital-followup',
-    title: '🏥 Scenario C: Hospital Vague Input (AI Follow-up System)',
-    description: 'AI presents interactive follow-up option pills to pinpoint missing details.',
+    id: 'tanglish-mixed',
+    title: '🗣️ Scenario B: Code-Mixed Tanglish (Tamil + English)',
+    description: 'Informal code-mixed speech parsed without requiring formal grammar.',
+    language: 'Tanglish',
     messages: [
-      { id: 'm1', sender: 'citizen', text: "Our hospital isn't working properly.", timestamp: '10:30 AM', language: 'English' },
+      { id: 'm1', sender: 'citizen', text: 'Road romba damage aagiduchu, school pakkam potholes irukku.', timestamp: '10:20 AM', language: 'Tanglish (Mixed)' },
       {
         id: 'm2',
         sender: 'ai',
-        text: 'I understand you are experiencing an issue at the hospital. What is the main problem?',
-        timestamp: '10:30 AM',
-        language: 'English',
-        quickOptions: ['👨‍⚕️ No doctors', '💊 Medicine shortage', '⏳ Long waiting time', '🏥 Facility damaged', '💬 Other']
+        text: 'நான் புரிந்துகொண்டேன் (I understood). I have extracted your road defect report near the school area.',
+        timestamp: '10:20 AM',
+        language: 'Tanglish (Mixed)',
+        isConfirmationCard: true,
+        extractedEntity: {
+          category: 'Road Infrastructure',
+          subcategory: 'Severe Potholes & Surface Damage',
+          location: 'Near Primary School Corridor',
+          duration: 'Ongoing / 1 month',
+          urgency: 'HIGH 🔴',
+          affectedGroup: 'School children & daily commuters'
+        }
+      }
+    ] as ChatMessage[]
+  },
+  {
+    id: 'hinglish-mixed',
+    title: '🗣️ Scenario C: Code-Mixed Hinglish (Hindi + English)',
+    description: 'Combines Hindi and English phrases into unified civic signal.',
+    language: 'Hinglish',
+    messages: [
+      { id: 'm1', sender: 'citizen', text: 'हमारे area में water supply बहुत खराब है, 10 days से पानी नहीं आया।', timestamp: '10:25 AM', language: 'Hinglish (Mixed)' },
+      {
+        id: 'm2',
+        sender: 'ai',
+        text: 'मैंने समझ लिया। (I understand). I have logged this drinking water supply shortage.',
+        timestamp: '10:25 AM',
+        language: 'Hinglish (Mixed)',
+        isConfirmationCard: true,
+        extractedEntity: {
+          category: 'Water Infrastructure',
+          subcategory: 'Pipeline Outage & Zero Supply',
+          location: 'Krishna District Residential Area',
+          duration: '10 days',
+          urgency: 'CRITICAL 🔴',
+          affectedGroup: 'Local households & families'
+        }
       }
     ] as ChatMessage[]
   },
   {
     id: 'telugu-chat',
-    title: 'తెలుగు Scenario D: Multilingual Telugu Chat',
+    title: 'తెలుగు Scenario D: Native Telugu Conversation',
     description: 'Citizen speaks Telugu; AI replies in Telugu while extracting structured English representation.',
+    language: 'Telugu',
     messages: [
       { id: 'm1', sender: 'citizen', text: 'మా గ్రామంలో రెండు వారాలుగా మంచినీటి సరఫరా నిలిచిపోయింది.', timestamp: '10:45 AM', language: 'Telugu' },
       {
@@ -173,26 +155,19 @@ const SAMPLE_CHAT_SCENARIOS = [
     ] as ChatMessage[]
   },
   {
-    id: 'hindi-chat',
-    title: 'हिंदी Scenario E: Multilingual Hindi Chat',
-    description: 'Citizen speaks Hindi; AI replies in Hindi with full structure.',
+    id: 'hospital-followup',
+    title: '🏥 Scenario E: Hospital Vague Input (AI Follow-up System)',
+    description: 'AI presents interactive follow-up option pills to pinpoint missing details.',
+    language: 'English',
     messages: [
-      { id: 'm1', sender: 'citizen', text: 'हमारे स्कूल के पास स्ट्रीट लाइट और सड़क 2 महीने से खराब हैं।', timestamp: '11:00 AM', language: 'Hindi' },
+      { id: 'm1', sender: 'citizen', text: "Our hospital isn't working properly.", timestamp: '10:30 AM', language: 'English' },
       {
         id: 'm2',
         sender: 'ai',
-        text: 'धन्यवाद। मैंने इसे सड़क और स्ट्रीट लाइट बुनियादी ढांचे की समस्या के रूप में दर्ज कर लिया है।',
-        timestamp: '11:00 AM',
-        language: 'Hindi',
-        isConfirmationCard: true,
-        extractedEntity: {
-          category: 'Roads & Electricity',
-          subcategory: 'Street lighting & Potholes',
-          location: 'Near Government School, Guntur',
-          duration: '2 months',
-          urgency: 'HIGH 🔴',
-          affectedGroup: 'छात्र और स्थानीय निवासी'
-        }
+        text: 'I understand you are experiencing an issue at the hospital. What is the main problem?',
+        timestamp: '10:30 AM',
+        language: 'English',
+        quickOptions: ['👨‍⚕️ No doctors', '💊 Medicine shortage', '⏳ Long waiting time', '🏥 Facility damaged', '💬 Other']
       }
     ] as ChatMessage[]
   }
@@ -200,27 +175,27 @@ const SAMPLE_CHAT_SCENARIOS = [
 
 export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   districts,
-  requests,
   onAddRequest,
-  onOpenScoreModal,
   onNavigateToHotspots,
   onNavigateToPatterns,
 }) => {
   // Navigation View Tabs
-  const [activeTab, setActiveTab] = useState<'messaging' | 'followup' | 'analytics' | 'pipeline'>('messaging');
+  const [activeTab, setActiveTab] = useState<'messaging' | 'onevoice' | 'official_dashboard' | 'pipeline'>('messaging');
 
   // Active Scenario Selection
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('street-lighting');
-  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(SAMPLE_CHAT_SCENARIOS[1].messages);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>(SAMPLE_CHAT_SCENARIOS[0].messages);
 
   // Input Controls
-  const [inputText, setInputText] = useState<string>("The street lights in our area haven't been working for 2 weeks.");
-  const [inputLanguage, setInputLanguage] = useState<string>('English');
+  const [inputText, setInputText] = useState<string>("The street lights in our area have not been working for 2 weeks.");
+  const [inputLanguage, setInputLanguage] = useState<string>('Auto-Detect');
   const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
+
+  // Official Interface Language Switcher
+  const [officialLang, setOfficialLang] = useState<'EN' | 'TE' | 'HI' | 'TA'>('EN');
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState<boolean>(false);
-  const [recordingSeconds, setRecordingSeconds] = useState<number>(0);
   const [recordedAudioUrl, setRecordedAudioUrl] = useState<string | null>(null);
 
   // Submission / Processing State
@@ -300,7 +275,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         sender: 'ai',
-        text: "We understood your request! Please review the details below:",
+        text: "We understood your request! Please review the extracted details below:",
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         language: inputLanguage,
         isConfirmationCard: true,
@@ -421,19 +396,32 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       {/* CIVICPULSE Header Banner */}
       <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[4px_4px_0px_#171717] space-y-4 text-center">
         <div className="inline-block px-3 py-1 bg-[#171717] text-[#F7F5EF] font-mono text-[10px] font-bold uppercase tracking-widest border border-[#171717] mb-1">
-          DIGITAL PUBLIC GOOD • CIVICPULSE MESSAGING
+          DIGITAL PUBLIC GOOD • CIVICPULSE MULTILINGUAL AI
         </div>
 
         <h1 className="text-3xl sm:text-4xl font-serif font-black tracking-tight text-[#171717] uppercase">
           CIVICPULSE
         </h1>
-        <p className="text-lg sm:text-xl font-serif text-[#D65A3A] font-bold italic">
-          "What does your community need?"
-        </p>
-
-        <p className="text-xs font-mono text-[#171717]/70 max-w-xl mx-auto">
-          You can write or speak in <strong>Telugu (తెలుగు)</strong>, <strong>Hindi (हिंदी)</strong>, <strong>English</strong>, <strong>Tamil (தமிழ்)</strong>, or <strong>Kannada (ಕನ್ನಡ)</strong>.
-        </p>
+        
+        {/* Multilingual Greetings Bar */}
+        <div className="space-y-1">
+          <p className="text-lg sm:text-xl font-serif text-[#D65A3A] font-bold italic">
+            "உங்கள் பிரச்சனையை சொல்லுங்கள் • Tell us your problem • మీ సమస్యను చెప్పండి"
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2 pt-1 font-mono text-xs text-[#171717]/80">
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">தமிழ்</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">తెలుగు</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">हिन्दी</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">English</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">বাংলা</span>
+            <span>•</span>
+            <span className="px-2 py-0.5 bg-[#F7F5EF] border border-[#171717]/30 font-bold">ಕನ್ನಡ</span>
+          </div>
+        </div>
 
         {/* View Selection Tabs */}
         <div className="flex flex-wrap items-center justify-center gap-2 pt-4 border-t border-[#171717]/15">
@@ -446,31 +434,31 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             }`}
           >
             <MessageSquare className="w-3.5 h-3.5 text-[#D65A3A]" />
-            <span>01. Messaging & AI Chat</span>
+            <span>01. Citizen Messaging</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('followup')}
+            onClick={() => setActiveTab('onevoice')}
             className={`px-4 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer border border-[#171717] flex items-center gap-2 ${
-              activeTab === 'followup'
+              activeTab === 'onevoice'
                 ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
                 : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
-            <span>02. AI Follow-up System</span>
+            <Languages className="w-3.5 h-3.5 text-[#D65A3A]" />
+            <span>⭐ 02. One Civic Voice AI</span>
           </button>
 
           <button
-            onClick={() => setActiveTab('analytics')}
+            onClick={() => setActiveTab('official_dashboard')}
             className={`px-4 py-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer border border-[#171717] flex items-center gap-2 ${
-              activeTab === 'analytics'
+              activeTab === 'official_dashboard'
                 ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
                 : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
             }`}
           >
             <BarChart3 className="w-3.5 h-3.5 text-[#D65A3A]" />
-            <span>03. Officials' Structured Analytics</span>
+            <span>03. Officials' Language View</span>
           </button>
 
           <button
@@ -482,7 +470,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             }`}
           >
             <Layers className="w-3.5 h-3.5 text-[#D65A3A]" />
-            <span>04. 6-Stage Pipeline & Stage 6 MEASURE</span>
+            <span>04. End-to-End Pipeline & Measure</span>
           </button>
         </div>
       </div>
@@ -495,10 +483,10 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             {/* Scenario Switcher */}
             <div className="bg-white border border-[#171717] p-5 shadow-[4px_4px_0px_#171717] space-y-3">
               <span className="text-[10px] font-mono font-bold uppercase text-[#D65A3A] tracking-wider block">
-                INTERACTIVE SCENARIO SHORTCUTS
+                PRE-CONFIGURED TEST MESSAGES
               </span>
               <p className="text-xs text-[#171717]/70">
-                Click any pre-configured messaging flow to test AI extraction:
+                Click any scenario to test natural language & code-mixed parsing:
               </p>
 
               <div className="space-y-2">
@@ -529,7 +517,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   REPORT A PROBLEM
                 </span>
                 <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 px-2 py-0.5 border border-emerald-400 font-bold">
-                  UNIFIED INPUT PIPELINE
+                  AUTOMATIC LANGUAGE DETECT
                 </span>
               </div>
 
@@ -537,7 +525,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
               <div className="grid grid-cols-3 gap-2 text-center">
                 <button
                   type="button"
-                  onClick={() => handleSendMessage("The street lights near our school haven't worked for two weeks.")}
+                  onClick={() => handleSendMessage("Road romba damage aagiduchu, school pakkam potholes irukku.")}
                   className="p-3 bg-[#F7F5EF] hover:bg-white border border-[#171717] font-mono text-xs font-bold cursor-pointer flex flex-col items-center gap-1 shadow-[2px_2px_0px_#171717]"
                 >
                   <MessageSquare className="w-5 h-5 text-[#D65A3A]" />
@@ -576,22 +564,12 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 </div>
               )}
 
-              {/* Language Selector */}
-              <div className="space-y-1">
-                <label className="text-[10px] font-mono font-bold uppercase text-[#171717]/70 block">
-                  Language Preference:
-                </label>
-                <select
-                  value={inputLanguage}
-                  onChange={(e) => setInputLanguage(e.target.value)}
-                  className="w-full bg-[#F7F5EF] border border-[#171717] p-2 text-xs font-mono font-bold cursor-pointer"
-                >
-                  <option value="English">English</option>
-                  <option value="Telugu">Telugu (తెలుగు)</option>
-                  <option value="Hindi">Hindi (हिंदी)</option>
-                  <option value="Tamil">Tamil (தமிழ்)</option>
-                  <option value="Kannada">Kannada (ಕನ್ನಡ)</option>
-                </select>
+              {/* Language Mode Display */}
+              <div className="p-3 bg-[#F7F5EF] border border-[#171717] font-mono text-xs space-y-1">
+                <span className="text-[10px] font-bold text-[#D65A3A] uppercase block">AI AUTO-DETECTION ACTIVE:</span>
+                <p className="text-[11px] text-[#171717]">
+                  Type in <strong>Telugu, Hindi, Tanglish, Hinglish, Tamil, or English</strong>. No language selection dropdown required.
+                </p>
               </div>
             </div>
           </div>
@@ -611,13 +589,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       CIVICPULSE ASSISTANT
                     </span>
                     <span className="text-[9px] font-mono text-emerald-400 block">
-                      ● Active • Multilingual AI Engine
+                      ● Active • Multilingual Semantic Engine
                     </span>
                   </div>
                 </div>
 
-                <span className="text-[10px] font-mono uppercase bg-white/10 px-2 py-0.5 border border-white/20">
-                  {inputLanguage} Mode
+                <span className="text-[10px] font-mono bg-white/10 px-2 py-0.5 border border-white/20 uppercase font-bold text-amber-300">
+                  Auto-Detect Active
                 </span>
               </div>
 
@@ -743,7 +721,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 {isProcessing && (
                   <div className="flex items-center gap-2 p-3 bg-white border border-[#171717] font-mono text-xs text-[#171717] w-fit shadow-[2px_2px_0px_#171717]">
                     <Sparkles className="w-4 h-4 text-[#D65A3A] animate-spin" />
-                    <span>AI is processing request & extracting entities...</span>
+                    <span>AI is analyzing language & extracting structured civic signal...</span>
                   </div>
                 )}
 
@@ -758,7 +736,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder='💬 "The street lights in our area have not been working for 2 weeks."'
+                    placeholder='💬 Write in Telugu, Tanglish, Hinglish, Hindi, Tamil or English...'
                     className="flex-1 bg-[#F7F5EF] border border-[#171717] px-3 py-2.5 font-mono text-xs text-[#171717] focus:outline-none focus:bg-white"
                   />
 
@@ -797,175 +775,334 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         </div>
       )}
 
-      {/* TAB 2: AI FOLLOW-UP SYSTEM SIMULATOR */}
-      {activeTab === 'followup' && (
-        <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[5px_5px_0px_#171717] space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
-            <div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block">
-                SMART CLARIFICATION PIPELINE
-              </span>
-              <h2 className="text-xl font-serif font-bold text-[#171717]">
-                AI "Follow-up" System
-              </h2>
-              <p className="text-xs text-[#171717]/70 mt-1 max-w-xl">
-                Instead of forcing citizens to fill out 10 tedious form fields, CivicPulse AI asks targeted clarifying questions with interactive option pills when reports are vague.
-              </p>
-            </div>
-
-            <span className="p-3 bg-[#F7F5EF] border border-[#171717] font-mono text-xs text-center font-bold text-[#D65A3A]">
-              🤖 ZERO FORM FILLING
-            </span>
-          </div>
-
-          {/* Demonstration Diagram */}
-          <div className="p-6 bg-[#F7F5EF] border border-[#171717] space-y-4 font-mono text-xs">
-            <span className="font-bold text-[#171717] uppercase block border-b border-[#171717]/15 pb-2">
-              EXAMPLE: VAGUE CITIZEN MESSAGE ➔ SMART AI CLARIFICATION
+      {/* TAB 2: ONE CIVIC VOICE (CROSS-LANGUAGE CONVERGENCE & CODE-MIXED AI) */}
+      {activeTab === 'onevoice' && (
+        <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[5px_5px_0px_#171717] space-y-8">
+          {/* Concept Header */}
+          <div className="text-center space-y-3 border-b border-[#171717]/15 pb-6">
+            <span className="px-3 py-1 bg-[#171717] text-[#F7F5EF] font-mono text-[10px] font-bold uppercase tracking-widest border border-[#171717]">
+              CONCEPTUAL IDENTITY • ONE CIVIC VOICE
             </span>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Box 1: Vague Input */}
-              <div className="bg-white p-4 border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
-                <span className="text-[10px] text-rose-600 font-bold block">👤 STEP 1: CITIZEN SENDS VAGUE REPORT</span>
-                <p className="font-serif italic text-sm text-[#171717]">"Our hospital isn't working properly."</p>
-                <div className="text-[10px] text-[#171717]/60">
-                  Deficit: Missing location, specific issue type, and severity.
-                </div>
-              </div>
-
-              {/* Box 2: Smart AI Follow-up */}
-              <div className="bg-[#171717] text-[#F7F5EF] p-4 border border-[#171717] space-y-3 shadow-[2px_2px_0px_#D65A3A]">
-                <span className="text-[10px] text-amber-300 font-bold block">🤖 STEP 2: AI ASKS TARGETED FOLLOW-UP</span>
-                <p className="font-sans text-xs">"What is the main issue you are experiencing at the hospital?"</p>
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {['[ No doctors ]', '[ No medicines ]', '[ Long waiting time ]', '[ Facility damaged ]', '[ Other ]'].map((pill, idx) => (
-                    <span key={idx} className="px-2 py-0.5 bg-white/10 text-white text-[10px] border border-white/20 font-bold">
-                      {pill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex justify-end pt-2">
-            <button
-              onClick={() => {
-                setActiveTab('messaging');
-                handleSelectScenario('hospital-followup');
-              }}
-              className="py-3 px-6 bg-[#D65A3A] text-white font-mono text-xs font-bold uppercase border border-[#171717] shadow-[3px_3px_0px_#171717] cursor-pointer flex items-center gap-2"
-            >
-              <span>Test Hospital Follow-up Live →</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 3: OFFICIALS' STRUCTURED ANALYTICS VIEW */}
-      {activeTab === 'analytics' && (
-        <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[5px_5px_0px_#171717] space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
-            <div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block">
-                AGGREGATED INTELLIGENCE
-              </span>
-              <h2 className="text-xl font-serif font-bold text-[#171717]">
-                Officials' Structured Version
-              </h2>
-              <p className="text-xs text-[#171717]/70 mt-1 max-w-xl">
-                Government officials don't read 5,000 raw chat messages — CivicPulse aggregates thousands of signals into categorized dashboards and pattern alerts.
-              </p>
-            </div>
-
-            <div className="p-3 bg-[#171717] text-[#F7F5EF] font-mono text-xs text-center border border-[#171717]">
-              <span className="text-[9px] text-[#D65A3A] block font-bold">PROCESSED SIGNALS</span>
-              <span className="font-extrabold text-sm">2,481 Healthcare Signals</span>
-            </div>
-          </div>
-
-          {/* Healthcare Signals Breakdown Table */}
-          <div className="bg-[#F7F5EF] border border-[#171717] p-5 shadow-[3px_3px_0px_#171717] space-y-4 font-mono text-xs">
-            <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
-              <span className="font-bold text-rose-900 uppercase flex items-center gap-1.5 text-sm">
-                <HeartPulse className="w-5 h-5 text-rose-600" />
-                Healthcare Signals Breakdown (2,481 Signals)
-              </span>
-              <span className="text-[10px] bg-rose-100 text-rose-900 px-2 py-0.5 border border-rose-300 font-bold">
-                Categorized Automatically
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div className="p-3.5 bg-white border border-[#171717] space-y-1">
-                <span className="text-[10px] text-[#171717]/60 block font-bold">DOCTOR AVAILABILITY</span>
-                <span className="text-xl font-extrabold text-[#171717]">842</span>
-                <p className="text-[9px] text-[#171717]/70">33.9% of total healthcare signals</p>
-              </div>
-
-              <div className="p-3.5 bg-white border-2 border-rose-600 space-y-1 shadow-[2px_2px_0px_#D65A3A]">
-                <span className="text-[10px] text-rose-700 block font-bold">MEDICINE SHORTAGE</span>
-                <span className="text-xl font-extrabold text-rose-700">617</span>
-                <p className="text-[9px] font-bold text-rose-800">🔴 Critical Supply Chain Anomaly</p>
-              </div>
-
-              <div className="p-3.5 bg-white border border-[#171717] space-y-1">
-                <span className="text-[10px] text-[#171717]/60 block font-bold">WAITING TIMES</span>
-                <span className="text-xl font-extrabold text-[#171717]">493</span>
-                <p className="text-[9px] text-[#171717]/70">19.8% of total healthcare signals</p>
-              </div>
-
-              <div className="p-3.5 bg-white border border-[#171717] space-y-1">
-                <span className="text-[10px] text-[#171717]/60 block font-bold">FACILITY CONDITION</span>
-                <span className="text-xl font-extrabold text-[#171717]">281</span>
-                <p className="text-[9px] text-[#171717]/70">11.3% of total healthcare signals</p>
-              </div>
-
-              <div className="p-3.5 bg-white border border-[#171717] space-y-1">
-                <span className="text-[10px] text-[#171717]/60 block font-bold">OTHER / MISC</span>
-                <span className="text-xl font-extrabold text-[#171717]">248</span>
-                <p className="text-[9px] text-[#171717]/70">10.0% of total healthcare signals</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Pattern Alert Card */}
-          <div className="p-5 bg-[#171717] text-[#F7F5EF] border border-[#171717] space-y-3 shadow-[4px_4px_0px_#D65A3A]">
-            <div className="flex items-center justify-between border-b border-white/20 pb-2">
-              <span className="text-xs font-mono font-bold uppercase text-[#D65A3A] flex items-center gap-2">
-                <ShieldAlert className="w-4 h-4 text-[#D65A3A]" />
-                PATTERN DETECTED 🔴
-              </span>
-              <span className="text-[10px] font-mono bg-rose-700 text-white px-2 py-0.5 font-bold">
-                Confidence: 89%
-              </span>
-            </div>
-
-            <p className="font-serif font-bold text-base leading-snug">
-              "7 districts show unusually high reports of medicine shortages across rural PHC centers."
+            <h2 className="text-2xl sm:text-3xl font-serif font-black uppercase text-[#171717]">
+              Different Languages. One Civic Intelligence Layer.
+            </h2>
+            <p className="text-xs font-mono text-[#171717]/70 max-w-2xl mx-auto">
+              CivicPulse does not rely on naive surface translation — it maps multi-dialect Indian citizen inputs directly into a unified semantic representation.
             </p>
+          </div>
 
-            <div className="p-3 bg-white/10 border border-white/20 font-mono text-xs space-y-1">
-              <span className="text-[10px] font-bold text-amber-300 block">FEEDS DIRECTLY INTO RECOMMENDATIONS PORTAL:</span>
-              <p className="text-white italic">
-                "💡 Consider investigating medicine supply chains across these 7 districts and reallocating regional buffer stock."
-              </p>
+          {/* Visual Architecture Diagram: ONE CIVIC VOICE */}
+          <div className="p-6 bg-[#171717] text-[#F7F5EF] border border-[#171717] space-y-6 shadow-[4px_4px_0px_#D65A3A]">
+            <div className="text-center font-mono text-xs font-bold text-amber-300 uppercase tracking-wider">
+              ONE CIVIC VOICE ARCHITECTURE
             </div>
 
-            <div className="pt-2 flex justify-end">
-              <button
-                onClick={() => onNavigateToPatterns && onNavigateToPatterns()}
-                className="py-2 px-4 bg-[#D65A3A] text-white font-mono text-xs font-bold uppercase border border-white cursor-pointer shadow-[2px_2px_0px_#171717]"
-              >
-                Open Recommendations Portal →
-              </button>
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center font-mono text-xs">
+              <div className="p-3 bg-white/10 border border-white/20">
+                <span className="font-bold text-amber-300 block">తెలుగు</span>
+                <span className="text-[10px] text-white/70">Telugu</span>
+              </div>
+              <div className="p-3 bg-white/10 border border-white/20">
+                <span className="font-bold text-amber-300 block">हिन्दी</span>
+                <span className="text-[10px] text-white/70">Hindi</span>
+              </div>
+              <div className="p-3 bg-white/10 border border-white/20">
+                <span className="font-bold text-amber-300 block">தமிழ்</span>
+                <span className="text-[10px] text-white/70">Tamil</span>
+              </div>
+              <div className="p-3 bg-white/10 border border-white/20">
+                <span className="font-bold text-amber-300 block">English</span>
+                <span className="text-[10px] text-white/70">English</span>
+              </div>
+              <div className="p-3 bg-white/10 border border-white/20 col-span-2 sm:col-span-1">
+                <span className="font-bold text-amber-300 block">ಕನ್ನಡ</span>
+                <span className="text-[10px] text-white/70">Kannada</span>
+              </div>
+            </div>
+
+            <div className="text-center font-mono text-[#D65A3A] font-bold text-xl">
+              ↓ MULTILINGUAL SEMANTIC CONVERGENCE ENGINE ↓
+            </div>
+
+            <div className="p-4 bg-white text-[#171717] border-2 border-[#D65A3A] text-center space-y-1 font-mono">
+              <span className="text-xs font-bold text-[#D65A3A] uppercase block">ONE SHARED CIVIC PICTURE</span>
+              <p className="text-sm font-serif font-bold text-[#171717]">
+                2,840 Native Signals ➔ Filtered into Unified Priority Clusters & Policy Actions
+              </p>
+            </div>
+          </div>
+
+          {/* Interactive Cross-Language Convergence Demonstrator */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2 font-mono">
+              <span className="text-xs font-bold uppercase text-[#171717]">
+                CROSS-LANGUAGE SEMANTIC CONVERGENCE DEMO
+              </span>
+              <span className="text-[10px] bg-blue-100 text-blue-900 px-2 py-0.5 border border-blue-400 font-bold">
+                5 DIVERSE INPUTS ➔ 1 CLUSTER
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+              {/* 5 Input Speech Cards */}
+              <div className="lg:col-span-7 space-y-2.5 font-mono text-xs">
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] flex items-center justify-between shadow-[2px_2px_0px_#171717]">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase block">CITIZEN A • TELUGU (తెలుగు)</span>
+                    <p className="font-serif italic text-xs">"మా గ్రామంలో రెండు వారాలుగా మంచినీటి సరఫరా నిలిచిపోయింది."</p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 font-bold">VALID</span>
+                </div>
+
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] flex items-center justify-between shadow-[2px_2px_0px_#171717]">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase block">CITIZEN B • HINDI (हिंदी)</span>
+                    <p className="font-serif italic text-xs">"हमारे इलाके में पानी नहीं आ रहा है, टैंकर भी बंद है।"</p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 font-bold">VALID</span>
+                </div>
+
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] flex items-center justify-between shadow-[2px_2px_0px_#171717]">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase block">CITIZEN C • TAMIL (தமிழ்)</span>
+                    <p className="font-serif italic text-xs">"எங்கள் பகுதியில் 2 வாரங்களாக குடிநீர் வரவில்லை."</p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 font-bold">VALID</span>
+                </div>
+
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] flex items-center justify-between shadow-[2px_2px_0px_#171717]">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase block">CITIZEN D • ENGLISH</span>
+                    <p className="font-serif italic text-xs">"Water supply has completely stopped in our village for 14 days."</p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 font-bold">VALID</span>
+                </div>
+
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] flex items-center justify-between shadow-[2px_2px_0px_#171717]">
+                  <div className="space-y-0.5">
+                    <span className="text-[10px] font-bold text-amber-800 uppercase block">CITIZEN E • KANNADA (ಕನ್ನಡ)</span>
+                    <p className="font-serif italic text-xs">"ನಮ್ಮ ಊರಿನಲ್ಲಿ 2 ವಾರಗಳಿಂದ ಕುಡಿಯುವ ನೀರು ಬರುತ್ತಿಲ್ಲ."</p>
+                  </div>
+                  <span className="text-[10px] bg-emerald-200 text-emerald-900 px-2 py-0.5 font-bold">VALID</span>
+                </div>
+              </div>
+
+              {/* Converged Cluster Box */}
+              <div className="lg:col-span-5 p-5 bg-[#171717] text-[#F7F5EF] border-2 border-[#D65A3A] space-y-4 shadow-[5px_5px_0px_#171717]">
+                <div className="flex items-center justify-between border-b border-white/20 pb-2 font-mono">
+                  <span className="text-xs font-bold text-[#D65A3A] uppercase flex items-center gap-1.5">
+                    <Radio className="w-4 h-4 text-[#D65A3A]" />
+                    SEMANTIC CONVERGENCE
+                  </span>
+                  <span className="text-[9px] bg-rose-700 text-white px-2 py-0.5 font-bold">CRITICAL 🔴</span>
+                </div>
+
+                <div className="space-y-2 font-mono text-xs">
+                  <span className="text-[10px] text-amber-300 font-bold block">IDENTIFIED PATTERN CLUSTER:</span>
+                  <h3 className="font-serif font-black text-xl text-white">
+                    WATER SHORTAGE OUTAGE
+                  </h3>
+                  <p className="text-[#F7F5EF]/80 text-xs leading-relaxed">
+                    All 5 native inputs map to the exact same underlying infrastructure deficit without needing manual translation.
+                  </p>
+                </div>
+
+                <div className="p-3 bg-white/10 border border-white/20 font-mono text-[11px] space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Location:</span>
+                    <span className="font-bold text-white">Krishna District (9 Villages)</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Duration:</span>
+                    <span className="font-bold text-amber-300">14 Days Continuous</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-white/70">Impacted Households:</span>
+                    <span className="font-bold text-rose-400">3,200 Families</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => onNavigateToPatterns && onNavigateToPatterns()}
+                  className="w-full py-2.5 bg-[#D65A3A] text-white font-mono text-xs font-bold uppercase border border-white cursor-pointer shadow-[2px_2px_0px_#171717]"
+                >
+                  View Water Anomaly On Map →
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Code-Mixed Informal Speech Support */}
+          <div className="p-6 bg-[#F7F5EF] border border-[#171717] space-y-4 font-mono text-xs shadow-[3px_3px_0px_#171717]">
+            <span className="font-bold text-[#171717] uppercase block border-b border-[#171717]/20 pb-2">
+              INFORMAL CODE-MIXED SPEECH (HINGLISH & TANGLISH) EXAMPLES
+            </span>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="bg-white p-4 border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
+                <span className="text-[10px] font-bold text-purple-800 uppercase block">TANGLISH CODE-MIXED REPORT</span>
+                <p className="font-serif italic text-sm text-[#171717]">"Road romba damage aagiduchu, school pakkam potholes irukku."</p>
+                <div className="p-2 bg-purple-50 border border-purple-200 text-[10px] space-y-0.5">
+                  <div><strong>Language:</strong> Tanglish (Tamil + English)</div>
+                  <div><strong>Topic:</strong> Road Infrastructure (Potholes)</div>
+                  <div><strong>Location:</strong> School Corridor</div>
+                  <div><strong>Urgency:</strong> HIGH 🔴</div>
+                </div>
+              </div>
+
+              <div className="bg-white p-4 border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
+                <span className="text-[10px] font-bold text-blue-800 uppercase block">HINGLISH CODE-MIXED REPORT</span>
+                <p className="font-serif italic text-sm text-[#171717]">"हमारे area में water supply बहुत खराब है, 10 days से पानी नहीं आया।"</p>
+                <div className="p-2 bg-blue-50 border border-blue-200 text-[10px] space-y-0.5">
+                  <div><strong>Language:</strong> Hinglish (Hindi + English)</div>
+                  <div><strong>Topic:</strong> Drinking Water Outage</div>
+                  <div><strong>Location:</strong> Residential Block</div>
+                  <div><strong>Urgency:</strong> CRITICAL 🔴</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* TAB 4: THE 6-STAGE POLICY INTELLIGENCE PIPELINE & STAGE 6 MEASURE */}
+      {/* TAB 3: OFFICIALS' LANGUAGE COVERAGE & MULTILINGUAL DASHBOARD */}
+      {activeTab === 'official_dashboard' && (
+        <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[5px_5px_0px_#171717] space-y-8">
+          {/* Header & Interface Language Switcher */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4 font-mono">
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-widest text-[#D65A3A] block">
+                OFFICIAL POLICY DASHBOARD
+              </span>
+              <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+                {officialLang === 'EN' && "Multilingual Executive Intelligence View"}
+                {officialLang === 'TE' && "బహుభాషా ఎగ్జిక్యూటివ్ ఇంటెలిజెన్స్ వ్యూ"}
+                {officialLang === 'HI' && "बहुभाषी कार्यकारी खुफिया दृश्य"}
+                {officialLang === 'TA' && "பல்மொழி நிருவாக நுண்ணறிவுப் பார்வை"}
+              </h2>
+            </div>
+
+            {/* Official UI Language Selector */}
+            <div className="flex items-center gap-2 bg-[#F7F5EF] p-2 border border-[#171717]">
+              <Globe2 className="w-4 h-4 text-[#D65A3A]" />
+              <span className="text-xs font-bold uppercase text-[#171717]">Interface Language:</span>
+              <select
+                value={officialLang}
+                onChange={(e) => setOfficialLang(e.target.value as any)}
+                className="bg-white border border-[#171717] p-1 text-xs font-bold cursor-pointer"
+              >
+                <option value="EN">English ▾</option>
+                <option value="TE">తెలుగు (Telugu)</option>
+                <option value="HI">हिन्दी (Hindi)</option>
+                <option value="TA">தமிழ் (Tamil)</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Dynamic AI Summary in Selected Official Language */}
+          <div className="p-5 bg-[#171717] text-[#F7F5EF] border border-[#171717] space-y-3 shadow-[4px_4px_0px_#D65A3A] font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-white/20 pb-2">
+              <span className="text-xs font-bold text-amber-300 uppercase">
+                AI EXECUTIVE SUMMARY (DYNAMICALLY TRANSLATED)
+              </span>
+              <span className="text-[10px] bg-white/10 px-2 py-0.5 border border-white/20">
+                Data Preserved • Language Switched
+              </span>
+            </div>
+
+            <p className="font-serif text-base leading-relaxed text-white">
+              {officialLang === 'EN' && "Water supply complaints increased 43% across 12 villages in Krishna district over the past 14 days."}
+              {officialLang === 'TE' && "గత 14 రోజుల్లో కృష్ణా జిల్లాలోని 12 గ్రామాల్లో నీటి సరఫరా ఫిర్యాదులు 43% పెరిగాయి."}
+              {officialLang === 'HI' && "पिछले 14 दिनों में कृष्णा जिले के 12 गांवों में पानी की आपूर्ति की शिकायतों में 43% की वृद्धि हुई है।"}
+              {officialLang === 'TA' && "கடந்த 14 நாட்களில் கிருஷ்ணா மாவட்டத்தின் 12 கிராமங்களில் குடிநீர் விநியோக புகார்கள் 43% அதிகரித்துள்ளன."}
+            </p>
+          </div>
+
+          {/* LANGUAGE COVERAGE ANALYTICS CARD */}
+          <div className="p-6 bg-[#F7F5EF] border-2 border-[#171717] space-y-6 shadow-[4px_4px_0px_#171717] font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-[#171717]/20 pb-3">
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-widest text-[#D65A3A] block">
+                  DIGITAL PUBLIC GOOD INCLUSIVITY METRICS
+                </span>
+                <h3 className="text-lg font-serif font-bold text-[#171717]">
+                  Language Coverage Across 2,840 Citizen Signals
+                </h3>
+              </div>
+              <span className="px-3 py-1 bg-[#171717] text-white font-bold text-xs">
+                8 LANGUAGES ANALYZED
+              </span>
+            </div>
+
+            {/* Language Breakdown Bars */}
+            <div className="space-y-3">
+              <div>
+                <div className="flex justify-between font-bold pb-1">
+                  <span>Telugu (తెలుగు)</span>
+                  <span>1,240 signals (43%)</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[#171717]">
+                  <div className="h-full bg-[#171717]" style={{ width: '43%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between font-bold pb-1">
+                  <span>Hindi (हिंदी)</span>
+                  <span>730 signals (26%)</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[#171717]">
+                  <div className="h-full bg-[#D65A3A]" style={{ width: '26%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between font-bold pb-1">
+                  <span>Tamil (தமிழ்)</span>
+                  <span>490 signals (17%)</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[#171717]">
+                  <div className="h-full bg-blue-700" style={{ width: '17%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between font-bold pb-1">
+                  <span>English</span>
+                  <span>380 signals (9%)</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[#171717]">
+                  <div className="h-full bg-amber-600" style={{ width: '9%' }} />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex justify-between font-bold pb-1">
+                  <span>Other (Bengali, Kannada, Marathi)</span>
+                  <span>141 signals (5%)</span>
+                </div>
+                <div className="w-full h-3 bg-white border border-[#171717]">
+                  <div className="h-full bg-slate-500" style={{ width: '5%' }} />
+                </div>
+              </div>
+            </div>
+
+            {/* Inclusivity Callout */}
+            <div className="p-4 bg-emerald-100 border-2 border-emerald-600 text-emerald-900 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <span className="font-bold text-xs block">✨ INCLUSIVITY HIGHLIGHT</span>
+                <p className="text-xs font-sans font-semibold">
+                  <strong>12% of high-priority critical signals</strong> were submitted in languages other than English — demonstrating that CivicPulse bridges the digital divide for rural populations.
+                </p>
+              </div>
+              <CheckCircle2 className="w-6 h-6 text-emerald-700 shrink-0" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 4: END-TO-END PIPELINE & STAGE 6 MEASURE */}
       {activeTab === 'pipeline' && (
         <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[5px_5px_0px_#171717] space-y-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
