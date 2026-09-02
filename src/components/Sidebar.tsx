@@ -44,7 +44,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     { id: 'connectors' as NavTab, label: 'Country Connectors', icon: Box, emoji: '🔌', badge: 'Adapters' },
     { id: 'blocks' as NavTab, label: 'Infrastructure Blocks', icon: Box, emoji: '🧱', badge: '8 Reusable' },
     { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏛️', badge: null },
-    { id: 'engine' as NavTab, label: 'Priority Engine', icon: Cpu, emoji: '⚡', badge: '94/100' },
+    { id: 'engine' as NavTab, label: 'Recommendations', icon: Sparkles, emoji: '💡', badge: 'AI Portal' },
     { id: 'submit' as NavTab, label: 'Submit Request', icon: FileEdit, emoji: '📝', badge: `${requestsCount}` },
     { id: 'insights' as NavTab, label: 'AI Policy Lab', icon: Sparkles, emoji: '🤖', badge: 'Gemini' },
     { id: 'projects' as NavTab, label: 'Gov Projects', icon: Hammer, emoji: '🏗️', badge: `${projectsCount}` },

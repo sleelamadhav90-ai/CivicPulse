@@ -24,10 +24,20 @@ import {
   BarChart3,
   Search,
   ShieldCheck,
-  Award
+  Award,
+  Hammer,
+  Wrench,
+  ArrowUpCircle,
+  FileCheck,
+  X,
+  Check,
+  Plus,
+  Compass,
+  Bookmark,
+  Share2
 } from 'lucide-react';
-import { District, CitizenRequest, InfrastructureCategory, RecommendedProject } from '../types';
-import { getAIRecommendedProjects, SCORING_WEIGHTS, getPriorityTier } from '../utils/scoring';
+import { District, CitizenRequest, InfrastructureCategory, RecommendedProject, InterventionType, ActionQueueItem } from '../types';
+import { getAIRecommendedProjects, getPriorityTier } from '../utils/scoring';
 import { CivicRelationshipFlow } from './CivicRelationshipFlow';
 
 interface PriorityEngineProps {
@@ -54,244 +64,510 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
     return getAIRecommendedProjects(districts, requests);
   }, [districts, requests]);
 
-  // Selected project for deep-dive reasoning
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(recommendedProjects[0]?.id || 'rec-01');
-  const [sectorFilter, setSectorFilter] = useState<string>('All');
+  // Main Active Tab
+  const [mainTab, setMainTab] = useState<'portal' | 'queue'>('portal');
+
+  // Filter States
+  const [interventionFilter, setInterventionFilter] = useState<'ALL' | InterventionType>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const currentProject = useMemo(() => {
-    return recommendedProjects.find((p) => p.id === selectedProjectId) || recommendedProjects[0];
-  }, [recommendedProjects, selectedProjectId]);
+  // Modals state
+  const [evidenceModalProject, setEvidenceModalProject] = useState<RecommendedProject | null>(null);
+  const [impactModalProject, setImpactModalProject] = useState<RecommendedProject | null>(null);
 
+  // Action Queue state
+  const [actionQueue, setActionQueue] = useState<ActionQueueItem[]>([
+    {
+      id: 'aq-01',
+      recommendationId: recommendedProjects[0]?.id || 'rec-01',
+      title: recommendedProjects[0]?.title || 'Expand Rural Water Pipeline Trunk',
+      districtName: recommendedProjects[0]?.districtName || 'District 1',
+      districtId: recommendedProjects[0]?.districtId || 'dist-01',
+      category: recommendedProjects[0]?.category || 'Water',
+      interventionType: recommendedProjects[0]?.interventionType || 'BUILD',
+      priorityScore: recommendedProjects[0]?.priorityScore || 91,
+      status: 'Shortlisted',
+      addedAt: new Date().toLocaleDateString(),
+      estimatedBudgetInr: recommendedProjects[0]?.estimatedBudgetInr || 98000000,
+      targetBeneficiaries: recommendedProjects[0]?.targetBeneficiaries || 42000,
+    },
+    {
+      id: 'aq-02',
+      recommendationId: recommendedProjects[1]?.id || 'rec-02',
+      title: recommendedProjects[1]?.title || 'Upgrade Primary Healthcare Solar Grid',
+      districtName: recommendedProjects[1]?.districtName || 'District 2',
+      districtId: recommendedProjects[1]?.districtId || 'dist-02',
+      category: recommendedProjects[1]?.category || 'Healthcare',
+      interventionType: recommendedProjects[1]?.interventionType || 'UPGRADE',
+      priorityScore: recommendedProjects[1]?.priorityScore || 87,
+      status: 'Under Review',
+      addedAt: new Date().toLocaleDateString(),
+      estimatedBudgetInr: recommendedProjects[1]?.estimatedBudgetInr || 45000000,
+      targetBeneficiaries: recommendedProjects[1]?.targetBeneficiaries || 27000,
+    }
+  ]);
+
+  // Filtered projects
   const filteredProjects = useMemo(() => {
     return recommendedProjects.filter((p) => {
-      const matchSector = sectorFilter === 'All' || p.category === sectorFilter;
-      const matchSearch = p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.districtName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          p.state.toLowerCase().includes(searchQuery.toLowerCase());
-      return matchSector && matchSearch;
+      const matchType = interventionFilter === 'ALL' || p.interventionType === interventionFilter;
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch = !q || 
+        p.title.toLowerCase().includes(q) ||
+        p.districtName.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.state.toLowerCase().includes(q);
+      return matchType && matchSearch;
     });
-  }, [recommendedProjects, sectorFilter, searchQuery]);
+  }, [recommendedProjects, interventionFilter, searchQuery]);
+
+  // Handle adding to action queue
+  const handleToggleActionQueue = (project: RecommendedProject) => {
+    const existing = actionQueue.find((item) => item.recommendationId === project.id);
+    if (existing) {
+      setActionQueue(actionQueue.filter((item) => item.recommendationId !== project.id));
+    } else {
+      setActionQueue([
+        ...actionQueue,
+        {
+          id: `aq-${Date.now()}`,
+          recommendationId: project.id,
+          title: project.title,
+          districtName: project.districtName,
+          districtId: project.districtId,
+          category: project.category,
+          interventionType: project.interventionType,
+          priorityScore: project.priorityScore,
+          status: 'Shortlisted',
+          addedAt: new Date().toLocaleDateString(),
+          estimatedBudgetInr: project.estimatedBudgetInr,
+          targetBeneficiaries: project.targetBeneficiaries,
+        }
+      ]);
+    }
+  };
+
+  const handleUpdateQueueStatus = (id: string, newStatus: 'Shortlisted' | 'Under Review' | 'Approved') => {
+    setActionQueue(actionQueue.map((item) => item.id === id ? { ...item, status: newStatus } : item));
+  };
 
   const getCategoryIcon = (cat: InfrastructureCategory) => {
     switch (cat) {
-      case 'Drainage':
-        return <Droplets className="w-4 h-4 text-cyan-600" />;
-      case 'Water':
-        return <Droplet className="w-4 h-4 text-blue-600" />;
-      case 'Roads':
-        return <Route className="w-4 h-4 text-amber-600" />;
-      case 'Electricity':
-        return <Zap className="w-4 h-4 text-yellow-600" />;
+      case 'Drainage': return <Droplets className="w-3.5 h-3.5 text-cyan-600" />;
+      case 'Water': return <Droplet className="w-3.5 h-3.5 text-blue-600" />;
+      case 'Roads': return <Route className="w-3.5 h-3.5 text-amber-600" />;
+      case 'Electricity': return <Zap className="w-3.5 h-3.5 text-yellow-600" />;
       case 'Healthcare':
-      case 'Health':
-        return <HeartPulse className="w-4 h-4 text-rose-600" />;
-      case 'Education':
-        return <GraduationCap className="w-4 h-4 text-purple-600" />;
-      default:
-        return <Building2 className="w-4 h-4 text-slate-600" />;
+      case 'Health': return <HeartPulse className="w-3.5 h-3.5 text-rose-600" />;
+      case 'Education': return <GraduationCap className="w-3.5 h-3.5 text-purple-600" />;
+      default: return <Building2 className="w-3.5 h-3.5 text-slate-600" />;
+    }
+  };
+
+  const getInterventionBadge = (type: InterventionType) => {
+    switch (type) {
+      case 'BUILD':
+        return (
+          <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-emerald-100 text-emerald-900 border border-emerald-300 flex items-center gap-1 shadow-[1px_1px_0px_#171717]">
+            <Hammer className="w-3 h-3 text-emerald-700" />
+            BUILD
+          </span>
+        );
+      case 'FIX':
+        return (
+          <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-amber-100 text-amber-900 border border-amber-300 flex items-center gap-1 shadow-[1px_1px_0px_#171717]">
+            <Wrench className="w-3 h-3 text-amber-700" />
+            FIX
+          </span>
+        );
+      case 'UPGRADE':
+        return (
+          <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-blue-100 text-blue-900 border border-blue-300 flex items-center gap-1 shadow-[1px_1px_0px_#171717]">
+            <ArrowUpCircle className="w-3 h-3 text-blue-700" />
+            UPGRADE
+          </span>
+        );
+      case 'POLICY':
+        return (
+          <span className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider bg-purple-100 text-purple-900 border border-purple-300 flex items-center gap-1 shadow-[1px_1px_0px_#171717]">
+            <FileCheck className="w-3 h-3 text-purple-700" />
+            POLICY
+          </span>
+        );
     }
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Hero Formula & Engine Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+    <div className="space-y-8 animate-in fade-in duration-300 font-sans text-[#171717]">
+      {/* Top Banner & Header */}
+      <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[4px_4px_0px_#171717]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#171717]/15">
           <div className="space-y-2">
-            <div className="flex items-center space-x-2.5">
-              <span className="px-2.5 py-0.5 text-xs font-black uppercase tracking-wider rounded-md bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1.5 font-mono">
-                <Cpu className="w-3.5 h-3.5 text-blue-600" />
-                DPI ALGORITHMIC CORE
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest bg-[#D65A3A] text-white border border-[#171717] shadow-[2px_2px_0px_#171717]">
+                CIVICPULSE AI DECISION SUITE
               </span>
-              <span className="text-xs text-slate-500 font-medium">
-                • Auditable Mathematical Governance
+              <span className="text-xs font-mono text-[#171717]/60">
+                • {new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              AI Priority Engine
+
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717] tracking-tight">
+              Recommendations Portal
             </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
-              CivicPulse does not simply count raw complaints. The Priority Engine combines citizen voice with demographic density, infrastructure access deficits, risk urgency, and capex budgets to rank capital projects deterministically.
+            <p className="text-xs sm:text-sm text-[#171717]/80 max-w-3xl leading-relaxed">
+              Actionable AI interventions translating citizen signals directly into targeted municipal decisions. Explore evidence, impact forecasts, and add recommendations to your official Policy Action Queue.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={onNavigateToMap}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center gap-2 cursor-pointer"
+              onClick={() => setMainTab('portal')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border border-[#171717] transition-all cursor-pointer flex items-center gap-2 ${
+                mainTab === 'portal'
+                  ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
+                  : 'bg-white text-[#171717] hover:bg-[#F7F5EF] shadow-[2px_2px_0px_#171717]'
+              }`}
             >
-              <Flame className="w-4 h-4 text-rose-500" />
-              <span>GIS Demand Hotspots</span>
+              <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
+              <span>Recommendations ({recommendedProjects.length})</span>
             </button>
+
             <button
-              onClick={() => onSelectProjectForPolicy(currentProject.districtId, currentProject.category)}
-              className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center gap-2 cursor-pointer"
+              onClick={() => setMainTab('queue')}
+              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border border-[#171717] transition-all cursor-pointer flex items-center gap-2 ${
+                mainTab === 'queue'
+                  ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
+                  : 'bg-[#F7F5EF] text-[#171717] hover:bg-white shadow-[2px_2px_0px_#171717]'
+              }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Simulate in Policy Lab</span>
+              <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+              <span>Action Queue ({actionQueue.length})</span>
             </button>
           </div>
         </div>
 
-        {/* Priority Score Mathematical Formula Banner */}
-        <div className="mt-6 p-5 bg-slate-900 text-white rounded-xl shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-              <Scale className="w-4 h-4 text-blue-400" />
-              PRIORITY SCORE CALCULATION FORMULA
-            </span>
-            <span className="text-xs px-2.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">
-              Deterministic Weights = 100%
-            </span>
+        {/* 6-Step Decision Flow Banner */}
+        <div className="mt-6 p-4 bg-[#F7F5EF] border border-[#171717] shadow-[2px_2px_0px_#171717]">
+          <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] mb-2">
+            GOVERNANCE DECISION FLOW:
           </div>
 
-          {/* Formula Display */}
-          <div className="p-4 bg-slate-800/90 rounded-lg border border-slate-700/80 font-mono text-xs sm:text-sm text-slate-200 overflow-x-auto">
-            <div className="font-bold text-amber-300 mb-1">
-              Priority Score (0–100) =
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs font-mono font-bold">
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-[#171717]/60">01</span>
+              <span className="text-[#171717]">Citizen Signals</span>
             </div>
-            <div className="pl-4 space-y-1 text-slate-300">
-              <span className="text-blue-400 font-bold">Citizen Demand (30%)</span> +{' '}
-              <span className="text-rose-400 font-bold">Infrastructure Gap (25%)</span> +{' '}
-              <span className="text-purple-400 font-bold">Population Impact (20%)</span> +{' '}
-              <span className="text-amber-400 font-bold">Urgency (15%)</span> +{' '}
-              <span className="text-emerald-400 font-bold">Government Priority (10%)</span>
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-[#171717]/60">02</span>
+              <span className="text-[#171717]">AI Analysis</span>
+            </div>
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-[#171717]/60">03</span>
+              <span className="text-[#171717]">Evidence</span>
+            </div>
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-[#171717]/60">04</span>
+              <span className="text-[#D65A3A]">Intervention</span>
+            </div>
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
+              <span className="text-[10px] text-[#171717]/60">05</span>
+              <span className="text-[#171717]">Expected Impact</span>
+            </div>
+            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center bg-emerald-50 text-emerald-900 border-emerald-400">
+              <span className="text-[10px] text-emerald-700">06</span>
+              <span>Official Decision</span>
             </div>
           </div>
-
-          <p className="text-xs text-slate-400 italic">
-            Connecting citizen voice + municipal data + infrastructure capital works without subjective bias.
-          </p>
         </div>
       </div>
 
-      {/* Relational Flow Diagram: Citizen Signals -> Public Data -> Public Decisions */}
-      <CivicRelationshipFlow />
-
-      {/* Main Split Layout: AI Recommended Projects Leaderboard + Deep Reasoning Drawer */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column (7 cols): AI Recommended Projects Leaderboard */}
-        <div className="lg:col-span-7 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
-              <div>
-                <h2 className="text-lg font-black text-slate-900 flex items-center gap-2">
-                  <Award className="w-5 h-5 text-amber-500" />
-                  AI Recommended Projects
-                </h2>
-                <p className="text-xs text-slate-500 mt-0.5">
-                  Ranked by composite priority score. Click any project to inspect mathematical reasoning.
-                </p>
-              </div>
-              <span className="text-xs font-mono font-bold px-2.5 py-1 rounded bg-slate-100 text-slate-700">
-                {filteredProjects.length} Projects Ranked
+      {mainTab === 'portal' && (
+        <div className="space-y-6">
+          {/* Top Category / Intervention Filter Bar */}
+          <div className="bg-white border border-[#171717] p-4 shadow-[3px_3px_0px_#171717] flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#171717]/70 block mb-1">
+                WHAT NEEDS ATTENTION? (INTERVENTION TYPES)
               </span>
-            </div>
-
-            {/* Filter and Search Bar */}
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
-                <input
-                  type="text"
-                  placeholder="Search project or city..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white"
-                />
-              </div>
-
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto text-xs">
-                {['All', 'Drainage', 'Water', 'Electricity', 'Roads', 'Health'].map((cat) => (
+              <div className="flex flex-wrap items-center gap-2">
+                {[
+                  { id: 'ALL', label: 'ALL INTERVENTIONS', icon: Layers },
+                  { id: 'BUILD', label: '🏗 BUILD', sub: 'New / Capacity' },
+                  { id: 'FIX', label: '🔧 FIX', sub: 'Failing / Repair' },
+                  { id: 'UPGRADE', label: '⬆ UPGRADE', sub: 'Expansion' },
+                  { id: 'POLICY', label: '📋 POLICY', sub: 'Non-construction' },
+                ].map((item) => (
                   <button
-                    key={cat}
-                    onClick={() => setSectorFilter(cat)}
-                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all cursor-pointer whitespace-nowrap text-xs ${
-                      sectorFilter === cat
-                        ? 'bg-white text-slate-900 shadow-2xs font-bold'
-                        : 'text-slate-600 hover:text-slate-900'
+                    key={item.id}
+                    onClick={() => setInterventionFilter(item.id as any)}
+                    className={`px-3 py-1.5 font-mono text-xs font-bold uppercase transition-all cursor-pointer border border-[#171717] ${
+                      interventionFilter === item.id
+                        ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
+                        : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
                     }`}
                   >
-                    {cat}
+                    {item.label}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Recommended Projects Table / Cards */}
-            <div className="space-y-3">
-              {filteredProjects.map((project) => {
-                const isSelected = project.id === selectedProjectId;
-                const tier = getPriorityTier(project.priorityScore);
+            {/* Search */}
+            <div className="relative w-full md:w-64">
+              <Search className="w-3.5 h-3.5 text-[#171717]/50 absolute left-3 top-2.5" />
+              <input
+                type="text"
+                placeholder="Search intervention or district..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full bg-[#F7F5EF] border border-[#171717] pl-8 pr-3 py-1.5 text-xs text-[#171717] placeholder:text-[#171717]/50 focus:outline-none focus:bg-white font-mono"
+              />
+            </div>
+          </div>
 
-                return (
-                  <div
-                    key={project.id}
-                    onClick={() => setSelectedProjectId(project.id)}
-                    className={`p-4 rounded-xl border transition-all cursor-pointer space-y-3 ${
-                      isSelected
-                        ? 'bg-blue-50/70 border-blue-400 shadow-xs ring-1 ring-blue-400'
-                        : 'bg-slate-50/50 hover:bg-slate-50 border-slate-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center space-x-3">
-                        {/* Rank Badge */}
-                        <div className="w-9 h-9 rounded-xl bg-white border border-slate-200 flex items-center justify-center font-bold text-sm font-mono shadow-2xs shrink-0">
-                          {project.medal}
-                        </div>
+          {/* Actionable Recommendation Cards Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {filteredProjects.map((project) => {
+              const inQueue = actionQueue.some((item) => item.recommendationId === project.id);
+              const isHigh = project.priorityScore >= 85;
 
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-bold text-slate-500 flex items-center gap-1 font-mono">
-                              {getCategoryIcon(project.category)}
-                              {project.category}
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-xs font-semibold text-slate-600">
-                              {project.districtName}, {project.state}
-                            </span>
-                          </div>
-                          <h3 className="text-sm font-bold text-slate-900 mt-0.5 leading-snug">
-                            {project.title}
-                          </h3>
-                        </div>
-                      </div>
-
-                      {/* Priority Score Badge */}
-                      <div className="text-right shrink-0">
-                        <div className="text-lg font-black font-mono tracking-tight" style={{ color: tier.color }}>
-                          {project.priorityScore}
-                          <span className="text-xs text-slate-400 font-normal font-sans">/100</span>
-                        </div>
-                        <span className={`text-[10px] px-2 py-0.5 rounded font-extrabold uppercase font-mono border ${tier.badgeBg} ${tier.badgeText} ${tier.borderColor}`}>
-                          {project.priorityTier}
+              return (
+                <div
+                  key={project.id}
+                  className="bg-white border border-[#171717] p-6 shadow-[4px_4px_0px_#171717] flex flex-col justify-between space-y-5 hover:shadow-[6px_6px_0px_#171717] transition-all"
+                >
+                  {/* Card Header */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#171717]/10 pb-3">
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-0.5 text-[10px] font-mono font-extrabold uppercase tracking-widest border border-[#171717] shadow-[1px_1px_0px_#171717] ${
+                          isHigh ? 'bg-rose-500 text-white' : 'bg-amber-400 text-[#171717]'
+                        }`}>
+                          {isHigh ? '🔴 HIGH PRIORITY' : '🟠 MEDIUM PRIORITY'}
                         </span>
+                        {getInterventionBadge(project.interventionType)}
                       </div>
+
+                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717]/80 bg-[#F7F5EF] px-2.5 py-1 border border-[#171717]">
+                        {project.districtName.toUpperCase()}
+                      </span>
                     </div>
 
-                    {/* Quick Reasoning Snippet */}
-                    <div className="p-2.5 bg-white rounded-lg border border-slate-200/80 text-xs flex flex-wrap items-center justify-between gap-2 text-slate-600">
-                      <div className="flex flex-wrap items-center gap-3">
-                        <span className="font-semibold text-blue-700 flex items-center gap-1 font-mono">
-                          <Users className="w-3.5 h-3.5" />
-                          {project.citizenRequestsCount.toLocaleString()} requests
-                        </span>
-                        <span className="text-slate-300">•</span>
-                        <span className="font-semibold text-rose-700 font-mono">
-                          {project.factors.infrastructureGap.metricValue}
-                        </span>
-                        <span className="text-slate-300">•</span>
-                        <span className="font-medium text-slate-700">
-                          ₹{(project.estimatedBudgetInr / 10000000).toFixed(1)} Cr Capex
-                        </span>
+                    <div>
+                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider mb-1">
+                        {getCategoryIcon(project.category)}
+                        <span>{project.category} INFRASTRUCTURE</span>
                       </div>
+                      <h2 className="text-lg font-serif font-bold text-[#171717] leading-snug">
+                        {project.title}
+                      </h2>
+                    </div>
+                  </div>
 
-                      <span className="text-blue-600 font-bold text-xs flex items-center gap-1 hover:underline">
-                        Why high priority?
-                        <ChevronRight className="w-3.5 h-3.5" />
+                  {/* WHY THIS? Metric Grid */}
+                  <div className="p-4 bg-[#F7F5EF] border border-[#171717] space-y-2">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717]/60 block border-b border-[#171717]/10 pb-1">
+                      WHY THIS?
+                    </span>
+                    <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+                      <div>
+                        <span className="text-[#171717]/60 block text-[10px]">CITIZEN REQUESTS</span>
+                        <span className="font-bold text-[#171717]">{project.citizenRequestsCount.toLocaleString()} signals</span>
+                      </div>
+                      <div>
+                        <span className="text-[#171717]/60 block text-[10px]">AFFECTED AREAS</span>
+                        <span className="font-bold text-[#171717]">{project.affectedAreasCount} villages/wards</span>
+                      </div>
+                      <div>
+                        <span className="text-[#171717]/60 block text-[10px]">INFRASTRUCTURE GAP</span>
+                        <span className="font-bold text-rose-700">{project.factors.infrastructureGap.score}% Deficit</span>
+                      </div>
+                      <div>
+                        <span className="text-[#171717]/60 block text-[10px]">VULNERABILITY</span>
+                        <span className="font-bold text-[#D65A3A]">{project.vulnerabilityLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* AI RECOMMENDATION Box */}
+                  <div className="p-4 bg-white border border-[#171717] space-y-1.5 shadow-[2px_2px_0px_#171717]">
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-[#D65A3A]" />
+                      AI RECOMMENDATION
+                    </span>
+                    <p className="text-xs text-[#171717] font-medium leading-relaxed">
+                      {project.aiRecommendation}
+                    </p>
+                  </div>
+
+                  {/* Quick Stats Row */}
+                  <div className="grid grid-cols-3 gap-2 text-center p-2 bg-[#F7F5EF] border border-[#171717]/30 text-xs font-mono">
+                    <div>
+                      <span className="text-[9px] text-[#171717]/60 block">EXPECTED REACH</span>
+                      <span className="font-bold text-[#171717]">{project.targetBeneficiaries.toLocaleString()} citizens</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-[#171717]/60 block">URGENCY</span>
+                      <span className="font-bold text-amber-700">{project.urgencyLabel}</span>
+                    </div>
+                    <div>
+                      <span className="text-[9px] text-[#171717]/60 block">CONFIDENCE</span>
+                      <span className="font-bold text-emerald-700">{project.confidencePct}%</span>
+                    </div>
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#171717]/10">
+                    <button
+                      onClick={() => setEvidenceModalProject(project)}
+                      className="py-2 px-2 bg-white hover:bg-[#F7F5EF] border border-[#171717] font-mono font-bold text-[10px] uppercase tracking-wider text-[#171717] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[2px_2px_0px_#171717]"
+                    >
+                      <BarChart3 className="w-3 h-3 text-[#D65A3A]" />
+                      <span>Evidence</span>
+                    </button>
+
+                    <button
+                      onClick={() => setImpactModalProject(project)}
+                      className="py-2 px-2 bg-[#F7F5EF] hover:bg-white border border-[#171717] font-mono font-bold text-[10px] uppercase tracking-wider text-[#171717] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[2px_2px_0px_#171717]"
+                    >
+                      <TrendingUp className="w-3 h-3 text-emerald-700" />
+                      <span>Impact →</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleToggleActionQueue(project)}
+                      className={`py-2 px-2 font-mono font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 border border-[#171717] ${
+                        inQueue
+                          ? 'bg-emerald-600 text-white shadow-[2px_2px_0px_#171717]'
+                          : 'bg-[#171717] text-[#F7F5EF] hover:bg-[#171717]/90 shadow-[2px_2px_0px_#D65A3A]'
+                      }`}
+                    >
+                      {inQueue ? (
+                        <>
+                          <Check className="w-3 h-3" />
+                          <span>Queued</span>
+                        </>
+                      ) : (
+                        <>
+                          <Plus className="w-3 h-3" />
+                          <span>Queue</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Main Tab = Queue ("MY POLICY ACTIONS") */}
+      {mainTab === 'queue' && (
+        <div className="space-y-6">
+          <div className="bg-white border border-[#171717] p-6 shadow-[4px_4px_0px_#171717] space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block mb-1">
+                  EXECUTIVE GOVERNANCE WORKFLOW
+                </span>
+                <h2 className="text-xl font-serif font-bold text-[#171717]">
+                  My Policy Action Queue
+                </h2>
+                <p className="text-xs text-[#171717]/70 mt-1">
+                  Shortlisted interventions queued by municipal leadership for formal review, funding sanction, and execution.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 text-xs font-mono">
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] text-center">
+                  <span className="text-[9px] text-[#171717]/60 block">TOTAL QUEUED</span>
+                  <span className="font-bold text-[#171717]">{actionQueue.length} Actions</span>
+                </div>
+                <div className="p-3 bg-[#F7F5EF] border border-[#171717] text-center">
+                  <span className="text-[9px] text-[#171717]/60 block">ESTIMATED CAPEX</span>
+                  <span className="font-bold text-[#D65A3A]">
+                    ₹{(actionQueue.reduce((acc, i) => acc + i.estimatedBudgetInr, 0) / 10000000).toFixed(1)} Cr
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Queue 3 Columns (Shortlisted / Under Review / Approved) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+              {[
+                { status: 'Shortlisted', label: '📌 SHORTLISTED', color: 'bg-amber-50 border-amber-300' },
+                { status: 'Under Review', label: '🔍 UNDER REVIEW', color: 'bg-blue-50 border-blue-300' },
+                { status: 'Approved', label: '✅ APPROVED', color: 'bg-emerald-50 border-emerald-300' },
+              ].map((col) => {
+                const items = actionQueue.filter((i) => i.status === col.status);
+
+                return (
+                  <div key={col.status} className="bg-[#F7F5EF] border border-[#171717] p-4 shadow-[2px_2px_0px_#171717] space-y-3">
+                    <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
+                      <span className="font-mono text-xs font-extrabold uppercase text-[#171717]">
+                        {col.label}
                       </span>
+                      <span className="font-mono text-xs font-bold px-2 py-0.5 bg-white border border-[#171717]">
+                        {items.length}
+                      </span>
+                    </div>
+
+                    <div className="space-y-3">
+                      {items.length === 0 ? (
+                        <div className="p-6 bg-white border border-dashed border-[#171717]/30 text-center text-xs font-mono text-[#171717]/50">
+                          No actions in {col.status.toLowerCase()} queue.
+                        </div>
+                      ) : (
+                        items.map((item) => (
+                          <div key={item.id} className="bg-white border border-[#171717] p-4 shadow-[2px_2px_0px_#171717] space-y-3">
+                            <div className="flex items-center justify-between text-[10px] font-mono">
+                              <span className="font-bold text-[#D65A3A] uppercase">{item.districtName}</span>
+                              <span className="font-bold bg-[#F7F5EF] px-1.5 py-0.5 border border-[#171717]/30">
+                                Priority {item.priorityScore}
+                              </span>
+                            </div>
+
+                            <h4 className="text-xs font-serif font-bold text-[#171717]">
+                              {item.title}
+                            </h4>
+
+                            <div className="text-[10px] font-mono text-[#171717]/70 flex items-center justify-between border-t border-[#171717]/10 pt-2">
+                              <span>Reach: {item.targetBeneficiaries.toLocaleString()}</span>
+                              <span>₹{(item.estimatedBudgetInr / 10000000).toFixed(1)} Cr</span>
+                            </div>
+
+                            {/* Move status buttons */}
+                            <div className="flex items-center justify-between gap-1 pt-1 font-mono text-[9px]">
+                              {item.status !== 'Shortlisted' && (
+                                <button
+                                  onClick={() => handleUpdateQueueStatus(item.id, 'Shortlisted')}
+                                  className="px-2 py-1 bg-[#F7F5EF] hover:bg-white border border-[#171717] text-[#171717] cursor-pointer"
+                                >
+                                  ← Shortlist
+                                </button>
+                              )}
+                              {item.status !== 'Under Review' && (
+                                <button
+                                  onClick={() => handleUpdateQueueStatus(item.id, 'Under Review')}
+                                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 border border-blue-400 text-blue-900 cursor-pointer font-bold"
+                                >
+                                  Review
+                                </button>
+                              )}
+                              {item.status !== 'Approved' && (
+                                <button
+                                  onClick={() => handleUpdateQueueStatus(item.id, 'Approved')}
+                                  className="px-2 py-1 bg-emerald-600 text-white border border-[#171717] font-bold cursor-pointer"
+                                >
+                                  Approve →
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 );
@@ -299,191 +575,313 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             </div>
           </div>
         </div>
+      )}
 
-        {/* Right Column (5 cols): "Why is this high priority?" Deep Reasoning Dossier */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-6">
-            {/* Header: Why is this high priority? */}
-            <div className="pb-4 border-b border-slate-100">
-              <span className="text-[11px] font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5 mb-1 font-mono">
-                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                REASONING BREAKDOWN
-              </span>
-              <h3 className="text-xl font-black text-slate-900 tracking-tight">
-                Why is this high priority?
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Project #{currentProject.rank}: <strong className="text-slate-800">{currentProject.title}</strong> ({currentProject.districtName})
-              </p>
-            </div>
-
-            {/* Prominent Question & Answer Visual Box */}
-            <div className="p-5 bg-gradient-to-br from-slate-900 to-slate-800 text-white rounded-xl shadow-xs space-y-4 font-mono">
-              <div className="text-xs uppercase tracking-wider text-slate-400 font-sans font-bold">
-                Direct Connection of Citizen Voice + Data:
-              </div>
-
-              <div className="space-y-2 text-xs sm:text-sm font-semibold">
-                {currentProject.keyBulletPoints.map((point, idx) => (
-                  <div key={idx} className="flex items-center space-x-2">
-                    <span className="text-blue-400 font-bold text-base">
-                      {idx === 0 ? '•' : '+'}
-                    </span>
-                    <span className={idx === 0 ? 'text-white font-bold' : 'text-slate-200'}>
-                      {point.replace(/^\+\s*/, '')}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              {/* Priority Outcome Banner */}
-              <div className="pt-3 border-t border-slate-700/80 flex items-center justify-between">
-                <span className="text-xs font-sans text-slate-300">
-                  Calculated Output:
+      {/* EVIDENCE MODAL ("WHY CIVICPULSE RECOMMENDS THIS") */}
+      {evidenceModalProject && (
+        <div className="fixed inset-0 z-50 bg-[#171717]/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#F7F5EF] border-2 border-[#171717] max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-[8px_8px_0px_#171717] p-6 space-y-6">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between border-b border-[#171717] pb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block">
+                  EVIDENCE & AUDIT TRAIL
                 </span>
-                <span className="text-sm font-black px-3 py-1 rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  → HIGH PRIORITY ({currentProject.priorityScore}/100)
-                </span>
-              </div>
-            </div>
-
-            {/* Five Factors Breakdown Cards */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center justify-between">
-                <span>The 5 Formula Components</span>
-                <span className="font-mono text-slate-500 font-normal">Weights</span>
-              </h4>
-
-              {/* Factor 1: Citizen Demand */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                    1. Citizen Demand (30% Weight)
-                  </span>
-                  <span className="font-mono font-bold text-blue-700">
-                    {currentProject.factors.citizenDemand.metricValue}
-                  </span>
+                <h3 className="text-xl font-serif font-bold text-[#171717] uppercase">
+                  {evidenceModalProject.title}
+                </h3>
+                <div className="flex items-center gap-2 mt-1 font-mono text-xs text-[#171717]/70">
+                  <span>{evidenceModalProject.districtName} District</span>
+                  <span>•</span>
+                  <span className="font-bold text-[#D65A3A]">Priority Score: {evidenceModalProject.priorityScore} / 100</span>
                 </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {currentProject.factors.citizenDemand.description}
-                </p>
               </div>
-
-              {/* Factor 2: Infrastructure Gap */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-600"></span>
-                    2. Infrastructure Gap (25% Weight)
-                  </span>
-                  <span className="font-mono font-bold text-rose-700">
-                    {currentProject.factors.infrastructureGap.metricValue}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {currentProject.factors.infrastructureGap.description}
-                </p>
-              </div>
-
-              {/* Factor 3: Population Impact */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-purple-600"></span>
-                    3. Population Impact (20% Weight)
-                  </span>
-                  <span className="font-mono font-bold text-purple-700">
-                    {currentProject.factors.populationImpact.metricValue}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {currentProject.factors.populationImpact.description}
-                </p>
-              </div>
-
-              {/* Factor 4: Urgency */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-600"></span>
-                    4. Urgency & Safety (15% Weight)
-                  </span>
-                  <span className="font-mono font-bold text-amber-700">
-                    {currentProject.factors.urgency.metricValue}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {currentProject.factors.urgency.description}
-                </p>
-              </div>
-
-              {/* Factor 5: Government Priority */}
-              <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
-                <div className="flex justify-between items-center">
-                  <span className="font-bold text-slate-800 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-600"></span>
-                    5. Government Priority (10% Weight)
-                  </span>
-                  <span className="font-mono font-bold text-emerald-700">
-                    {currentProject.factors.governmentPriority.metricValue}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-500 leading-relaxed">
-                  {currentProject.factors.governmentPriority.description}
-                </p>
-              </div>
-            </div>
-
-            {/* AI Policy Recommendation Banner */}
-            <div className="p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5 text-blue-600" />
-                  Gemini AI Policy Synthesis
-                </span>
-                <span className="text-[10px] font-mono font-bold text-blue-700 bg-white px-2 py-0.5 rounded border border-blue-200">
-                  {currentProject.timelineMonths} Mo Timeline
-                </span>
-              </div>
-              <p className="text-xs text-slate-800 font-medium italic leading-relaxed">
-                "{currentProject.aiRecommendation}"
-              </p>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-2">
-              {onConvertToGovernmentProject && (
-                <button
-                  onClick={() => onConvertToGovernmentProject(currentProject)}
-                  className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <Building2 className="w-4 h-4" />
-                  <span>Convert to Government Project</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
 
               <button
-                onClick={() => onSelectProjectForPolicy(currentProject.districtId, currentProject.category)}
-                className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => setEvidenceModalProject(null)}
+                className="p-1 bg-white hover:bg-rose-100 border border-[#171717] cursor-pointer"
               >
-                <FileText className="w-4 h-4" />
-                <span>Generate Ministerial Policy Brief</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <X className="w-5 h-5 text-[#171717]" />
+              </button>
+            </div>
+
+            {/* WHY CIVICPULSE RECOMMENDS THIS - Progress Bars */}
+            <div className="bg-white border border-[#171717] p-5 space-y-4 shadow-[2px_2px_0px_#171717]">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717] block border-b border-[#171717]/10 pb-2">
+                WHY CIVICPULSE RECOMMENDS THIS
+              </span>
+
+              <div className="space-y-3 font-mono text-xs">
+                {/* Citizen Demand */}
+                <div>
+                  <div className="flex justify-between font-bold mb-1">
+                    <span>Citizen Demand Signals</span>
+                    <span className="text-blue-700">{evidenceModalProject.factors.citizenDemand.score} / 100</span>
+                  </div>
+                  <div className="w-full h-3 bg-[#F7F5EF] border border-[#171717] overflow-hidden">
+                    <div className="h-full bg-blue-600" style={{ width: `${evidenceModalProject.factors.citizenDemand.score}%` }} />
+                  </div>
+                </div>
+
+                {/* Infrastructure Gap */}
+                <div>
+                  <div className="flex justify-between font-bold mb-1">
+                    <span>Infrastructure Gap</span>
+                    <span className="text-rose-700">{evidenceModalProject.factors.infrastructureGap.score} / 100</span>
+                  </div>
+                  <div className="w-full h-3 bg-[#F7F5EF] border border-[#171717] overflow-hidden">
+                    <div className="h-full bg-rose-600" style={{ width: `${evidenceModalProject.factors.infrastructureGap.score}%` }} />
+                  </div>
+                </div>
+
+                {/* Vulnerability */}
+                <div>
+                  <div className="flex justify-between font-bold mb-1">
+                    <span>Vulnerability & Hazard Index</span>
+                    <span className="text-amber-700">{evidenceModalProject.factors.urgency.score} / 100</span>
+                  </div>
+                  <div className="w-full h-3 bg-[#F7F5EF] border border-[#171717] overflow-hidden">
+                    <div className="h-full bg-amber-500" style={{ width: `${evidenceModalProject.factors.urgency.score}%` }} />
+                  </div>
+                </div>
+
+                {/* Population Impact */}
+                <div>
+                  <div className="flex justify-between font-bold mb-1">
+                    <span>Population Impact & Density</span>
+                    <span className="text-purple-700">{evidenceModalProject.factors.populationImpact.score} / 100</span>
+                  </div>
+                  <div className="w-full h-3 bg-[#F7F5EF] border border-[#171717] overflow-hidden">
+                    <div className="h-full bg-purple-600" style={{ width: `${evidenceModalProject.factors.populationImpact.score}%` }} />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Citizen Signals & Infrastructure Metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="bg-white border border-[#171717] p-4 space-y-2 shadow-[2px_2px_0px_#171717]">
+                <span className="text-[10px] font-mono font-bold uppercase text-[#D65A3A] block border-b border-[#171717]/10 pb-1">
+                  CITIZEN SIGNALS
+                </span>
+                <ul className="space-y-1.5 font-mono text-xs text-[#171717]">
+                  <li className="font-bold">• {evidenceModalProject.evidenceSignals.totalRequests.toLocaleString()} verified citizen requests</li>
+                  <li>• {evidenceModalProject.evidenceSignals.topicMentionPct}% explicitly mention {evidenceModalProject.category.toLowerCase()} availability</li>
+                  <li>• {evidenceModalProject.evidenceSignals.urgentRequestsCount} marked as urgent hazard</li>
+                </ul>
+              </div>
+
+              <div className="bg-white border border-[#171717] p-4 space-y-2 shadow-[2px_2px_0px_#171717]">
+                <span className="text-[10px] font-mono font-bold uppercase text-[#D65A3A] block border-b border-[#171717]/10 pb-1">
+                  INFRASTRUCTURE AUDIT
+                </span>
+                <ul className="space-y-1.5 font-mono text-xs text-[#171717]">
+                  <li className="font-bold">• {evidenceModalProject.evidenceInfrastructure.underservedAreasCount} underserved villages/wards</li>
+                  <li>• {evidenceModalProject.evidenceInfrastructure.existingFacilitiesCount} existing facilities logged</li>
+                  <li>• {evidenceModalProject.evidenceInfrastructure.nonFunctionalFacilitiesCount} currently non-functional</li>
+                </ul>
+              </div>
+            </div>
+
+            {/* "WHY THIS OVER THAT?" Feature Matrix */}
+            <div className="bg-white border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#171717]">
+              <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717] flex items-center gap-1.5">
+                  <Compass className="w-4 h-4 text-[#D65A3A]" />
+                  WHY THIS OVER THAT? (SECTOR COMPARISON)
+                </span>
+                <span className="text-[10px] font-mono bg-[#D65A3A] text-white px-2 py-0.5 font-bold">
+                  Transparent Tradeoffs
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left font-mono text-xs border-collapse">
+                  <thead>
+                    <tr className="border-b border-[#171717] bg-[#F7F5EF]">
+                      <th className="p-2 border-r border-[#171717]">CRITERIA</th>
+                      <th className="p-2 border-r border-[#171717] bg-emerald-100 font-extrabold text-emerald-900">
+                        {evidenceModalProject.category.toUpperCase()} ⭐
+                      </th>
+                      <th className="p-2 border-r border-[#171717]">HEALTHCARE</th>
+                      <th className="p-2">ROADS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-[#171717]/20">
+                      <td className="p-2 font-bold border-r border-[#171717]">Citizen Demand</td>
+                      <td className="p-2 border-r border-[#171717] bg-emerald-50 font-bold text-emerald-900">{evidenceModalProject.factors.citizenDemand.score}</td>
+                      <td className="p-2 border-r border-[#171717]">84</td>
+                      <td className="p-2">76</td>
+                    </tr>
+                    <tr className="border-b border-[#171717]/20">
+                      <td className="p-2 font-bold border-r border-[#171717]">Infrastructure Gap</td>
+                      <td className="p-2 border-r border-[#171717] bg-emerald-50 font-bold text-emerald-900">{evidenceModalProject.factors.infrastructureGap.score}</td>
+                      <td className="p-2 border-r border-[#171717]">79</td>
+                      <td className="p-2">72</td>
+                    </tr>
+                    <tr className="border-b border-[#171717]/20">
+                      <td className="p-2 font-bold border-r border-[#171717]">Vulnerability</td>
+                      <td className="p-2 border-r border-[#171717] bg-emerald-50 font-bold text-emerald-900">{evidenceModalProject.factors.urgency.score}</td>
+                      <td className="p-2 border-r border-[#171717]">88</td>
+                      <td className="p-2">61</td>
+                    </tr>
+                    <tr className="border-b border-[#171717]/20">
+                      <td className="p-2 font-bold border-r border-[#171717]">Population Impact</td>
+                      <td className="p-2 border-r border-[#171717] bg-emerald-50 font-bold text-emerald-900">{evidenceModalProject.factors.populationImpact.score}</td>
+                      <td className="p-2 border-r border-[#171717]">81</td>
+                      <td className="p-2">74</td>
+                    </tr>
+                    <tr className="bg-[#F7F5EF] font-black border-t border-[#171717]">
+                      <td className="p-2 border-r border-[#171717]">OVERALL SCORE</td>
+                      <td className="p-2 border-r border-[#171717] bg-emerald-200 text-emerald-950 font-mono text-sm">
+                        {evidenceModalProject.priorityScore} ↑ RECOMMENDED
+                      </td>
+                      <td className="p-2 border-r border-[#171717] text-slate-700">87</td>
+                      <td className="p-2 text-slate-700">82</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <button
+                onClick={() => {
+                  setEvidenceModalProject(null);
+                  onNavigateToMap();
+                }}
+                className="py-2.5 px-4 bg-white hover:bg-[#F7F5EF] border border-[#171717] font-mono text-xs font-bold uppercase text-[#171717] cursor-pointer shadow-[2px_2px_0px_#171717]"
+              >
+                [ View District ]
               </button>
 
               <button
-                onClick={() => onNavigateToImpact(currentProject.districtId, currentProject.category)}
-                className="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => {
+                  handleToggleActionQueue(evidenceModalProject);
+                  setEvidenceModalProject(null);
+                }}
+                className="py-2.5 px-5 bg-[#171717] hover:bg-[#171717]/90 border border-[#171717] font-mono text-xs font-bold uppercase text-[#F7F5EF] cursor-pointer shadow-[2px_2px_0px_#D65A3A]"
               >
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span>Simulate ROI & Access Uplift</span>
+                + Add to Action Queue
               </button>
             </div>
           </div>
         </div>
-      </div>
+      )}
+
+      {/* IMPACT PREVIEW MODAL ("IF THIS IS IMPLEMENTED") */}
+      {impactModalProject && (
+        <div className="fixed inset-0 z-50 bg-[#171717]/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-[#F7F5EF] border-2 border-[#171717] max-w-xl w-full shadow-[8px_8px_0px_#171717] p-6 space-y-6">
+            <div className="flex items-start justify-between border-b border-[#171717] pb-4">
+              <div>
+                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-emerald-700 block">
+                  IMPACT PREVIEW FORECAST
+                </span>
+                <h3 className="text-xl font-serif font-bold text-[#171717]">
+                  {impactModalProject.title}
+                </h3>
+                <p className="text-xs font-mono text-[#171717]/70 mt-1">
+                  {impactModalProject.districtName} District
+                </p>
+              </div>
+
+              <button
+                onClick={() => setImpactModalProject(null)}
+                className="p-1 bg-white hover:bg-rose-100 border border-[#171717] cursor-pointer"
+              >
+                <X className="w-5 h-5 text-[#171717]" />
+              </button>
+            </div>
+
+            <div className="text-center space-y-3">
+              <span className="text-xs font-mono font-bold uppercase tracking-widest bg-[#171717] text-[#F7F5EF] px-3 py-1 inline-block">
+                IF THIS IS IMPLEMENTED
+              </span>
+
+              {/* 3 Prominent Stat Cards */}
+              <div className="grid grid-cols-3 gap-3">
+                <div className="p-4 bg-white border border-[#171717] shadow-[2px_2px_0px_#171717] text-center">
+                  <span className="text-xl font-serif font-bold text-[#D65A3A] block">
+                    {impactModalProject.targetBeneficiaries.toLocaleString()}
+                  </span>
+                  <span className="text-[10px] font-mono uppercase text-[#171717]/70 font-bold block mt-1">
+                    CITIZENS REACHED
+                  </span>
+                </div>
+
+                <div className="p-4 bg-white border border-[#171717] shadow-[2px_2px_0px_#171717] text-center">
+                  <span className="text-xl font-serif font-bold text-[#171717] block">
+                    {impactModalProject.affectedAreasCount}
+                  </span>
+                  <span className="text-[10px] font-mono uppercase text-[#171717]/70 font-bold block mt-1">
+                    VILLAGES COVERED
+                  </span>
+                </div>
+
+                <div className="p-4 bg-white border border-[#171717] shadow-[2px_2px_0px_#171717] text-center">
+                  <span className="text-xl font-serif font-bold text-amber-700 block">
+                    {impactModalProject.vulnerabilityLabel}
+                  </span>
+                  <span className="text-[10px] font-mono uppercase text-[#171717]/70 font-bold block mt-1">
+                    VULNERABILITY
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Expected Impact Forecast Numbers */}
+            <div className="bg-white border border-[#171717] p-5 space-y-3 shadow-[2px_2px_0px_#171717]">
+              <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717] block border-b border-[#171717]/10 pb-2">
+                EXPECTED OUTCOMES (SIMULATED)
+              </span>
+
+              <div className="space-y-2.5 font-mono text-xs">
+                <div className="flex justify-between items-center p-2 bg-[#F7F5EF] border border-[#171717]/30">
+                  <span className="font-bold text-[#171717]">{impactModalProject.category} Access Uplift</span>
+                  <span className="font-extrabold text-emerald-700">+{impactModalProject.expectedImpact.accessIncreasePct}%</span>
+                </div>
+
+                <div className="flex justify-between items-center p-2 bg-[#F7F5EF] border border-[#171717]/30">
+                  <span className="font-bold text-[#171717]">Municipal Service Coverage</span>
+                  <span className="font-extrabold text-blue-700">+{impactModalProject.expectedImpact.coverageIncreasePct}%</span>
+                </div>
+
+                <div className="flex justify-between items-center p-2 bg-[#F7F5EF] border border-[#171717]/30">
+                  <span className="font-bold text-[#171717]">Unresolved Citizen Grievances</span>
+                  <span className="font-extrabold text-rose-700">-{impactModalProject.expectedImpact.demandReductionPct}%</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] font-mono text-[#171717]/60 italic pt-1">
+                Note: AI/data-based estimates calibrated by CivicPulse Priority Engine, not guaranteed outcomes.
+              </p>
+            </div>
+
+            {/* Footer Buttons */}
+            <div className="flex items-center justify-end gap-3 pt-2">
+              <button
+                onClick={() => setImpactModalProject(null)}
+                className="py-2.5 px-4 bg-white border border-[#171717] font-mono text-xs font-bold uppercase cursor-pointer"
+              >
+                Close
+              </button>
+
+              <button
+                onClick={() => {
+                  setImpactModalProject(null);
+                  onNavigateToImpact(impactModalProject.districtId, impactModalProject.category);
+                }}
+                className="py-2.5 px-5 bg-[#D65A3A] text-white border border-[#171717] font-mono text-xs font-bold uppercase shadow-[2px_2px_0px_#171717] cursor-pointer"
+              >
+                Full Impact Simulator →
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

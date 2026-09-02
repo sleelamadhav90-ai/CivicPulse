@@ -162,18 +162,41 @@ export interface PriorityFactorDetail {
   badgeColor: string;
 }
 
+export type InterventionType = 'BUILD' | 'FIX' | 'UPGRADE' | 'POLICY';
+
+export interface ActionQueueItem {
+  id: string;
+  recommendationId: string;
+  title: string;
+  districtName: string;
+  districtId: string;
+  category: InfrastructureCategory;
+  interventionType: InterventionType;
+  priorityScore: number;
+  status: 'Shortlisted' | 'Under Review' | 'Approved';
+  addedAt: string;
+  estimatedBudgetInr: number;
+  targetBeneficiaries: number;
+}
+
 export interface RecommendedProject {
   id: string;
   rank: number;
   medal: string; // "🥇 1", "🥈 2", "🥉 3", "#4", etc.
   title: string;
   category: InfrastructureCategory;
+  interventionType: InterventionType;
   districtName: string;
   districtId: string;
   state: string;
   priorityScore: number; // e.g. 94
   priorityTier: 'Critical' | 'High' | 'Moderate' | 'Stable';
   citizenRequestsCount: number;
+  affectedAreasCount: number;
+  vulnerabilityLabel: 'CRITICAL' | 'HIGH' | 'MODERATE';
+  confidencePct: number;
+  expectedReach: number;
+  urgencyLabel: 'CRITICAL' | 'HIGH' | 'MEDIUM';
   summaryReasoning: string;
   factors: {
     citizenDemand: PriorityFactorDetail;
@@ -187,6 +210,23 @@ export interface RecommendedProject {
   estimatedBudgetInr: number;
   targetBeneficiaries: number;
   timelineMonths: number;
+  // Evidence metrics for official credibility
+  evidenceSignals: {
+    totalRequests: number;
+    topicMentionPct: number;
+    urgentRequestsCount: number;
+  };
+  evidenceInfrastructure: {
+    underservedAreasCount: number;
+    existingFacilitiesCount: number;
+    nonFunctionalFacilitiesCount: number;
+  };
+  // Expected impact preview metrics
+  expectedImpact: {
+    accessIncreasePct: number;
+    coverageIncreasePct: number;
+    demandReductionPct: number;
+  };
 }
 
 export interface PolicyBrief {

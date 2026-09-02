@@ -33,7 +33,7 @@ import {
   Scale
 } from 'lucide-react';
 import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
-import { getPriorityTier } from '../utils/scoring';
+import { getPriorityTier, getAIRecommendedProjects } from '../utils/scoring';
 
 interface ProjectsViewProps {
   districts: District[];
@@ -59,7 +59,53 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [filterCategory, setFilterCategory] = useState<string>('All');
   const [filterStatus, setFilterStatus] = useState<string>('All');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(projects[0]?.id || 'gov-proj-01');
+
+  const activeDistrictIds = useMemo(() => new Set(districts.map((d) => d.id.toLowerCase())), [districts]);
+  const activeDistrictNames = useMemo(() => new Set(districts.map((d) => d.name.toLowerCase())), [districts]);
+
+  const activeProjects = useMemo(() => {
+    const matched = projects.filter(
+      (p) => activeDistrictIds.has(p.districtId.toLowerCase()) || activeDistrictNames.has(p.district.toLowerCase())
+    );
+
+    if (matched.length > 0) return matched;
+
+    // Fallback generated government projects for selected country's districts
+    return getAIRecommendedProjects(districts, []).map((rec, idx) => ({
+      id: `gov-${rec.id}`,
+      title: rec.title,
+      district: rec.districtName,
+      districtId: rec.districtId,
+      state: rec.state,
+      category: rec.category,
+      priorityScore: rec.priorityScore,
+      citizenRequestsCount: rec.citizenRequestsCount,
+      population: rec.targetBeneficiaries,
+      estimatedCostInr: rec.estimatedBudgetInr,
+      status: (idx === 0 ? 'Approved' : idx === 1 ? 'In Progress' : 'Recommended') as ProjectLifecycleStatus,
+      progress: idx === 0 ? 25 : idx === 1 ? 60 : 0,
+      department: 'Public Works & Municipal Administration',
+      officerInCharge: 'Chief Project Director',
+      startDate: 'Q1 2026',
+      targetDate: 'Q4 2026',
+      beforeAccess: Math.max(10, 100 - rec.factors.infrastructureGap.score),
+      afterAccess: 90,
+      description: rec.aiRecommendation,
+      keyReasoning: rec.keyBulletPoints,
+      aiSummary: rec.summaryReasoning,
+      sourceRecommendationId: rec.id,
+      history: [
+        {
+          status: 'Recommended' as ProjectLifecycleStatus,
+          timestamp: new Date().toISOString(),
+          note: `Flagged by AI Priority Engine for ${rec.districtName}`,
+          actor: 'CivicPulse AI Engine',
+        },
+      ],
+    }));
+  }, [projects, districts, activeDistrictIds, activeDistrictNames]);
+
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(activeProjects[0]?.id || 'gov-proj-01');
   const [statusChangeModal, setStatusChangeModal] = useState<{
     project: GovernmentProject;
     targetStatus: ProjectLifecycleStatus;
@@ -68,12 +114,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
   // Selected project for deep inspection
   const selectedProject = useMemo(() => {
-    return projects.find((p) => p.id === selectedProjectId) || projects[0];
-  }, [projects, selectedProjectId]);
+    return activeProjects.find((p) => p.id === selectedProjectId) || activeProjects[0];
+  }, [activeProjects, selectedProjectId]);
 
   // Filtering
   const filteredProjects = useMemo(() => {
-    return projects.filter((p) => {
+    return activeProjects.filter((p) => {
       const matchCat = filterCategory === 'All' || p.category === filterCategory;
       const matchStatus = filterStatus === 'All' || p.status === filterStatus;
       const q = searchQuery.toLowerCase().trim();
@@ -84,16 +130,16 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         p.department.toLowerCase().includes(q);
       return matchCat && matchStatus && matchSearch;
     });
-  }, [projects, filterCategory, filterStatus, searchQuery]);
+  }, [activeProjects, filterCategory, filterStatus, searchQuery]);
 
   // Lifecycle Summary Counts
-  const recommendedCount = projects.filter((p) => p.status === 'Recommended').length;
-  const approvedCount = projects.filter((p) => p.status === 'Approved').length;
-  const inProgressCount = projects.filter((p) => p.status === 'In Progress').length;
-  const completedCount = projects.filter((p) => p.status === 'Completed').length;
+  const recommendedCount = activeProjects.filter((p) => p.status === 'Recommended').length;
+  const approvedCount = activeProjects.filter((p) => p.status === 'Approved').length;
+  const inProgressCount = activeProjects.filter((p) => p.status === 'In Progress').length;
+  const completedCount = activeProjects.filter((p) => p.status === 'Completed').length;
 
-  const totalCapex = projects.reduce((acc, p) => acc + p.estimatedCostInr, 0);
-  const totalBeneficiaries = projects.reduce((acc, p) => acc + p.population, 0);
+  const totalCapex = activeProjects.reduce((acc, p) => acc + p.estimatedCostInr, 0);
+  const totalBeneficiaries = activeProjects.reduce((acc, p) => acc + p.population, 0);
 
   const getCategoryIcon = (cat: InfrastructureCategory) => {
     switch (cat) {
@@ -376,7 +422,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             onChange={(e) => setFilterStatus(e.target.value)}
             className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-bold text-slate-700 focus:outline-none cursor-pointer"
           >
-            <option value="All">All Statuses ({projects.length})</option>
+            <option value="All">All Statuses ({activeProjects.length})</option>
             <option value="Recommended">● Recommended ({recommendedCount})</option>
             <option value="Approved">● Approved ({approvedCount})</option>
             <option value="In Progress">● In Progress ({inProgressCount})</option>
