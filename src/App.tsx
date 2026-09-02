@@ -31,6 +31,7 @@ import { PublicInfrastructureBlocks } from './components/PublicInfrastructureBlo
 import { GlobalHeader } from './components/GlobalHeader';
 import { GlobalWorldMapCanvas } from './components/GlobalWorldMapCanvas';
 import { GlobalConnectorsView } from './components/GlobalConnectorsView';
+import { GovernmentBriefing } from './components/GovernmentBriefing';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -56,8 +57,8 @@ export default function App() {
     return INITIAL_GOVERNMENT_PROJECTS;
   });
 
-  // Default to 'world' so the Global Civic Map is immediately shown
-  const [activeTab, setActiveTab] = useState<NavTab>('world');
+  // Default to 'map' so the Policy Map is the primary home interface
+  const [activeTab, setActiveTab] = useState<NavTab>('map');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Policy Lab Target State
@@ -368,6 +369,20 @@ export default function App() {
             />
           )}
 
+          {activeTab === 'briefing' && (
+            <GovernmentBriefing
+              districts={districts}
+              requests={requests}
+              selectedCountryCode={selectedCountryCode}
+              onInvestigateDistrict={(districtId, category) => {
+                setPolicyTargetDistrictId(districtId);
+                setPolicyTargetCategory(category);
+                setActiveTab('map');
+              }}
+              onNavigateToMap={() => setActiveTab('map')}
+            />
+          )}
+
           {activeTab === 'map' && (
             <HotspotMap
               districts={districts}
@@ -375,6 +390,8 @@ export default function App() {
               onSelectHotspotForPolicy={handleSelectHotspotForPolicy}
               onOpenScoreModal={handleOpenScoreModal}
               selectedCountryCode={selectedCountryCode}
+              onNavigateToBriefing={() => setActiveTab('briefing')}
+              onNavigateToEngine={() => setActiveTab('engine')}
             />
           )}
 

@@ -12,10 +12,11 @@ import {
   Layers,
   Cpu,
   Box,
-  Share2
+  Share2,
+  FileText
 } from 'lucide-react';
 
-export type NavTab = 'world' | 'connectors' | 'map' | 'blocks' | 'overview' | 'engine' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
+export type NavTab = 'world' | 'briefing' | 'map' | 'connectors' | 'blocks' | 'overview' | 'engine' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -37,9 +38,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const navItems = [
+    { id: 'briefing' as NavTab, label: 'Gov Briefing', icon: FileText, emoji: '📰', badge: 'Daily' },
+    { id: 'map' as NavTab, label: 'Policy Map', icon: MapPin, emoji: '🗺️', badge: 'Main' },
     { id: 'world' as NavTab, label: 'Global World Atlas', icon: MapPin, emoji: '🌍', badge: 'BRICS / Global' },
     { id: 'connectors' as NavTab, label: 'Country Connectors', icon: Box, emoji: '🔌', badge: 'Adapters' },
-    { id: 'map' as NavTab, label: 'Country Civic Atlas', icon: MapPin, emoji: '🗺️', badge: 'Local Map' },
     { id: 'blocks' as NavTab, label: 'Infrastructure Blocks', icon: Box, emoji: '🧱', badge: '8 Reusable' },
     { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏛️', badge: null },
     { id: 'engine' as NavTab, label: 'Priority Engine', icon: Cpu, emoji: '⚡', badge: '94/100' },
