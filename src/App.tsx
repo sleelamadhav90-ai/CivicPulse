@@ -381,6 +381,7 @@ export default function App() {
               onAddRequest={handleAddRequest}
               onOpenScoreModal={handleOpenScoreModal}
               onNavigateToHotspots={() => setActiveTab('map')}
+              onNavigateToPatterns={() => setActiveTab('patterns')}
             />
           )}
 

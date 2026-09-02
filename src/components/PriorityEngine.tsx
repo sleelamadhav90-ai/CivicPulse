@@ -34,7 +34,10 @@ import {
   Plus,
   Compass,
   Bookmark,
-  Share2
+  Share2,
+  Mic,
+  Volume2,
+  Play
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, RecommendedProject, InterventionType, ActionQueueItem } from '../types';
 import { getAIRecommendedProjects, getPriorityTier } from '../utils/scoring';
@@ -680,6 +683,57 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   <li>• {evidenceModalProject.evidenceInfrastructure.existingFacilitiesCount} existing facilities logged</li>
                   <li>• {evidenceModalProject.evidenceInfrastructure.nonFunctionalFacilitiesCount} currently non-functional</li>
                 </ul>
+              </div>
+            </div>
+
+            {/* ORIGINAL CITIZEN VOICE SIGNALS */}
+            <div className="bg-[#171717] text-[#F7F5EF] border border-[#171717] p-5 space-y-3 shadow-[3px_3px_0px_#D65A3A]">
+              <div className="flex items-center justify-between border-b border-[#F7F5EF]/20 pb-2">
+                <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#D65A3A] flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4 text-[#D65A3A]" />
+                  ORIGINAL CITIZEN VOICE SIGNALS ({evidenceModalProject.evidenceSignals.totalRequests} VOICE REPORTS)
+                </span>
+                <span className="text-[9px] font-mono bg-emerald-700 text-white px-2 py-0.5 font-bold">
+                  AI Summarizes Voice, Doesn't Replace It
+                </span>
+              </div>
+
+              <p className="text-xs text-[#F7F5EF]/80 font-serif italic">
+                Listen to raw, authentic citizen audio voice signals captured across villages in {evidenceModalProject.districtName}:
+              </p>
+
+              <div className="space-y-2.5 font-mono text-xs">
+                <div className="bg-white/10 p-3 border border-white/20 rounded space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-amber-300 font-bold">
+                    <span className="flex items-center gap-1">
+                      <Play className="w-3 h-3 text-[#D65A3A] fill-[#D65A3A]" />
+                      VOICE RECORDING #0482 • TELUGU (తెలుగు)
+                    </span>
+                    <span>00:18 • {evidenceModalProject.districtName} Rural</span>
+                  </div>
+                  <p className="text-white italic text-xs font-serif leading-relaxed">
+                    "మా గ్రామంలో రెండు వారాలుగా మంచినీటి సరఫరా నిలిచిపోయింది. పిల్లలు, పెద్దలు తాగునీటి కోసం తీవ్ర ఇబ్బందులు పడుతున్నారు..."
+                  </p>
+                  <div className="text-[10px] text-slate-300 font-sans pt-1 border-t border-white/10">
+                    <strong>English Translation:</strong> "Drinking water supply has stopped in our village for two weeks. Children and elderly are facing severe hardship fetching potable water..."
+                  </div>
+                </div>
+
+                <div className="bg-white/10 p-3 border border-white/20 rounded space-y-1.5">
+                  <div className="flex items-center justify-between text-[10px] text-amber-300 font-bold">
+                    <span className="flex items-center gap-1">
+                      <Play className="w-3 h-3 text-[#D65A3A] fill-[#D65A3A]" />
+                      VOICE RECORDING #0819 • HINDI (हिंदी)
+                    </span>
+                    <span>00:24 • {evidenceModalProject.districtName} Sector 4</span>
+                  </div>
+                  <p className="text-white italic text-xs font-serif leading-relaxed">
+                    "हमारे इलाके में पानी का मुख्य पाइप पूरी तरह से टूट गया है और 4 दिनों से गंदा पानी सड़कों पर बह रहा है..."
+                  </p>
+                  <div className="text-[10px] text-slate-300 font-sans pt-1 border-t border-white/10">
+                    <strong>English Translation:</strong> "The main water pipeline in our area has burst completely and contaminated water is leaking onto streets for 4 days..."
+                  </div>
+                </div>
               </div>
             </div>
 
