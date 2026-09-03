@@ -14,10 +14,36 @@ import {
   Box,
   Share2,
   FileText,
-  DollarSign
+  DollarSign,
+  Grid,
+  Globe,
+  Radio,
+  Users,
+  CheckSquare,
+  ListFilter
 } from 'lucide-react';
 
-export type NavTab = 'world' | 'briefing' | 'map' | 'patterns' | 'engine' | 'investment' | 'connectors' | 'blocks' | 'overview' | 'submit' | 'insights' | 'projects' | 'impact' | 'settings';
+export type NavTab = 
+  | 'overview' 
+  | 'signals' 
+  | 'issues' 
+  | 'patterns' 
+  | 'infrastructure' 
+  | 'demographics' 
+  | 'investment' 
+  | 'recommendations' 
+  | 'impact' 
+  | 'action_queue' 
+  | 'map' 
+  | 'briefing' 
+  | 'insights' 
+  | 'world' 
+  | 'settings'
+  | 'submit'
+  | 'connectors'
+  | 'blocks'
+  | 'engine'
+  | 'projects';
 
 interface SidebarProps {
   activeTab: NavTab;
@@ -25,6 +51,7 @@ interface SidebarProps {
   requestsCount: number;
   projectsCount?: number;
   onOpenMethodology: () => void;
+  onOpenPortalDirectory?: () => void;
   isOpenMobile?: boolean;
   onCloseMobile?: () => void;
 }
@@ -35,24 +62,43 @@ export const Sidebar: React.FC<SidebarProps> = ({
   requestsCount,
   projectsCount = 6,
   onOpenMethodology,
+  onOpenPortalDirectory,
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const navItems = [
-    { id: 'briefing' as NavTab, label: 'Gov Briefing', icon: FileText, emoji: '📰', badge: 'Daily' },
-    { id: 'map' as NavTab, label: 'Policy Map', icon: MapPin, emoji: '🗺️', badge: 'Main' },
-    { id: 'patterns' as NavTab, label: 'Community Signals', icon: Cpu, emoji: '🔎', badge: '327 Issues' },
-    { id: 'engine' as NavTab, label: 'Recommendations', icon: Sparkles, emoji: '💡', badge: 'AI Portal' },
-    { id: 'investment' as NavTab, label: 'Investment Audit', icon: DollarSign, emoji: '💰', badge: '₹120 Cr' },
-    { id: 'world' as NavTab, label: 'Global World Atlas', icon: MapPin, emoji: '🌍', badge: 'BRICS / Global' },
-    { id: 'connectors' as NavTab, label: 'Country Connectors', icon: Box, emoji: '🔌', badge: 'Adapters' },
-    { id: 'blocks' as NavTab, label: 'Infrastructure Blocks', icon: Box, emoji: '🧱', badge: '8 Reusable' },
-    { id: 'overview' as NavTab, label: 'Overview', icon: Home, emoji: '🏛️', badge: null },
-    { id: 'submit' as NavTab, label: 'Submit Request', icon: FileEdit, emoji: '📝', badge: `${requestsCount}` },
-    { id: 'insights' as NavTab, label: 'AI Policy Lab', icon: Sparkles, emoji: '🤖', badge: 'Gemini' },
-    { id: 'projects' as NavTab, label: 'Gov Projects', icon: Hammer, emoji: '🏗️', badge: `${projectsCount}` },
-    { id: 'impact' as NavTab, label: 'Impact Dashboard', icon: TrendingUp, emoji: '📊', badge: '4.2M' },
-    { id: 'settings' as NavTab, label: 'Settings', icon: Settings, emoji: '⚙️', badge: null },
+  const primaryNavSections = [
+    {
+      title: 'DECISION SUPPORT',
+      items: [
+        { id: 'overview' as NavTab, label: 'Overview', icon: Home, badge: 'Home' },
+        { id: 'signals' as NavTab, label: 'Citizen Signals', icon: Radio, badge: `${requestsCount}` },
+        { id: 'issues' as NavTab, label: 'Community Issues', icon: Layers, badge: '327' },
+        { id: 'patterns' as NavTab, label: 'AI Patterns', icon: Cpu, badge: 'Feed' },
+      ]
+    },
+    {
+      title: 'DATA REGISTERS',
+      items: [
+        { id: 'infrastructure' as NavTab, label: 'Infrastructure', icon: Building2, badge: 'Assets' },
+        { id: 'demographics' as NavTab, label: 'Demographics', icon: Users, badge: 'Census' },
+        { id: 'investment' as NavTab, label: 'Gov Investment', icon: DollarSign, badge: '₹120 Cr' },
+      ]
+    },
+    {
+      title: 'ACTION & POLICY',
+      items: [
+        { id: 'recommendations' as NavTab, label: 'Recommendations', icon: Sparkles, badge: 'AI' },
+        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp, badge: '4.2M' },
+        { id: 'action_queue' as NavTab, label: 'Action Queue', icon: CheckSquare, badge: `${projectsCount}` },
+      ]
+    },
+    {
+      title: 'GLOBAL & SPECS',
+      items: [
+        { id: 'world' as NavTab, label: 'Global World Atlas', icon: Globe, badge: 'BRICS' },
+        { id: 'settings' as NavTab, label: 'Settings & Specs', icon: Settings, badge: null },
+      ]
+    }
   ];
 
   return (
@@ -61,87 +107,117 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 z-40 bg-[#171717]/40 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"
         />
       )}
 
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#F7F5EF] border-r border-[#171717] flex flex-col justify-between transition-transform duration-200 ease-in-out
+        fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 border-r border-slate-800 flex flex-col justify-between transition-transform duration-200 ease-in-out overflow-y-auto font-sans
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        {/* Brand Header */}
         <div>
-          <div className="p-5 border-b border-[#171717] bg-white flex flex-col items-center justify-center text-center">
-            <div className="w-10 h-10 mb-2 border border-[#171717] bg-[#D65A3A] text-white flex items-center justify-center font-serif font-bold text-lg shadow-[2px_2px_0px_#171717]">
+          {/* Official Header */}
+          <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-700 text-white font-mono font-bold text-sm flex items-center justify-center border border-blue-500 shadow-xs shrink-0">
               CP
             </div>
             <div>
-              <span className="text-xl font-serif font-bold tracking-tight text-[#171717] block leading-tight uppercase">
+              <span className="text-sm font-bold tracking-tight text-white block uppercase leading-tight">
                 CIVICPULSE
               </span>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-[#171717]/70 block leading-tight mt-1 border-t border-[#171717]/10 pt-1">
-                CIVIC INFRASTRUCTURE BLOCKS
+              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block mt-0.5">
+                GOVERNMENT DECISION PLATFORM
               </span>
             </div>
           </div>
 
-          {/* Navigation Items List */}
-          <nav className="p-3 space-y-1" aria-label="Main Navigation">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => {
-                    setActiveTab(item.id);
-                    if (onCloseMobile) onCloseMobile();
-                  }}
-                  className={`w-full flex items-center justify-between px-3 py-2.5 text-xs font-mono font-semibold uppercase tracking-wider transition-all cursor-pointer ${
-                    isActive
-                      ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
-                      : 'text-[#171717]/80 hover:text-[#171717] hover:bg-[#171717]/5'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5">
-                    <span className="text-sm">{item.emoji}</span>
-                    <span>{item.label}</span>
-                  </div>
-                  {item.badge && (
-                    <span className={`text-[9px] px-1.5 py-0.5 font-mono ${
-                      isActive
-                        ? 'bg-[#D65A3A] text-white'
-                        : 'bg-[#171717]/10 text-[#171717]'
-                    }`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+          {/* Directory Launcher Button */}
+          {onOpenPortalDirectory && (
+            <div className="p-2 border-b border-slate-800 bg-slate-900">
+              <button
+                onClick={onOpenPortalDirectory}
+                className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-mono font-bold text-[10px] uppercase tracking-wider transition-colors flex items-center justify-between cursor-pointer border border-slate-700"
+              >
+                <div className="flex items-center space-x-2">
+                  <Grid className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Module Directory</span>
+                </div>
+                <span className="px-1.5 py-0.2 bg-blue-900 text-blue-200 text-[9px] font-mono border border-blue-700">14 Apps</span>
+              </button>
+            </div>
+          )}
+
+          {/* Categorized Navigation */}
+          <nav className="p-2 space-y-3" aria-label="Main Navigation">
+            {primaryNavSections.map((sec, secIdx) => (
+              <div key={secIdx} className="space-y-0.5">
+                <div className="px-2 pt-1 pb-1 text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800/80 mb-1">
+                  {sec.title}
+                </div>
+
+                {sec.items.map((item) => {
+                  const IconComp = item.icon;
+                  // Handle aliases
+                  const isActive = activeTab === item.id || 
+                    (item.id === 'recommendations' && activeTab === 'engine') ||
+                    (item.id === 'action_queue' && activeTab === 'projects') ||
+                    (item.id === 'signals' && activeTab === 'submit');
+
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        setActiveTab(item.id);
+                        if (onCloseMobile) onCloseMobile();
+                      }}
+                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium tracking-wide transition-colors cursor-pointer border ${
+                        isActive
+                          ? 'bg-blue-800 text-white border-blue-600 font-semibold shadow-xs'
+                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border-transparent'
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2.5">
+                        <IconComp className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                        <span className="text-[11px]">{item.label}</span>
+                      </div>
+                      {item.badge && (
+                        <span className={`text-[8px] px-1.5 py-0.2 font-mono uppercase font-bold border ${
+                          isActive
+                            ? 'bg-white text-blue-900 border-white'
+                            : 'bg-slate-800 text-slate-300 border-slate-700'
+                        }`}>
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </nav>
         </div>
 
-        {/* Bottom System Audit & Architecture Badge */}
-        <div className="p-4 border-t border-[#171717] space-y-3 bg-[#F7F5EF]">
-          <div className="p-3 border border-[#171717] bg-white text-xs shadow-[2px_2px_0px_#171717]">
-            <div className="flex items-center justify-between mb-1.5 border-b border-[#171717]/10 pb-1.5">
-              <span className="font-mono uppercase tracking-widest font-bold text-[#D65A3A] text-[9px]">DESIGN SYSTEM</span>
-              <span className="flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#285943] animate-pulse"></span>
-                <span className="text-[9px] font-mono uppercase tracking-widest text-[#285943] font-bold">Active</span>
+        {/* Bottom System Specs */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950 space-y-2 shrink-0 font-mono text-[10px]">
+          <div className="p-2 border border-slate-800 bg-slate-900 text-slate-300">
+            <div className="flex items-center justify-between mb-1 border-b border-slate-800 pb-1">
+              <span className="uppercase font-bold text-blue-400 text-[9px]">DPI PIPELINE</span>
+              <span className="flex items-center gap-1 text-emerald-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>ONLINE</span>
               </span>
             </div>
-            <p className="text-[10px] font-mono text-[#171717]/80 leading-relaxed">
-              India Stack × Bloomberg data viz × open infrastructure.
+            <p className="text-[9px] text-slate-400 leading-relaxed font-sans">
+              7-Stage Closed Loop Civic Support Platform.
             </p>
           </div>
 
           <button
             onClick={onOpenMethodology}
-            className="w-full py-2 bg-[#F7F5EF] hover:bg-[#171717]/5 text-[#171717] font-mono font-bold text-[10px] tracking-widest uppercase transition-colors flex items-center justify-center gap-2 cursor-pointer border border-[#171717]"
+            className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 font-mono text-[9px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-800"
           >
-            <Info className="w-3.5 h-3.5 text-[#D65A3A]" />
+            <Info className="w-3 h-3 text-blue-400" />
             <span>Architecture Specs</span>
           </button>
         </div>
@@ -149,3 +225,5 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
+

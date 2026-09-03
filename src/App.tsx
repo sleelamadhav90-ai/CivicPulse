@@ -34,6 +34,7 @@ import { GlobalConnectorsView } from './components/GlobalConnectorsView';
 import { GovernmentBriefing } from './components/GovernmentBriefing';
 import { PatternIntelligence } from './components/PatternIntelligence';
 import { InvestmentIntelligence } from './components/InvestmentIntelligence';
+import { PortalHubModal } from './components/PortalHub';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -62,6 +63,7 @@ export default function App() {
   // Default to 'map' so the Policy Map is the primary home interface
   const [activeTab, setActiveTab] = useState<NavTab>('map');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [portalDirectoryOpen, setPortalDirectoryOpen] = useState(false);
 
   // Policy Lab Target State
   const [policyTargetDistrictId, setPolicyTargetDistrictId] = useState<string>('guntur');
@@ -255,6 +257,7 @@ export default function App() {
           onToggleWorldAtlas={() => setActiveTab(activeTab === 'world' ? 'map' : 'world')}
           onNavigateToConnectors={() => setActiveTab('connectors')}
           onNavigateToSchema={() => setActiveTab('connectors')}
+          onOpenPortalDirectory={() => setPortalDirectoryOpen(true)}
         />
 
         <div className="flex-1 flex min-w-0">
@@ -265,6 +268,7 @@ export default function App() {
             requestsCount={requests.length}
             projectsCount={governmentProjects.length}
             onOpenMethodology={() => setMethodologyModalOpen(true)}
+            onOpenPortalDirectory={() => setPortalDirectoryOpen(true)}
             isOpenMobile={mobileMenuOpen}
             onCloseMobile={() => setMobileMenuOpen(false)}
           />
@@ -613,6 +617,19 @@ export default function App() {
           </div>
         </div>
       )}
+
+      {/* PORTAL DIRECTORY MODAL */}
+      <PortalHubModal
+        isOpen={portalDirectoryOpen}
+        onClose={() => setPortalDirectoryOpen(false)}
+        activeTab={activeTab}
+        onNavigate={(tab) => {
+          setActiveTab(tab);
+          setPortalDirectoryOpen(false);
+        }}
+        requestsCount={requests.length}
+        projectsCount={governmentProjects.length}
+      />
         </div>
       </div>
     </>
