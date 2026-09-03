@@ -61,15 +61,15 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </button>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm tracking-wide text-white uppercase font-sans">
-                CIVICPULSE
+              <span className="font-bold text-sm tracking-wide text-white font-sans">
+                CivicPulse
               </span>
-              <span className="hidden md:inline-block px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[9px] uppercase tracking-wider font-bold">
-                OFFICIAL DECISION COMMAND CENTRE
+              <span className="hidden md:inline-block px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[9px] tracking-wider">
+                Public Infrastructure & Citizen Intelligence
               </span>
             </div>
             <span className="text-[10px] text-slate-400 font-sans hidden sm:block">
-              Government Infrastructure & Citizen Need Analytics
+              Public Infrastructure & Need Analytics
             </span>
           </div>
         </div>

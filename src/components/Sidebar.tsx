@@ -68,35 +68,40 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const primaryNavSections = [
     {
-      title: 'DECISION SUPPORT',
+      title: 'HOME',
       items: [
-        { id: 'overview' as NavTab, label: 'Overview', icon: Home, badge: 'Home' },
+        { id: 'overview' as NavTab, label: 'Home', icon: Home, badge: 'Overview' },
+      ]
+    },
+    {
+      title: 'UNDERSTAND',
+      items: [
         { id: 'signals' as NavTab, label: 'Citizen Signals', icon: Radio, badge: `${requestsCount}` },
         { id: 'issues' as NavTab, label: 'Community Issues', icon: Layers, badge: '327' },
         { id: 'patterns' as NavTab, label: 'AI Patterns', icon: Cpu, badge: 'Feed' },
       ]
     },
     {
-      title: 'DATA REGISTERS',
+      title: 'EXPLORE',
       items: [
         { id: 'infrastructure' as NavTab, label: 'Infrastructure', icon: Building2, badge: 'Assets' },
-        { id: 'demographics' as NavTab, label: 'Demographics', icon: Users, badge: 'Census' },
-        { id: 'investment' as NavTab, label: 'Gov Investment', icon: DollarSign, badge: '₹120 Cr' },
+        { id: 'demographics' as NavTab, label: 'Population', icon: Users, badge: 'Census' },
+        { id: 'investment' as NavTab, label: 'Government Investment', icon: DollarSign, badge: '₹120 Cr' },
       ]
     },
     {
-      title: 'ACTION & POLICY',
+      title: 'DECIDE',
       items: [
         { id: 'recommendations' as NavTab, label: 'Recommendations', icon: Sparkles, badge: 'AI' },
-        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp, badge: '4.2M' },
         { id: 'action_queue' as NavTab, label: 'Action Queue', icon: CheckSquare, badge: `${projectsCount}` },
+        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp, badge: '4.2M' },
       ]
     },
     {
-      title: 'GLOBAL & SPECS',
+      title: 'SETTINGS',
       items: [
+        { id: 'settings' as NavTab, label: 'Settings', icon: Settings, badge: null },
         { id: 'world' as NavTab, label: 'Global World Atlas', icon: Globe, badge: 'BRICS' },
-        { id: 'settings' as NavTab, label: 'Settings & Specs', icon: Settings, badge: null },
       ]
     }
   ];
@@ -123,11 +128,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
               CP
             </div>
             <div>
-              <span className="text-sm font-bold tracking-tight text-white block uppercase leading-tight">
-                CIVICPULSE
+              <span className="text-sm font-bold tracking-tight text-white block uppercase leading-tight font-sans">
+                CivicPulse
               </span>
-              <span className="text-[9px] font-mono uppercase tracking-wider text-slate-400 block mt-0.5">
-                GOVERNMENT DECISION PLATFORM
+              <span className="text-[9px] font-mono tracking-wider text-slate-400 block mt-0.5">
+                Public Infrastructure & Intelligence
               </span>
             </div>
           </div>

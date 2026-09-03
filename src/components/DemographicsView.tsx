@@ -59,14 +59,14 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
-              DEMOGRAPHIC & EQUITY ANALYTICS
+              DEMOGRAPHICS & EQUITY
             </span>
             <span className="text-slate-400 text-xs font-mono">
-              • Privacy-Preserving Census & Vulnerability Profile
+              • Census & Vulnerability Profile
             </span>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-white mt-1 font-sans">
-            District Demographic Profile & Population Reach
+            Demographics & Census Data
           </h1>
           <p className="text-xs text-slate-300 mt-0.5 font-sans max-w-3xl">
             Aggregated demographic breakdown by age distribution, rural/urban split, and equity vulnerability indicators. All estimates operate at the anonymized ward & block level.

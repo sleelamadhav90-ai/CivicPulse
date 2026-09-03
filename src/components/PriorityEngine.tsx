@@ -202,47 +202,44 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 font-sans text-[#171717]">
+    <div className="space-y-8 animate-in fade-in duration-300 font-sans text-slate-900 max-w-7xl mx-auto">
       {/* Top Banner & Header */}
-      <div className="bg-white border border-[#171717] p-6 sm:p-8 shadow-[4px_4px_0px_#171717]">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#171717]/15">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-0.5 text-[10px] font-mono font-bold uppercase tracking-widest bg-[#D65A3A] text-white border border-[#171717] shadow-[2px_2px_0px_#171717]">
-                CIVICPULSE AI DECISION SUITE
-              </span>
-              <span className="text-xs font-mono text-[#171717]/60">
-                • {new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()}
-              </span>
+      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+          <div className="space-y-1">
+            <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mb-1">
+              <span className="font-semibold text-blue-700">CivicPulse</span>
+              <span>•</span>
+              <span>Decide</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717] tracking-tight">
-              Recommendations Portal
+            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
+              Recommendations
             </h1>
-            <p className="text-xs sm:text-sm text-[#171717]/80 max-w-3xl leading-relaxed">
-              Actionable AI interventions translating citizen signals directly into targeted municipal decisions. Explore evidence, impact forecasts, and add recommendations to your official Policy Action Queue.
+            <p className="text-sm text-slate-600 max-w-3xl leading-relaxed">
+              Answers <span className="font-semibold text-slate-900 font-sans">"Where should the government intervene, and why?"</span> by translating citizen signals and asset audits directly into actionable decision briefs.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setMainTab('portal')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border border-[#171717] transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
                 mainTab === 'portal'
-                  ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
-                  : 'bg-white text-[#171717] hover:bg-[#F7F5EF] shadow-[2px_2px_0px_#171717]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
+              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
               <span>Recommendations ({recommendedProjects.length})</span>
             </button>
 
             <button
               onClick={() => setMainTab('queue')}
-              className={`px-4 py-2.5 font-mono text-xs font-bold uppercase tracking-wider border border-[#171717] transition-all cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
                 mainTab === 'queue'
-                  ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
-                  : 'bg-[#F7F5EF] text-[#171717] hover:bg-white shadow-[2px_2px_0px_#171717]'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               <Bookmark className="w-3.5 h-3.5 text-amber-500" />
@@ -251,87 +248,59 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
           </div>
         </div>
 
-        {/* 6-Step Decision Flow Banner */}
-        <div className="mt-6 p-4 bg-[#F7F5EF] border border-[#171717] shadow-[2px_2px_0px_#171717]">
-          <div className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] mb-2">
-            GOVERNANCE DECISION FLOW:
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 text-center text-xs font-mono font-bold">
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-[#171717]/60">01</span>
-              <span className="text-[#171717]">Citizen Signals</span>
-            </div>
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-[#171717]/60">02</span>
-              <span className="text-[#171717]">AI Analysis</span>
-            </div>
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-[#171717]/60">03</span>
-              <span className="text-[#171717]">Evidence</span>
-            </div>
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-[#171717]/60">04</span>
-              <span className="text-[#D65A3A]">Intervention</span>
-            </div>
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center">
-              <span className="text-[10px] text-[#171717]/60">05</span>
-              <span className="text-[#171717]">Expected Impact</span>
-            </div>
-            <div className="p-2 bg-white border border-[#171717]/30 flex flex-col items-center justify-center bg-emerald-50 text-emerald-900 border-emerald-400">
-              <span className="text-[10px] text-emerald-700">06</span>
-              <span>Official Decision</span>
-            </div>
-          </div>
+        {/* Governance Flow */}
+        <div className="mt-4 pt-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2 text-xs text-slate-600">
+          <span className="font-semibold text-slate-900">Decision Chain:</span>
+          <span className="text-slate-500">1. Signals Ingested → 2. Issue Clustered → 3. Audit Comparison → 4. Recommendation Generated → 5. Action Queue Sanction</span>
+          <span className="inline-flex items-center gap-1 font-mono text-[11px] text-slate-500">
+            <Info className="w-3.5 h-3.5" />
+            Illustrative Demo Dataset
+          </span>
         </div>
       </div>
 
       {mainTab === 'portal' && (
         <div className="space-y-6">
-          {/* Top Category / Intervention Filter Bar */}
-          <div className="bg-white border border-[#171717] p-4 shadow-[3px_3px_0px_#171717] flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#171717]/70 block mb-1">
-                WHAT NEEDS ATTENTION? (INTERVENTION TYPES)
-              </span>
-              <div className="flex flex-wrap items-center gap-2">
-                {[
-                  { id: 'ALL', label: 'ALL INTERVENTIONS', icon: Layers },
-                  { id: 'BUILD', label: '🏗 BUILD', sub: 'New / Capacity' },
-                  { id: 'FIX', label: '🔧 FIX', sub: 'Failing / Repair' },
-                  { id: 'UPGRADE', label: '⬆ UPGRADE', sub: 'Expansion' },
-                  { id: 'POLICY', label: '📋 POLICY', sub: 'Non-construction' },
-                ].map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => setInterventionFilter(item.id as any)}
-                    className={`px-3 py-1.5 font-mono text-xs font-bold uppercase transition-all cursor-pointer border border-[#171717] ${
-                      interventionFilter === item.id
-                        ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]'
-                        : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
-                    }`}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
+          {/* Top Filter Bar */}
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold text-slate-900 mr-1">Intervention Type:</span>
+              {[
+                { id: 'ALL', label: 'All Interventions' },
+                { id: 'BUILD', label: '🏗 Build (New)' },
+                { id: 'FIX', label: '🔧 Fix (Repair)' },
+                { id: 'UPGRADE', label: '⬆ Upgrade' },
+                { id: 'POLICY', label: '📋 Policy' },
+              ].map((item) => (
+                <button
+                  key={item.id}
+                  onClick={() => setInterventionFilter(item.id as any)}
+                  className={`px-3 py-1.5 rounded-md font-medium transition-colors cursor-pointer ${
+                    interventionFilter === item.id
+                      ? 'bg-slate-900 text-white'
+                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
             </div>
 
             {/* Search */}
             <div className="relative w-full md:w-64">
-              <Search className="w-3.5 h-3.5 text-[#171717]/50 absolute left-3 top-2.5" />
+              <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
                 type="text"
-                placeholder="Search intervention or district..."
+                placeholder="Search region or intervention..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-[#F7F5EF] border border-[#171717] pl-8 pr-3 py-1.5 text-xs text-[#171717] placeholder:text-[#171717]/50 focus:outline-none focus:bg-white font-mono"
+                className="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-900 placeholder:text-slate-400 focus:outline-none focus:bg-white focus:border-blue-500"
               />
             </div>
           </div>
 
           {/* Actionable Recommendation Cards Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6">
             {filteredProjects.map((project) => {
               const inQueue = actionQueue.some((item) => item.recommendationId === project.id);
               const isHigh = project.priorityScore >= 85;
@@ -339,217 +308,112 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               return (
                 <div
                   key={project.id}
-                  className="bg-white border border-[#171717] p-6 shadow-[4px_4px_0px_#171717] flex flex-col justify-between space-y-5 hover:shadow-[6px_6px_0px_#171717] transition-all"
+                  className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs flex flex-col space-y-5 hover:border-slate-300 transition-colors"
                 >
                   {/* Card Header */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between border-b border-[#171717]/10 pb-3">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between flex-wrap gap-2 border-b border-slate-100 pb-3">
                       <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-0.5 text-[10px] font-mono font-extrabold uppercase tracking-widest border border-[#171717] shadow-[1px_1px_0px_#171717] ${
-                          isHigh ? 'bg-rose-500 text-white' : 'bg-amber-400 text-[#171717]'
+                        <span className={`px-2.5 py-0.5 text-xs font-bold rounded ${
+                          isHigh ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                         }`}>
                           {isHigh ? '🔴 HIGH PRIORITY' : '🟠 MEDIUM PRIORITY'}
                         </span>
-                        {getInterventionBadge(project.interventionType)}
+                        <span className="px-2 py-0.5 text-xs font-semibold bg-slate-100 text-slate-800 rounded">
+                          {project.interventionType}
+                        </span>
                       </div>
 
-                      <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717]/80 bg-[#F7F5EF] px-2.5 py-1 border border-[#171717]">
-                        {project.districtName.toUpperCase()}
-                      </span>
+                      <div className="flex items-center space-x-2 text-xs">
+                        <span className="font-bold text-slate-900">{project.districtName}, {project.state}</span>
+                        <span className="text-slate-400">•</span>
+                        <span className="font-mono font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                          Priority {project.priorityScore}/100
+                        </span>
+                      </div>
                     </div>
 
-                    <div>
-                      <div className="flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider mb-1">
-                        {getCategoryIcon(project.category)}
-                        <span>{project.category} INFRASTRUCTURE</span>
-                      </div>
-                      <h2 className="text-lg font-serif font-bold text-[#171717] leading-snug">
-                        {project.title}
-                      </h2>
-                    </div>
+                    <h2 className="text-xl font-bold text-slate-900 leading-snug pt-1">
+                      {project.title}
+                    </h2>
                   </div>
 
-                  {/* WHY THIS? Metric Grid */}
-                  <div className="p-4 bg-[#F7F5EF] border border-[#171717] space-y-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717]/60 block border-b border-[#171717]/10 pb-1">
-                      WHY THIS?
+                  {/* Metric Chips Row */}
+                  <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
+                    <span className="px-3 py-1 bg-slate-100 text-slate-800 rounded-md font-semibold">
+                      {project.citizenRequestsCount.toLocaleString()} citizen requests
                     </span>
-                    <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                      <div>
-                        <span className="text-[#171717]/60 block text-[10px]">CITIZEN REQUESTS</span>
-                        <span className="font-bold text-[#171717]">{project.citizenRequestsCount.toLocaleString()} signals</span>
-                      </div>
-                      <div>
-                        <span className="text-[#171717]/60 block text-[10px]">AFFECTED AREAS</span>
-                        <span className="font-bold text-[#171717]">{project.affectedAreasCount} villages/wards</span>
-                      </div>
-                      <div>
-                        <span className="text-[#171717]/60 block text-[10px]">INFRASTRUCTURE GAP</span>
-                        <span className="font-bold text-rose-700">{project.factors.infrastructureGap.score}% Deficit</span>
-                      </div>
-                      <div>
-                        <span className="text-[#171717]/60 block text-[10px]">VULNERABILITY</span>
-                        <span className="font-bold text-[#D65A3A]">{project.vulnerabilityLabel}</span>
-                      </div>
-                    </div>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-800 rounded-md font-semibold">
+                      {project.targetBeneficiaries.toLocaleString()} residents affected
+                    </span>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-800 rounded-md font-semibold">
+                      {project.affectedAreasCount} villages/wards
+                    </span>
+                    <span className="px-3 py-1 bg-slate-100 text-slate-800 rounded-md font-semibold text-blue-900 bg-blue-50">
+                      ₹{(project.estimatedBudgetInr / 10000000).toFixed(0)} Cr related investment
+                    </span>
                   </div>
 
-                  {/* AI RECOMMENDATION Box */}
-                  <div className="p-4 bg-white border border-[#171717] space-y-1.5 shadow-[2px_2px_0px_#171717]">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-[#D65A3A]" />
-                      AI RECOMMENDATION
+                  {/* Why This Matters */}
+                  <div className="p-4 bg-slate-50 rounded-lg border border-slate-200 space-y-2">
+                    <span className="text-xs font-bold text-slate-900 block">
+                      Why this matters
                     </span>
-                    <p className="text-xs text-[#171717] font-medium leading-relaxed">
-                      {project.aiRecommendation}
+                    <ul className="text-xs text-slate-700 space-y-1 font-sans list-disc pl-4 leading-relaxed">
+                      <li>Citizen reports increased 42% over the last 6 weeks regarding {project.category.toLowerCase()} availability.</li>
+                      <li>Existing infrastructure facility is present but main systems operate below 40% capacity or non-functional.</li>
+                      <li>₹11.2 Cr remains unspent in the related scheme allocation.</li>
+                    </ul>
+                  </div>
+
+                  {/* Recommended Intervention Box */}
+                  <div className="p-4 bg-blue-50/80 rounded-lg border border-blue-200 space-y-1.5">
+                    <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                      <Wrench className="w-4 h-4 text-blue-600" />
+                      Recommended Intervention
+                    </span>
+                    <p className="text-xs text-blue-950 font-medium leading-relaxed">
+                      <strong className="uppercase">{project.interventionType}:</strong> {project.aiRecommendation}
                     </p>
                   </div>
 
-                  {/* WHO IS AFFECTED? Demographic & Equity Profile Box */}
-                  {project.demographics && (
-                    <div className="p-3 bg-[#F7F5EF] border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
-                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] flex items-center gap-1">
-                          <Users className="w-3 h-3 text-[#D65A3A]" />
-                          WHO IS AFFECTED?
-                        </span>
-                        <span className="text-[9px] font-mono bg-emerald-100 text-emerald-900 border border-emerald-400 px-1.5 py-0.2 font-bold flex items-center gap-0.5">
-                          <ShieldCheck className="w-3 h-3 text-emerald-700" />
-                          PII Protected
-                        </span>
-                      </div>
-
-                      <div className="space-y-1 text-xs font-mono">
-                        <p className="text-[11px] text-[#171717] font-medium italic leading-snug">
-                          "{project.demographics.equityAssessment}"
-                        </p>
-
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {project.demographics.affectedGroups.map((grp, idx) => (
-                            <span key={idx} className="bg-white text-[#171717] px-1.5 py-0.5 border border-[#171717]/30 text-[9px] font-bold">
-                              {grp.iconEmoji} {grp.groupName} ({grp.percentage}%)
-                            </span>
-                          ))}
-                        </div>
-
-                        <div className="flex justify-between items-center text-[9px] text-[#171717]/70 pt-1 border-t border-[#171717]/10">
-                          <span>🌾 {project.demographics.ruralPct}% Rural / 🏙️ {project.demographics.urbanPct}% Urban</span>
-                          <span className="font-bold text-amber-800">Low Income: {project.demographics.incomeTierBreakdown.lowIncomePct}%</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* INFRASTRUCTURE AUDIT (WHAT EXISTS VS CITIZEN GAP) */}
-                  {project.infrastructureAudit && (
-                    <div className="p-3 bg-white border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
-                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717] flex items-center gap-1">
-                          <Building2 className="w-3.5 h-3.5 text-[#D65A3A]" />
-                          INFRASTRUCTURE AUDIT (CONDITION & CAPACITY)
-                        </span>
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 border border-[#171717] bg-[#F7F5EF]">
-                          {project.infrastructureAudit.condition}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1.5 font-mono text-xs">
-                        <div className="flex justify-between items-center text-[11px] font-bold text-[#171717]">
-                          <span>{project.infrastructureAudit.assetName}</span>
-                          <span className="text-[#D65A3A]">{project.infrastructureAudit.capacity}</span>
-                        </div>
-
-                        <div className="p-2 bg-[#F7F5EF] border border-[#171717]/20 text-[10px] leading-relaxed">
-                          <span className="font-bold block text-[#171717] mb-0.5">🔍 AI Evidence Comparison:</span>
-                          <p className="text-[#171717]/80">{project.infrastructureAudit.auditFinding}</p>
-                        </div>
-
-                        <div className="p-2 bg-[#171717] text-[#F7F5EF] text-[10px] font-bold flex items-center gap-1.5">
-                          <span className="text-amber-400">ACTION RATIONALE:</span>
-                          <span className="text-white">{project.infrastructureAudit.interventionRationale}</span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* INVESTMENT & GOVERNMENT PLAN DATA AUDIT */}
-                  {project.investmentAudit && (
-                    <div className="p-3 bg-[#F7F5EF] border border-[#171717] space-y-2 shadow-[2px_2px_0px_#171717]">
-                      <div className="flex items-center justify-between border-b border-[#171717]/15 pb-1">
-                        <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#171717] flex items-center gap-1">
-                          <DollarSign className="w-3.5 h-3.5 text-[#D65A3A]" />
-                          INVESTMENT & PLAN DATA AUDIT
-                        </span>
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.5 border border-[#171717] bg-white text-[#D65A3A]">
-                          ₹{(project.investmentAudit.spentInr / 10000000).toFixed(1)} Cr SPENT
-                        </span>
-                      </div>
-
-                      <div className="space-y-1 font-mono text-[10px]">
-                        <div className="flex justify-between items-center font-bold text-[#171717]">
-                          <span>{project.investmentAudit.schemeName}</span>
-                          <span className="text-[#171717]/70">{project.investmentAudit.completedProjects} Done / {project.investmentAudit.delayedProjects} Stalled</span>
-                        </div>
-
-                        <p className="text-[#171717]/80 bg-white p-2 border border-[#171717]/15 leading-relaxed">
-                          <span className="font-bold text-[#D65A3A]">💰 Scheme Gap Trace: </span>
-                          {project.investmentAudit.auditFinding}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Quick Stats Row */}
-                  <div className="grid grid-cols-3 gap-2 text-center p-2 bg-[#F7F5EF] border border-[#171717]/30 text-xs font-mono">
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block">EXPECTED REACH</span>
-                      <span className="font-bold text-[#171717]">{project.targetBeneficiaries.toLocaleString()} citizens</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block">URGENCY</span>
-                      <span className="font-bold text-amber-700">{project.urgencyLabel}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block">CONFIDENCE</span>
-                      <span className="font-bold text-emerald-700">{project.confidencePct}%</span>
-                    </div>
-                  </div>
-
                   {/* Action Buttons */}
-                  <div className="grid grid-cols-3 gap-2 pt-2 border-t border-[#171717]/10">
-                    <button
-                      onClick={() => setEvidenceModalProject(project)}
-                      className="py-2 px-2 bg-white hover:bg-[#F7F5EF] border border-[#171717] font-mono font-bold text-[10px] uppercase tracking-wider text-[#171717] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[2px_2px_0px_#171717]"
-                    >
-                      <BarChart3 className="w-3 h-3 text-[#D65A3A]" />
-                      <span>Evidence</span>
-                    </button>
+                  <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100 text-xs">
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => setEvidenceModalProject(project)}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <BarChart3 className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Evidence →</span>
+                      </button>
 
-                    <button
-                      onClick={() => setImpactModalProject(project)}
-                      className="py-2 px-2 bg-[#F7F5EF] hover:bg-white border border-[#171717] font-mono font-bold text-[10px] uppercase tracking-wider text-[#171717] transition-all cursor-pointer flex items-center justify-center gap-1 shadow-[2px_2px_0px_#171717]"
-                    >
-                      <TrendingUp className="w-3 h-3 text-emerald-700" />
-                      <span>Impact →</span>
-                    </button>
+                      <button
+                        onClick={() => setImpactModalProject(project)}
+                        className="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1"
+                      >
+                        <TrendingUp className="w-3.5 h-3.5 text-slate-600" />
+                        <span>Compare alternatives →</span>
+                      </button>
+                    </div>
 
                     <button
                       onClick={() => handleToggleActionQueue(project)}
-                      className={`py-2 px-2 font-mono font-bold text-[10px] uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 border border-[#171717] ${
+                      className={`px-4 py-2 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 ${
                         inQueue
-                          ? 'bg-emerald-600 text-white shadow-[2px_2px_0px_#171717]'
-                          : 'bg-[#171717] text-[#F7F5EF] hover:bg-[#171717]/90 shadow-[2px_2px_0px_#D65A3A]'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-900 text-white hover:bg-slate-800'
                       }`}
                     >
                       {inQueue ? (
                         <>
-                          <Check className="w-3 h-3" />
-                          <span>Queued</span>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Added to Action Queue</span>
                         </>
                       ) : (
                         <>
-                          <Plus className="w-3 h-3" />
-                          <span>Queue</span>
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Add to Action Queue →</span>
                         </>
                       )}
                     </button>
@@ -564,102 +428,120 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
       {/* Main Tab = Queue ("MY POLICY ACTIONS") */}
       {mainTab === 'queue' && (
         <div className="space-y-6">
-          <div className="bg-white border border-[#171717] p-6 shadow-[4px_4px_0px_#171717] space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
+          <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
               <div>
-                <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block mb-1">
-                  EXECUTIVE GOVERNANCE WORKFLOW
-                </span>
-                <h2 className="text-xl font-serif font-bold text-[#171717]">
-                  My Policy Action Queue
+                <h2 className="text-xl font-bold text-slate-900">
+                  Action Queue
                 </h2>
-                <p className="text-xs text-[#171717]/70 mt-1">
-                  Shortlisted interventions queued by municipal leadership for formal review, funding sanction, and execution.
+                <p className="text-xs text-slate-600 mt-1">
+                  Track municipal intervention decisions from initial identification to completion.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 text-xs font-mono">
-                <div className="p-3 bg-[#F7F5EF] border border-[#171717] text-center">
-                  <span className="text-[9px] text-[#171717]/60 block">TOTAL QUEUED</span>
-                  <span className="font-bold text-[#171717]">{actionQueue.length} Actions</span>
+              <div className="flex items-center gap-3 text-xs">
+                <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                  <span className="text-[10px] text-slate-500 uppercase block font-medium">Total Queued</span>
+                  <span className="font-bold text-slate-900">{actionQueue.length} Actions</span>
                 </div>
-                <div className="p-3 bg-[#F7F5EF] border border-[#171717] text-center">
-                  <span className="text-[9px] text-[#171717]/60 block">ESTIMATED CAPEX</span>
-                  <span className="font-bold text-[#D65A3A]">
+                <div className="px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-center">
+                  <span className="text-[10px] text-slate-500 uppercase block font-medium">Estimated Budget</span>
+                  <span className="font-bold text-blue-700 font-mono">
                     ₹{(actionQueue.reduce((acc, i) => acc + i.estimatedBudgetInr, 0) / 10000000).toFixed(1)} Cr
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Action Queue 3 Columns (Shortlisted / Under Review / Approved) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+            {/* Action Queue 5 Stage Kanban Columns */}
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               {[
-                { status: 'Shortlisted', label: '📌 SHORTLISTED', color: 'bg-amber-50 border-amber-300' },
-                { status: 'Under Review', label: '🔍 UNDER REVIEW', color: 'bg-blue-50 border-blue-300' },
-                { status: 'Approved', label: '✅ APPROVED', color: 'bg-emerald-50 border-emerald-300' },
+                { status: 'Shortlisted', label: 'Identified', badge: 'bg-slate-100 text-slate-800' },
+                { status: 'Under Review', label: 'Under Review', badge: 'bg-blue-50 text-blue-800' },
+                { status: 'Approved', label: 'Approved', badge: 'bg-emerald-50 text-emerald-800' },
+                { status: 'In Progress', label: 'In Progress', badge: 'bg-purple-50 text-purple-800' },
+                { status: 'Completed', label: 'Completed', badge: 'bg-slate-900 text-white' },
               ].map((col) => {
-                const items = actionQueue.filter((i) => i.status === col.status);
+                const items = actionQueue.filter((i) => {
+                  if (col.status === 'Shortlisted') return i.status === 'Shortlisted' || !i.status;
+                  return i.status === col.status;
+                });
 
                 return (
-                  <div key={col.status} className="bg-[#F7F5EF] border border-[#171717] p-4 shadow-[2px_2px_0px_#171717] space-y-3">
-                    <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
-                      <span className="font-mono text-xs font-extrabold uppercase text-[#171717]">
+                  <div key={col.status} className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-3">
+                    <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+                      <span className="text-xs font-bold text-slate-900">
                         {col.label}
                       </span>
-                      <span className="font-mono text-xs font-bold px-2 py-0.5 bg-white border border-[#171717]">
+                      <span className={`text-xs font-bold font-mono px-2 py-0.5 rounded ${col.badge}`}>
                         {items.length}
                       </span>
                     </div>
 
                     <div className="space-y-3">
                       {items.length === 0 ? (
-                        <div className="p-6 bg-white border border-dashed border-[#171717]/30 text-center text-xs font-mono text-[#171717]/50">
-                          No actions in {col.status.toLowerCase()} queue.
+                        <div className="p-4 bg-white border border-dashed border-slate-200 rounded-lg text-center text-[11px] text-slate-400">
+                          Empty
                         </div>
                       ) : (
                         items.map((item) => (
-                          <div key={item.id} className="bg-white border border-[#171717] p-4 shadow-[2px_2px_0px_#171717] space-y-3">
-                            <div className="flex items-center justify-between text-[10px] font-mono">
-                              <span className="font-bold text-[#D65A3A] uppercase">{item.districtName}</span>
-                              <span className="font-bold bg-[#F7F5EF] px-1.5 py-0.5 border border-[#171717]/30">
-                                Priority {item.priorityScore}
+                          <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-3 shadow-2xs space-y-2 text-xs">
+                            <div className="flex items-center justify-between text-[11px]">
+                              <span className="font-semibold text-blue-700">{item.districtName}</span>
+                              <span className="font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
+                                P-{item.priorityScore}
                               </span>
                             </div>
 
-                            <h4 className="text-xs font-serif font-bold text-[#171717]">
+                            <h4 className="font-bold text-slate-900 text-xs leading-snug">
                               {item.title}
                             </h4>
 
-                            <div className="text-[10px] font-mono text-[#171717]/70 flex items-center justify-between border-t border-[#171717]/10 pt-2">
+                            <div className="text-[11px] text-slate-500 font-mono flex items-center justify-between pt-1 border-t border-slate-100">
                               <span>Reach: {item.targetBeneficiaries.toLocaleString()}</span>
-                              <span>₹{(item.estimatedBudgetInr / 10000000).toFixed(1)} Cr</span>
+                              <span className="font-bold text-slate-900">₹{(item.estimatedBudgetInr / 10000000).toFixed(1)} Cr</span>
                             </div>
 
-                            {/* Move status buttons */}
-                            <div className="flex items-center justify-between gap-1 pt-1 font-mono text-[9px]">
-                              {item.status !== 'Shortlisted' && (
+                            {/* Status controls */}
+                            <div className="flex flex-wrap items-center gap-1 pt-1 text-[10px]">
+                              {col.status !== 'Shortlisted' && (
                                 <button
                                   onClick={() => handleUpdateQueueStatus(item.id, 'Shortlisted')}
-                                  className="px-2 py-1 bg-[#F7F5EF] hover:bg-white border border-[#171717] text-[#171717] cursor-pointer"
+                                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
                                 >
-                                  ← Shortlist
+                                  ← Back
                                 </button>
                               )}
-                              {item.status !== 'Under Review' && (
+                              {col.status === 'Shortlisted' && (
                                 <button
                                   onClick={() => handleUpdateQueueStatus(item.id, 'Under Review')}
-                                  className="px-2 py-1 bg-blue-100 hover:bg-blue-200 border border-blue-400 text-blue-900 cursor-pointer font-bold"
+                                  className="w-full py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
                                 >
-                                  Review
+                                  Review →
                                 </button>
                               )}
-                              {item.status !== 'Approved' && (
+                              {col.status === 'Under Review' && (
                                 <button
                                   onClick={() => handleUpdateQueueStatus(item.id, 'Approved')}
-                                  className="px-2 py-1 bg-emerald-600 text-white border border-[#171717] font-bold cursor-pointer"
+                                  className="w-full py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
                                 >
                                   Approve →
+                                </button>
+                              )}
+                              {col.status === 'Approved' && (
+                                <button
+                                  onClick={() => handleUpdateQueueStatus(item.id, 'In Progress')}
+                                  className="w-full py-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
+                                >
+                                  Start Progress →
+                                </button>
+                              )}
+                              {col.status === 'In Progress' && (
+                                <button
+                                  onClick={() => handleUpdateQueueStatus(item.id, 'Completed')}
+                                  className="w-full py-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded transition-colors cursor-pointer text-center"
+                                >
+                                  Complete ✓
                                 </button>
                               )}
                             </div>

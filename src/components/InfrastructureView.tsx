@@ -58,14 +58,14 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
-              ASSET & INFRASTRUCTURE REGISTER
+              INFRASTRUCTURE
             </span>
             <span className="text-slate-400 text-xs font-mono">
-              • Facility Condition & Capacity Registry
+              • Facility Condition & Capacity
             </span>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-white mt-1 font-sans">
-            Municipal Infrastructure Asset Register
+            Infrastructure Assets
           </h1>
           <p className="text-xs text-slate-300 mt-0.5 font-sans max-w-3xl">
             Complete inventory of public water filtration plants, primary health centres, schools, sub-stations, roads, and drainage outfalls. Cross-references physical condition against utilization stress.

@@ -1,13 +1,12 @@
 import React, { useState } from 'react';
 import { 
-  Cpu, 
   Layers, 
   MapPin, 
-  Volume2, 
   Search, 
   ArrowRight, 
-  CheckCircle2, 
-  AlertTriangle, 
+  Droplets,
+  Route,
+  HeartPulse,
   Filter, 
   Combine, 
   Split, 
@@ -16,9 +15,9 @@ import {
   Building2, 
   MessageSquare,
   FileText,
-  Clock,
-  Zap,
-  Tag
+  TrendingUp,
+  AlertTriangle,
+  Info
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, GovernmentProject } from '../types';
 
@@ -31,12 +30,12 @@ export interface CommunityIssue {
   requestCount: number;
   affectedCommunitiesCount: number;
   languagesRepresented: string[];
-  trendLabel: string; // e.g. "+38% over 3 weeks"
-  severityScore: number; // 1-10
-  confidencePct: number; // 0-100
+  trendLabel: string;
+  severityScore: number;
+  confidencePct: number;
   relatedInfrastructureName: string;
   relatedInfrastructureCondition: string;
-  relatedInvestmentInr: number; // e.g. 390000000 (₹39 Cr)
+  relatedInvestmentInr: number;
   relatedSchemeName: string;
   aiVerified: boolean;
   sampleRequests: CitizenRequest[];
@@ -53,75 +52,56 @@ export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
     id: 'ISSUE-WAT-001',
     title: '3-Day Pipeline Failure & Severe Drinking Water Outage',
     category: 'Water',
-    location: 'Tadepalle & Mangalagiri Rural Ward 9 & 12',
-    districtId: 'guntur',
+    location: 'Gaya, Bihar (Tadepalle & Ward 9)',
+    districtId: 'dist-01',
     requestCount: 1842,
     affectedCommunitiesCount: 12,
     languagesRepresented: ['Telugu', 'Hindi', 'English'],
-    trendLabel: '+42% over 2 weeks',
+    trendLabel: '↑ 37% over 2 weeks',
     severityScore: 9,
     confidencePct: 96,
     relatedInfrastructureName: 'Overhead Water Tank & Pumping Station #3',
-    relatedInfrastructureCondition: '🔴 Critical (34% leakage)',
+    relatedInfrastructureCondition: 'Critical (34% leakage)',
     relatedInvestmentInr: 390000000,
     relatedSchemeName: 'Jal Jeevan Mission (JJM)',
     aiVerified: true,
     sampleRequests: []
   },
   {
-    id: 'ISSUE-HC-002',
-    title: 'Primary Health Centre Staff Absentees & Vaccine Shortage',
-    category: 'Health',
-    location: 'Mylavaram Rural Block B',
-    districtId: 'guntur',
-    requestCount: 420,
-    affectedCommunitiesCount: 8,
-    languagesRepresented: ['Telugu', 'English'],
-    trendLabel: '+18% over 1 month',
-    severityScore: 8,
-    confidencePct: 91,
-    relatedInfrastructureName: 'Mylavaram Sub-Centre Hospital',
-    relatedInfrastructureCondition: '🔴 Critical (Doctor absent 4 days/wk)',
-    relatedInvestmentInr: 120000000,
-    relatedSchemeName: 'National Health Mission (NHM)',
-    aiVerified: true,
-    sampleRequests: []
-  },
-  {
-    id: 'ISSUE-RD-003',
-    title: 'Arterial Corridor Pothole Craters & Ambulance Delays',
+    id: 'ISSUE-RD-002',
+    title: 'Arterial Corridor Potholes & Emergency Access Delays',
     category: 'Roads',
-    location: 'Mangalagiri Corridor MDR-44',
-    districtId: 'guntur',
-    requestCount: 310,
-    affectedCommunitiesCount: 15,
-    languagesRepresented: ['Telugu', 'Marathi', 'Hindi'],
-    trendLabel: '+31% post-monsoon',
+    location: 'Pune & Solapur Corridor MDR-44',
+    districtId: 'dist-04',
+    requestCount: 684,
+    affectedCommunitiesCount: 8,
+    languagesRepresented: ['Marathi', 'Hindi'],
+    trendLabel: '↑ 21% post-monsoon',
     severityScore: 8,
     confidencePct: 94,
     relatedInfrastructureName: 'MDR-44 Arterial Hospital Access Road',
-    relatedInfrastructureCondition: '⚠️ Damaged (48 major craters)',
+    relatedInfrastructureCondition: 'Damaged (48 major craters)',
     relatedInvestmentInr: 250000000,
     relatedSchemeName: 'PMGSY Rural Roads',
     aiVerified: true,
     sampleRequests: []
   },
   {
-    id: 'ISSUE-DRN-004',
-    title: 'Stormwater Drain Silt Blockage & Open Sewage Overflow',
-    category: 'Drainage',
-    location: 'Vijayawada Municipal Ward 4',
-    districtId: 'vijayawada',
-    requestCount: 268,
+    id: 'ISSUE-HC-003',
+    title: 'Primary Health Centre Staff Absentees & Solar Power Outages',
+    category: 'Health',
+    location: 'Ranchi & Mylavaram Sub-Centre',
+    districtId: 'dist-03',
+    requestCount: 315,
     affectedCommunitiesCount: 6,
-    languagesRepresented: ['Telugu', 'Hindi'],
-    trendLabel: '+55% during monsoon rain',
-    severityScore: 9,
-    confidencePct: 98,
-    relatedInfrastructureName: 'Main Municipal Stormwater Outfall Drain',
-    relatedInfrastructureCondition: '🔴 Critical (70% silt blockage)',
-    relatedInvestmentInr: 85000000,
-    relatedSchemeName: 'Swachh Bharat Urban Drainage',
+    languagesRepresented: ['Hindi', 'English'],
+    trendLabel: '↑ 16% over 1 month',
+    severityScore: 8,
+    confidencePct: 91,
+    relatedInfrastructureName: 'Mylavaram Sub-Centre Hospital',
+    relatedInfrastructureCondition: 'Critical (Doctor absent 4 days/wk)',
+    relatedInvestmentInr: 120000000,
+    relatedSchemeName: 'National Health Mission (NHM)',
     aiVerified: true,
     sampleRequests: []
   }
@@ -137,7 +117,6 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModalIssue, setActiveModalIssue] = useState<CommunityIssue | null>(null);
   const [modalMode, setModalMode] = useState<'evidence' | 'requests' | 'merge' | 'split' | null>(null);
-  const [selectedIssueIdsForMerge, setSelectedIssueIdsForMerge] = useState<string[]>([]);
 
   const filteredIssues = issuesList.filter(issue => {
     const matchesCategory = selectedCategory === 'ALL' || issue.category === selectedCategory;
@@ -147,10 +126,6 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       issue.relatedInfrastructureName.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
-
-  const totalRawRequestsAggregated = 2841;
-  const totalCommunityIssuesCount = 327;
-  const totalMajorHotspotsCount = 42;
 
   const handleVerifyAI = (issueId: string) => {
     setIssuesList(prev => prev.map(item => {
@@ -162,103 +137,136 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   };
 
   return (
-    <div className="space-y-6 font-sans text-slate-900 pb-12">
-      {/* Official Header */}
-      <div className="bg-slate-900 text-white p-5 border-b-2 border-slate-700 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-8 font-sans text-slate-900 pb-12 max-w-7xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <div className="flex items-center space-x-2">
-            <span className="bg-blue-700 text-white text-[10px] font-mono font-bold px-2 py-0.5 tracking-wider uppercase">
-              STAGE 2: ISSUE AGGREGATION
-            </span>
-            <span className="text-slate-400 text-xs font-mono">
-              • Semantic Clustering & Hotspot Synthesis
-            </span>
+          <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mb-1">
+            <span className="font-semibold text-blue-700">CivicPulse</span>
+            <span>•</span>
+            <span>Understand</span>
           </div>
-          <h1 className="text-xl font-semibold tracking-tight text-white mt-1">
-            Community-Level Issues & Hotspots
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Community Issues
           </h1>
-          <p className="text-xs text-slate-300 mt-0.5 max-w-3xl">
-            Aggregates thousands of raw citizen signals into distinct community issues. Enables municipal officials to inspect underlying evidence, merge/split clusters, and verify AI classification.
+          <p className="text-sm text-slate-600 mt-1">
+            <span className="font-semibold text-slate-900">2,841 citizen requests</span> have been grouped into <span className="font-semibold text-slate-900">327 community issues</span>.
           </p>
         </div>
 
         {onNavigateToRecommendations && (
           <button
             onClick={onNavigateToRecommendations}
-            className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-medium px-4 py-2 transition-colors flex items-center gap-1.5 cursor-pointer border border-blue-600 font-mono shrink-0"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-xs flex items-center gap-2 cursor-pointer shrink-0"
           >
-            <span>Proceed to AI Recommendations</span>
+            <span>View Recommendations</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
       </div>
 
       {/* 3-Step Aggregation Funnel Banner */}
-      <div className="bg-white border border-slate-300 p-4 shadow-xs font-mono text-xs">
-        <div className="text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">
-          AGGREGATION FUNNEL ARCHITECTURE
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div className="p-3 bg-slate-50 border border-slate-200 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-slate-500 uppercase block">Raw Ingested Signals</span>
-              <span className="text-base font-bold text-slate-900">{totalRawRequestsAggregated.toLocaleString()} Requests</span>
-            </div>
-            <MessageSquare className="w-5 h-5 text-slate-400" />
-          </div>
-
-          <div className="p-3 bg-blue-50 border border-blue-200 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-blue-800 uppercase block">Clustered Issues</span>
-              <span className="text-base font-bold text-blue-950">{totalCommunityIssuesCount} Community Issues</span>
-            </div>
-            <Layers className="w-5 h-5 text-blue-700" />
-          </div>
-
-          <div className="p-3 bg-red-50 border border-red-200 flex items-center justify-between">
-            <div>
-              <span className="text-[10px] text-red-800 uppercase block font-bold">Critical Action Hotspots</span>
-              <span className="text-base font-bold text-red-950">{totalMajorHotspotsCount} Priority Hotspots</span>
-            </div>
-            <AlertTriangle className="w-5 h-5 text-red-700" />
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Question Banner */}
-      <div className="bg-slate-100 border border-slate-300 p-3.5 text-xs text-slate-800 flex items-center justify-between font-mono">
-        <div className="flex items-center space-x-2">
-          <span className="font-bold text-blue-900">PRIMARY QUESTION:</span>
-          <span>"What systemic community issues emerge when thousands of individual requests are grouped by proximity & category?"</span>
-        </div>
-        <span className="text-[11px] text-slate-600 font-bold">
-          4 Active Major Hotspots Listed
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-xs">
+        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
+          Signal Aggregation Funnel
         </span>
+
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 font-sans text-slate-900">
+          <div className="flex-1 w-full bg-white border border-slate-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
+            <span className="text-3xl font-bold font-mono text-slate-900 block">2,841</span>
+            <span className="text-xs font-medium text-slate-600 mt-0.5 block">Citizen requests</span>
+          </div>
+
+          <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block shrink-0" />
+
+          <div className="flex-1 w-full bg-blue-50/80 border border-blue-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
+            <span className="text-3xl font-bold font-mono text-blue-900 block">327</span>
+            <span className="text-xs font-semibold text-blue-800 mt-0.5 block">Community issues</span>
+          </div>
+
+          <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block shrink-0" />
+
+          <div className="flex-1 w-full bg-red-50/80 border border-red-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
+            <span className="text-3xl font-bold font-mono text-red-900 block">42</span>
+            <span className="text-xs font-semibold text-red-800 mt-0.5 block">Priority hotspots</span>
+          </div>
+        </div>
       </div>
 
-      {/* Search & Category Toolbar */}
-      <div className="bg-white border border-slate-300 p-3 flex flex-col md:flex-row items-center justify-between gap-3 font-mono text-xs shadow-xs">
-        <div className="relative w-full md:w-80">
+      {/* Top Emerging Issues Summary Cards */}
+      <div className="space-y-3">
+        <h2 className="text-base font-bold text-slate-900">
+          Top Emerging Issues
+        </h2>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans">
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
+                💧 Water supply
+              </span>
+              <span className="font-mono text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
+                ↑ 37%
+              </span>
+            </div>
+            <p className="text-slate-600 font-mono text-[11px]">
+              1,842 requests · 12 villages
+            </p>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
+                🛣️ Road accessibility
+              </span>
+              <span className="font-mono text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                ↑ 21%
+              </span>
+            </div>
+            <p className="text-slate-600 font-mono text-[11px]">
+              684 requests · 8 villages
+            </p>
+          </div>
+
+          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
+            <div className="flex items-center justify-between text-slate-700">
+              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
+                🏥 Healthcare access
+              </span>
+              <span className="font-mono text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                ↑ 16%
+              </span>
+            </div>
+            <p className="text-slate-600 font-mono text-[11px]">
+              315 requests · 6 villages
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 p-3 rounded-xl shadow-xs text-xs">
+        <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search issue title, location, or infrastructure..."
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-300 text-xs text-slate-900 focus:outline-none focus:border-blue-700"
+            placeholder="Search issue title, location, or facility..."
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
           />
         </div>
 
         <div className="flex items-center space-x-2">
-          <span className="text-slate-500 font-bold uppercase text-[10px]">Filter Sector:</span>
-          {['ALL', 'Water', 'Health', 'Roads', 'Drainage'].map((cat) => (
+          <span className="text-slate-500 font-medium">Filter sector:</span>
+          {['ALL', 'Water', 'Roads', 'Health'].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 text-[11px] border cursor-pointer ${
+              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
                 selectedCategory === cat
-                  ? 'bg-slate-900 text-white border-slate-900 font-bold'
-                  : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
+                  ? 'bg-slate-900 text-white font-semibold'
+                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
               {cat}
@@ -267,133 +275,117 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
         </div>
       </div>
 
-      {/* Community Issues List */}
+      {/* Issues List */}
       <div className="space-y-4">
         {filteredIssues.map((issue) => (
-          <div key={issue.id} className="bg-white border border-slate-300 p-5 shadow-xs space-y-4 font-sans hover:border-slate-400 transition-colors">
-            {/* Card Top Row */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-200 pb-3">
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2 font-mono text-xs">
-                  <span className="font-bold text-blue-900 bg-blue-50 border border-blue-200 px-2 py-0.5">
+          <div key={issue.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 hover:border-slate-300 transition-colors">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <div className="flex items-center space-x-2 text-xs font-mono mb-1">
+                  <span className="bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-200">
                     {issue.id}
                   </span>
-                  <span className="bg-slate-900 text-white font-bold px-2 py-0.5 text-[10px] uppercase">
+                  <span className="font-semibold text-blue-700">
                     {issue.category}
                   </span>
-                  <span className="text-slate-600 font-bold flex items-center gap-1">
-                    <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                    {issue.location}
-                  </span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-slate-600 font-sans">{issue.location}</span>
                 </div>
                 <h3 className="text-base font-bold text-slate-900">
                   {issue.title}
                 </h3>
               </div>
 
-              {/* Status & Verification Badge */}
-              <div className="flex items-center space-x-3 font-mono text-xs shrink-0">
+              <div className="flex items-center space-x-2 text-xs font-mono shrink-0">
                 <button
                   onClick={() => handleVerifyAI(issue.id)}
-                  className={`px-2.5 py-1 border font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                  className={`px-2.5 py-1 rounded font-semibold border transition-colors cursor-pointer ${
                     issue.aiVerified 
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                      : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
+                      : 'bg-amber-50 text-amber-800 border-amber-200'
                   }`}
-                  title="Click to toggle official AI classification verification"
                 >
-                  <ShieldCheck className="w-4 h-4 text-emerald-700" />
-                  <span>{issue.aiVerified ? 'AI Verified' : 'Unverified AI'}</span>
+                  <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-emerald-600" />
+                  <span>{issue.aiVerified ? 'AI Verified' : 'Unverified'}</span>
                 </button>
 
-                <span className={`px-2.5 py-1 border font-bold ${
-                  issue.severityScore >= 8 ? 'bg-red-50 text-red-800 border-red-300' : 'bg-amber-50 text-amber-800 border-amber-300'
+                <span className={`px-2.5 py-1 rounded font-bold ${
+                  issue.severityScore >= 8 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
                 }`}>
                   Severity {issue.severityScore}/10
                 </span>
               </div>
             </div>
 
-            {/* Metrics Breakdown Bar */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 font-mono text-xs bg-slate-50 p-3 border border-slate-200">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono">
               <div>
-                <span className="text-[10px] text-slate-500 uppercase block">Citizen Requests</span>
-                <span className="text-sm font-bold text-slate-900">{issue.requestCount.toLocaleString()} signals</span>
+                <span className="text-[10px] text-slate-500 uppercase font-sans block">Citizen Requests</span>
+                <span className="font-bold text-slate-900">{issue.requestCount.toLocaleString()} signals</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase block">Communities Affected</span>
-                <span className="text-sm font-bold text-slate-900">{issue.affectedCommunitiesCount} villages / wards</span>
+                <span className="text-[10px] text-slate-500 uppercase font-sans block">Communities Affected</span>
+                <span className="font-bold text-slate-900">{issue.affectedCommunitiesCount} villages</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase block">Languages Represented</span>
-                <span className="text-xs font-bold text-slate-900">{issue.languagesRepresented.join(', ')}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-sans block">Languages</span>
+                <span className="font-medium text-slate-800">{issue.languagesRepresented.join(', ')}</span>
               </div>
               <div>
-                <span className="text-[10px] text-slate-500 uppercase block">Trend / Velocity</span>
-                <span className="text-xs font-bold text-red-700">{issue.trendLabel}</span>
+                <span className="text-[10px] text-slate-500 uppercase font-sans block">Velocity Trend</span>
+                <span className="font-bold text-red-600">{issue.trendLabel}</span>
               </div>
             </div>
 
-            {/* Related Infrastructure & Investment Evidence */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-              <div className="p-3 bg-white border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block flex items-center gap-1">
-                  <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                  RELATED INFRASTRUCTURE FACILITY
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-sans">
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-500 font-semibold uppercase block">
+                  Related Facility
                 </span>
                 <div className="font-bold text-slate-900">{issue.relatedInfrastructureName}</div>
-                <div className="text-[11px] text-slate-600">Condition: {issue.relatedInfrastructureCondition}</div>
+                <div className="text-slate-600 font-mono text-[11px]">Condition: {issue.relatedInfrastructureCondition}</div>
               </div>
 
-              <div className="p-3 bg-white border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-500 uppercase font-bold block flex items-center gap-1">
-                  <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                  EXISTING GOVERNMENT INVESTMENT CONTEXT
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                <span className="text-[10px] text-slate-500 font-semibold uppercase block">
+                  Government Investment Context
                 </span>
                 <div className="font-bold text-slate-900">
                   ₹{(issue.relatedInvestmentInr / 10000000).toFixed(1)} Cr Allocated ({issue.relatedSchemeName})
                 </div>
-                <div className="text-[11px] text-amber-700 font-bold">
-                  ⚠️ Audit Warning: High expenditure but zero outage resolution
+                <div className="text-amber-800 font-medium">
+                  High expenditure but zero outage resolution
                 </div>
               </div>
             </div>
 
-            {/* Action Bar (View Evidence, View Requests, Merge, Split) */}
-            <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 font-mono text-xs">
+            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => { setActiveModalIssue(issue); setModalMode('evidence'); }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-3 py-1.5 border border-slate-300 cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded text-[11px] transition-colors cursor-pointer"
                 >
-                  <FileText className="w-3.5 h-3.5 text-slate-600" />
-                  <span>View Evidence (12)</span>
+                  View Evidence
                 </button>
-
                 <button
                   onClick={() => { setActiveModalIssue(issue); setModalMode('requests'); }}
-                  className="bg-slate-100 hover:bg-slate-200 text-slate-800 font-medium px-3 py-1.5 border border-slate-300 cursor-pointer flex items-center gap-1"
+                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded text-[11px] transition-colors cursor-pointer"
                 >
-                  <MessageSquare className="w-3.5 h-3.5 text-slate-600" />
-                  <span>View Individual Requests ({issue.requestCount})</span>
+                  View Requests ({issue.requestCount})
                 </button>
               </div>
 
               <div className="flex items-center space-x-2">
                 <button
                   onClick={() => { setActiveModalIssue(issue); setModalMode('merge'); }}
-                  className="bg-white hover:bg-slate-100 text-slate-800 font-medium px-2.5 py-1.5 border border-slate-300 cursor-pointer flex items-center gap-1 text-[11px]"
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded text-[11px] transition-colors cursor-pointer"
                 >
-                  <Combine className="w-3.5 h-3.5 text-blue-700" />
-                  <span>Merge Issue</span>
+                  Merge Issue
                 </button>
-
                 <button
                   onClick={() => { setActiveModalIssue(issue); setModalMode('split'); }}
-                  className="bg-white hover:bg-slate-100 text-slate-800 font-medium px-2.5 py-1.5 border border-slate-300 cursor-pointer flex items-center gap-1 text-[11px]"
+                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded text-[11px] transition-colors cursor-pointer"
                 >
-                  <Split className="w-3.5 h-3.5 text-amber-700" />
-                  <span>Split Issue</span>
+                  Split Issue
                 </button>
               </div>
             </div>
@@ -404,47 +396,47 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       {/* Modal Dialog for Evidence / Requests / Merge / Split */}
       {activeModalIssue && modalMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white border-2 border-slate-800 shadow-xl max-w-2xl w-full p-6 space-y-4 font-sans">
-            <div className="flex items-center justify-between border-b border-slate-300 pb-3 font-mono">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full p-6 space-y-4 font-sans">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <span className="text-xs text-blue-900 font-bold uppercase">
-                  {modalMode === 'evidence' && '📋 Citizen & Infrastructure Evidence Pack'}
-                  {modalMode === 'requests' && '💬 Individual Citizen Request Stream'}
-                  {modalMode === 'merge' && '🔀 Merge Duplicate Issues'}
-                  {modalMode === 'split' && '✂️ Split Issue Clusters'}
+                <span className="text-xs text-blue-600 font-semibold uppercase">
+                  {modalMode === 'evidence' && 'Citizen & Infrastructure Evidence'}
+                  {modalMode === 'requests' && 'Individual Citizen Request Stream'}
+                  {modalMode === 'merge' && 'Merge Duplicate Issues'}
+                  {modalMode === 'split' && 'Split Issue Clusters'}
                 </span>
                 <h3 className="text-base font-bold text-slate-900">{activeModalIssue.title}</h3>
               </div>
               <button
                 onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="text-slate-500 hover:text-slate-900 text-sm font-bold border border-slate-300 px-2 py-1"
+                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1 cursor-pointer"
               >
-                Close ✕
+                ✕
               </button>
             </div>
 
             <div className="space-y-3 text-xs max-h-96 overflow-y-auto">
               {modalMode === 'evidence' && (
-                <div className="space-y-2 font-mono">
-                  <div className="p-3 bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="font-bold text-slate-900">EVIDENCE ITEM 1: Voice Recording Audio Evidence</span>
-                    <p className="text-slate-700 font-sans italic">"మా గ్రామంలో మూడు రోజులుగా తాగునీటి సరఫరా పూర్తిగా నిలిచిపోయింది..."</p>
-                    <div className="text-[11px] text-slate-500">Language: Telugu | Source: Voice Telephony | Confidence: 96%</div>
+                <div className="space-y-2">
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                    <span className="font-bold text-slate-900">Voice Telephony Evidence</span>
+                    <p className="text-slate-700 italic">"మా గ్రామంలో మూడు రోజులుగా తాగునీటి సరఫరా పూర్తిగా నిలిచిపోయింది..."</p>
+                    <div className="text-[11px] text-slate-500 font-mono">Language: Telugu | Source: Voice Telephony | Confidence: 96%</div>
                   </div>
-                  <div className="p-3 bg-slate-50 border border-slate-200 space-y-1">
-                    <span className="font-bold text-slate-900">EVIDENCE ITEM 2: Infrastructure Inspector Telemetry Audit</span>
-                    <p className="text-slate-700 font-sans">Water Tank #3 main pump impellers rusted; pipeline leakage measured at 34%.</p>
+                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
+                    <span className="font-bold text-slate-900">Infrastructure Inspector Telemetry Audit</span>
+                    <p className="text-slate-700">Water Tank #3 main pump impellers rusted; pipeline leakage measured at 34%.</p>
                   </div>
                 </div>
               )}
 
               {modalMode === 'requests' && (
                 <div className="space-y-2">
-                  <p className="text-slate-600 font-mono text-[11px]">
-                    Showing sample citizen signals that were aggregated into this issue cluster:
+                  <p className="text-slate-600 font-medium">
+                    Sample citizen signals aggregated into this issue cluster:
                   </p>
                   {requests.slice(0, 3).map((req) => (
-                    <div key={req.id} className="p-3 bg-slate-50 border border-slate-200 space-y-1 font-mono">
+                    <div key={req.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1 font-mono">
                       <div className="flex justify-between font-bold text-blue-900 text-[11px]">
                         <span>{req.id} • {req.location}</span>
                         <span>{req.language}</span>
@@ -456,42 +448,42 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
               )}
 
               {modalMode === 'merge' && (
-                <div className="space-y-3 font-mono">
-                  <p className="text-slate-700 font-sans">
-                    Select another issue from Guntur to merge with <strong>{activeModalIssue.title}</strong> into a single combined incident record:
+                <div className="space-y-3">
+                  <p className="text-slate-700">
+                    Select another issue to merge with <strong>{activeModalIssue.title}</strong>:
                   </p>
-                  <div className="p-3 border border-slate-200 bg-slate-50 space-y-2">
+                  <div className="p-3 border border-slate-200 bg-slate-50 rounded-lg">
                     <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-blue-700" defaultChecked />
-                      <span className="font-bold text-slate-900">ISSUE-WAT-002: Pipe leakage at Mangalagiri Sector 4</span>
+                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" defaultChecked />
+                      <span className="font-bold text-slate-900">ISSUE-WAT-002: Pipe leakage at Gaya Sector 4</span>
                     </label>
                   </div>
                 </div>
               )}
 
               {modalMode === 'split' && (
-                <div className="space-y-3 font-mono">
-                  <p className="text-slate-700 font-sans">
+                <div className="space-y-3">
+                  <p className="text-slate-700">
                     Specify parameters to split this cluster into two distinct sub-issues:
                   </p>
-                  <div className="space-y-2">
-                    <label className="block text-slate-700 font-bold">Sub-Issue 1 Target Village:</label>
-                    <input type="text" defaultValue="Tadepalle Ward 9" className="w-full p-2 bg-slate-50 border border-slate-300 text-xs" />
+                  <div className="space-y-1">
+                    <label className="block text-slate-700 font-bold">Sub-Issue 1 Target Location:</label>
+                    <input type="text" defaultValue="Gaya Ward 9" className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs" />
                   </div>
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-300 flex justify-end font-mono text-xs gap-2">
+            <div className="pt-3 border-t border-slate-100 flex justify-end text-xs gap-2">
               <button
                 onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="bg-slate-200 text-slate-800 font-bold px-4 py-2 hover:bg-slate-300"
+                className="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded hover:bg-slate-200 cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="bg-slate-900 text-white font-bold px-4 py-2 hover:bg-slate-800"
+                className="px-4 py-2 bg-slate-900 text-white font-semibold rounded hover:bg-slate-800 cursor-pointer"
               >
                 Save Changes
               </button>

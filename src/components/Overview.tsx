@@ -11,19 +11,16 @@ import {
   Droplets, 
   Route, 
   HeartPulse, 
-  GraduationCap,
+  DollarSign, 
+  ChevronRight,
+  Filter,
+  Users,
   ShieldCheck,
-  Cpu,
-  Award,
-  ChevronDown,
-  ChevronUp,
-  DollarSign,
-  Layers,
-  FileText,
-  CheckSquare
+  Check,
+  Info
 } from 'lucide-react';
-import { District, CitizenRequest, RecommendedProject } from '../types';
-import { calculatePriorityScore, getPriorityTier, getAIRecommendedProjects } from '../utils/scoring';
+import { District, CitizenRequest } from '../types';
+import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { NavTab } from './Sidebar';
 
 interface OverviewProps {
@@ -39,12 +36,10 @@ export const Overview: React.FC<OverviewProps> = ({
   onNavigate,
   onSelectDistrictForPolicy,
 }) => {
-  const [expandedProjectId, setExpandedProjectId] = useState<string | null>('rec-01');
+  // Region state for interactive map & detail drawer
+  const [selectedRegionId, setSelectedRegionId] = useState<string>('dist-01');
 
-  // AI Recommended Projects generated from Priority Engine
-  const recommendedProjects = getAIRecommendedProjects(districts, requests);
-
-  // Ranked Priority Districts
+  // Compute district priority rankings
   const rankedDistricts = districts.map((d) => {
     const waterScore = calculatePriorityScore(d, 'Water', 8, requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase() && r.category === 'Water').length + 12).total_score;
     const roadScore = calculatePriorityScore(d, 'Roads', 7, requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase() && r.category === 'Roads').length + 8).total_score;
@@ -57,281 +52,322 @@ export const Overview: React.FC<OverviewProps> = ({
       maxScore,
       topCategory,
       tier: getPriorityTier(maxScore),
+      affectedCount: (d.population * 0.18).toFixed(0),
+      citizenSignals: requests.filter(r => r.location.toLowerCase() === d.name.toLowerCase()).length + 380,
+      investedCr: 39,
+      delayedProjects: 25,
+      complaintIncreasePct: 42,
     };
   }).sort((a, b) => b.maxScore - a.maxScore);
 
+  const selectedRegion = rankedDistricts.find(d => d.id === selectedRegionId) || rankedDistricts[0];
+
   return (
-    <div className="space-y-6 font-sans text-slate-900 pb-12">
-      {/* Official Government Header */}
-      <div className="bg-slate-900 text-white p-6 border-b-2 border-slate-700 shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6 font-mono">
-        <div className="space-y-1">
-          <div className="flex items-center space-x-2">
-            <span className="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 tracking-wider uppercase">
-              EXECUTIVE COMMAND CENTRE
-            </span>
-            <span className="text-slate-400 text-xs">
-              • Unified Public Decision Matrix
-            </span>
+    <div className="space-y-8 font-sans text-slate-900 pb-12 max-w-7xl mx-auto">
+      {/* Top Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+        <div>
+          <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mb-1">
+            <span className="font-semibold text-blue-700">CivicPulse</span>
+            <span>•</span>
+            <span>Overview</span>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-white font-sans mt-1">
-            Intervention Priority Matrix
+          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+            Where should we intervene?
           </h1>
-          <p className="text-xs text-slate-300 font-sans max-w-3xl leading-relaxed">
-            Synthesizes 2,841 citizen voice signals, JJM piped water infrastructure deficits, and government expenditure logs to answer: <strong>Where should the government intervene, and why?</strong>
+          <p className="text-sm text-slate-600 mt-1">
+            <span className="font-semibold text-slate-900">4 regions</span> currently require priority attention based on citizen signals, access deficits, and stalled capital projects.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 font-mono text-xs shrink-0">
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
+            <Info className="w-3.5 h-3.5 text-slate-500" />
+            <span>Illustrative demo dataset</span>
+          </span>
           <button
             onClick={() => onNavigate('recommendations')}
-            className="bg-blue-700 hover:bg-blue-800 text-white font-medium px-4 py-2.5 transition-colors flex items-center gap-2 cursor-pointer border border-blue-600 shadow-xs"
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
-            <span>Priority Recommendations</span>
-          </button>
-          <button
-            onClick={() => onNavigate('investment')}
-            className="bg-slate-800 hover:bg-slate-700 text-white font-medium px-4 py-2.5 transition-colors flex items-center gap-2 cursor-pointer border border-slate-700"
-          >
-            <DollarSign className="w-4 h-4 text-emerald-400" />
-            <span>Investment Audit</span>
+            <span>View Recommendations</span>
           </button>
         </div>
       </div>
 
-      {/* Primary Question Banner */}
-      <div className="bg-slate-100 border border-slate-300 p-4 text-xs text-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2 font-mono">
-        <div className="flex items-center space-x-2">
-          <span className="font-bold text-blue-900 bg-blue-100 px-2 py-0.5 border border-blue-300">CORE DIRECTIVE:</span>
-          <span className="font-bold text-slate-900">"Where should the government intervene, and why?"</span>
+      {/* Filter Bar */}
+      <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-700">
+        <div className="flex items-center space-x-3 flex-wrap gap-y-2">
+          <span className="flex items-center gap-1.5 font-semibold text-slate-900">
+            <Filter className="w-3.5 h-3.5 text-slate-500" />
+            <span>Scope:</span>
+          </span>
+          <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md font-medium text-slate-800">
+            India
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md font-medium text-slate-800">
+            All States
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md font-medium text-slate-800">
+            All Infrastructure Sectors
+          </span>
+          <span className="text-slate-300">•</span>
+          <span className="px-2.5 py-1 bg-white border border-slate-200 rounded-md font-medium text-slate-800 font-mono">
+            Last 90 days
+          </span>
         </div>
-        <span className="text-[11px] text-slate-600 font-bold">
-          4 Priority Regions Flagged for Immediate Allocation
-        </span>
+
+        <div className="text-xs text-slate-500 font-mono">
+          Updated: <span className="font-semibold text-slate-700">03 Sep 2026</span>
+        </div>
       </div>
 
-      {/* Top Section: Priority Regions & Critical Issues Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        
-        {/* Left Column (7 cols): Priority Regions List */}
-        <div className="lg:col-span-7 bg-white border border-slate-300 p-5 shadow-xs space-y-4">
-          <div className="flex items-center justify-between border-b border-slate-200 pb-3 font-mono text-xs">
+      {/* Hero Section: Map + Selected Region Detail Side Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* Interactive Priority Map (7 cols) */}
+        <div className="lg:col-span-7 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
             <div>
-              <span className="text-[10px] text-slate-500 uppercase font-bold block">SECTION 1</span>
-              <h2 className="text-sm font-bold text-slate-900 uppercase font-sans">
-                Priority Intervention Regions
+              <h2 className="text-lg font-bold text-slate-900">
+                Priority Areas Map
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Click any region to inspect issue velocity, affected residents, and recommended action
+              </p>
+            </div>
+
+            {/* Status Legend */}
+            <div className="flex items-center space-x-3 text-xs">
+              <span className="flex items-center gap-1 font-medium text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                Critical
+              </span>
+              <span className="flex items-center gap-1 font-medium text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                High
+              </span>
+              <span className="flex items-center gap-1 font-medium text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-yellow-500"></span>
+                Moderate
+              </span>
+              <span className="flex items-center gap-1 font-medium text-slate-700">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                Stable
+              </span>
+            </div>
+          </div>
+
+          {/* Map Interactive Canvas Container */}
+          <div className="relative bg-slate-900 text-white rounded-lg p-6 min-h-[340px] flex flex-col justify-between overflow-hidden">
+            {/* Subtle Map Grid Background */}
+            <div className="absolute inset-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]"></div>
+
+            <div className="relative z-10 flex justify-between items-start">
+              <span className="text-xs font-mono text-slate-400 bg-slate-800/80 px-2.5 py-1 rounded border border-slate-700">
+                Interactive Regional Focus Canvas
+              </span>
+              <span className="text-xs text-slate-300 bg-blue-900/60 border border-blue-500/40 px-2.5 py-1 rounded">
+                Click a region pin below
+              </span>
+            </div>
+
+            {/* Region Pins Grid Representation */}
+            <div className="relative z-10 grid grid-cols-2 sm:grid-cols-3 gap-3 my-4">
+              {rankedDistricts.slice(0, 6).map((district, idx) => {
+                const isSelected = selectedRegionId === district.id;
+                const isCritical = district.maxScore >= 80;
+
+                return (
+                  <button
+                    key={district.id}
+                    onClick={() => setSelectedRegionId(district.id)}
+                    className={`p-3.5 rounded-lg border text-left transition-all cursor-pointer relative ${
+                      isSelected
+                        ? 'bg-blue-600 text-white border-white shadow-md ring-2 ring-blue-300/50'
+                        : 'bg-slate-800/90 hover:bg-slate-800 text-slate-200 border-slate-700'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-sm truncate">{district.name}</span>
+                      <span className={`w-2.5 h-2.5 rounded-full shrink-0 ${
+                        isCritical ? 'bg-red-500 animate-pulse' : 'bg-amber-400'
+                      }`} />
+                    </div>
+                    <div className="text-xs opacity-80 flex items-center justify-between mt-1">
+                      <span>{district.state}</span>
+                      <span className="font-mono font-bold">Priority {district.maxScore}</span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="relative z-10 text-xs text-slate-400 flex items-center justify-between pt-2 border-t border-slate-800">
+              <span>Showing 6 active monitoring districts</span>
+              <button 
+                onClick={() => onNavigate('map')}
+                className="text-blue-400 hover:text-blue-300 font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <span>Open full GIS map</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Selected Region Focus Drawer / Panel (5 cols) */}
+        <div className="lg:col-span-5 bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-5">
+          <div className="border-b border-slate-100 pb-3 flex items-start justify-between">
+            <div>
+              <span className="text-xs text-blue-600 font-semibold uppercase tracking-wider block">
+                Selected Region
+              </span>
+              <h2 className="text-xl font-bold text-slate-900 mt-0.5">
+                {selectedRegion.name}, {selectedRegion.state}
               </h2>
             </div>
-            <button
-              onClick={() => onNavigate('demographics')}
-              className="text-blue-700 hover:text-blue-900 font-bold text-[11px] uppercase hover:underline cursor-pointer flex items-center gap-1"
-            >
-              <span>View Census Data</span>
-              <ArrowRight className="w-3 h-3" />
-            </button>
+            <div className="text-right">
+              <span className="text-xs text-slate-500 font-medium block">Priority Score</span>
+              <span className="text-2xl font-bold font-mono text-red-600">
+                {selectedRegion.maxScore}<span className="text-xs text-slate-400 font-normal">/100</span>
+              </span>
+            </div>
           </div>
 
-          <div className="divide-y divide-slate-200">
-            {rankedDistricts.slice(0, 4).map((dist) => (
-              <div 
-                key={dist.id} 
-                onClick={() => {
-                  onSelectDistrictForPolicy(dist.id, dist.topCategory);
-                  onNavigate('recommendations');
-                }}
-                className="py-3 hover:bg-slate-50 transition-colors cursor-pointer space-y-2 font-sans"
-              >
-                <div className="flex items-center justify-between font-mono text-xs">
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-slate-900 text-sm">{dist.name}</span>
-                    <span className="text-slate-500 text-[11px]">({dist.state})</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[11px] text-slate-500">Priority Score:</span>
-                    <span className={`px-2 py-0.5 font-bold border ${
-                      dist.maxScore >= 80 ? 'bg-red-50 text-red-800 border-red-300' : 'bg-amber-50 text-amber-800 border-amber-300'
-                    }`}>
-                      {dist.maxScore} / 100
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 font-mono text-[11px] bg-slate-50 p-2 border border-slate-200">
-                  <div>
-                    <span className="text-[9px] text-slate-500 block uppercase">Primary Sector Deficit</span>
-                    <span className="font-bold text-slate-900">{dist.topCategory} Access Deficit</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-500 block uppercase">Citizen Signal Volume</span>
-                    <span className="font-bold text-blue-900">4,820 reports</span>
-                  </div>
-                  <div>
-                    <span className="text-[9px] text-slate-500 block uppercase">Unspent Budget</span>
-                    <span className="font-bold text-amber-800">₹11.2 Cr unspent</span>
-                  </div>
-                </div>
-
-                <p className="text-xs text-slate-600 leading-normal">
-                  <strong>Why intervene:</strong> High population density combined with 3-day water supply outage and unspent JJM budget creating severe public health risk.
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right Column (5 cols): Investment-Performance Warnings & Signal Changes */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Investment-Performance Warnings */}
-          <div className="bg-white border border-slate-300 p-5 shadow-xs space-y-3 font-mono text-xs">
-            <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-red-700 uppercase font-bold block">AUDIT WARNINGS</span>
-                <h3 className="text-xs font-bold text-slate-900 font-sans uppercase">
-                  Investment & Outcome Mismatch Flags
-                </h3>
-              </div>
-              <AlertTriangle className="w-4 h-4 text-amber-600" />
+          {/* Key Facts List */}
+          <div className="space-y-3 text-xs">
+            <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+              <span className="font-semibold text-slate-800 flex items-center gap-2">
+                <Droplets className="w-4 h-4 text-blue-600" />
+                Primary Sector Deficit
+              </span>
+              <span className="font-bold text-slate-900">{selectedRegion.topCategory} Access</span>
             </div>
 
-            <div className="space-y-2.5 font-sans">
-              <div className="p-3 bg-red-50/50 border border-red-200 space-y-1 font-mono">
-                <div className="flex justify-between font-bold text-red-900 text-[11px]">
-                  <span>Guntur Rural Water Scheme</span>
-                  <span>₹39 Cr Spent</span>
-                </div>
-                <p className="text-[11px] text-slate-700 font-sans">
-                  <strong>Warning:</strong> 78% budget spent, but citizen complaints rose 42% due to pipeline pump breakdown.
-                </p>
+            <div className="grid grid-cols-2 gap-2 font-mono">
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span className="text-[10px] text-slate-500 block uppercase font-sans">Citizen Signals</span>
+                <span className="text-sm font-bold text-slate-900">{selectedRegion.citizenSignals.toLocaleString()}</span>
               </div>
-
-              <div className="p-3 bg-amber-50/50 border border-amber-200 space-y-1 font-mono">
-                <div className="flex justify-between font-bold text-amber-900 text-[11px]">
-                  <span>Mylavaram PHC Sub-Centre</span>
-                  <span>₹12 Cr Released</span>
-                </div>
-                <p className="text-[11px] text-slate-700 font-sans">
-                  <strong>Warning:</strong> Facility fully funded but doctor absent 4 days/wk causing 30 km hospital detours.
-                </p>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span className="text-[10px] text-slate-500 block uppercase font-sans">Residents Affected</span>
+                <span className="text-sm font-bold text-slate-900">{(selectedRegion.population * 0.18 / 1000).toFixed(0)}K</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span className="text-[10px] text-slate-500 block uppercase font-sans">Invested Capital</span>
+                <span className="text-sm font-bold text-slate-900">₹{selectedRegion.investedCr} Cr</span>
+              </div>
+              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <span className="text-[10px] text-slate-500 block uppercase font-sans">Complaint Velocity</span>
+                <span className="text-sm font-bold text-red-600">↑ {selectedRegion.complaintIncreasePct}%</span>
               </div>
             </div>
 
-            <button
-              onClick={() => onNavigate('investment')}
-              className="w-full text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold uppercase text-[11px] border border-slate-300 cursor-pointer"
-            >
-              Inspect 4-Quadrant Investment Matrix →
-            </button>
-          </div>
-
-          {/* Recent Citizen Signal Changes */}
-          <div className="bg-white border border-slate-300 p-5 shadow-xs space-y-3 font-mono text-xs">
-            <div className="border-b border-slate-200 pb-2 flex items-center justify-between">
-              <div>
-                <span className="text-[10px] text-blue-900 uppercase font-bold block">SIGNAL TRENDS</span>
-                <h3 className="text-xs font-bold text-slate-900 font-sans uppercase">
-                  Recent Citizen Signal Changes
-                </h3>
-              </div>
-              <Radio className="w-4 h-4 text-blue-700" />
+            {/* Recommended Action Box */}
+            <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-lg space-y-2">
+              <span className="text-xs font-bold text-blue-900 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-blue-600" />
+                Recommended Action
+              </span>
+              <p className="text-xs text-blue-950 leading-relaxed font-medium">
+                Fix existing water infrastructure before allocating new construction funds. ₹11.2 Cr remains unspent in related Jal Jeevan Mission allocation.
+              </p>
             </div>
-
-            <div className="space-y-2 font-sans text-xs">
-              <div className="flex justify-between p-2 bg-slate-50 border border-slate-200">
-                <span>Drinking Water Outages</span>
-                <strong className="text-red-700 font-mono">+42% velocity</strong>
-              </div>
-              <div className="flex justify-between p-2 bg-slate-50 border border-slate-200">
-                <span>Post-Monsoon Road Potholes</span>
-                <strong className="text-amber-700 font-mono">+31% velocity</strong>
-              </div>
-              <div className="flex justify-between p-2 bg-slate-50 border border-slate-200">
-                <span>Primary School Roof Leaks</span>
-                <strong className="text-slate-700 font-mono">+12% velocity</strong>
-              </div>
-            </div>
-
-            <button
-              onClick={() => onNavigate('signals')}
-              className="w-full text-center py-2 bg-slate-100 hover:bg-slate-200 text-slate-900 font-bold uppercase text-[11px] border border-slate-300 cursor-pointer"
-            >
-              Open Raw Signal Ingestion Stream →
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      {/* Priority Recommendations Feature Section */}
-      <div className="bg-white border border-slate-300 p-5 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3 font-mono text-xs">
-          <div>
-            <span className="text-[10px] text-blue-900 uppercase font-bold block">AI DECISION SUPPORT ENGINE</span>
-            <h2 className="text-base font-bold text-slate-900 uppercase font-sans">
-              Recommended Government Actions
-            </h2>
           </div>
 
           <button
-            onClick={() => onNavigate('recommendations')}
-            className="bg-blue-700 hover:bg-blue-800 text-white font-bold px-3.5 py-1.5 transition-colors cursor-pointer border border-blue-600"
+            onClick={() => {
+              onSelectDistrictForPolicy(selectedRegion.id, selectedRegion.topCategory);
+              onNavigate('recommendations');
+            }}
+            className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-semibold text-xs rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-xs"
           >
-            Explore All Action Briefs →
+            <span>View evidence & brief</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Priority Regions Table */}
+      <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-slate-900">
+              Priority Intervention Areas
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Ranked deterministically by demand volume, infrastructure gap, and unspent scheme budget
+            </p>
+          </div>
+          <button
+            onClick={() => onNavigate('recommendations')}
+            className="text-xs font-semibold text-blue-600 hover:text-blue-800 flex items-center gap-1 cursor-pointer"
+          >
+            <span>See all recommendations</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        <div className="space-y-3 font-sans">
-          {recommendedProjects.slice(0, 3).map((project) => (
-            <div key={project.id} className="p-4 bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-2 font-mono text-xs">
-                <div className="flex items-center space-x-2">
-                  <span className="bg-slate-900 text-white px-2 py-0.5 text-[10px] font-bold uppercase">
-                    {project.category}
-                  </span>
-                  <span className="font-bold text-slate-900">{project.districtName}, {project.state}</span>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <span className="text-slate-500 text-[11px]">Priority:</span>
-                  <span className="font-bold text-red-700 bg-red-50 border border-red-200 px-2 py-0.5">
-                    {project.priorityScore} / 100
-                  </span>
-                </div>
-              </div>
-
-              <h3 className="text-sm font-bold text-slate-900">
-                {project.title}
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-mono">
-                <div className="p-2.5 bg-white border border-slate-200 space-y-1">
-                  <span className="text-[9px] text-slate-500 uppercase font-bold block">Why this recommendation?</span>
-                  <p className="font-sans text-slate-800 text-[11px] leading-relaxed">
-                    {project.keyBulletPoints[0] || 'High population deficit paired with severe citizen complaint velocity.'}
-                  </p>
-                </div>
-
-                <div className="p-2.5 bg-white border border-slate-200 space-y-1">
-                  <span className="text-[9px] text-slate-500 uppercase font-bold block">Why now?</span>
-                  <p className="font-sans text-slate-800 text-[11px] leading-relaxed">
-                    Unspent scheme capital exists in the sector; immediate action prevents public health escalation.
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2 flex justify-end font-mono text-xs gap-2">
-                <button
-                  onClick={() => onNavigate('recommendations')}
-                  className="bg-blue-700 hover:bg-blue-800 text-white font-bold px-3 py-1 text-[11px] border border-blue-600 cursor-pointer"
-                >
-                  View Full Evidence & Export Brief
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs">
+            <thead className="bg-slate-50 text-slate-600 uppercase font-medium text-[11px] border-b border-slate-200">
+              <tr>
+                <th className="py-3 px-4">Region</th>
+                <th className="py-3 px-4">Primary Issue</th>
+                <th className="py-3 px-4 font-mono">People Affected</th>
+                <th className="py-3 px-4 font-mono">Investment</th>
+                <th className="py-3 px-4 font-mono">Priority</th>
+                <th className="py-3 px-4 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 font-sans text-slate-800">
+              {rankedDistricts.slice(0, 4).map((dist) => (
+                <tr key={dist.id} className="hover:bg-slate-50/80 transition-colors">
+                  <td className="py-3.5 px-4 font-bold text-slate-900">
+                    <div>{dist.name}</div>
+                    <div className="text-[11px] text-slate-500 font-normal">{dist.state}</div>
+                  </td>
+                  <td className="py-3.5 px-4">
+                    <span className="inline-flex items-center gap-1.5 font-medium">
+                      {dist.topCategory === 'Water' && <Droplets className="w-3.5 h-3.5 text-blue-600" />}
+                      {dist.topCategory === 'Roads' && <Route className="w-3.5 h-3.5 text-amber-600" />}
+                      {dist.topCategory === 'Health' && <HeartPulse className="w-3.5 h-3.5 text-rose-600" />}
+                      {dist.topCategory} access deficit
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 font-mono font-medium text-slate-700">
+                    {(dist.population * 0.18 / 1000).toFixed(0)}K residents
+                  </td>
+                  <td className="py-3.5 px-4 font-mono font-medium text-slate-700">
+                    ₹39 Cr
+                  </td>
+                  <td className="py-3.5 px-4 font-mono">
+                    <span className={`inline-block px-2 py-0.5 rounded font-bold ${
+                      dist.maxScore >= 80 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
+                    }`}>
+                      {dist.maxScore}/100
+                    </span>
+                  </td>
+                  <td className="py-3.5 px-4 text-right">
+                    <button
+                      onClick={() => {
+                        onSelectDistrictForPolicy(dist.id, dist.topCategory);
+                        onNavigate('recommendations');
+                      }}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded text-[11px] transition-colors cursor-pointer inline-flex items-center gap-1"
+                    >
+                      <span>View details</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>
   );
 };
-
-
