@@ -152,6 +152,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
   }, [evaluations]);
 
+  const activeEvaluation = useMemo(() => {
+    return validEvaluations.find(e => e.district.id === activeDistrictId);
+  }, [validEvaluations, activeDistrictId]);
+
   // Refined high-precision marker icon creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
     let iconSymbol = '📍';
@@ -225,12 +229,28 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
   return (
     <div className="w-full h-full relative z-0 bg-[#F7F5EF] overflow-hidden" style={{ minHeight: '520px' }}>
-      {/* 1. INDIA CONTEXTUAL BADGE OVERLAY (TOP-LEFT) */}
+      {/* 1. BREADCRUMB & CONTEXTUAL BADGE OVERLAY (TOP-LEFT) */}
       <div className="absolute top-3 left-3 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 px-3 py-1.5 shadow-[2px_2px_0px_#171717] backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] rounded-md">
         <span className="text-xs">🇮🇳</span>
         <span className="font-bold text-[#171717] tracking-wider uppercase">INDIA</span>
-        <span className="text-[#171717]/40">•</span>
-        <span className="text-slate-700 font-semibold text-[10px]">28 STATES · 8 UTs</span>
+        <span className="text-[#171717]/40">/</span>
+        <span className="font-semibold text-[#D65A3A] uppercase">
+          {activeEvaluation?.district.state || 'ANDHRA PRADESH'}
+        </span>
+        {activeEvaluation && (
+          <>
+            <span className="text-[#171717]/40">/</span>
+            <span className="font-bold text-[#171717] uppercase underline decoration-[#D65A3A]">
+              {activeEvaluation.district.name}
+            </span>
+          </>
+        )}
+      </div>
+
+      {/* DATA FRESHNESS INDICATOR (TOP-CENTER) */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 bg-[#171717] text-white border border-[#171717] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest rounded shadow-sm">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>CITIZEN SIGNALS · LAST 30 DAYS</span>
       </div>
 
       {/* 2. FLOATING MAP TILE STYLE SELECTOR (TOP-RIGHT) */}
