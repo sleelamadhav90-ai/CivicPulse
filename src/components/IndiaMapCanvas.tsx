@@ -1,14 +1,16 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, ZoomControl, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, ZoomControl, Polyline, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
   Bot, FileText, Camera, Hammer, MessageSquare, TrendingUp, Flame, ChevronRight, Layers, Sparkles,
-  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity
+  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
 import { GLOBAL_COUNTRIES } from '../data/globalConfig';
+import indiaNationalGeoJSON from '../data/india-boundaries/india-national.json';
+import indiaStatesGeoJSON from '../data/india-boundaries/india-states.json';
 
 export interface EvaluatedDistrict {
   district: District;
@@ -106,6 +108,46 @@ const getReportEvidence = (district: District, category: string, hotspot: CityDe
   };
 };
 
+const INDIAN_STATE_LABELS = [
+  { name: 'Ladakh', lat: 34.2, lon: 77.6, isUT: true },
+  { name: 'Jammu and Kashmir', lat: 33.8, lon: 75.0, isUT: true },
+  { name: 'Himachal Pradesh', lat: 31.8, lon: 77.2, isUT: false },
+  { name: 'Punjab', lat: 31.0, lon: 75.4, isUT: false },
+  { name: 'Uttarakhand', lat: 30.1, lon: 79.2, isUT: false },
+  { name: 'Haryana', lat: 29.1, lon: 76.1, isUT: false },
+  { name: 'Delhi', lat: 28.6, lon: 77.2, isUT: true },
+  { name: 'Rajasthan', lat: 26.9, lon: 73.8, isUT: false },
+  { name: 'Gujarat', lat: 22.3, lon: 71.8, isUT: false },
+  { name: 'Madhya Pradesh', lat: 23.5, lon: 78.5, isUT: false },
+  { name: 'Uttar Pradesh', lat: 26.8, lon: 80.9, isUT: false },
+  { name: 'Maharashtra', lat: 19.5, lon: 75.8, isUT: false },
+  { name: 'Andhra Pradesh', lat: 15.9, lon: 79.7, isUT: false },
+  { name: 'Telangana', lat: 17.8, lon: 79.1, isUT: false },
+  { name: 'Karnataka', lat: 15.3, lon: 75.7, isUT: false },
+  { name: 'Tamil Nadu', lat: 11.1, lon: 78.7, isUT: false },
+  { name: 'Kerala', lat: 10.2, lon: 76.4, isUT: false },
+  { name: 'Odisha', lat: 20.5, lon: 84.4, isUT: false },
+  { name: 'West Bengal', lat: 23.0, lon: 87.8, isUT: false },
+  { name: 'Assam', lat: 26.2, lon: 92.9, isUT: false },
+];
+
+const createStateLabelIcon = (name: string, isSelected: boolean) => {
+  return L.divIcon({
+    className: 'custom-state-label-marker',
+    html: `
+      <div class="px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
+        isSelected
+          ? 'bg-[#D65A3A] text-white shadow-md ring-1 ring-white'
+          : 'bg-[#171717]/90 text-white border border-[#171717]/50 shadow-xs'
+      } rounded whitespace-nowrap pointer-events-none">
+        ${name}
+      </div>
+    `,
+    iconSize: [90, 18],
+    iconAnchor: [45, 9],
+  });
+};
+
 // Component to dynamically pan to active district
 const MapController = ({ center, zoom }: { center: [number, number], zoom: number }) => {
   const map = useMap();
@@ -127,6 +169,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   selectedCountryCode = 'IN',
 }) => {
   const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'physical_topo' | 'physical_shaded' | 'vector_voyager'>('vector_voyager');
+  const [showMapSources, setShowMapSources] = useState(false);
   const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
 
   // Calculate map center based on active district, country evaluations, or country center coordinates
@@ -262,9 +305,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               ? 'bg-[#171717] text-white'
               : 'text-[#171717] hover:bg-[#171717]/10'
           }`}
-          title="Clean Vector Administrative Map"
+          title="OpenStreetMap Standard Vector Map (No API Key Required)"
         >
-          🗺️ Vector
+          MAP
         </button>
         <button
           onClick={() => setBaseTileMode('physical_satellite')}
@@ -273,9 +316,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               ? 'bg-[#171717] text-white'
               : 'text-[#171717] hover:bg-[#171717]/10'
           }`}
-          title="High-Resolution Esri Satellite Imagery"
+          title="High-Resolution Satellite Imagery"
         >
-          🛰️ Satellite
+          SATELLITE
         </button>
         <button
           onClick={() => setBaseTileMode('physical_topo')}
@@ -284,14 +327,14 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               ? 'bg-[#171717] text-white'
               : 'text-[#171717] hover:bg-[#171717]/10'
           }`}
-          title="Esri Topographic Contour Map"
+          title="Topographic Contour Map"
         >
-          🏔️ Relief
+          RELIEF
         </button>
       </div>
 
       {/* 3. REFINED FLOATING PRIORITY LEGEND (BOTTOM-LEFT) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-3 shadow-[3px_3px_0px_#171717] backdrop-blur-md font-sans text-xs rounded-lg space-y-2 max-w-[210px]">
+      <div className="absolute bottom-4 left-4 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-3 shadow-[3px_3px_0px_#171717] backdrop-blur-md font-sans text-xs rounded-lg space-y-2 max-w-[220px]">
         <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider border-b border-[#171717]/15 pb-1 flex items-center justify-between">
           <span>CIVIC PRIORITY</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
@@ -319,6 +362,38 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             <span className="font-mono text-[10px] text-slate-600 font-bold">&lt;40</span>
           </div>
         </div>
+
+        {/* MAP SOURCES BUTTON */}
+        <div className="pt-1.5 border-t border-[#171717]/15">
+          <button
+            onClick={() => setShowMapSources(!showMapSources)}
+            className="w-full bg-[#171717]/5 hover:bg-[#171717] text-[#171717] hover:text-white px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all rounded flex items-center justify-between cursor-pointer"
+          >
+            <span className="flex items-center gap-1">
+              <Info className="w-3 h-3 text-[#D65A3A]" />
+              <span>MAP SOURCES</span>
+            </span>
+            <span>{showMapSources ? '▲' : '▼'}</span>
+          </button>
+
+          {showMapSources && (
+            <div className="mt-2 p-2 bg-white border border-[#171717]/25 rounded text-[9px] font-mono space-y-1 text-[#171717]/90 shadow-sm animate-fadeIn">
+              <div className="font-bold text-[#D65A3A] uppercase tracking-wide border-b border-slate-200 pb-0.5">MAP SOURCES</div>
+              <div>
+                <strong className="block text-[#171717]">BOUNDARIES:</strong>
+                <span>Survey of India / Government of India GeoJSON</span>
+              </div>
+              <div>
+                <strong className="block text-[#171717]">BASE MAP:</strong>
+                <span>OpenStreetMap / Esri Canvas</span>
+              </div>
+              <div>
+                <strong className="block text-[#171717]">CIVIC DATA:</strong>
+                <span>CivicPulse Ingestion Matrix</span>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       <MapContainer 
@@ -334,8 +409,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         {/* DYNAMIC BASE TILE LAYERS */}
         {baseTileMode === 'vector_voyager' && (
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             maxZoom={19}
           />
         )}
@@ -351,7 +426,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
               attribution='&copy; Esri'
               maxZoom={19}
-              opacity={0.85}
+              opacity={0.4}
             />
           </>
         )}
@@ -365,28 +440,55 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         )}
 
         {baseTileMode === 'physical_shaded' && (
-          <>
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}"
-              attribution='Tiles &copy; Esri &mdash; Source: US National Park Service'
-              maxZoom={19}
-            />
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              attribution='&copy; Esri'
-              maxZoom={19}
-              opacity={0.7}
-            />
-          </>
-        )}
-
-        {baseTileMode === 'vector_voyager' && (
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager_labels_under/{z}/{x}/{y}{r}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             maxZoom={19}
           />
         )}
+
+        {/* 1. CIVICPULSE OFFICIAL INDIA NATIONAL BOUNDARY OVERLAY */}
+        <GeoJSON
+          key="india-national-official-overlay"
+          data={indiaNationalGeoJSON as any}
+          style={{
+            color: '#171717',
+            weight: 2.5,
+            opacity: 0.95,
+            fillColor: '#F7F5EF',
+            fillOpacity: 0.02,
+          }}
+        />
+
+        {/* 2. CIVICPULSE OFFICIAL STATE/UT BOUNDARY OVERLAY */}
+        <GeoJSON
+          key="india-states-official-overlay"
+          data={indiaStatesGeoJSON as any}
+          style={(feature) => {
+            const stateName = feature?.properties?.name;
+            const isStateSelected = activeEvaluation && activeEvaluation.district.state === stateName;
+            return {
+              color: isStateSelected ? '#D65A3A' : '#333333',
+              weight: isStateSelected ? 2.2 : 1.2,
+              dashArray: isStateSelected ? 'none' : '3,3',
+              fillColor: isStateSelected ? '#D65A3A' : 'transparent',
+              fillOpacity: isStateSelected ? 0.12 : 0,
+            };
+          }}
+        />
+
+        {/* 3. OFFICIAL ENGLISH STATE & UNION TERRITORY LABELS OVERLAY */}
+        {INDIAN_STATE_LABELS.map((labelItem) => {
+          const isSelected = activeEvaluation && activeEvaluation.district.state === labelItem.name;
+          return (
+            <Marker
+              key={`state-label-${labelItem.name}`}
+              position={[labelItem.lat, labelItem.lon]}
+              icon={createStateLabelIcon(labelItem.name, Boolean(isSelected))}
+              interactive={false}
+            />
+          );
+        })}
 
         {/* LAYER: POPULATION DENSITY HEATMAP */}
         {layers.population && validEvaluations.map((item) => (
