@@ -1,16 +1,13 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, CircleMarker, Tooltip, Popup, useMap, ZoomControl, Polyline, GeoJSON } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, CircleMarker, Circle, Tooltip, Popup, useMap, ZoomControl, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
-  Bot, FileText, Camera, Hammer, MessageSquare, TrendingUp, Flame, ChevronRight, Layers, Sparkles,
-  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info
+  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info, Flame
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
 import { GLOBAL_COUNTRIES } from '../data/globalConfig';
-import indiaNationalGeoJSON from '../data/india-boundaries/india-national.json';
-import indiaStatesGeoJSON from '../data/india-boundaries/india-states.json';
 
 export interface EvaluatedDistrict {
   district: District;
@@ -108,52 +105,12 @@ const getReportEvidence = (district: District, category: string, hotspot: CityDe
   };
 };
 
-const INDIAN_STATE_LABELS = [
-  { name: 'Ladakh', lat: 34.2, lon: 77.6, isUT: true },
-  { name: 'Jammu and Kashmir', lat: 33.8, lon: 75.0, isUT: true },
-  { name: 'Himachal Pradesh', lat: 31.8, lon: 77.2, isUT: false },
-  { name: 'Punjab', lat: 31.0, lon: 75.4, isUT: false },
-  { name: 'Uttarakhand', lat: 30.1, lon: 79.2, isUT: false },
-  { name: 'Haryana', lat: 29.1, lon: 76.1, isUT: false },
-  { name: 'Delhi', lat: 28.6, lon: 77.2, isUT: true },
-  { name: 'Rajasthan', lat: 26.9, lon: 73.8, isUT: false },
-  { name: 'Gujarat', lat: 22.3, lon: 71.8, isUT: false },
-  { name: 'Madhya Pradesh', lat: 23.5, lon: 78.5, isUT: false },
-  { name: 'Uttar Pradesh', lat: 26.8, lon: 80.9, isUT: false },
-  { name: 'Maharashtra', lat: 19.5, lon: 75.8, isUT: false },
-  { name: 'Andhra Pradesh', lat: 15.9, lon: 79.7, isUT: false },
-  { name: 'Telangana', lat: 17.8, lon: 79.1, isUT: false },
-  { name: 'Karnataka', lat: 15.3, lon: 75.7, isUT: false },
-  { name: 'Tamil Nadu', lat: 11.1, lon: 78.7, isUT: false },
-  { name: 'Kerala', lat: 10.2, lon: 76.4, isUT: false },
-  { name: 'Odisha', lat: 20.5, lon: 84.4, isUT: false },
-  { name: 'West Bengal', lat: 23.0, lon: 87.8, isUT: false },
-  { name: 'Assam', lat: 26.2, lon: 92.9, isUT: false },
-];
-
-const createStateLabelIcon = (name: string, isSelected: boolean) => {
-  return L.divIcon({
-    className: 'custom-state-label-marker',
-    html: `
-      <div class="px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider ${
-        isSelected
-          ? 'bg-[#D65A3A] text-white shadow-md ring-1 ring-white'
-          : 'bg-[#171717]/90 text-white border border-[#171717]/50 shadow-xs'
-      } rounded whitespace-nowrap pointer-events-none">
-        ${name}
-      </div>
-    `,
-    iconSize: [90, 18],
-    iconAnchor: [45, 9],
-  });
-};
-
-// Component to dynamically pan to active district
+// Component to dynamically pan and zoom smoothly to active district
 const MapController = ({ center, zoom }: { center: [number, number], zoom: number }) => {
   const map = useMap();
   useEffect(() => {
     if (Array.isArray(center) && center.length === 2 && isValidCoord(center[0], center[1])) {
-      map.flyTo(center, zoom, { animate: true, duration: 1 });
+      map.flyTo(center, zoom, { animate: true, duration: 1.2 });
     }
   }, [center, zoom, map]);
   return null;
@@ -168,29 +125,11 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onSelectHotspotForPolicy,
   selectedCountryCode = 'IN',
 }) => {
-  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'physical_topo' | 'physical_shaded' | 'vector_voyager'>('vector_voyager');
+  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'vector_voyager'>('physical_satellite');
   const [showMapSources, setShowMapSources] = useState(false);
   const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
 
-  // Calculate map center based on active district, country evaluations, or country center coordinates
-  const mapCenter = useMemo<[number, number]>(() => {
-    const active = evaluations.find(e => e.district.id === activeDistrictId);
-    if (active && isValidCoord(active.district.lat, active.district.lon)) {
-      return [active.district.lat, active.district.lon];
-    }
-    const validEval = evaluations.find(e => isValidCoord(e.district?.lat, e.district?.lon));
-    if (validEval) {
-      return [validEval.district.lat, validEval.district.lon];
-    }
-    if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
-      return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
-    }
-    return [20.5937, 78.9629];
-  }, [activeDistrictId, evaluations, countryConfig]);
-
-  const defaultZoom = countryConfig.coordinates.zoom || 5;
-
-  // Filter evaluations to only those with valid numeric coordinates to avoid Leaflet NaN LatLng errors
+  // Filter evaluations to only those with valid numeric coordinates
   const validEvaluations = useMemo(() => {
     return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
   }, [evaluations]);
@@ -199,25 +138,40 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     return validEvaluations.find(e => e.district.id === activeDistrictId);
   }, [validEvaluations, activeDistrictId]);
 
-  // Refined high-precision marker icon creation
+  // Calculate map center based on active district, first valid evaluation, or country center coordinates
+  const mapCenter = useMemo<[number, number]>(() => {
+    if (activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon)) {
+      return [activeEvaluation.district.lat, activeEvaluation.district.lon];
+    }
+    const validEval = validEvaluations[0];
+    if (validEval) {
+      return [validEval.district.lat, validEval.district.lon];
+    }
+    if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
+      return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
+    }
+    return [20.5937, 78.9629];
+  }, [activeEvaluation, validEvaluations, countryConfig]);
+
+  const defaultZoom = countryConfig?.coordinates?.zoom || 5;
+  // Smoothly zoom in closer to inspect when a district is selected
+  const targetZoom = activeDistrictId ? 8 : defaultZoom;
+
+  // Clean, modern CivicPulse pin icon creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
     let iconSymbol = '📍';
     let bg = '#171717';
-    let border = '#ffffff';
 
-    if (type === 'healthcare') { iconSymbol = '🏥'; bg = '#285943'; border = '#ffffff'; }
-    else if (type === 'education') { iconSymbol = '🎓'; bg = '#285943'; border = '#ffffff'; }
-    else if (type === 'project') { iconSymbol = '🏗️'; bg = '#D9A441'; border = '#171717'; }
-    else if (type === 'digital') { iconSymbol = '📡'; bg = '#171717'; border = '#D9A441'; }
+    if (type === 'healthcare') { iconSymbol = '🏥'; bg = '#285943'; }
+    else if (type === 'education') { iconSymbol = '🎓'; bg = '#285943'; }
+    else if (type === 'project') { iconSymbol = '🏗️'; bg = '#D9A441'; }
+    else if (type === 'digital') { iconSymbol = '📡'; bg = '#171717'; }
     else if (score >= 70) {
       bg = '#D65A3A'; // High Priority CivicPulse Orange/Red
-      border = '#ffffff';
     } else if (score >= 40) {
       bg = '#D9A441'; // Medium Priority Amber
-      border = '#ffffff';
     } else {
       bg = '#285943'; // Emerging Priority Green
-      border = '#ffffff';
     }
 
     if (category === 'Water') iconSymbol = '💧';
@@ -225,8 +179,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     else if (category === 'Roads') iconSymbol = '🛣️';
     else if (category === 'Electricity') iconSymbol = '⚡';
 
-    const size = isSelected ? 34 : 26;
-    const ringSize = isSelected ? 46 : 0;
+    const size = isSelected ? 32 : 24;
+    const ringSize = isSelected ? 44 : 0;
 
     return L.divIcon({
       className: 'bg-transparent border-none',
@@ -238,8 +192,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               width: ${ringSize}px;
               height: ${ringSize}px;
               border-radius: 50%;
-              border: 2px solid ${bg};
-              background: ${bg}1a;
+              border: 2px solid #ffffff;
+              background: ${bg}33;
               animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
             "></div>
           ` : ''}
@@ -252,12 +206,13 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             height: ${size}px;
             border-radius: 50%;
             background-color: ${bg};
-            border: 2px solid ${border};
-            box-shadow: 0 2px 6px rgba(0,0,0,0.25), 1px 1px 0px #171717;
-            font-size: ${isSelected ? '15px' : '12px'};
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3);
+            font-size: ${isSelected ? '14px' : '11px'};
             color: #ffffff;
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+            cursor: pointer;
             z-index: ${isSelected ? 50 : 10};
           ">
             ${iconSymbol}
@@ -271,124 +226,108 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative z-0 bg-[#F7F5EF] overflow-hidden" style={{ minHeight: '520px' }}>
+    <div className="w-full h-full relative z-0 bg-[#121417] overflow-hidden" style={{ minHeight: '520px' }}>
       {/* 1. BREADCRUMB & CONTEXTUAL BADGE OVERLAY (TOP-LEFT) */}
-      <div className="absolute top-3 left-3 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 px-3 py-1.5 shadow-[2px_2px_0px_#171717] backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] rounded-md">
+      <div className="absolute top-3 left-3 z-20 bg-[#171717]/85 border border-white/20 px-3 py-1.5 shadow-md backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] text-white rounded-lg">
         <span className="text-xs">🇮🇳</span>
-        <span className="font-bold text-[#171717] tracking-wider uppercase">INDIA</span>
-        <span className="text-[#171717]/40">/</span>
+        <span className="font-bold tracking-wider uppercase">INDIA</span>
+        <span className="text-white/40">/</span>
         <span className="font-semibold text-[#D65A3A] uppercase">
-          {activeEvaluation?.district.state || 'ANDHRA PRADESH'}
+          {activeEvaluation?.district.state || 'NATIONAL MONITOR'}
         </span>
         {activeEvaluation && (
           <>
-            <span className="text-[#171717]/40">/</span>
-            <span className="font-bold text-[#171717] uppercase underline decoration-[#D65A3A]">
+            <span className="text-white/40">/</span>
+            <span className="font-bold uppercase text-white underline decoration-[#D65A3A] decoration-2">
               {activeEvaluation.district.name}
             </span>
           </>
         )}
       </div>
 
-      {/* DATA FRESHNESS INDICATOR (TOP-CENTER) */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 bg-[#171717] text-white border border-[#171717] px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest rounded shadow-sm">
+      {/* DATA STATUS INDICATOR (TOP-CENTER) */}
+      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 bg-[#171717]/90 text-white border border-white/20 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-md backdrop-blur-md">
         <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>CITIZEN SIGNALS · LAST 30 DAYS</span>
+        <span>CITIZEN SIGNALS · REAL-TIME PRIORITY</span>
       </div>
 
       {/* 2. FLOATING MAP TILE STYLE SELECTOR (TOP-RIGHT) */}
-      <div className="absolute top-3 right-3 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-1 shadow-[2px_2px_0px_#171717] flex items-center gap-1 font-mono text-[10px] backdrop-blur-md rounded-md">
-        <button
-          onClick={() => setBaseTileMode('vector_voyager')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
-            baseTileMode === 'vector_voyager'
-              ? 'bg-[#171717] text-white'
-              : 'text-[#171717] hover:bg-[#171717]/10'
-          }`}
-          title="OpenStreetMap Standard Vector Map (No API Key Required)"
-        >
-          MAP
-        </button>
+      <div className="absolute top-3 right-3 z-20 bg-[#171717]/85 backdrop-blur-md border border-white/20 p-1 shadow-md flex items-center gap-1 font-mono text-[10px] rounded-lg">
         <button
           onClick={() => setBaseTileMode('physical_satellite')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
+          className={`px-3 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded-md ${
             baseTileMode === 'physical_satellite'
-              ? 'bg-[#171717] text-white'
-              : 'text-[#171717] hover:bg-[#171717]/10'
+              ? 'bg-[#D65A3A] text-white shadow-xs'
+              : 'text-white/80 hover:text-white hover:bg-white/10'
           }`}
-          title="High-Resolution Satellite Imagery"
+          title="High-Resolution Satellite Imagery with Place Context"
         >
-          SATELLITE
+          🛰️ SATELLITE
         </button>
         <button
-          onClick={() => setBaseTileMode('physical_topo')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
-            baseTileMode === 'physical_topo'
-              ? 'bg-[#171717] text-white'
-              : 'text-[#171717] hover:bg-[#171717]/10'
+          onClick={() => setBaseTileMode('vector_voyager')}
+          className={`px-3 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded-md ${
+            baseTileMode === 'vector_voyager'
+              ? 'bg-[#D65A3A] text-white shadow-xs'
+              : 'text-white/80 hover:text-white hover:bg-white/10'
           }`}
-          title="Topographic Contour Map"
+          title="Clean Street & Geographic Map"
         >
-          RELIEF
+          🗺️ STREETS
         </button>
       </div>
 
-      {/* 3. REFINED FLOATING PRIORITY LEGEND (BOTTOM-LEFT) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-3 shadow-[3px_3px_0px_#171717] backdrop-blur-md font-sans text-xs rounded-lg space-y-2 max-w-[220px]">
-        <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider border-b border-[#171717]/15 pb-1 flex items-center justify-between">
+      {/* 3. REFINED FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT) */}
+      <div className="absolute bottom-4 left-4 z-20 bg-[#171717]/90 text-white border border-white/20 p-3 shadow-xl backdrop-blur-md font-sans text-xs rounded-xl space-y-2 max-w-[210px]">
+        <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider border-b border-white/15 pb-1 flex items-center justify-between">
           <span>CIVIC PRIORITY</span>
           <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
         </div>
-        <div className="space-y-1.5 font-medium text-[11px] text-[#171717]">
+        <div className="space-y-1.5 font-medium text-[11px] text-gray-200">
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] border border-white shadow-sm inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] border border-white shadow-xs inline-block"></span>
               <span>High Priority</span>
             </span>
-            <span className="font-mono text-[10px] text-slate-600 font-bold">70+</span>
+            <span className="font-mono text-[10px] text-gray-300 font-bold">70+</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441] border border-white shadow-sm inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441] border border-white shadow-xs inline-block"></span>
               <span>Medium Priority</span>
             </span>
-            <span className="font-mono text-[10px] text-slate-600 font-bold">40-69</span>
+            <span className="font-mono text-[10px] text-gray-300 font-bold">40–69</span>
           </div>
           <div className="flex items-center justify-between">
             <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#285943] border border-white shadow-sm inline-block"></span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[#285943] border border-white shadow-xs inline-block"></span>
               <span>Emerging</span>
             </span>
-            <span className="font-mono text-[10px] text-slate-600 font-bold">&lt;40</span>
+            <span className="font-mono text-[10px] text-gray-300 font-bold">&lt;40</span>
           </div>
         </div>
 
-        {/* MAP SOURCES BUTTON */}
-        <div className="pt-1.5 border-t border-[#171717]/15">
+        {/* MAP SOURCES DROPDOWN */}
+        <div className="pt-1.5 border-t border-white/15">
           <button
             onClick={() => setShowMapSources(!showMapSources)}
-            className="w-full bg-[#171717]/5 hover:bg-[#171717] text-[#171717] hover:text-white px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all rounded flex items-center justify-between cursor-pointer"
+            className="w-full bg-white/10 hover:bg-white/20 text-gray-200 px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all rounded flex items-center justify-between cursor-pointer"
           >
             <span className="flex items-center gap-1">
               <Info className="w-3 h-3 text-[#D65A3A]" />
-              <span>MAP SOURCES</span>
+              <span>DATA SOURCES</span>
             </span>
             <span>{showMapSources ? '▲' : '▼'}</span>
           </button>
 
           {showMapSources && (
-            <div className="mt-2 p-2 bg-white border border-[#171717]/25 rounded text-[9px] font-mono space-y-1 text-[#171717]/90 shadow-sm animate-fadeIn">
-              <div className="font-bold text-[#D65A3A] uppercase tracking-wide border-b border-slate-200 pb-0.5">MAP SOURCES</div>
+            <div className="mt-2 p-2 bg-[#1f2227] border border-white/20 rounded text-[9px] font-mono space-y-1 text-gray-300 shadow-sm">
               <div>
-                <strong className="block text-[#171717]">BOUNDARIES:</strong>
-                <span>Survey of India / Government of India GeoJSON</span>
+                <strong className="block text-white">IMAGERY & CONTEXT:</strong>
+                <span>Esri World Imagery & Reference</span>
               </div>
               <div>
-                <strong className="block text-[#171717]">BASE MAP:</strong>
-                <span>OpenStreetMap / Esri Canvas</span>
-              </div>
-              <div>
-                <strong className="block text-[#171717]">CIVIC DATA:</strong>
+                <strong className="block text-white">CIVIC SIGNALS:</strong>
                 <span>CivicPulse Ingestion Matrix</span>
               </div>
             </div>
@@ -398,24 +337,16 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
       <MapContainer 
         center={mapCenter} 
-        zoom={defaultZoom} 
+        zoom={targetZoom} 
         scrollWheelZoom={true}
-        style={{ width: '100%', height: '100%', background: '#F7F5EF' }}
+        style={{ width: '100%', height: '100%', background: '#121417' }}
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
-        <MapController center={mapCenter} zoom={activeDistrictId ? (defaultZoom + 1) : defaultZoom} />
+        <MapController center={mapCenter} zoom={targetZoom} />
         
-        {/* DYNAMIC BASE TILE LAYERS */}
-        {baseTileMode === 'vector_voyager' && (
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            maxZoom={19}
-          />
-        )}
-
-        {baseTileMode === 'physical_satellite' && (
+        {/* BASE TILE LAYERS: SATELLITE (DEFAULT) OR STREETS */}
+        {baseTileMode === 'physical_satellite' ? (
           <>
             <TileLayer
               url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
@@ -426,108 +357,77 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
               attribution='&copy; Esri'
               maxZoom={19}
-              opacity={0.4}
+              opacity={0.65}
+            />
+          </>
+        ) : (
+          <TileLayer
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
+            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            maxZoom={19}
+          />
+        )}
+
+        {/* HIGHLIGHT ONLY THE SELECTED DISTRICT (SUBTLE OUTLINE & GLOW) */}
+        {activeEvaluation && (
+          <>
+            {/* Outer subtle focus perimeter */}
+            <Circle
+              center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
+              radius={22000}
+              pathOptions={{
+                color: '#D65A3A',
+                weight: 2,
+                dashArray: '5, 5',
+                opacity: 0.85,
+                fillColor: '#D65A3A',
+                fillOpacity: 0.08,
+              }}
+              interactive={false}
+            />
+            {/* Inner focused core halo */}
+            <Circle
+              center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
+              radius={8500}
+              pathOptions={{
+                color: '#FFFFFF',
+                weight: 1.5,
+                opacity: 0.9,
+                fillColor: '#D65A3A',
+                fillOpacity: 0.18,
+              }}
+              interactive={false}
             />
           </>
         )}
 
-        {baseTileMode === 'physical_topo' && (
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}"
-            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
-            maxZoom={19}
-          />
-        )}
+        {/* 1. SUBTLE TRANSLUCENT PRIORITY ZONES BEHIND MARKERS */}
+        {validEvaluations.map((item) => {
+          const isSelected = item.district.id === activeDistrictId;
+          const score = item.breakdown.total_score;
+          const zoneColor = score >= 70 ? '#D65A3A' : score >= 40 ? '#D9A441' : '#285943';
+          const zoneRadius = isSelected ? 28 : (score >= 70 ? 20 : score >= 40 ? 15 : 12);
+          const zoneOpacity = isSelected ? 0.35 : (score >= 70 ? 0.22 : 0.15);
 
-        {baseTileMode === 'physical_shaded' && (
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            maxZoom={19}
-          />
-        )}
-
-        {/* 1. CIVICPULSE OFFICIAL INDIA NATIONAL BOUNDARY OVERLAY */}
-        <GeoJSON
-          key="india-national-official-overlay"
-          data={indiaNationalGeoJSON as any}
-          style={{
-            color: '#171717',
-            weight: 2.5,
-            opacity: 0.95,
-            fillColor: '#F7F5EF',
-            fillOpacity: 0.02,
-          }}
-        />
-
-        {/* 2. CIVICPULSE OFFICIAL STATE/UT BOUNDARY OVERLAY */}
-        <GeoJSON
-          key="india-states-official-overlay"
-          data={indiaStatesGeoJSON as any}
-          style={(feature) => {
-            const stateName = feature?.properties?.name;
-            const isStateSelected = activeEvaluation && activeEvaluation.district.state === stateName;
-            return {
-              color: isStateSelected ? '#D65A3A' : '#333333',
-              weight: isStateSelected ? 2.2 : 1.2,
-              dashArray: isStateSelected ? 'none' : '3,3',
-              fillColor: isStateSelected ? '#D65A3A' : 'transparent',
-              fillOpacity: isStateSelected ? 0.12 : 0,
-            };
-          }}
-        />
-
-        {/* 3. OFFICIAL ENGLISH STATE & UNION TERRITORY LABELS OVERLAY */}
-        {INDIAN_STATE_LABELS.map((labelItem) => {
-          const isSelected = activeEvaluation && activeEvaluation.district.state === labelItem.name;
           return (
-            <Marker
-              key={`state-label-${labelItem.name}`}
-              position={[labelItem.lat, labelItem.lon]}
-              icon={createStateLabelIcon(labelItem.name, Boolean(isSelected))}
+            <CircleMarker
+              key={`zone-${item.district.id}`}
+              center={[item.district.lat, item.district.lon]}
+              radius={zoneRadius}
+              pathOptions={{
+                fillColor: zoneColor,
+                fillOpacity: zoneOpacity,
+                stroke: true,
+                color: zoneColor,
+                weight: isSelected ? 2 : 1,
+                opacity: isSelected ? 0.9 : 0.4,
+              }}
               interactive={false}
             />
           );
         })}
 
-        {/* LAYER: POPULATION DENSITY HEATMAP */}
-        {layers.population && validEvaluations.map((item) => (
-          <CircleMarker
-            key={`pop-${item.district.id}`}
-            center={[item.district.lat, item.district.lon]}
-            radius={Math.min(65, Math.max(25, item.district.population / 25000))}
-            pathOptions={{
-              fillColor: '#D9A441',
-              fillOpacity: 0.25,
-              stroke: true,
-              color: '#D9A441',
-              weight: 1,
-              dashArray: '4,4'
-            }}
-          />
-        ))}
-
-        {/* LAYER: INFRASTRUCTURE GAP BOUNDARIES */}
-        {layers.infrastructure && validEvaluations.map((item) => {
-          const gap = 100 - item.currentAccess;
-          if (gap < 20) return null;
-          return (
-            <CircleMarker
-              key={`gap-${item.district.id}`}
-              center={[item.district.lat, item.district.lon]}
-              radius={Math.min(80, Math.max(30, gap * 1.2))}
-              pathOptions={{
-                fillColor: '#D65A3A',
-                fillOpacity: 0.2,
-                stroke: true,
-                color: '#D65A3A',
-                weight: 1.5
-              }}
-            />
-          );
-        })}
-
-        {/* LAYER: ROADS NETWORK VECTORS */}
+        {/* 2. REGIONAL CONNECTIVITY NETWORK (WHEN ROADS LAYER ENABLED) */}
         {layers.roads && (
           <>
             <Polyline
@@ -537,7 +437,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 [14.4426, 79.9865], // Nellore
                 [13.2172, 79.1003], // Chittoor
               ]}
-              pathOptions={{ color: '#171717', weight: 2, dashArray: '6,6' }}
+              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.6, dashArray: '4,6' }}
             />
             <Polyline
               positions={[
@@ -545,12 +445,12 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 [19.1383, 77.3210], // Nanded
                 [17.6599, 75.9064], // Solapur
               ]}
-              pathOptions={{ color: '#171717', weight: 2, dashArray: '6,6' }}
+              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.6, dashArray: '4,6' }}
             />
           </>
         )}
 
-        {/* LAYER: CITIZEN DEMAND PINS */}
+        {/* 3. CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
         {layers.citizen_demand && validEvaluations.map((item) => {
           const isSelected = item.district.id === activeDistrictId;
           const evidence = getReportEvidence(item.district, item.category, item.demandHotspot);
@@ -564,15 +464,23 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 click: () => onSelectDistrict(item.district.id),
               }}
             >
-              <Tooltip direction="top" offset={[0, -20]} className="bg-[#F7F5EF] border border-[#171717] text-[#171717] rounded-none shadow-[2px_2px_0px_#171717] !p-0">
-                <div className="px-3 py-2 text-xs font-mono font-bold flex flex-col gap-1">
-                  <div className="flex justify-between items-center gap-4">
-                    <span className="font-serif">{item.district.name}</span>
-                    <span className="text-[10px] bg-[#D65A3A] text-white px-1.5 font-mono">{item.demandCount} Req</span>
+              <Tooltip direction="top" offset={[0, -18]} className="bg-[#171717] text-white border border-white/20 rounded-md shadow-lg !p-0">
+                <div className="px-3 py-2 text-xs font-mono font-medium flex flex-col gap-1">
+                  <div className="flex justify-between items-center gap-3">
+                    <span className="font-bold text-sm text-white">{item.district.name}</span>
+                    <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase rounded ${
+                      item.breakdown.total_score >= 70 ? 'bg-[#D65A3A] text-white' : item.breakdown.total_score >= 40 ? 'bg-[#D9A441] text-black' : 'bg-[#285943] text-white'
+                    }`}>
+                      {item.breakdown.total_score >= 70 ? 'High' : item.breakdown.total_score >= 40 ? 'Medium' : 'Emerging'}
+                    </span>
                   </div>
-                  <span className="text-[10px] text-[#171717]/70 uppercase tracking-widest">
-                    Score: {item.breakdown.total_score}/100 • {item.category}
-                  </span>
+                  <div className="text-[11px] text-gray-300 flex items-center justify-between gap-4">
+                    <span>Score: <strong className="text-white">{item.breakdown.total_score}/100</strong></span>
+                    <span>Signals: <strong className="text-white">{item.demandCount}</strong></span>
+                  </div>
+                  <div className="text-[10px] text-gray-400 border-t border-white/10 pt-1">
+                    {item.category} • Click to inspect
+                  </div>
                 </div>
               </Tooltip>
 
@@ -622,53 +530,53 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           );
         })}
 
-        {/* LAYER: HEALTHCARE CLINICS */}
+        {/* 4. HEALTHCARE CLINICS LAYER */}
         {layers.healthcare && validEvaluations.map((item) => (
           <Marker
             key={`hc-${item.district.id}`}
             position={[item.district.lat + 0.04, item.district.lon - 0.04]}
             icon={createAtlasIcon('Health', false, 'healthcare')}
           >
-            <Tooltip direction="top" className="bg-[#F7F5EF] border border-[#171717] text-[#171717] font-mono text-xs">
+            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
               <div>🏥 {item.district.name} District Hospital & PHC</div>
             </Tooltip>
           </Marker>
         ))}
 
-        {/* LAYER: EDUCATION INSTITUTIONS */}
+        {/* 5. EDUCATION INSTITUTIONS LAYER */}
         {layers.education && validEvaluations.map((item) => (
           <Marker
             key={`edu-${item.district.id}`}
             position={[item.district.lat - 0.04, item.district.lon + 0.04]}
             icon={createAtlasIcon('Education', false, 'education')}
           >
-            <Tooltip direction="top" className="bg-[#F7F5EF] border border-[#171717] text-[#171717] font-mono text-xs">
+            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
               <div>🎓 {item.district.name} Govt ITI & High School</div>
             </Tooltip>
           </Marker>
         ))}
 
-        {/* LAYER: GOVERNMENT SANCTIONED PROJECTS */}
+        {/* 6. GOVERNMENT SANCTIONED PROJECTS LAYER */}
         {layers.projects && validEvaluations.map((item) => (
           <Marker
             key={`proj-${item.district.id}`}
             position={[item.district.lat + 0.02, item.district.lon + 0.05]}
             icon={createAtlasIcon('Project', false, 'project')}
           >
-            <Tooltip direction="top" className="bg-[#F7F5EF] border border-[#171717] text-[#171717] font-mono text-xs">
+            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
               <div>🏗️ Active Project Site — ₹12.5 Cr Sanction</div>
             </Tooltip>
           </Marker>
         ))}
 
-        {/* LAYER: DIGITAL CONNECTIVITY TOWERS */}
+        {/* 7. DIGITAL CONNECTIVITY TOWERS LAYER */}
         {layers.digital && validEvaluations.map((item) => (
           <Marker
             key={`dig-${item.district.id}`}
             position={[item.district.lat - 0.03, item.district.lon - 0.05]}
             icon={createAtlasIcon('Digital', false, 'digital')}
           >
-            <Tooltip direction="top" className="bg-[#F7F5EF] border border-[#171717] text-[#171717] font-mono text-xs">
+            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
               <div>📡 BharatNet Fiber Node & 5G Tower</div>
             </Tooltip>
           </Marker>
