@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Layers, 
   MapPin, 
@@ -117,6 +117,58 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [activeModalIssue, setActiveModalIssue] = useState<CommunityIssue | null>(null);
   const [modalMode, setModalMode] = useState<'evidence' | 'requests' | 'merge' | 'split' | null>(null);
+
+  // Dynamically ingest citizen requests into community issues aggregation
+  useEffect(() => {
+    const customRequests = requests.filter(r => r.id.startsWith('CP-2026-'));
+    if (customRequests.length > 0) {
+      setIssuesList(prev => {
+        const updated = [...prev];
+        customRequests.forEach(req => {
+          const matchIdx = updated.findIndex(iss => 
+            iss.category === req.category && 
+            (iss.location.toLowerCase().includes(req.location.toLowerCase()) || req.location.toLowerCase().includes(iss.districtId))
+          );
+          if (matchIdx >= 0) {
+            const existing = updated[matchIdx];
+            const alreadyHas = existing.sampleRequests?.some(sr => sr.id === req.id);
+            if (!alreadyHas) {
+              updated[matchIdx] = {
+                ...existing,
+                requestCount: existing.requestCount + 1,
+                sampleRequests: [req, ...(existing.sampleRequests || [])],
+                languagesRepresented: Array.from(new Set([...existing.languagesRepresented, req.language]))
+              };
+            }
+          } else {
+            const existsInList = updated.some(iss => iss.id === `ISSUE-LIVE-${req.id}`);
+            if (!existsInList) {
+              updated.unshift({
+                id: `ISSUE-LIVE-${req.id}`,
+                title: req.summary_en || `${req.category} Outage in ${req.location}`,
+                category: req.category,
+                location: `${req.location} (Emergent Cluster)`,
+                districtId: req.location.toLowerCase().includes('vijayawada') ? 'dist-01' : req.location.toLowerCase().includes('guntur') ? 'dist-02' : 'dist-03',
+                requestCount: 1,
+                affectedCommunitiesCount: 1,
+                languagesRepresented: [req.language],
+                trendLabel: '⚡ Just Ingested (Live Signal)',
+                severityScore: req.severity || 8,
+                confidencePct: 96,
+                relatedInfrastructureName: `${req.category} Distribution Network`,
+                relatedInfrastructureCondition: 'Citizen grievance intake verified',
+                relatedInvestmentInr: 5000000,
+                relatedSchemeName: 'State Municipal Infrastructure Fund',
+                aiVerified: true,
+                sampleRequests: [req]
+              });
+            }
+          }
+        });
+        return updated;
+      });
+    }
+  }, [requests]);
 
   const filteredIssues = issuesList.filter(issue => {
     const matchesCategory = selectedCategory === 'ALL' || issue.category === selectedCategory;

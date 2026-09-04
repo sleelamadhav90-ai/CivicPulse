@@ -368,46 +368,30 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           />
         )}
 
-        {/* HIGHLIGHT ONLY THE SELECTED DISTRICT (SUBTLE OUTLINE & GLOW) */}
+        {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY */}
         {activeEvaluation && (
-          <>
-            {/* Outer subtle focus perimeter */}
-            <Circle
-              center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
-              radius={22000}
-              pathOptions={{
-                color: '#D65A3A',
-                weight: 2,
-                dashArray: '5, 5',
-                opacity: 0.85,
-                fillColor: '#D65A3A',
-                fillOpacity: 0.08,
-              }}
-              interactive={false}
-            />
-            {/* Inner focused core halo */}
-            <Circle
-              center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
-              radius={8500}
-              pathOptions={{
-                color: '#FFFFFF',
-                weight: 1.5,
-                opacity: 0.9,
-                fillColor: '#D65A3A',
-                fillOpacity: 0.18,
-              }}
-              interactive={false}
-            />
-          </>
+          <Circle
+            center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
+            radius={9500}
+            pathOptions={{
+              color: '#D65A3A',
+              weight: 1.5,
+              opacity: 0.9,
+              fillColor: '#D65A3A',
+              fillOpacity: 0.12,
+            }}
+            interactive={false}
+          />
         )}
 
-        {/* 1. SUBTLE TRANSLUCENT PRIORITY ZONES BEHIND MARKERS */}
+        {/* 1. SUBTLE TRANSLUCENT PRIORITY ZONES WITH CLEAR OUTLINES */}
         {validEvaluations.map((item) => {
           const isSelected = item.district.id === activeDistrictId;
           const score = item.breakdown.total_score;
+          // Priority tier styling: High (Red/Orange), Medium (Amber), Low (Forest Green)
           const zoneColor = score >= 70 ? '#D65A3A' : score >= 40 ? '#D9A441' : '#285943';
-          const zoneRadius = isSelected ? 28 : (score >= 70 ? 20 : score >= 40 ? 15 : 12);
-          const zoneOpacity = isSelected ? 0.35 : (score >= 70 ? 0.22 : 0.15);
+          const zoneRadius = isSelected ? 22 : (score >= 70 ? 18 : score >= 40 ? 14 : 11);
+          const zoneOpacity = isSelected ? 0.35 : (score >= 70 ? 0.25 : score >= 40 ? 0.20 : 0.15);
 
           return (
             <CircleMarker
@@ -419,8 +403,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 fillOpacity: zoneOpacity,
                 stroke: true,
                 color: zoneColor,
-                weight: isSelected ? 2 : 1,
-                opacity: isSelected ? 0.9 : 0.4,
+                weight: 1.5,
+                opacity: 0.85,
               }}
               interactive={false}
             />
@@ -437,7 +421,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 [14.4426, 79.9865], // Nellore
                 [13.2172, 79.1003], // Chittoor
               ]}
-              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.6, dashArray: '4,6' }}
+              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.5 }}
             />
             <Polyline
               positions={[
@@ -445,7 +429,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 [19.1383, 77.3210], // Nanded
                 [17.6599, 75.9064], // Solapur
               ]}
-              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.6, dashArray: '4,6' }}
+              pathOptions={{ color: '#ffffff', weight: 1.5, opacity: 0.5 }}
             />
           </>
         )}

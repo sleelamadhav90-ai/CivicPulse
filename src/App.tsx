@@ -36,6 +36,7 @@ import { PatternIntelligence } from './components/PatternIntelligence';
 import { InvestmentIntelligence } from './components/InvestmentIntelligence';
 import { PortalHubModal } from './components/PortalHub';
 import { CitizenSignalsView } from './components/CitizenSignalsView';
+import { CitizenSubmissionView } from './components/CitizenSubmissionView';
 import { CommunityIssuesView } from './components/CommunityIssuesView';
 import { InfrastructureView } from './components/InfrastructureView';
 import { DemographicsView } from './components/DemographicsView';
@@ -47,7 +48,47 @@ export default function App() {
 
   const districts = useMemo(() => getDistrictsForCountry(selectedCountryCode), [selectedCountryCode]);
 
-  const [customRequests, setCustomRequests] = useState<CitizenRequest[]>([]);
+  // Persistent citizen requests initialized from local storage
+  const [customRequests, setCustomRequests] = useState<CitizenRequest[]>(() => {
+    try {
+      const saved = localStorage.getItem('civicpulse_custom_requests');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return [];
+  });
+
+  // Fetch backend persisted requests from file storage on mount
+  useEffect(() => {
+    fetch('/api/citizen-requests')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.requests) && data.requests.length > 0) {
+          setCustomRequests(prev => {
+            const existingIds = new Set(prev.map(r => r.id));
+            const newOnes = data.requests.filter((r: CitizenRequest) => !existingIds.has(r.id));
+            if (newOnes.length > 0) {
+              const merged = [...newOnes, ...prev];
+              try {
+                localStorage.setItem('civicpulse_custom_requests', JSON.stringify(merged));
+              } catch {}
+              return merged;
+            }
+            return prev;
+          });
+        }
+      })
+      .catch(err => console.warn('Could not fetch server persisted requests:', err));
+  }, []);
+
+  // Save custom requests to local storage whenever updated
+  useEffect(() => {
+    try {
+      localStorage.setItem('civicpulse_custom_requests', JSON.stringify(customRequests));
+    } catch {}
+  }, [customRequests]);
   
   const requests = useMemo(() => {
     const defaultCountryRequests = getRequestsForCountry(selectedCountryCode);
@@ -68,6 +109,11 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('map');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [portalDirectoryOpen, setPortalDirectoryOpen] = useState(false);
+
+  // Dedicated Submission Mode & Tracking Target State
+  const [submissionInitialMode, setSubmissionInitialMode] = useState<'write' | 'voice'>('write');
+  const [submissionInitialCategory, setSubmissionInitialCategory] = useState<InfrastructureCategory | undefined>(undefined);
+  const [focusedRequestId, setFocusedRequestId] = useState<string | undefined>(undefined);
 
   // Policy Lab Target State
   const [policyTargetDistrictId, setPolicyTargetDistrictId] = useState<string>('guntur');
@@ -348,14 +394,45 @@ export default function App() {
                 setPolicyTargetDistrictId(districtId);
                 setPolicyTargetCategory(category as InfrastructureCategory);
               }}
+              onSelectCategoryForReporting={(category) => {
+                setSubmissionInitialCategory(category);
+                setSubmissionInitialMode('write');
+                setActiveTab('submit');
+              }}
+              onStartVoiceSubmission={() => {
+                setSubmissionInitialMode('voice');
+                setActiveTab('submit');
+              }}
+              onStartWriteSubmission={() => {
+                setSubmissionInitialMode('write');
+                setActiveTab('submit');
+              }}
             />
           )}
 
-          {(activeTab === 'signals' || activeTab === 'submit') && (
+          {activeTab === 'submit' && (
+            <CitizenSubmissionView
+              districts={districts}
+              initialMode={submissionInitialMode}
+              initialCategory={submissionInitialCategory}
+              onAddRequest={handleAddRequest}
+              onViewRequest={(reqId) => {
+                setFocusedRequestId(reqId);
+                setActiveTab('signals');
+              }}
+            />
+          )}
+
+          {activeTab === 'signals' && (
             <CitizenSignalsView
               requests={requests}
               selectedLanguage={selectedLanguage}
+              selectedRequestId={focusedRequestId}
               onNavigateToIssues={() => setActiveTab('issues')}
+              onNavigateToSubmit={() => {
+                setSubmissionInitialMode('write');
+                setActiveTab('submit');
+              }}
             />
           )}
 

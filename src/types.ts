@@ -130,7 +130,14 @@ export interface InfrastructureAudit {
   interventionType: InterventionType;
 }
 
-export type RequestStatus = 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged';
+export type RequestStatus = 'Received' | 'Submitted' | 'Under Review' | 'Assigned' | 'Resolved' | 'Prioritized' | 'Funded' | 'Logged' | 'Action Initiated';
+
+export interface RequestTimelineEntry {
+  date: string;
+  title: string;
+  status: 'completed' | 'in_progress' | 'pending';
+  note?: string;
+}
 
 export interface DemographicGroupImpact {
   groupName: string; // e.g. "Students (Ages 5-18)", "Elderly Residents (60+)", "Women & Primary Caregivers", "Daily-Wage Workers"
@@ -166,25 +173,35 @@ export interface AIAnalysisResult {
 }
 
 export interface CitizenRequest {
-  id: string; // e.g. "CP-10482"
+  id: string; // e.g. "CP-2026-004821"
+  request_id?: string;
   timestamp: string;
   original_text: string;
   language: string;
+  translated_text?: string;
   category: InfrastructureCategory;
-  issue_title?: string; // e.g. "Street Lighting"
-  location: string; // e.g. "Vijayawada"
+  subcategory?: string;
+  issue_title?: string; // e.g. "Drinking water supply disruption"
+  location: string; // e.g. "Vijayawada Rural"
   severity: number; // 1 to 10
+  severity_label?: string; // e.g. "High"
   priority_tier?: 'Low' | 'Medium' | 'High' | 'Critical';
+  summary?: string;
   summary_en: string;
+  urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   urgency_reasoning?: string;
   affected_group?: string;
+  affected_area?: string;
+  affected_population_if_available?: string;
+  duration?: string;
   audio_url?: string;
-  source_type: 'voice' | 'text' | 'sample';
+  photo_url?: string;
+  source_type: 'voice' | 'text' | 'photo' | 'voice+photo' | 'text+photo' | 'sample';
   status: RequestStatus;
+  timeline?: RequestTimelineEntry[];
 
   // AI Analysis (Feature 2)
   problem?: string;
-  urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
   affected_infrastructure?: string;
   estimated_impact?: 'Low' | 'Medium' | 'High' | 'Critical';
   recommended_action?: string;

@@ -30,6 +30,8 @@ interface OverviewProps {
   onNavigate: (tab: NavTab) => void;
   onSelectDistrictForPolicy?: (districtId: string, category: InfrastructureCategory) => void;
   onSelectCategoryForReporting?: (category: InfrastructureCategory) => void;
+  onStartVoiceSubmission?: () => void;
+  onStartWriteSubmission?: () => void;
 }
 
 export const Overview: React.FC<OverviewProps> = ({
@@ -37,6 +39,8 @@ export const Overview: React.FC<OverviewProps> = ({
   requests,
   onNavigate,
   onSelectCategoryForReporting,
+  onStartVoiceSubmission,
+  onStartWriteSubmission,
 }) => {
   // Service category definitions
   const serviceCategories = [
@@ -146,19 +150,31 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Primary Action Buttons */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
             <button
-              onClick={() => onNavigate('submit')}
+              onClick={() => {
+                if (onStartVoiceSubmission) {
+                  onStartVoiceSubmission();
+                } else {
+                  onNavigate('submit');
+                }
+              }}
               className="px-6 py-4 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-bold text-sm tracking-wide transition-all shadow-[4px_4px_0px_#171717] border-2 border-[#171717] flex items-center justify-center gap-3 cursor-pointer"
             >
               <Mic className="w-5 h-5 text-amber-200" />
-              <span>🎙️ Speak Your Request</span>
+              <span>🎙 Speak an Issue</span>
             </button>
 
             <button
-              onClick={() => onNavigate('submit')}
+              onClick={() => {
+                if (onStartWriteSubmission) {
+                  onStartWriteSubmission();
+                } else {
+                  onNavigate('submit');
+                }
+              }}
               className="px-6 py-4 bg-white hover:bg-slate-50 text-[#171717] font-bold text-sm tracking-wide transition-all shadow-[4px_4px_0px_#171717] border-2 border-[#171717] flex items-center justify-center gap-3 cursor-pointer"
             >
               <FileEdit className="w-5 h-5 text-[#285943]" />
-              <span>✍️ Submit a Written Request</span>
+              <span>✎ Write an Issue</span>
             </button>
           </div>
 
