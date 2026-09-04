@@ -17,6 +17,7 @@ export interface CityDemandHotspot {
   lat: number;
   lon: number;
   totalCitizenRequests: number;
+  categoryRequests: number;
   highPriorityCount: number;
   primaryCategory: string;
   primaryDot: '🔴' | '🟠' | '🟡' | '🟢';
@@ -27,6 +28,16 @@ export interface CityDemandHotspot {
   urgencyLevel: 'Critical' | 'High' | 'Moderate' | 'Low';
   population: number;
   povertyIndex: number;
+  hasCategorySignal: boolean;
+  categoryScore: number;
+  representativeQuote?: {
+    text: string;
+    english: string;
+    language: string;
+    locality?: string;
+    severity: number;
+    urgency: string;
+  };
 }
 
 // Baseline realistic seed demand metrics per district for realistic GIS analysis
@@ -36,53 +47,113 @@ const BASELINE_DISTRICT_DEMAND: Record<string, {
   issueWeights: { category: string; weight: number }[];
   recommendation: string;
 }> = {
-  vijayawada: {
-    baseRequests: 2481,
-    highPriorityRatio: 0.155, // 386 high priority
+  // WATER-DOMINANT BELTS
+  jodhpur: {
+    baseRequests: 1820,
+    highPriorityRatio: 0.22,
     issueWeights: [
-      { category: 'Water', weight: 41 },
-      { category: 'Roads', weight: 27 },
-      { category: 'Drainage', weight: 18 },
-      { category: 'Lighting', weight: 9 },
-      { category: 'Sanitation', weight: 5 },
+      { category: 'Water', weight: 65 },
+      { category: 'Roads', weight: 15 },
+      { category: 'Electricity', weight: 12 },
+      { category: 'Drainage', weight: 5 },
+      { category: 'Health', weight: 3 },
     ],
-    recommendation: 'Prioritize drainage infrastructure and stormwater canal widening in this region to prevent recurrent monsoon flooding.',
+    recommendation: 'Expand emergency solar deep-aquifer tubewell grids and commission RO desalination plants for saline desert groundwater.',
+  },
+  barmer: {
+    baseRequests: 1640,
+    highPriorityRatio: 0.24,
+    issueWeights: [
+      { category: 'Water', weight: 68 },
+      { category: 'Health', weight: 16 },
+      { category: 'Electricity', weight: 10 },
+      { category: 'Roads', weight: 6 },
+    ],
+    recommendation: 'Rehabilitate fractured Narmada canal feeder pipelines and deploy mobile water purification units in desert clusters.',
+  },
+  solapur: {
+    baseRequests: 1910,
+    highPriorityRatio: 0.18,
+    issueWeights: [
+      { category: 'Water', weight: 58 },
+      { category: 'Roads', weight: 18 },
+      { category: 'Drainage', weight: 12 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Health', weight: 4 },
+    ],
+    recommendation: 'Augment Ujjani reservoir canal storage and enforce micro-drip irrigation to avert seasonal drinking supply collapses.',
+  },
+  latur: {
+    baseRequests: 1720,
+    highPriorityRatio: 0.21,
+    issueWeights: [
+      { category: 'Water', weight: 62 },
+      { category: 'Health', weight: 15 },
+      { category: 'Roads', weight: 12 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Desilt Manjara river basin recharge structures and restore electrified rural mini-piped supply schemes.',
+  },
+  nalgonda: {
+    baseRequests: 1480,
+    highPriorityRatio: 0.19,
+    issueWeights: [
+      { category: 'Water', weight: 56 },
+      { category: 'Health', weight: 20 },
+      { category: 'Roads', weight: 12 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Drainage', weight: 4 },
+    ],
+    recommendation: 'Repair non-operational community RO defluoridation filtration plants across fluoride-endemic rural mandals.',
+  },
+  anantapur: {
+    baseRequests: 2150,
+    highPriorityRatio: 0.23,
+    issueWeights: [
+      { category: 'Water', weight: 61 },
+      { category: 'Roads', weight: 16 },
+      { category: 'Health', weight: 12 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Expedite Handri-Neeva Sujala Sravanthi canal water interlinking and construct check dams in Rayalaseema arid pockets.',
+  },
+  prakasam: {
+    baseRequests: 1520,
+    highPriorityRatio: 0.18,
+    issueWeights: [
+      { category: 'Water', weight: 54 },
+      { category: 'Roads', weight: 20 },
+      { category: 'Health', weight: 14 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Drainage', weight: 4 },
+    ],
+    recommendation: 'Accelerate Veligonda project surface water trunk distribution to replace fluoride-laden groundwater in western mandals.',
   },
   guntur: {
     baseRequests: 1842,
-    highPriorityRatio: 0.169, // ~312 high priority
+    highPriorityRatio: 0.17,
     issueWeights: [
-      { category: 'Water', weight: 46 },
-      { category: 'Roads', weight: 24 },
-      { category: 'Drainage', weight: 15 },
-      { category: 'Electricity', weight: 10 },
+      { category: 'Water', weight: 48 },
+      { category: 'Roads', weight: 22 },
+      { category: 'Drainage', weight: 16 },
+      { category: 'Electricity', weight: 9 },
       { category: 'Health', weight: 5 },
     ],
-    recommendation: 'Deploy solar micro-piped water distribution and rehabilitate rural supply pipelines in rain-shadow blocks.',
+    recommendation: 'Rehabilitate damaged feeder water mains in Tenali and expand Jal Jeevan piped distribution in upland mandals.',
   },
-  warangal: {
-    baseRequests: 1290,
-    highPriorityRatio: 0.186, // ~240 high priority
+  raichur: {
+    baseRequests: 1390,
+    highPriorityRatio: 0.18,
     issueWeights: [
-      { category: 'Health', weight: 44 },
-      { category: 'Roads', weight: 26 },
-      { category: 'Water', weight: 18 },
-      { category: 'Drainage', weight: 8 },
-      { category: 'Electricity', weight: 4 },
-    ],
-    recommendation: 'Upgrade Primary Health Centers with emergency telemedicine triage and trauma care ambulances.',
-  },
-  nashik: {
-    baseRequests: 1654,
-    highPriorityRatio: 0.145,
-    issueWeights: [
-      { category: 'Roads', weight: 48 },
-      { category: 'Water', weight: 25 },
+      { category: 'Water', weight: 52 },
+      { category: 'Education', weight: 22 },
       { category: 'Electricity', weight: 14 },
-      { category: 'Drainage', weight: 8 },
-      { category: 'Health', weight: 5 },
+      { category: 'Roads', weight: 8 },
+      { category: 'Health', weight: 4 },
     ],
-    recommendation: 'Accelerate asphalt resurfacing on agricultural transit corridors and repair severe arterial road craters.',
+    recommendation: 'Restore tail-end Tungabhadra distributary canal flow and desilt community percolation tanks in Manvi taluk.',
   },
   gaya: {
     baseRequests: 2130,
@@ -94,159 +165,354 @@ const BASELINE_DISTRICT_DEMAND: Record<string, {
       { category: 'Roads', weight: 8 },
       { category: 'Health', weight: 5 },
     ],
-    recommendation: 'Commission deep aquifer recharge wells and emergency tanker distribution in depleted groundwater blocks.',
+    recommendation: 'Deploy deep aquifer solar pumps in rocky zones and restore Har Ghar Nal Ka Jal pump motors in Wazirganj.',
   },
-  raichur: {
-    baseRequests: 980,
-    highPriorityRatio: 0.13,
+
+  // ROADS & FREIGHT ARTERIAL CORRIDORS
+  kanpur_dehat: {
+    baseRequests: 1690,
+    highPriorityRatio: 0.20,
     issueWeights: [
-      { category: 'Education', weight: 45 },
-      { category: 'Water', weight: 28 },
-      { category: 'Electricity', weight: 15 },
-      { category: 'Roads', weight: 8 },
-      { category: 'Health', weight: 4 },
-    ],
-    recommendation: 'Refurbish government school structural facilities and install dedicated gender-segregated sanitation blocks.',
-  },
-  mumbai: {
-    baseRequests: 4820,
-    highPriorityRatio: 0.125,
-    issueWeights: [
-      { category: 'Drainage', weight: 42 },
-      { category: 'Roads', weight: 31 },
-      { category: 'Water', weight: 14 },
-      { category: 'Electricity', weight: 8 },
-      { category: 'Sanitation', weight: 5 },
-    ],
-    recommendation: 'Desilt major stormwater outfalls and construct subterranean holding tanks in low-lying transit bottlenecks.',
-  },
-  delhi: {
-    baseRequests: 5410,
-    highPriorityRatio: 0.14,
-    issueWeights: [
-      { category: 'Drainage', weight: 38 },
-      { category: 'Roads', weight: 29 },
+      { category: 'Roads', weight: 64 },
       { category: 'Electricity', weight: 18 },
       { category: 'Water', weight: 10 },
-      { category: 'Sanitation', weight: 5 },
-    ],
-    recommendation: 'Modernize stormwater drainage canals and revamp peripheral road lighting along freight transit loops.',
-  },
-  bengaluru: {
-    baseRequests: 3670,
-    highPriorityRatio: 0.13,
-    issueWeights: [
-      { category: 'Roads', weight: 43 },
-      { category: 'Drainage', weight: 32 },
-      { category: 'Water', weight: 15 },
-      { category: 'Electricity', weight: 7 },
-      { category: 'Health', weight: 3 },
-    ],
-    recommendation: 'Upgrade arterial junction drainage culverts and resurface high-density suburban tech corridor connectors.',
-  },
-  hyderabad: {
-    baseRequests: 3210,
-    highPriorityRatio: 0.12,
-    issueWeights: [
-      { category: 'Drainage', weight: 39 },
-      { category: 'Roads', weight: 33 },
-      { category: 'Water', weight: 16 },
-      { category: 'Electricity', weight: 8 },
-      { category: 'Health', weight: 4 },
-    ],
-    recommendation: 'Execute strategic nalas remodeling program to avert localized flash flooding during cloudburst spells.',
-  },
-  chennai: {
-    baseRequests: 2890,
-    highPriorityRatio: 0.14,
-    issueWeights: [
-      { category: 'Water', weight: 38 },
-      { category: 'Drainage', weight: 34 },
-      { category: 'Roads', weight: 17 },
-      { category: 'Electricity', weight: 7 },
-      { category: 'Sanitation', weight: 4 },
-    ],
-    recommendation: 'Expand desalination pipeline connectivity and clear estuarine stormwater flood gates before monsoons.',
-  },
-  kolkata: {
-    baseRequests: 2150,
-    highPriorityRatio: 0.16,
-    issueWeights: [
-      { category: 'Drainage', weight: 45 },
-      { category: 'Roads', weight: 26 },
-      { category: 'Water', weight: 16 },
-      { category: 'Electricity', weight: 8 },
       { category: 'Health', weight: 5 },
+      { category: 'Drainage', weight: 3 },
     ],
-    recommendation: 'Rehabilitate heritage drainage pumping stations and elevate low-lying transit carriageways.',
+    recommendation: 'Rebuild cratered Akbarpur-Rura arterial road with heavy asphalt and widen culverts to avert freight rollovers.',
   },
-  lucknow: {
+  sitapur: {
     baseRequests: 1780,
-    highPriorityRatio: 0.15,
-    issueWeights: [
-      { category: 'Roads', weight: 37 },
-      { category: 'Water', weight: 31 },
-      { category: 'Drainage', weight: 18 },
-      { category: 'Electricity', weight: 9 },
-      { category: 'Health', weight: 5 },
-    ],
-    recommendation: 'Expand municipal piped water network to peri-urban clusters and pave secondary transit roads.',
-  },
-  guwahati: {
-    baseRequests: 1420,
     highPriorityRatio: 0.19,
     issueWeights: [
-      { category: 'Drainage', weight: 51 },
-      { category: 'Roads', weight: 24 },
-      { category: 'Water', weight: 14 },
-      { category: 'Health', weight: 7 },
+      { category: 'Roads', weight: 60 },
+      { category: 'Electricity', weight: 18 },
+      { category: 'Health', weight: 11 },
+      { category: 'Water', weight: 8 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Resurface heavy-freight sugar mill transit corridors between Biswan and Laharpur with durable bituminous layers.',
+  },
+  muzaffarpur: {
+    baseRequests: 2280,
+    highPriorityRatio: 0.21,
+    issueWeights: [
+      { category: 'Roads', weight: 54 },
+      { category: 'Health', weight: 22 },
+      { category: 'Drainage', weight: 14 },
+      { category: 'Water', weight: 6 },
       { category: 'Electricity', weight: 4 },
     ],
-    recommendation: 'Reinforce riverbank embankment drainage and clear silt from natural hill streams traversing the city.',
+    recommendation: 'Rebuild flood-damaged river embankment bypasses in Kanti and construct permanent concrete causeways.',
   },
-  patna: {
+  murshidabad: {
+    baseRequests: 2140,
+    highPriorityRatio: 0.18,
+    issueWeights: [
+      { category: 'Roads', weight: 52 },
+      { category: 'Drainage', weight: 24 },
+      { category: 'Water', weight: 12 },
+      { category: 'Health', weight: 8 },
+      { category: 'Electricity', weight: 4 },
+    ],
+    recommendation: 'Rehabilitate State Highway connecting Berhampore and Domkal to accommodate high-volume jute freight.',
+  },
+  nashik: {
+    baseRequests: 1654,
+    highPriorityRatio: 0.16,
+    issueWeights: [
+      { category: 'Roads', weight: 54 },
+      { category: 'Water', weight: 20 },
+      { category: 'Electricity', weight: 14 },
+      { category: 'Drainage', weight: 8 },
+      { category: 'Health', weight: 4 },
+    ],
+    recommendation: 'Accelerate asphalt resurfacing on agricultural transit corridors and repair severe arterial road craters.',
+  },
+  belagavi: {
     baseRequests: 1890,
     highPriorityRatio: 0.17,
     issueWeights: [
-      { category: 'Drainage', weight: 44 },
-      { category: 'Roads', weight: 28 },
-      { category: 'Water', weight: 16 },
-      { category: 'Electricity', weight: 7 },
+      { category: 'Roads', weight: 51 },
+      { category: 'Water', weight: 21 },
+      { category: 'Electricity', weight: 15 },
+      { category: 'Drainage', weight: 8 },
       { category: 'Health', weight: 5 },
     ],
-    recommendation: 'Construct high-discharge sump wells and modern pumping stations to prevent urban water-logging.',
+    recommendation: 'Reinforce subsiding bridge approaches along Krishna river crossings in Chikkodi-Nipani corridor.',
+  },
+  kurnool: {
+    baseRequests: 1720,
+    highPriorityRatio: 0.18,
+    issueWeights: [
+      { category: 'Roads', weight: 53 },
+      { category: 'Water', weight: 25 },
+      { category: 'Electricity', weight: 12 },
+      { category: 'Health', weight: 7 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Rebuild collapsed culverts and resurface Adoni-Yemmiganur roadway to restore vital RTC bus transit.',
+  },
+
+  // ELECTRICITY / GRID STABILITY
+  hardoi: {
+    baseRequests: 1620,
+    highPriorityRatio: 0.21,
+    issueWeights: [
+      { category: 'Electricity', weight: 62 },
+      { category: 'Roads', weight: 20 },
+      { category: 'Water', weight: 10 },
+      { category: 'Health', weight: 5 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Replace burnt 250 kVA distribution transformers in Sandila and modernize rural 11 kV transmission line protection.',
+  },
+  purnia: {
+    baseRequests: 1580,
+    highPriorityRatio: 0.19,
+    issueWeights: [
+      { category: 'Electricity', weight: 56 },
+      { category: 'Roads', weight: 22 },
+      { category: 'Health', weight: 12 },
+      { category: 'Water', weight: 6 },
+      { category: 'Drainage', weight: 4 },
+    ],
+    recommendation: 'Install voltage stabilizer substations to support agricultural tube wells and expand feeder segregation.',
+  },
+  palamu: {
+    baseRequests: 1450,
+    highPriorityRatio: 0.23,
+    issueWeights: [
+      { category: 'Electricity', weight: 58 },
+      { category: 'Health', weight: 20 },
+      { category: 'Water', weight: 12 },
+      { category: 'Roads', weight: 7 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Restore lightning-damaged rural substations in Daltonganj and replace broken wooden transmission poles.',
+  },
+  kalahandi: {
+    baseRequests: 1380,
+    highPriorityRatio: 0.22,
+    issueWeights: [
+      { category: 'Electricity', weight: 54 },
+      { category: 'Health', weight: 24 },
+      { category: 'Water', weight: 12 },
+      { category: 'Roads', weight: 7 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Rectify low-voltage grid sag in Bhawanipatna rural mandals and replace dangling 11 kV agricultural power lines.',
+  },
+
+  // HEALTHCARE ACCESS
+  madhubani: {
+    baseRequests: 2180,
+    highPriorityRatio: 0.25,
+    issueWeights: [
+      { category: 'Health', weight: 64 },
+      { category: 'Roads', weight: 16 },
+      { category: 'Drainage', weight: 12 },
+      { category: 'Water', weight: 5 },
+      { category: 'Electricity', weight: 3 },
+    ],
+    recommendation: 'Deploy permanent medical officers to Jhanjharpur PHC and operationalize 24/7 maternal obstetrics ward.',
+  },
+  bahraich: {
+    baseRequests: 1940,
+    highPriorityRatio: 0.26,
+    issueWeights: [
+      { category: 'Health', weight: 66 },
+      { category: 'Roads', weight: 16 },
+      { category: 'Water', weight: 10 },
+      { category: 'Electricity', weight: 5 },
+      { category: 'Drainage', weight: 3 },
+    ],
+    recommendation: 'Replenish critical emergency stocks of anti-snake venom (ASV) and rabies immunoglobulins at Nanpara border CHC.',
+  },
+  dhubri: {
+    baseRequests: 1560,
+    highPriorityRatio: 0.23,
+    issueWeights: [
+      { category: 'Health', weight: 60 },
+      { category: 'Drainage', weight: 20 },
+      { category: 'Roads', weight: 12 },
+      { category: 'Water', weight: 5 },
+      { category: 'Electricity', weight: 3 },
+    ],
+    recommendation: 'Re-equip Bilasipara riverine hospital with mobile X-Ray and blood diagnostic analyzers to combat post-flood outbreaks.',
+  },
+  warangal: {
+    baseRequests: 1290,
+    highPriorityRatio: 0.19,
+    issueWeights: [
+      { category: 'Health', weight: 52 },
+      { category: 'Roads', weight: 24 },
+      { category: 'Water', weight: 14 },
+      { category: 'Drainage', weight: 6 },
+      { category: 'Electricity', weight: 4 },
+    ],
+    recommendation: 'Upgrade Primary Health Centers with emergency telemedicine triage and 24/7 advanced life support ambulances.',
+  },
+
+  // SANITATION & URBAN DRAINAGE
+  bareilly: {
+    baseRequests: 1850,
+    highPriorityRatio: 0.17,
+    issueWeights: [
+      { category: 'Drainage', weight: 52 },
+      { category: 'Roads', weight: 22 },
+      { category: 'Electricity', weight: 12 },
+      { category: 'Water', weight: 10 },
+      { category: 'Sanitation', weight: 4 },
+    ],
+    recommendation: 'Execute comprehensive desilting of major stormwater nalas in Nawabganj and prevent sewage overflow into residential streets.',
+  },
+  south_24_parganas: {
+    baseRequests: 2420,
+    highPriorityRatio: 0.19,
+    issueWeights: [
+      { category: 'Drainage', weight: 56 },
+      { category: 'Roads', weight: 20 },
+      { category: 'Water', weight: 14 },
+      { category: 'Health', weight: 6 },
+      { category: 'Electricity', weight: 4 },
+    ],
+    recommendation: 'Dredge silted tidal sluice gates along Matla river in Canning to eliminate persistent monsoonal market flooding.',
+  },
+  mumbai: {
+    baseRequests: 4820,
+    highPriorityRatio: 0.14,
+    issueWeights: [
+      { category: 'Drainage', weight: 52 },
+      { category: 'Roads', weight: 28 },
+      { category: 'Water', weight: 10 },
+      { category: 'Electricity', weight: 6 },
+      { category: 'Sanitation', weight: 4 },
+    ],
+    recommendation: 'Desilt Mithi river intake culverts along LBS Marg and widen micro-drains to prevent arterial commuter disruption.',
+  },
+  bengaluru: {
+    baseRequests: 3670,
+    highPriorityRatio: 0.14,
+    issueWeights: [
+      { category: 'Roads', weight: 42 },
+      { category: 'Drainage', weight: 34 },
+      { category: 'Electricity', weight: 14 },
+      { category: 'Water', weight: 7 },
+      { category: 'Health', weight: 3 },
+    ],
+    recommendation: 'Clear construction debris from Varthur storm channel and restore street lighting cables in Peenya Industrial Area.',
+  },
+  hyderabad: {
+    baseRequests: 3210,
+    highPriorityRatio: 0.13,
+    issueWeights: [
+      { category: 'Drainage', weight: 42 },
+      { category: 'Roads', weight: 32 },
+      { category: 'Electricity', weight: 16 },
+      { category: 'Water', weight: 7 },
+      { category: 'Health', weight: 3 },
+    ],
+    recommendation: 'Execute Strategic Nala Development Program remodeling at Kukatpally and restore high-mast traffic lighting.',
+  },
+  vijayawada: {
+    baseRequests: 2481,
+    highPriorityRatio: 0.16,
+    issueWeights: [
+      { category: 'Drainage', weight: 38 },
+      { category: 'Water', weight: 32 },
+      { category: 'Roads', weight: 18 },
+      { category: 'Electricity', weight: 8 },
+      { category: 'Sanitation', weight: 4 },
+    ],
+    recommendation: 'Prioritize canal bank drainage desilting and reconstruct storm-damaged street lighting circuits in Gunadala.',
   },
 };
 
 /**
+ * Filter requests by time window
+ */
+export function filterRequestsByTime(
+  requests: CitizenRequest[],
+  timeRange: '7d' | '30d' | '90d' | 'all' = 'all'
+): CitizenRequest[] {
+  if (timeRange === 'all') return requests;
+  const now = Date.now();
+  const limits: Record<'7d' | '30d' | '90d', number> = {
+    '7d': 7 * 24 * 60 * 60 * 1000,
+    '30d': 30 * 24 * 60 * 60 * 1000,
+    '90d': 90 * 24 * 60 * 60 * 1000,
+  };
+  const maxAge = limits[timeRange];
+  return requests.filter((r) => {
+    const t = new Date(r.timestamp).getTime();
+    return now - t <= maxAge;
+  });
+}
+
+/**
  * Computes aggregated demand hotspot data for a district, merging
  * baseline historical signal density with live incoming citizen requests.
+ * Fully supports category-specific signal calculation and time filtering!
  */
 export function getCityDemandHotspot(
   district: District,
-  liveRequests: CitizenRequest[]
+  liveRequests: CitizenRequest[],
+  selectedCategory: InfrastructureCategory | 'All' = 'All'
 ): CityDemandHotspot {
-  // Find live requests matching this district
-  const matchedLive = liveRequests.filter(
-    (r) => r.location.toLowerCase() === district.name.toLowerCase()
-  );
+  const districtNameLower = district.name.toLowerCase();
+  const districtIdLower = district.id.toLowerCase();
+  const stateLower = district.state.toLowerCase();
 
-  const baseline = BASELINE_DISTRICT_DEMAND[district.id.toLowerCase()] || {
-    baseRequests: Math.round(district.population / 4500) + 600,
+  // Find live requests matching this district
+  const matchedLive = liveRequests.filter((r) => {
+    const rLoc = (r.location || '').toLowerCase();
+    const rDist = (r.district || '').toLowerCase();
+    const rState = (r.state || '').toLowerCase();
+
+    return (
+      rDist === districtNameLower ||
+      rDist === districtIdLower ||
+      rLoc.includes(districtNameLower) ||
+      (rLoc.includes(districtIdLower) && rState === stateLower)
+    );
+  });
+
+  const baseline = BASELINE_DISTRICT_DEMAND[districtIdLower] || {
+    baseRequests: Math.round(district.population / 4500) + 500,
     highPriorityRatio: 0.14,
     issueWeights: [
-      { category: 'Drainage', weight: 35 },
-      { category: 'Water', weight: 30 },
-      { category: 'Roads', weight: 20 },
-      { category: 'Electricity', weight: 10 },
-      { category: 'Education', weight: 5 },
+      { category: 'Drainage', weight: 30 },
+      { category: 'Water', weight: 28 },
+      { category: 'Roads', weight: 24 },
+      { category: 'Electricity', weight: 12 },
+      { category: 'Health', weight: 6 },
     ],
-    recommendation: `Prioritize municipal infrastructure upgrades and essential civic access in ${district.name}.`,
+    recommendation: `Prioritize essential public infrastructure upgrades and citizen service access in ${district.name}.`,
   };
 
   const totalRequests = baseline.baseRequests + matchedLive.length;
-  const highPriorityLiveCount = matchedLive.filter((r) => r.severity >= 8).length;
-  const totalHighPriority = Math.round(baseline.baseRequests * baseline.highPriorityRatio) + highPriorityLiveCount;
+
+  // Calculate category-specific request counts and weights
+  const targetCategoryName = selectedCategory === 'All' ? null : selectedCategory;
+  const categoryWeightObj = targetCategoryName
+    ? baseline.issueWeights.find((w) => w.category === targetCategoryName)
+    : null;
+  const categoryBasePct = categoryWeightObj ? categoryWeightObj.weight : 0;
+
+  const matchedLiveForCategory = targetCategoryName
+    ? matchedLive.filter((r) => r.category === targetCategoryName)
+    : matchedLive;
+
+  const categoryRequests = targetCategoryName
+    ? Math.round((baseline.baseRequests * categoryBasePct) / 100) + matchedLiveForCategory.length
+    : totalRequests;
+
+  // Determine if this district has a notable signal for this category
+  // A district has notable signal if it has live requests for that category, OR its baseline weight is >= 25%
+  const hasCategorySignal = targetCategoryName
+    ? matchedLiveForCategory.length > 0 || categoryBasePct >= 25
+    : true;
 
   // Compute issue category distribution percentages
   const issueCounts: Record<string, number> = {};
@@ -292,7 +558,7 @@ export function getCityDemandHotspot(
     })
     .sort((a, b) => b.percentage - a.percentage);
 
-  // Normalize percentages to sum to roughly 100%
+  // Normalize percentages
   const totalPct = topIssues.reduce((acc, curr) => acc + curr.percentage, 0);
   if (totalPct > 0 && totalPct !== 100 && topIssues.length > 0) {
     const diff = 100 - totalPct;
@@ -314,16 +580,46 @@ export function getCityDemandHotspot(
   else if (primaryIssue.percentage >= 10) primaryDot = '🟡';
   else primaryDot = '🟢';
 
+  // Calculate high priority
+  const highPriorityLiveCount = matchedLiveForCategory.filter((r) => r.severity >= 8).length;
+  const totalHighPriority =
+    Math.round(categoryRequests * baseline.highPriorityRatio) + highPriorityLiveCount;
+
+  // Category priority score (0-100 scale)
+  // Higher if high category percentage or high severity live reports exist
+  const effectivePct = targetCategoryName ? categoryBasePct : primaryIssue.percentage;
+  const liveBonus = matchedLiveForCategory.length * 4;
+  const categoryScore = Math.min(
+    98,
+    Math.round(effectivePct * 1.1 + (district.poverty_index * 25) + liveBonus)
+  );
+
   let urgencyLevel: 'Critical' | 'High' | 'Moderate' | 'Low' = 'Moderate';
-  if (totalHighPriority > 300 || primaryIssue.percentage >= 40) {
+  if (categoryScore >= 70 || totalHighPriority > 250) {
     urgencyLevel = 'Critical';
-  } else if (totalHighPriority > 150 || primaryIssue.percentage >= 25) {
+  } else if (categoryScore >= 50 || totalHighPriority > 120) {
     urgencyLevel = 'High';
-  } else if (totalHighPriority > 75) {
+  } else if (categoryScore >= 30) {
     urgencyLevel = 'Moderate';
   } else {
     urgencyLevel = 'Low';
   }
+
+  // Find representative quote for this district & category
+  const candidateReq =
+    matchedLiveForCategory.find((r) => r.original_text && r.summary_en) ||
+    matchedLive.find((r) => r.original_text && r.summary_en);
+
+  const representativeQuote = candidateReq
+    ? {
+        text: candidateReq.original_text,
+        english: candidateReq.summary_en,
+        language: candidateReq.language,
+        locality: candidateReq.locality || candidateReq.location,
+        severity: candidateReq.severity,
+        urgency: candidateReq.urgency || 'HIGH',
+      }
+    : undefined;
 
   return {
     districtId: district.id,
@@ -333,15 +629,19 @@ export function getCityDemandHotspot(
     lat: district.lat,
     lon: district.lon,
     totalCitizenRequests: totalRequests,
+    categoryRequests,
     highPriorityCount: totalHighPriority,
-    primaryCategory: primaryIssue.category,
+    primaryCategory: targetCategoryName || primaryIssue.category,
     primaryDot,
     primaryDotColor: primaryIssue.dotColor,
-    primaryBadgeLabel: `${primaryDot} ${primaryIssue.category}`,
+    primaryBadgeLabel: `${primaryDot} ${targetCategoryName || primaryIssue.category}`,
     topIssues,
     aiRecommendation: baseline.recommendation,
     urgencyLevel,
     population: district.population,
     povertyIndex: district.poverty_index,
+    hasCategorySignal,
+    categoryScore,
+    representativeQuote,
   };
 }

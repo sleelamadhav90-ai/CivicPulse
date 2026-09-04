@@ -1,44 +1,34 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  Layers, 
-  MapPin, 
-  Search, 
   ArrowRight, 
-  Droplets,
-  Route,
-  HeartPulse,
-  Filter, 
-  Combine, 
-  Split, 
-  ShieldCheck, 
-  DollarSign, 
+  Droplets, 
+  Route, 
+  HeartPulse, 
+  Zap, 
+  Search, 
+  X, 
+  Layers, 
   Building2, 
-  MessageSquare,
-  FileText,
-  TrendingUp,
-  AlertTriangle,
-  Info
+  CheckCircle2, 
+  Sparkles,
+  ArrowDown
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, GovernmentProject } from '../types';
 
 export interface CommunityIssue {
   id: string;
+  rank: string;
   title: string;
   category: InfrastructureCategory;
   location: string;
   districtId: string;
   requestCount: number;
-  affectedCommunitiesCount: number;
-  languagesRepresented: string[];
-  trendLabel: string;
-  severityScore: number;
-  confidencePct: number;
-  relatedInfrastructureName: string;
-  relatedInfrastructureCondition: string;
-  relatedInvestmentInr: number;
-  relatedSchemeName: string;
-  aiVerified: boolean;
-  sampleRequests: CitizenRequest[];
+  trend: string;
+  severity: 'Critical' | 'High' | 'Moderate';
+  affectedCommunities: number;
+  infrastructureName: string;
+  relatedScheme: string;
+  sampleRequests?: CitizenRequest[];
 }
 
 interface CommunityIssuesViewProps {
@@ -50,118 +40,106 @@ interface CommunityIssuesViewProps {
 export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
   {
     id: 'ISSUE-WAT-001',
-    title: '3-Day Pipeline Failure & Severe Drinking Water Outage',
+    rank: '01',
+    title: 'Water access deficit & pipeline pressure collapse',
     category: 'Water',
-    location: 'Gaya, Bihar (Tadepalle & Ward 9)',
-    districtId: 'dist-01',
-    requestCount: 1842,
-    affectedCommunitiesCount: 12,
-    languagesRepresented: ['Telugu', 'Hindi', 'English'],
-    trendLabel: '↑ 37% over 2 weeks',
-    severityScore: 9,
-    confidencePct: 96,
-    relatedInfrastructureName: 'Overhead Water Tank & Pumping Station #3',
-    relatedInfrastructureCondition: 'Critical (34% leakage)',
-    relatedInvestmentInr: 390000000,
-    relatedSchemeName: 'Jal Jeevan Mission (JJM)',
-    aiVerified: true,
-    sampleRequests: []
+    location: 'Guntur, Andhra Pradesh',
+    districtId: 'guntur',
+    requestCount: 742,
+    trend: '+22% this month',
+    severity: 'Critical',
+    affectedCommunities: 14,
+    infrastructureName: 'Overhead Tank & Trunk Feeder #4',
+    relatedScheme: 'Jal Jeevan Mission (JJM)',
   },
   {
     id: 'ISSUE-RD-002',
-    title: 'Arterial Corridor Potholes & Emergency Access Delays',
+    rank: '02',
+    title: 'Arterial hospital access corridor craters & washouts',
     category: 'Roads',
-    location: 'Pune & Solapur Corridor MDR-44',
-    districtId: 'dist-04',
-    requestCount: 684,
-    affectedCommunitiesCount: 8,
-    languagesRepresented: ['Marathi', 'Hindi'],
-    trendLabel: '↑ 21% post-monsoon',
-    severityScore: 8,
-    confidencePct: 94,
-    relatedInfrastructureName: 'MDR-44 Arterial Hospital Access Road',
-    relatedInfrastructureCondition: 'Damaged (48 major craters)',
-    relatedInvestmentInr: 250000000,
-    relatedSchemeName: 'PMGSY Rural Roads',
-    aiVerified: true,
-    sampleRequests: []
+    location: 'Patna, Bihar',
+    districtId: 'dist-01',
+    requestCount: 512,
+    trend: '+18% this month',
+    severity: 'High',
+    affectedCommunities: 9,
+    infrastructureName: 'MDR-44 Arterial Hospital Road',
+    relatedScheme: 'PMGSY Rural Connectivity',
   },
   {
     id: 'ISSUE-HC-003',
-    title: 'Primary Health Centre Staff Absentees & Solar Power Outages',
+    rank: '03',
+    title: 'Primary health sub-centre staffing & drug shortages',
     category: 'Health',
-    location: 'Ranchi & Mylavaram Sub-Centre',
-    districtId: 'dist-03',
-    requestCount: 315,
-    affectedCommunitiesCount: 6,
-    languagesRepresented: ['Hindi', 'English'],
-    trendLabel: '↑ 16% over 1 month',
-    severityScore: 8,
-    confidencePct: 91,
-    relatedInfrastructureName: 'Mylavaram Sub-Centre Hospital',
-    relatedInfrastructureCondition: 'Critical (Doctor absent 4 days/wk)',
-    relatedInvestmentInr: 120000000,
-    relatedSchemeName: 'National Health Mission (NHM)',
-    aiVerified: true,
-    sampleRequests: []
-  }
+    location: 'Nashik, Maharashtra',
+    districtId: 'dist-04',
+    requestCount: 389,
+    trend: '+15% this month',
+    severity: 'High',
+    affectedCommunities: 7,
+    infrastructureName: 'Rural PHC & Maternity Wing',
+    relatedScheme: 'National Health Mission (NHM)',
+  },
+  {
+    id: 'ISSUE-POW-004',
+    rank: '04',
+    title: 'Agricultural power transformer breakdown cycle',
+    category: 'Electricity',
+    location: 'Gaya, Bihar',
+    districtId: 'dist-01',
+    requestCount: 294,
+    trend: '+29% this month',
+    severity: 'Moderate',
+    affectedCommunities: 11,
+    infrastructureName: 'Sub-station 33/11kV Distribution Grid',
+    relatedScheme: 'Revamped Distribution Sector Scheme',
+  },
+  {
+    id: 'ISSUE-SAN-005',
+    rank: '05',
+    title: 'Stormwater culvert siltation & open drainage overflow',
+    category: 'Drainage',
+    location: 'Solapur, Maharashtra',
+    districtId: 'dist-04',
+    requestCount: 218,
+    trend: '+11% this month',
+    severity: 'Moderate',
+    affectedCommunities: 5,
+    infrastructureName: 'Municipal South Drain Trunk',
+    relatedScheme: 'Swachh Bharat Mission (Urban)',
+  },
 ];
 
 export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   requests,
   governmentProjects,
-  onNavigateToRecommendations
+  onNavigateToRecommendations,
 }) => {
   const [issuesList, setIssuesList] = useState<CommunityIssue[]>(INITIAL_COMMUNITY_ISSUES);
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeModalIssue, setActiveModalIssue] = useState<CommunityIssue | null>(null);
-  const [modalMode, setModalMode] = useState<'evidence' | 'requests' | 'merge' | 'split' | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
+  const [activeIssueModal, setActiveIssueModal] = useState<CommunityIssue | null>(null);
 
-  // Dynamically ingest citizen requests into community issues aggregation
+  // Ingest custom citizen requests dynamically into issues list
   useEffect(() => {
-    const customRequests = requests.filter(r => r.id.startsWith('CP-2026-'));
-    if (customRequests.length > 0) {
+    const custom = requests.filter(r => r.id.startsWith('CP-2026-'));
+    if (custom.length > 0) {
       setIssuesList(prev => {
         const updated = [...prev];
-        customRequests.forEach(req => {
+        custom.forEach(req => {
           const matchIdx = updated.findIndex(iss => 
             iss.category === req.category && 
-            (iss.location.toLowerCase().includes(req.location.toLowerCase()) || req.location.toLowerCase().includes(iss.districtId))
+            iss.location.toLowerCase().includes(req.location.toLowerCase().split(',')[0].trim())
           );
           if (matchIdx >= 0) {
-            const existing = updated[matchIdx];
-            const alreadyHas = existing.sampleRequests?.some(sr => sr.id === req.id);
-            if (!alreadyHas) {
+            const cur = updated[matchIdx];
+            const already = cur.sampleRequests?.some(sr => sr.id === req.id);
+            if (!already) {
               updated[matchIdx] = {
-                ...existing,
-                requestCount: existing.requestCount + 1,
-                sampleRequests: [req, ...(existing.sampleRequests || [])],
-                languagesRepresented: Array.from(new Set([...existing.languagesRepresented, req.language]))
+                ...cur,
+                requestCount: cur.requestCount + 1,
+                sampleRequests: [req, ...(cur.sampleRequests || [])],
               };
-            }
-          } else {
-            const existsInList = updated.some(iss => iss.id === `ISSUE-LIVE-${req.id}`);
-            if (!existsInList) {
-              updated.unshift({
-                id: `ISSUE-LIVE-${req.id}`,
-                title: req.summary_en || `${req.category} Outage in ${req.location}`,
-                category: req.category,
-                location: `${req.location} (Emergent Cluster)`,
-                districtId: req.location.toLowerCase().includes('vijayawada') ? 'dist-01' : req.location.toLowerCase().includes('guntur') ? 'dist-02' : 'dist-03',
-                requestCount: 1,
-                affectedCommunitiesCount: 1,
-                languagesRepresented: [req.language],
-                trendLabel: '⚡ Just Ingested (Live Signal)',
-                severityScore: req.severity || 8,
-                confidencePct: 96,
-                relatedInfrastructureName: `${req.category} Distribution Network`,
-                relatedInfrastructureCondition: 'Citizen grievance intake verified',
-                relatedInvestmentInr: 5000000,
-                relatedSchemeName: 'State Municipal Infrastructure Fund',
-                aiVerified: true,
-                sampleRequests: [req]
-              });
             }
           }
         });
@@ -170,159 +148,111 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
     }
   }, [requests]);
 
-  const filteredIssues = issuesList.filter(issue => {
-    const matchesCategory = selectedCategory === 'ALL' || issue.category === selectedCategory;
-    const matchesSearch = 
-      issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      issue.relatedInfrastructureName.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredIssues = useMemo(() => {
+    return issuesList.filter(iss => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch = !q || 
+        iss.title.toLowerCase().includes(q) ||
+        iss.location.toLowerCase().includes(q) ||
+        iss.category.toLowerCase().includes(q);
 
-  const handleVerifyAI = (issueId: string) => {
-    setIssuesList(prev => prev.map(item => {
-      if (item.id === issueId) {
-        return { ...item, aiVerified: !item.aiVerified };
-      }
-      return item;
-    }));
-  };
+      const matchesCat = selectedCategory === 'ALL' || iss.category === selectedCategory;
+      return matchesSearch && matchesCat;
+    });
+  }, [issuesList, searchQuery, selectedCategory]);
 
   return (
-    <div className="space-y-8 font-sans text-[#171717] pb-12 max-w-7xl mx-auto">
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#171717]/20 pb-6">
+    <div className="space-y-10 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+      
+      {/* 1. PAGE HEADER & AGGREGATION EXPLANATION */}
+      <div className="space-y-6 border-b border-[#171717]/10 pb-8">
         <div>
-          <div className="flex items-center space-x-2 text-xs font-mono font-bold mb-2">
-            <span className="px-2 py-0.5 bg-[#D65A3A] text-white uppercase text-[10px]">
-              DIGITAL PUBLIC GOODS × CIVIC INTELLIGENCE
-            </span>
-            <span className="text-[#171717]/40">•</span>
-            <span className="text-[#171717]/70 uppercase text-[10px]">
-              Built for India. Designed to scale across public systems.
-            </span>
-          </div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            Community Issues
+            Community issues
           </h1>
-          <p className="text-sm font-sans text-[#171717]/80 mt-1">
-            <span className="font-bold text-[#171717]">2,841 citizen requests</span> have been grouped into <span className="font-bold text-[#171717]">327 community issues</span>.
+          <p className="text-sm sm:text-base text-[#57534E] mt-1 max-w-2xl leading-relaxed">
+            Individual reports become meaningful when many people describe the same underlying problem.
           </p>
         </div>
 
-        {onNavigateToRecommendations && (
-          <button
-            onClick={onNavigateToRecommendations}
-            className="px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-sans font-bold text-xs rounded transition-colors shadow-[2px_2px_0px_#171717] border border-[#171717] flex items-center gap-2 cursor-pointer shrink-0"
-          >
-            <span>View Recommendations</span>
-            <ArrowRight className="w-4 h-4" />
-          </button>
-        )}
-      </div>
+        {/* Simple visual flow: 2,841 requests -> 327 community issues -> 42 priority hotspots */}
+        <div className="bg-white border border-[#171717]/15 p-5 rounded-sm shadow-xs">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+            {/* Step 1 */}
+            <div className="flex-1">
+              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#171717] block">
+                {requests.length.toLocaleString()}
+              </span>
+              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
+                individual requests
+              </span>
+              <span className="text-[11px] text-[#78716C] block">
+                Raw citizen voice & text notes
+              </span>
+            </div>
 
-      {/* 3-Step Aggregation Funnel Banner */}
-      <div className="bg-slate-50 border border-slate-200 rounded-xl p-5 shadow-xs">
-        <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider block mb-3">
-          Signal Aggregation Funnel
-        </span>
+            <div className="text-[#78716C] px-2 shrink-0">
+              <span className="hidden sm:inline text-lg font-mono">→</span>
+              <ArrowDown className="sm:hidden w-4 h-4 text-[#78716C] my-1" />
+            </div>
 
-        <div className="flex flex-col md:flex-row items-center justify-between gap-4 font-sans text-slate-900">
-          <div className="flex-1 w-full bg-white border border-slate-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
-            <span className="text-3xl font-bold font-mono text-slate-900 block">2,841</span>
-            <span className="text-xs font-medium text-slate-600 mt-0.5 block">Citizen requests</span>
-          </div>
+            {/* Step 2 */}
+            <div className="flex-1">
+              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#D65A3A] block">
+                327
+              </span>
+              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
+                community issues
+              </span>
+              <span className="text-[11px] text-[#78716C] block">
+                Clustered by locality & failure type
+              </span>
+            </div>
 
-          <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block shrink-0" />
+            <div className="text-[#78716C] px-2 shrink-0">
+              <span className="hidden sm:inline text-lg font-mono">→</span>
+              <ArrowDown className="sm:hidden w-4 h-4 text-[#78716C] my-1" />
+            </div>
 
-          <div className="flex-1 w-full bg-blue-50/80 border border-blue-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
-            <span className="text-3xl font-bold font-mono text-blue-900 block">327</span>
-            <span className="text-xs font-semibold text-blue-800 mt-0.5 block">Community issues</span>
-          </div>
-
-          <ArrowRight className="w-5 h-5 text-slate-400 hidden md:block shrink-0" />
-
-          <div className="flex-1 w-full bg-red-50/80 border border-red-200 rounded-lg p-4 shadow-2xs text-center md:text-left">
-            <span className="text-3xl font-bold font-mono text-red-900 block">42</span>
-            <span className="text-xs font-semibold text-red-800 mt-0.5 block">Priority hotspots</span>
+            {/* Step 3 */}
+            <div className="flex-1">
+              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#171717] block">
+                42
+              </span>
+              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
+                priority hotspots
+              </span>
+              <span className="text-[11px] text-[#78716C] block">
+                Cross-referenced with asset audits
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Top Emerging Issues Summary Cards */}
-      <div className="space-y-3">
-        <h2 className="text-base font-bold text-slate-900">
-          Top Emerging Issues
-        </h2>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-sans">
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
-            <div className="flex items-center justify-between text-slate-700">
-              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
-                💧 Water supply
-              </span>
-              <span className="font-mono text-red-600 font-bold bg-red-50 px-2 py-0.5 rounded border border-red-200">
-                ↑ 37%
-              </span>
-            </div>
-            <p className="text-slate-600 font-mono text-[11px]">
-              1,842 requests · 12 villages
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
-            <div className="flex items-center justify-between text-slate-700">
-              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
-                🛣️ Road accessibility
-              </span>
-              <span className="font-mono text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                ↑ 21%
-              </span>
-            </div>
-            <p className="text-slate-600 font-mono text-[11px]">
-              684 requests · 8 villages
-            </p>
-          </div>
-
-          <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-xs space-y-2">
-            <div className="flex items-center justify-between text-slate-700">
-              <span className="font-bold flex items-center gap-1.5 text-slate-900 text-sm">
-                🏥 Healthcare access
-              </span>
-              <span className="font-mono text-amber-600 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-                ↑ 16%
-              </span>
-            </div>
-            <p className="text-slate-600 font-mono text-[11px]">
-              315 requests · 6 villages
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white border border-slate-200 p-3 rounded-xl shadow-xs text-xs">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+      {/* 2. SEARCH & CONTROLS */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search issue title, location, or facility..."
-            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-900 focus:outline-none focus:bg-white focus:border-blue-500"
+            placeholder="Filter community issues by location, title or keyword..."
+            className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
           />
         </div>
 
-        <div className="flex items-center space-x-2">
-          <span className="text-slate-500 font-medium">Filter sector:</span>
-          {['ALL', 'Water', 'Roads', 'Health'].map((cat) => (
+        <div className="flex items-center space-x-2 text-xs">
+          <span className="text-[#78716C] text-[11px]">Sector:</span>
+          {['ALL', 'Water', 'Roads', 'Health', 'Electricity'].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1 rounded-md transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs ${
                 selectedCategory === cat
-                  ? 'bg-slate-900 text-white font-semibold'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-[#171717] text-white font-medium'
+                  : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
               }`}
             >
               {cat}
@@ -331,222 +261,154 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
         </div>
       </div>
 
-      {/* Issues List */}
-      <div className="space-y-4">
+      {/* 3. CLEAN RANKED LIST */}
+      <div className="space-y-3">
         {filteredIssues.map((issue) => (
-          <div key={issue.id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4 hover:border-slate-300 transition-colors">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
-              <div>
-                <div className="flex items-center space-x-2 text-xs font-mono mb-1">
-                  <span className="bg-slate-100 text-slate-700 font-semibold px-2 py-0.5 rounded border border-slate-200">
-                    {issue.id}
-                  </span>
-                  <span className="font-semibold text-blue-700">
+          <div
+            key={issue.id}
+            className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 rounded-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+          >
+            <div className="flex items-start space-x-4">
+              <span className="font-mono text-base font-bold text-[#78716C] shrink-0 pt-0.5">
+                {issue.rank}
+              </span>
+
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
                     {issue.category}
                   </span>
-                  <span className="text-slate-400">•</span>
-                  <span className="text-slate-600 font-sans">{issue.location}</span>
+                  <span className="text-[#171717]/30 text-xs">·</span>
+                  <span className="text-xs font-medium text-[#57534E]">
+                    {issue.location}
+                  </span>
                 </div>
-                <h3 className="text-base font-bold text-slate-900">
+
+                <h3 className="text-base font-serif font-bold text-[#171717]">
                   {issue.title}
                 </h3>
-              </div>
 
-              <div className="flex items-center space-x-2 text-xs font-mono shrink-0">
-                <button
-                  onClick={() => handleVerifyAI(issue.id)}
-                  className={`px-2.5 py-1 rounded font-semibold border transition-colors cursor-pointer ${
-                    issue.aiVerified 
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100'
-                      : 'bg-amber-50 text-amber-800 border-amber-200'
-                  }`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 inline mr-1 text-emerald-600" />
-                  <span>{issue.aiVerified ? 'AI Verified' : 'Unverified'}</span>
-                </button>
-
-                <span className={`px-2.5 py-1 rounded font-bold ${
-                  issue.severityScore >= 8 ? 'bg-red-50 text-red-700 border border-red-200' : 'bg-amber-50 text-amber-700 border border-amber-200'
-                }`}>
-                  Severity {issue.severityScore}/10
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs bg-slate-50 p-3 rounded-lg border border-slate-200 font-mono">
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-sans block">Citizen Requests</span>
-                <span className="font-bold text-slate-900">{issue.requestCount.toLocaleString()} signals</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-sans block">Communities Affected</span>
-                <span className="font-bold text-slate-900">{issue.affectedCommunitiesCount} villages</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-sans block">Languages</span>
-                <span className="font-medium text-slate-800">{issue.languagesRepresented.join(', ')}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-500 uppercase font-sans block">Velocity Trend</span>
-                <span className="font-bold text-red-600">{issue.trendLabel}</span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs font-sans">
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-500 font-semibold uppercase block">
-                  Related Facility
-                </span>
-                <div className="font-bold text-slate-900">{issue.relatedInfrastructureName}</div>
-                <div className="text-slate-600 font-mono text-[11px]">Condition: {issue.relatedInfrastructureCondition}</div>
-              </div>
-
-              <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                <span className="text-[10px] text-slate-500 font-semibold uppercase block">
-                  Government Investment Context
-                </span>
-                <div className="font-bold text-slate-900">
-                  ₹{(issue.relatedInvestmentInr / 10000000).toFixed(1)} Cr Allocated ({issue.relatedSchemeName})
-                </div>
-                <div className="text-amber-800 font-medium">
-                  High expenditure but zero outage resolution
+                <div className="flex flex-wrap items-center gap-3 text-xs text-[#57534E] pt-0.5">
+                  <span className="font-mono font-semibold text-[#171717]">
+                    {issue.requestCount} related requests
+                  </span>
+                  <span className="text-[#171717]/30">·</span>
+                  <span className={`font-medium ${
+                    issue.severity === 'Critical' ? 'text-[#D65A3A]' : 'text-amber-800'
+                  }`}>
+                    {issue.severity} severity
+                  </span>
+                  <span className="text-[#171717]/30">·</span>
+                  <span className="text-emerald-800 font-mono text-[11px]">
+                    {issue.trend}
+                  </span>
                 </div>
               </div>
             </div>
 
-            <div className="pt-2 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => { setActiveModalIssue(issue); setModalMode('evidence'); }}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded text-[11px] transition-colors cursor-pointer"
-                >
-                  View Evidence
-                </button>
-                <button
-                  onClick={() => { setActiveModalIssue(issue); setModalMode('requests'); }}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold rounded text-[11px] transition-colors cursor-pointer"
-                >
-                  View Requests ({issue.requestCount})
-                </button>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => { setActiveModalIssue(issue); setModalMode('merge'); }}
-                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded text-[11px] transition-colors cursor-pointer"
-                >
-                  Merge Issue
-                </button>
-                <button
-                  onClick={() => { setActiveModalIssue(issue); setModalMode('split'); }}
-                  className="px-3 py-1.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-medium rounded text-[11px] transition-colors cursor-pointer"
-                >
-                  Split Issue
-                </button>
-              </div>
+            <div className="flex items-center space-x-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#171717]/10">
+              <button
+                onClick={() => setActiveIssueModal(issue)}
+                className="px-3.5 py-1.5 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
+              >
+                Explore
+              </button>
             </div>
           </div>
         ))}
       </div>
 
-      {/* Modal Dialog for Evidence / Requests / Merge / Split */}
-      {activeModalIssue && modalMode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="bg-white rounded-xl border border-slate-200 shadow-xl max-w-2xl w-full p-6 space-y-4 font-sans">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+      {/* Detail Modal */}
+      {activeIssueModal && (
+        <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#171717]/20 rounded-sm w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-lg space-y-5 p-6 font-sans">
+            
+            <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
               <div>
-                <span className="text-xs text-blue-600 font-semibold uppercase">
-                  {modalMode === 'evidence' && 'Citizen & Infrastructure Evidence'}
-                  {modalMode === 'requests' && 'Individual Citizen Request Stream'}
-                  {modalMode === 'merge' && 'Merge Duplicate Issues'}
-                  {modalMode === 'split' && 'Split Issue Clusters'}
+                <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
+                  Community Issue Cluster · {activeIssueModal.id}
                 </span>
-                <h3 className="text-base font-bold text-slate-900">{activeModalIssue.title}</h3>
+                <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
+                  {activeIssueModal.title}
+                </h2>
+                <span className="text-xs text-[#57534E] mt-0.5 block">
+                  {activeIssueModal.location}
+                </span>
               </div>
+
               <button
-                onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="text-slate-400 hover:text-slate-700 text-sm font-bold p-1 cursor-pointer"
+                onClick={() => setActiveIssueModal(null)}
+                className="p-1 hover:bg-[#F7F5EF] rounded-xs text-[#78716C] hover:text-[#171717] cursor-pointer"
               >
-                ✕
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3 text-xs max-h-96 overflow-y-auto">
-              {modalMode === 'evidence' && (
-                <div className="space-y-2">
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                    <span className="font-bold text-slate-900">Voice Telephony Evidence</span>
-                    <p className="text-slate-700 italic">"మా గ్రామంలో మూడు రోజులుగా తాగునీటి సరఫరా పూర్తిగా నిలిచిపోయింది..."</p>
-                    <div className="text-[11px] text-slate-500 font-mono">Language: Telugu | Source: Voice Telephony | Confidence: 96%</div>
-                  </div>
-                  <div className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1">
-                    <span className="font-bold text-slate-900">Infrastructure Inspector Telemetry Audit</span>
-                    <p className="text-slate-700">Water Tank #3 main pump impellers rusted; pipeline leakage measured at 34%.</p>
-                  </div>
-                </div>
-              )}
+            <div className="grid grid-cols-3 gap-2 text-xs font-mono">
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                <span className="text-[10px] text-[#78716C] block">Citizen Signals</span>
+                <span className="text-base font-bold text-[#171717]">{activeIssueModal.requestCount}</span>
+              </div>
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                <span className="text-[10px] text-[#78716C] block">Severity</span>
+                <span className="text-base font-bold text-[#D65A3A]">{activeIssueModal.severity}</span>
+              </div>
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                <span className="text-[10px] text-[#78716C] block">Monthly Demand</span>
+                <span className="text-base font-bold text-emerald-800">{activeIssueModal.trend}</span>
+              </div>
+            </div>
 
-              {modalMode === 'requests' && (
-                <div className="space-y-2">
-                  <p className="text-slate-600 font-medium">
-                    Sample citizen signals aggregated into this issue cluster:
-                  </p>
-                  {requests.slice(0, 3).map((req) => (
-                    <div key={req.id} className="p-3 bg-slate-50 rounded-lg border border-slate-200 space-y-1 font-mono">
-                      <div className="flex justify-between font-bold text-blue-900 text-[11px]">
-                        <span>{req.id} • {req.location}</span>
-                        <span>{req.language}</span>
+            <div className="space-y-1 text-xs">
+              <span className="font-semibold text-[#171717] block">Underlying Public Asset:</span>
+              <p className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs text-[#57534E]">
+                {activeIssueModal.infrastructureName} · Aligned with {activeIssueModal.relatedScheme}
+              </p>
+            </div>
+
+            {activeIssueModal.sampleRequests && activeIssueModal.sampleRequests.length > 0 && (
+              <div className="space-y-1.5 text-xs">
+                <span className="font-semibold text-[#171717] block">Recently ingested citizen signals ({activeIssueModal.sampleRequests.length}):</span>
+                <div className="space-y-1 max-h-36 overflow-y-auto">
+                  {activeIssueModal.sampleRequests.map(sr => (
+                    <div key={sr.id} className="p-2.5 bg-white border border-[#171717]/10 rounded-xs text-[11px] text-[#57534E]">
+                      <div className="flex justify-between font-mono text-[10px] text-[#78716C] mb-0.5">
+                        <span>{sr.id}</span>
+                        <span>{sr.location}</span>
                       </div>
-                      <p className="font-sans text-slate-900">{req.summary_en}</p>
+                      <p className="italic">"{sr.summary_en || sr.original_text}"</p>
                     </div>
                   ))}
                 </div>
-              )}
+              </div>
+            )}
 
-              {modalMode === 'merge' && (
-                <div className="space-y-3">
-                  <p className="text-slate-700">
-                    Select another issue to merge with <strong>{activeModalIssue.title}</strong>:
-                  </p>
-                  <div className="p-3 border border-slate-200 bg-slate-50 rounded-lg">
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="checkbox" className="w-4 h-4 text-blue-600 rounded" defaultChecked />
-                      <span className="font-bold text-slate-900">ISSUE-WAT-002: Pipe leakage at Gaya Sector 4</span>
-                    </label>
-                  </div>
-                </div>
-              )}
+            <div className="flex items-center justify-between pt-3 border-t border-[#171717]/10">
+              <button
+                onClick={() => setActiveIssueModal(null)}
+                className="px-3 py-1.5 text-xs text-[#57534E] hover:text-[#171717] cursor-pointer"
+              >
+                Close
+              </button>
 
-              {modalMode === 'split' && (
-                <div className="space-y-3">
-                  <p className="text-slate-700">
-                    Specify parameters to split this cluster into two distinct sub-issues:
-                  </p>
-                  <div className="space-y-1">
-                    <label className="block text-slate-700 font-bold">Sub-Issue 1 Target Location:</label>
-                    <input type="text" defaultValue="Gaya Ward 9" className="w-full p-2 bg-slate-50 border border-slate-200 rounded text-xs" />
-                  </div>
-                </div>
+              {onNavigateToRecommendations && (
+                <button
+                  onClick={() => {
+                    setActiveIssueModal(null);
+                    onNavigateToRecommendations();
+                  }}
+                  className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
+                >
+                  <span>View official recommendation</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 flex justify-end text-xs gap-2">
-              <button
-                onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="px-4 py-2 bg-slate-100 text-slate-700 font-semibold rounded hover:bg-slate-200 cursor-pointer"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => { setActiveModalIssue(null); setModalMode(null); }}
-                className="px-4 py-2 bg-slate-900 text-white font-semibold rounded hover:bg-slate-800 cursor-pointer"
-              >
-                Save Changes
-              </button>
-            </div>
           </div>
         </div>
       )}
+
     </div>
   );
 };

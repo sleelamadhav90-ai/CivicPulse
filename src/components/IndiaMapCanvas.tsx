@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, CircleMarker, Circle, Tooltip, Popup, useMap, ZoomControl, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Tooltip, Popup, useMap, ZoomControl, Polyline } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
-  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info, Flame
+  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info, Flame, Eye, ExternalLink, ShieldAlert
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
@@ -35,6 +35,18 @@ export interface MapLayerState {
   digital: boolean;
 }
 
+export interface ReportEvidence {
+  title: string;
+  tag: string;
+  sub: string;
+  officer: string;
+  department: string;
+  actionDate: string;
+  status: string;
+  reportId: string;
+  signalConfidence: number;
+}
+
 interface IndiaMapCanvasProps {
   evaluations: EvaluatedDistrict[];
   activeDistrictId: string;
@@ -43,74 +55,104 @@ interface IndiaMapCanvasProps {
   layers: MapLayerState;
   onSelectHotspotForPolicy?: (district: District, category: InfrastructureCategory) => void;
   selectedCountryCode?: CountryCode;
+  onOpenEvidenceModal?: (district: District, category: string, hotspot: CityDemandHotspot) => void;
 }
 
 const isValidCoord = (lat?: number, lon?: number): boolean => {
   return typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
 };
 
-const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot) => {
-  const images = {
+export const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot): ReportEvidence => {
+  const reports: Record<string, {
+    title: string;
+    tag: string;
+    sub: string;
+    officer: string;
+    department: string;
+    actionDate: string;
+    status: string;
+    confidence: number;
+  }> = {
     Water: {
-      title: 'Drinking Water Pipeline Fracture & Ingress',
-      tag: '#WaterContamination',
-      sub: 'Main municipal feeder pipe ruptured near crossroad; muddy water entering overhead tanks.',
+      title: 'Deep Aquifer & Feeder Pipe Fracture Assessment',
+      tag: '#WaterSecurityCrisis',
+      sub: 'Main municipal raw water feeder line ruptured near transit junction; contamination ingress reported in 4 peri-urban blocks.',
       officer: 'Er. Rajesh Kumar, Executive Engineer',
+      department: 'Public Health Engineering Department (PHED)',
       actionDate: '28 Aug 2026',
-      status: 'In Sanction Tender'
+      status: 'Emergency Sanction Tender Underway',
+      confidence: 94,
     },
     Drainage: {
-      title: 'Monsoon Stormwater Drain Overflow',
-      tag: '#DrainageBlockage',
-      sub: 'Severe silt accumulation causing 1.5 ft waterlogging across residential streets.',
-      officer: 'Smt. Priya Sharma, Municipal Health Officer',
+      title: 'Monsoon Sump Siltation & Flood Canal Overflow',
+      tag: '#DrainageGridlock',
+      sub: 'Severe stormwater conduit siltation causing 1.5 ft toxic backflow across residential mandal corridors.',
+      officer: 'Smt. Priya Sharma, Chief Municipal Health Officer',
+      department: 'Urban Development & Stormwater Authority',
       actionDate: '29 Aug 2026',
-      status: 'Desilting Sanctioned'
+      status: 'Special Desilting Sanctioned',
+      confidence: 91,
     },
     Roads: {
-      title: 'Heavy Arterial Pothole Grid Failure',
-      tag: '#RoadSafetyDeficit',
-      sub: 'Multiple deep craters along 4.2 km main transit corridor impeding bus connectivity.',
+      title: 'Heavy Freight Corridor Subsidence & Arterial Craters',
+      tag: '#ArterialTransitDeficit',
+      sub: 'Multiple deep pavement fissures and structural culvert cracking along 6.4 km agricultural transit artery.',
       officer: 'K. Venkatesh, Superintending Engineer (R&B)',
+      department: 'Roads & Buildings / National Highway Cell',
       actionDate: '26 Aug 2026',
-      status: 'Work Order Issued'
+      status: 'Pavement Work Order Fast-Tracked',
+      confidence: 96,
     },
     Electricity: {
-      title: 'Substation Voltage Drop & Streetlight Outage',
-      tag: '#GridReliability',
-      sub: '14 consecutive street poles dark for 3 weeks creating severe nighttime hazard.',
-      officer: 'T. N. Murthy, ADE (APSPDCL)',
+      title: 'Substation Transformer Overload & Feeder Tripping',
+      tag: '#GridReliabilityRisk',
+      sub: 'Burnt 250 kVA distribution transformers causing prolonged brownouts and high-voltage motor burnout for agricultural wells.',
+      officer: 'T. N. Murthy, Assistant Divisional Engineer',
+      department: 'State Power Distribution Corporation',
       actionDate: '27 Aug 2026',
-      status: 'Under AI Prioritization'
+      status: 'Feeder Segregation Scheduled',
+      confidence: 89,
     },
     Health: {
-      title: 'Primary Health Clinic Staff & Bed Deficit',
-      tag: '#PrimaryHealthAccess',
-      sub: 'Single doctor handling 180+ outpatients daily without functioning diagnostics.',
-      officer: 'Dr. Anita Desai, DMHO',
+      title: 'Primary Health Center Emergency & Obstetrics Deficit',
+      tag: '#RuralHealthAccessDeficit',
+      sub: 'Single medical officer servicing 220+ outpatients daily; anti-snake venom and emergency pediatric diagnostics depleted.',
+      officer: 'Dr. Anita Desai, District Medical & Health Officer',
+      department: 'Directorate of Health Services',
       actionDate: '25 Aug 2026',
-      status: 'Policy Lab Review'
+      status: 'Medical Board Emergency Supply Dispatched',
+      confidence: 95,
+    },
+    Sanitation: {
+      title: 'Municipal Solid Waste Accumulation & Open Drain Hazard',
+      tag: '#SanitationVectorAlert',
+      sub: 'Uncollected refuse clogging peri-urban open storm channels, generating high vector breeding indices before monsoons.',
+      officer: 'S. K. Verma, Sanitation Commissioner',
+      department: 'Municipal Corporation Sanitation Wing',
+      actionDate: '24 Aug 2026',
+      status: 'Intensive Cleanup Drive Initiated',
+      confidence: 90,
     },
   };
 
-  const defaultEvidence = images[category as keyof typeof images] || images.Water;
+  const defaultEvidence = reports[category] || reports.Water;
   const safeLatVal = isValidCoord(district.lat, district.lon) ? district.lat : 16.5;
+  const code = (district.name || 'IND').substring(0, 3).toUpperCase();
+  const idNum = Math.floor(1000 + (Math.abs(safeLatVal) * 137) % 8999);
+
   return {
     ...defaultEvidence,
-    reportId: `CP-${district.name.substring(0, 3).toUpperCase()}-${Math.floor(1000 + (Math.abs(safeLatVal) * 100) % 9000)}`,
-    reporter: 'CivicPulse Citizen Network',
-    timestamp: 'Today, 02:34 PM',
-    commentsCount: Math.max(4, Math.round(hotspot.totalCitizenRequests / 450)),
-    upvotes: Math.max(120, Math.round(hotspot.totalCitizenRequests * 1.8)),
+    reportId: `CP-${code}-${idNum}`,
+    signalConfidence: defaultEvidence.confidence,
   };
 };
 
-// Component to dynamically pan and zoom smoothly to active district
-const MapController = ({ center, zoom }: { center: [number, number], zoom: number }) => {
+// Smoothly pans the map when selected district changes
+const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (Array.isArray(center) && center.length === 2 && isValidCoord(center[0], center[1])) {
-      map.flyTo(center, zoom, { animate: true, duration: 1.2 });
+    if (isValidCoord(center[0], center[1])) {
+      map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
     }
   }, [center, zoom, map]);
   return null;
@@ -124,6 +166,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   layers,
   onSelectHotspotForPolicy,
   selectedCountryCode = 'IN',
+  onOpenEvidenceModal,
 }) => {
   const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'vector_voyager'>('physical_satellite');
   const [showMapSources, setShowMapSources] = useState(false);
@@ -134,30 +177,42 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
   }, [evaluations]);
 
-  const activeEvaluation = useMemo(() => {
-    return validEvaluations.find(e => e.district.id === activeDistrictId);
-  }, [validEvaluations, activeDistrictId]);
+  // CRITICAL REALISM FILTER:
+  // When a category is filtered, ONLY display hotspots that have genuine demand/issues in that category!
+  const displayedEvaluations = useMemo(() => {
+    if (selectedCategory === 'All') {
+      return validEvaluations;
+    }
+    const filtered = validEvaluations.filter((item) => item.demandHotspot.hasCategorySignal);
+    // If none match strictly, fallback to top 5 by priority to avoid empty map
+    return filtered.length > 0 ? filtered : validEvaluations.slice(0, 6);
+  }, [validEvaluations, selectedCategory]);
 
-  // Calculate map center based on active district, first valid evaluation, or country center coordinates
+  const activeEvaluation = useMemo(() => {
+    return displayedEvaluations.find(e => e.district.id === activeDistrictId) || 
+           validEvaluations.find(e => e.district.id === activeDistrictId) || 
+           displayedEvaluations[0];
+  }, [displayedEvaluations, validEvaluations, activeDistrictId]);
+
+  // Calculate map center based on active district, first displayed evaluation, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
     if (activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon)) {
       return [activeEvaluation.district.lat, activeEvaluation.district.lon];
     }
-    const validEval = validEvaluations[0];
-    if (validEval) {
-      return [validEval.district.lat, validEval.district.lon];
+    const firstEval = displayedEvaluations[0];
+    if (firstEval) {
+      return [firstEval.district.lat, firstEval.district.lon];
     }
     if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
       return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
     }
     return [20.5937, 78.9629];
-  }, [activeEvaluation, validEvaluations, countryConfig]);
+  }, [activeEvaluation, displayedEvaluations, countryConfig]);
 
   const defaultZoom = countryConfig?.coordinates?.zoom || 5;
-  // Smoothly zoom in closer to inspect when a district is selected
   const targetZoom = activeDistrictId ? 8 : defaultZoom;
 
-  // Clean, modern CivicPulse pin icon creation
+  // Clean, institutional CivicPulse marker creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
     let iconSymbol = '📍';
     let bg = '#171717';
@@ -171,16 +226,19 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     } else if (score >= 40) {
       bg = '#D9A441'; // Medium Priority Amber
     } else {
-      bg = '#285943'; // Emerging Priority Green
+      bg = '#285943'; // Emerging Priority Forest Green
     }
 
     if (category === 'Water') iconSymbol = '💧';
     else if (category === 'Drainage') iconSymbol = '🌊';
     else if (category === 'Roads') iconSymbol = '🛣️';
     else if (category === 'Electricity') iconSymbol = '⚡';
+    else if (category === 'Health') iconSymbol = '🏥';
+    else if (category === 'Sanitation') iconSymbol = '🧹';
 
-    const size = isSelected ? 32 : 24;
-    const ringSize = isSelected ? 44 : 0;
+    // Size proportional to priority density: 20px (emerging), 24px (medium), 28px (high), 34px (selected)
+    const size = isSelected ? 34 : (score >= 70 ? 28 : score >= 40 ? 24 : 20);
+    const pulseRing = isSelected ? 46 : 0;
 
     return L.divIcon({
       className: 'bg-transparent border-none',
@@ -189,12 +247,12 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           ${isSelected ? `
             <div style="
               position: absolute;
-              width: ${ringSize}px;
-              height: ${ringSize}px;
+              width: ${pulseRing}px;
+              height: ${pulseRing}px;
               border-radius: 50%;
               border: 2px solid #ffffff;
               background: ${bg}33;
-              animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+              animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
             "></div>
           ` : ''}
           <div style="
@@ -207,10 +265,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             border-radius: 50%;
             background-color: ${bg};
             border: 2px solid #ffffff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(0,0,0,0.3);
-            font-size: ${isSelected ? '14px' : '11px'};
+            box-shadow: 0 3px 10px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.25);
+            font-size: ${isSelected ? '14px' : score >= 70 ? '12px' : '10px'};
             color: #ffffff;
-            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
             transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
             cursor: pointer;
             z-index: ${isSelected ? 50 : 10};
@@ -226,29 +284,26 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   };
 
   return (
-    <div className="w-full h-full relative z-0 bg-[#121417] overflow-hidden" style={{ minHeight: '520px' }}>
-      {/* 1. BREADCRUMB & CONTEXTUAL BADGE OVERLAY (TOP-LEFT) */}
+    <div className="w-full h-full relative z-0 bg-[#121417] overflow-hidden">
+      
+      {/* 1. BREADCRUMB & REGIONAL BADGE (TOP-LEFT) */}
       <div className="absolute top-3 left-3 z-20 bg-[#171717]/85 border border-white/20 px-3 py-1.5 shadow-md backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] text-white rounded-lg">
         <span className="text-xs">🇮🇳</span>
         <span className="font-bold tracking-wider uppercase">INDIA</span>
         <span className="text-white/40">/</span>
         <span className="font-semibold text-[#D65A3A] uppercase">
-          {activeEvaluation?.district.state || 'NATIONAL MONITOR'}
+          {activeEvaluation?.district.state || 'NATIONAL GIS'}
         </span>
         {activeEvaluation && (
           <>
             <span className="text-white/40">/</span>
-            <span className="font-bold uppercase text-white underline decoration-[#D65A3A] decoration-2">
-              {activeEvaluation.district.name}
-            </span>
+            <span className="font-bold text-white uppercase">{activeEvaluation.district.name}</span>
           </>
         )}
-      </div>
-
-      {/* DATA STATUS INDICATOR (TOP-CENTER) */}
-      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 hidden md:flex items-center gap-1.5 bg-[#171717]/90 text-white border border-white/20 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-widest rounded-lg shadow-md backdrop-blur-md">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-        <span>CITIZEN SIGNALS · REAL-TIME PRIORITY</span>
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1"></span>
+        <span className="text-[10px] text-gray-300 font-sans">
+          {displayedEvaluations.length} Active Hotspots
+        </span>
       </div>
 
       {/* 2. FLOATING MAP TILE STYLE SELECTOR (TOP-RIGHT) */}
@@ -357,7 +412,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
               attribution='&copy; Esri'
               maxZoom={19}
-              opacity={0.65}
+              opacity={0.7}
             />
           </>
         ) : (
@@ -368,50 +423,24 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           />
         )}
 
-        {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY */}
-        {activeEvaluation && (
+        {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY — NO HUGE OVERLAPPING CIRCLES */}
+        {activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon) && (
           <Circle
             center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
-            radius={9500}
+            radius={11000}
             pathOptions={{
               color: '#D65A3A',
-              weight: 1.5,
+              weight: 2,
               opacity: 0.9,
               fillColor: '#D65A3A',
               fillOpacity: 0.12,
+              dashArray: '4, 4',
             }}
             interactive={false}
           />
         )}
 
-        {/* 1. SUBTLE TRANSLUCENT PRIORITY ZONES WITH CLEAR OUTLINES */}
-        {validEvaluations.map((item) => {
-          const isSelected = item.district.id === activeDistrictId;
-          const score = item.breakdown.total_score;
-          // Priority tier styling: High (Red/Orange), Medium (Amber), Low (Forest Green)
-          const zoneColor = score >= 70 ? '#D65A3A' : score >= 40 ? '#D9A441' : '#285943';
-          const zoneRadius = isSelected ? 22 : (score >= 70 ? 18 : score >= 40 ? 14 : 11);
-          const zoneOpacity = isSelected ? 0.35 : (score >= 70 ? 0.25 : score >= 40 ? 0.20 : 0.15);
-
-          return (
-            <CircleMarker
-              key={`zone-${item.district.id}`}
-              center={[item.district.lat, item.district.lon]}
-              radius={zoneRadius}
-              pathOptions={{
-                fillColor: zoneColor,
-                fillOpacity: zoneOpacity,
-                stroke: true,
-                color: zoneColor,
-                weight: 1.5,
-                opacity: 0.85,
-              }}
-              interactive={false}
-            />
-          );
-        })}
-
-        {/* 2. REGIONAL CONNECTIVITY NETWORK (WHEN ROADS LAYER ENABLED) */}
+        {/* REGIONAL CONNECTIVITY NETWORK (WHEN ROADS LAYER ENABLED) */}
         {layers.roads && (
           <>
             <Polyline
@@ -434,16 +463,17 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           </>
         )}
 
-        {/* 3. CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
-        {layers.citizen_demand && validEvaluations.map((item) => {
+        {/* CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
+        {layers.citizen_demand && displayedEvaluations.map((item) => {
           const isSelected = item.district.id === activeDistrictId;
           const evidence = getReportEvidence(item.district, item.category, item.demandHotspot);
+          const score = item.breakdown.total_score;
 
           return (
             <Marker
               key={`demand-${item.district.id}`}
               position={[item.district.lat, item.district.lon]}
-              icon={createAtlasIcon(item.category, isSelected, 'demand', item.breakdown.total_score)}
+              icon={createAtlasIcon(item.category, isSelected, 'demand', score)}
               eventHandlers={{
                 click: () => onSelectDistrict(item.district.id),
               }}
@@ -453,17 +483,18 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                   <div className="flex justify-between items-center gap-3">
                     <span className="font-bold text-sm text-white">{item.district.name}</span>
                     <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase rounded ${
-                      item.breakdown.total_score >= 70 ? 'bg-[#D65A3A] text-white' : item.breakdown.total_score >= 40 ? 'bg-[#D9A441] text-black' : 'bg-[#285943] text-white'
+                      score >= 70 ? 'bg-[#D65A3A] text-white' : score >= 40 ? 'bg-[#D9A441] text-black' : 'bg-[#285943] text-white'
                     }`}>
-                      {item.breakdown.total_score >= 70 ? 'High' : item.breakdown.total_score >= 40 ? 'Medium' : 'Emerging'}
+                      {score >= 70 ? 'High' : score >= 40 ? 'Medium' : 'Emerging'}
                     </span>
                   </div>
                   <div className="text-[11px] text-gray-300 flex items-center justify-between gap-4">
-                    <span>Score: <strong className="text-white">{item.breakdown.total_score}/100</strong></span>
+                    <span>Priority: <strong className="text-white">{score}/100</strong></span>
                     <span>Signals: <strong className="text-white">{item.demandCount}</strong></span>
                   </div>
-                  <div className="text-[10px] text-gray-400 border-t border-white/10 pt-1">
-                    {item.category} • Click to inspect
+                  <div className="text-[10px] text-gray-400 border-t border-white/10 pt-1 flex items-center justify-between">
+                    <span>{item.category}</span>
+                    <span className="text-[#D65A3A]">Click to inspect →</span>
                   </div>
                 </div>
               </Tooltip>
@@ -473,7 +504,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                   <div className="p-4 space-y-3 font-mono">
                     <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
                       <span className="text-xs font-bold text-[#D65A3A] uppercase tracking-wider">
-                        {item.district.name} • GAZETTE
+                        {item.district.name} • {item.district.state}
                       </span>
                       <span className="text-[10px] bg-[#171717] text-white px-2 py-0.5">
                         {evidence.reportId}
@@ -481,32 +512,46 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                     </div>
 
                     <div className="text-xs bg-white p-2.5 border border-[#171717]/20 space-y-1">
-                      <div className="text-[10px] text-[#171717]/60 uppercase">Issue Summary:</div>
+                      <div className="text-[10px] text-[#171717]/60 uppercase">Field Assessment:</div>
                       <div className="font-sans text-[#171717] font-semibold">"{evidence.sub}"</div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div className="bg-[#F7F5EF] p-2 border border-[#171717]/20">
-                        <span className="text-[#171717]/60 block">DEMAND:</span>
+                        <span className="text-[#171717]/60 block">CITIZEN DEMAND:</span>
                         <span className="font-bold text-[#D65A3A]">{item.demandCount} Requests</span>
                       </div>
                       <div className="bg-[#F7F5EF] p-2 border border-[#171717]/20">
-                        <span className="text-[#171717]/60 block">PRIORITY:</span>
-                        <span className="font-bold text-[#171717]">{item.breakdown.total_score} / 100</span>
+                        <span className="text-[#171717]/60 block">PRIORITY SCORE:</span>
+                        <span className="font-bold text-[#171717]">{score} / 100</span>
                       </div>
                     </div>
 
-                    {onSelectHotspotForPolicy && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectHotspotForPolicy(item.district, item.category);
-                        }}
-                        className="w-full bg-[#171717] hover:bg-[#D65A3A] text-white py-2 text-xs font-mono font-bold uppercase tracking-widest transition-colors cursor-pointer border border-[#171717]"
-                      >
-                        Draft Policy Brief →
-                      </button>
-                    )}
+                    <div className="flex items-center gap-2 pt-1">
+                      {onOpenEvidenceModal && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onOpenEvidenceModal(item.district, item.category, item.demandHotspot);
+                          }}
+                          className="flex-1 bg-white hover:bg-stone-100 text-[#171717] py-2 text-xs font-mono font-bold uppercase transition-colors border border-[#171717] flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Evidence</span>
+                        </button>
+                      )}
+                      {onSelectHotspotForPolicy && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onSelectHotspotForPolicy(item.district, item.category);
+                          }}
+                          className="flex-1 bg-[#171717] hover:bg-[#D65A3A] text-white py-2 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer border border-[#171717] flex items-center justify-center gap-1"
+                        >
+                          <span>Policy Brief →</span>
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               </Popup>
@@ -514,8 +559,8 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           );
         })}
 
-        {/* 4. HEALTHCARE CLINICS LAYER */}
-        {layers.healthcare && validEvaluations.map((item) => (
+        {/* HEALTHCARE CLINICS LAYER */}
+        {layers.healthcare && displayedEvaluations.map((item) => (
           <Marker
             key={`hc-${item.district.id}`}
             position={[item.district.lat + 0.04, item.district.lon - 0.04]}
@@ -527,41 +572,41 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           </Marker>
         ))}
 
-        {/* 5. EDUCATION INSTITUTIONS LAYER */}
-        {layers.education && validEvaluations.map((item) => (
+        {/* EDUCATION INSTITUTIONS LAYER */}
+        {layers.education && displayedEvaluations.map((item) => (
           <Marker
             key={`edu-${item.district.id}`}
             position={[item.district.lat - 0.04, item.district.lon + 0.04]}
             icon={createAtlasIcon('Education', false, 'education')}
           >
             <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>🎓 {item.district.name} Govt ITI & High School</div>
+              <div>🎓 {item.district.name} Govt Polytechnic & High School</div>
             </Tooltip>
           </Marker>
         ))}
 
-        {/* 6. GOVERNMENT SANCTIONED PROJECTS LAYER */}
-        {layers.projects && validEvaluations.map((item) => (
+        {/* GOVERNMENT SANCTIONED PROJECTS LAYER */}
+        {layers.projects && displayedEvaluations.map((item) => (
           <Marker
             key={`proj-${item.district.id}`}
             position={[item.district.lat + 0.02, item.district.lon + 0.05]}
             icon={createAtlasIcon('Project', false, 'project')}
           >
             <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>🏗️ Active Project Site — ₹12.5 Cr Sanction</div>
+              <div>🏗️ Active Project Site — Sanction ₹14.8 Cr</div>
             </Tooltip>
           </Marker>
         ))}
 
-        {/* 7. DIGITAL CONNECTIVITY TOWERS LAYER */}
-        {layers.digital && validEvaluations.map((item) => (
+        {/* DIGITAL CONNECTIVITY TOWERS LAYER */}
+        {layers.digital && displayedEvaluations.map((item) => (
           <Marker
             key={`dig-${item.district.id}`}
             position={[item.district.lat - 0.03, item.district.lon - 0.05]}
             icon={createAtlasIcon('Digital', false, 'digital')}
           >
             <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>📡 BharatNet Fiber Node & 5G Tower</div>
+              <div>📡 BharatNet Optical Fiber Distribution Node</div>
             </Tooltip>
           </Marker>
         ))}
@@ -569,4 +614,3 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     </div>
   );
 };
-

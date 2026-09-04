@@ -42,7 +42,7 @@ import { InfrastructureView } from './components/InfrastructureView';
 import { DemographicsView } from './components/DemographicsView';
 
 export default function App() {
-  const [hasEntered, setHasEntered] = useState(false);
+  const [hasEntered, setHasEntered] = useState(true);
   const [selectedCountryCode, setSelectedCountryCode] = useState<CountryCode>('IN');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
@@ -105,8 +105,8 @@ export default function App() {
     return INITIAL_GOVERNMENT_PROJECTS;
   });
 
-  // Default to 'map' so the Policy Map is the primary home interface
-  const [activeTab, setActiveTab] = useState<NavTab>('map');
+  // Default to 'overview' for the clean public digital infrastructure dashboard
+  const [activeTab, setActiveTab] = useState<NavTab>('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [portalDirectoryOpen, setPortalDirectoryOpen] = useState(false);
 
@@ -360,7 +360,7 @@ export default function App() {
             </header>
 
             {/* Dynamic View Panel */}
-            <main className="flex-1 p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto">
+            <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-[calc(100vh-48px)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
               {activeTab === 'world' && (
                 <GlobalWorldMapCanvas
                   selectedCountryCode={selectedCountryCode}
@@ -529,6 +529,16 @@ export default function App() {
               selectedCountryCode={selectedCountryCode}
               onNavigateToBriefing={() => setActiveTab('briefing')}
               onNavigateToEngine={() => setActiveTab('recommendations')}
+              onNavigateToCommunityIssues={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('issues');
+              }}
+              onNavigateToRecommendations={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('recommendations');
+              }}
             />
           )}
 

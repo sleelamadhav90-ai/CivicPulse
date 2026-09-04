@@ -183,6 +183,14 @@ export interface CitizenRequest {
   subcategory?: string;
   issue_title?: string; // e.g. "Drinking water supply disruption"
   location: string; // e.g. "Vijayawada Rural"
+  state?: string;
+  district?: string;
+  locality?: string;
+  latitude?: number;
+  longitude?: number;
+  affected_population?: number;
+  infrastructure_gap?: number;
+  description?: string;
   severity: number; // 1 to 10
   severity_label?: string; // e.g. "High"
   priority_tier?: 'Low' | 'Medium' | 'High' | 'Critical';

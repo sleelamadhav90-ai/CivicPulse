@@ -64,6 +64,14 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   // Stages: 'input' | 'processing' | 'review' | 'success'
   const [stage, setStage] = useState<'input' | 'processing' | 'review' | 'success'>('input');
 
+  // React to prop changes so "Speak an Issue" and "Write an Issue" always open the submission form
+  useEffect(() => {
+    if (initialMode) {
+      setActiveMode(initialMode);
+      setStage('input');
+    }
+  }, [initialMode]);
+
   // Input Form State
   const [complaintText, setComplaintText] = useState<string>('');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('English');

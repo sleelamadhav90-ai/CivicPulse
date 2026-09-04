@@ -2,25 +2,17 @@ import React from 'react';
 import { 
   Building2, 
   Home, 
-  FileEdit, 
   MapPin, 
   Sparkles, 
-  Hammer, 
+  Layers, 
+  Cpu, 
+  DollarSign, 
+  Radio, 
+  Users, 
+  CheckSquare, 
   TrendingUp, 
   Settings, 
-  Info,
-  Layers,
-  Cpu,
-  Box,
-  Share2,
-  FileText,
-  DollarSign,
-  Grid,
-  Globe,
-  Radio,
-  Users,
-  CheckSquare,
-  ListFilter
+  PlusCircle
 } from 'lucide-react';
 
 export type NavTab = 
@@ -62,164 +54,187 @@ export const Sidebar: React.FC<SidebarProps> = ({
   requestsCount,
   projectsCount = 6,
   onOpenMethodology,
-  onOpenPortalDirectory,
   isOpenMobile,
   onCloseMobile,
 }) => {
-  const primaryNavSections = [
+  // Navigation structure adhering strictly to the recommended taxonomy:
+  // Overview -> UNDERSTAND -> EXPLORE -> DECIDE -> Settings
+  const navSections = [
     {
-      title: 'PUBLIC PORTAL',
+      title: 'UNDERSTAND',
       items: [
-        { id: 'overview' as NavTab, label: 'Home Portal', icon: Home, badge: 'Overview' },
-        { id: 'submit' as NavTab, label: 'Report an Issue', icon: FileEdit, badge: 'Service' },
-        { id: 'map' as NavTab, label: 'Explore Locality', icon: MapPin, badge: 'Map' },
-        { id: 'signals' as NavTab, label: 'My Requests', icon: Radio, badge: `${requestsCount}` },
-        { id: 'issues' as NavTab, label: 'Community Issues', icon: Layers, badge: '327' },
+        { id: 'signals' as NavTab, label: 'Citizen signals', icon: Radio, count: requestsCount },
+        { id: 'issues' as NavTab, label: 'Community issues', icon: Layers },
+        { id: 'patterns' as NavTab, label: 'AI patterns', icon: Cpu },
       ]
     },
     {
-      title: 'GOVERNMENT DASHBOARD',
+      title: 'EXPLORE',
       items: [
-        { id: 'recommendations' as NavTab, label: 'AI Priority Engine', icon: Sparkles, badge: '0-100' },
-        { id: 'action_queue' as NavTab, label: 'Action Queue', icon: CheckSquare, badge: `${projectsCount}` },
-        { id: 'investment' as NavTab, label: 'Public Capital', icon: DollarSign, badge: '₹120 Cr' },
-        { id: 'infrastructure' as NavTab, label: 'Asset Audits', icon: Building2, badge: 'Assets' },
-        { id: 'demographics' as NavTab, label: 'Demographics', icon: Users, badge: 'Census' },
+        { id: 'map' as NavTab, label: 'Map', icon: MapPin },
+        { id: 'infrastructure' as NavTab, label: 'Infrastructure', icon: Building2 },
+        { id: 'demographics' as NavTab, label: 'Population & vulnerability', icon: Users },
+        { id: 'investment' as NavTab, label: 'Government investment', icon: DollarSign },
       ]
     },
     {
-      title: 'POLICY & ANALYTICS',
+      title: 'DECIDE',
       items: [
-        { id: 'patterns' as NavTab, label: 'Pattern Intelligence', icon: Cpu, badge: 'Feed' },
-        { id: 'insights' as NavTab, label: 'Policy Lab', icon: FileText, badge: 'Simulate' },
-        { id: 'connectors' as NavTab, label: 'Data Sources', icon: Box, badge: 'India Grid' },
+        { id: 'recommendations' as NavTab, label: 'Recommendations', icon: Sparkles },
+        { id: 'action_queue' as NavTab, label: 'Action queue', icon: CheckSquare, count: projectsCount },
+        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp },
       ]
     }
   ];
 
+  const handleTabClick = (tab: NavTab) => {
+    setActiveTab(tab);
+    if (onCloseMobile) onCloseMobile();
+  };
+
   return (
     <>
-      {/* Mobile Overlay */}
+      {/* Mobile Backdrop */}
       {isOpenMobile && (
         <div 
           onClick={onCloseMobile}
-          className="fixed inset-0 z-40 bg-slate-900/60 backdrop-blur-xs lg:hidden"
+          className="fixed inset-0 z-40 bg-[#171717]/50 backdrop-blur-xs lg:hidden"
         />
       )}
 
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 bg-slate-900 text-slate-100 border-r border-slate-800 flex flex-col justify-between transition-transform duration-200 ease-in-out overflow-y-auto font-sans
+        fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#1F1E1B] text-[#E8E6DF] border-r border-[#2D2B26] flex flex-col justify-between transition-transform duration-200 ease-in-out font-sans
         lg:translate-x-0 lg:static lg:z-auto
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div>
-          {/* Official Header */}
-          <div className="p-4 border-b border-[#171717]/40 bg-[#171717] flex items-center space-x-3">
-            <div className="w-8 h-8 bg-[#D65A3A] text-white font-mono font-bold text-sm flex items-center justify-center border border-white/20 shadow-[1px_1px_0px_#F7F5EF] shrink-0">
-              CP
+        <div className="overflow-y-auto flex-1 py-5 px-3 space-y-5">
+          {/* Platform Header */}
+          <div className="px-2 pb-3 border-b border-[#2D2B26]">
+            <div className="flex items-center space-x-2.5">
+              <div className="w-7 h-7 bg-[#D65A3A] text-white font-mono font-bold text-xs flex items-center justify-center rounded-xs shrink-0">
+                CP
+              </div>
+              <div>
+                <span className="text-lg font-serif font-bold tracking-tight text-white block leading-none">
+                  CivicPulse
+                </span>
+                <span className="text-[11px] text-[#A6A296] font-sans block mt-1">
+                  Public digital infrastructure
+                </span>
+              </div>
             </div>
-            <div>
-              <span className="text-base font-serif font-bold tracking-tight text-white block uppercase leading-tight">
-                CivicPulse
-              </span>
-              <span className="text-[9px] font-mono tracking-wider text-[#F7F5EF]/70 block mt-0.5">
-                Public Infrastructure & Intelligence
-              </span>
+
+            {/* Quick citizen submission CTA */}
+            <div className="mt-4">
+              <button
+                onClick={() => handleTabClick('submit')}
+                className={`w-full py-2 px-3 flex items-center justify-center space-x-2 text-xs font-medium rounded-xs border transition-all cursor-pointer ${
+                  activeTab === 'submit'
+                    ? 'bg-[#D65A3A] text-white border-[#D65A3A]'
+                    : 'bg-[#292824] hover:bg-[#34322D] text-[#FAF8F5] border-[#3D3A33]'
+                }`}
+              >
+                <PlusCircle className="w-3.5 h-3.5 text-[#D65A3A]" />
+                <span>Report an issue</span>
+              </button>
             </div>
           </div>
 
-          {/* Directory Launcher Button */}
-          {onOpenPortalDirectory && (
-            <div className="p-2 border-b border-slate-800 bg-slate-900">
-              <button
-                onClick={onOpenPortalDirectory}
-                className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-mono font-bold text-[10px] uppercase tracking-wider transition-colors flex items-center justify-between cursor-pointer border border-slate-700"
-              >
-                <div className="flex items-center space-x-2">
-                  <Grid className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>Module Directory</span>
-                </div>
-                <span className="px-1.5 py-0.2 bg-[#D65A3A]/20 text-[#D65A3A] text-[9px] font-mono border border-[#D65A3A]/40 font-bold">14 Apps</span>
-              </button>
-            </div>
-          )}
+          {/* Top-level Overview link */}
+          <div className="px-1">
+            <button
+              onClick={() => handleTabClick('overview')}
+              className={`w-full flex items-center justify-between px-3 py-2 text-xs font-medium rounded-xs transition-colors cursor-pointer ${
+                activeTab === 'overview'
+                  ? 'bg-[#D65A3A] text-white font-semibold shadow-xs'
+                  : 'text-[#FAF8F5] hover:bg-[#2A2925] hover:text-white'
+              }`}
+            >
+              <div className="flex items-center space-x-2.5">
+                <Home className={`w-4 h-4 ${activeTab === 'overview' ? 'text-white' : 'text-[#A6A296]'}`} />
+                <span>Overview</span>
+              </div>
+            </button>
+          </div>
 
-          {/* Categorized Navigation */}
-          <nav className="p-2 space-y-3" aria-label="Main Navigation">
-            {primaryNavSections.map((sec, secIdx) => (
-              <div key={secIdx} className="space-y-0.5">
-                <div className="px-2 pt-1 pb-1 text-[9px] font-mono font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800/80 mb-1">
+          {/* Grouped Nav Sections */}
+          <nav className="space-y-5 px-1" aria-label="Main Navigation">
+            {navSections.map((sec) => (
+              <div key={sec.title} className="space-y-1">
+                <div className="px-3 text-[10px] font-mono font-semibold text-[#8C887B] tracking-wider uppercase">
                   {sec.title}
                 </div>
 
-                {sec.items.map((item) => {
-                  const IconComp = item.icon;
-                  // Handle aliases
-                  const isActive = activeTab === item.id || 
-                    (item.id === 'recommendations' && activeTab === 'engine') ||
-                    (item.id === 'action_queue' && activeTab === 'projects') ||
-                    (item.id === 'signals' && activeTab === 'submit');
+                <div className="space-y-0.5">
+                  {sec.items.map((item) => {
+                    const IconComp = item.icon;
+                    const isActive = activeTab === item.id ||
+                      (item.id === 'recommendations' && activeTab === 'engine') ||
+                      (item.id === 'action_queue' && activeTab === 'projects');
 
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        setActiveTab(item.id);
-                        if (onCloseMobile) onCloseMobile();
-                      }}
-                      className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium tracking-wide transition-colors cursor-pointer border ${
-                        isActive
-                          ? 'bg-[#D65A3A] text-white border-[#D65A3A] font-semibold shadow-[2px_2px_0px_#171717]'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border-transparent'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-2.5">
-                        <IconComp className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[11px] font-sans">{item.label}</span>
-                      </div>
-                      {item.badge && (
-                        <span className={`text-[8px] px-1.5 py-0.2 font-mono uppercase font-bold border ${
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => handleTabClick(item.id)}
+                        className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-xs transition-colors cursor-pointer ${
                           isActive
-                            ? 'bg-white text-[#171717] border-white'
-                            : 'bg-slate-800 text-slate-300 border-slate-700'
-                        }`}>
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
+                            ? 'bg-[#D65A3A] text-white font-semibold shadow-xs'
+                            : 'text-[#D5D2C8] hover:bg-[#2A2925] hover:text-white'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          <IconComp className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#8C887B]'}`} />
+                          <span>{item.label}</span>
+                        </div>
+                        {item.count !== undefined && item.count > 0 && (
+                          <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-xs ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-[#2B2925] text-[#A6A296]'
+                          }`}>
+                            {item.count}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ))}
+
+            {/* Settings */}
+            <div className="pt-2 border-t border-[#2D2B26]">
+              <button
+                onClick={() => handleTabClick('settings')}
+                className={`w-full flex items-center justify-between px-3 py-1.5 text-xs font-medium rounded-xs transition-colors cursor-pointer ${
+                  activeTab === 'settings'
+                    ? 'bg-[#D65A3A] text-white font-semibold'
+                    : 'text-[#A6A296] hover:bg-[#2A2925] hover:text-white'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <Settings className="w-3.5 h-3.5 text-[#8C887B]" />
+                  <span>Settings</span>
+                </div>
+              </button>
+            </div>
           </nav>
         </div>
 
-        {/* Bottom System Specs */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950 space-y-2 shrink-0 font-mono text-[10px]">
-          <div className="p-2 border border-slate-800 bg-slate-900 text-slate-300">
-            <div className="flex items-center justify-between mb-1 border-b border-slate-800 pb-1">
-              <span className="uppercase font-bold text-[#D65A3A] text-[9px]">INDIA DPI STACK</span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>OPERATIONAL</span>
-              </span>
-            </div>
-            <p className="text-[9px] text-slate-400 leading-relaxed font-sans font-medium">
-              Designed for India · Scalable by Design
-            </p>
+        {/* Quiet Footer */}
+        <div className="p-3 border-t border-[#2D2B26] bg-[#1A1916] text-[11px] text-[#8C887B] flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+            <span className="font-sans">India DPI Stack</span>
           </div>
-
           <button
             onClick={onOpenMethodology}
-            className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 font-mono text-[9px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-800"
+            className="text-[11px] text-[#A6A296] hover:text-white underline cursor-pointer"
           >
-            <Info className="w-3 h-3 text-[#D65A3A]" />
-            <span>Architecture Specs</span>
+            Methodology
           </button>
         </div>
       </aside>
     </>
   );
 };
-
-

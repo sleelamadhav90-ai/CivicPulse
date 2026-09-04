@@ -1,28 +1,24 @@
-import React from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
-  Building2, 
-  MapPin, 
-  Sparkles, 
   ArrowRight, 
-  CheckCircle2, 
-  Radio, 
   Droplets, 
   Route, 
   HeartPulse, 
-  GraduationCap,
-  Zap,
-  Trees,
-  Smartphone,
-  Mic,
-  FileEdit,
-  Clock,
-  ShieldCheck,
-  ChevronRight,
+  Zap, 
+  Mic, 
+  FileEdit, 
+  Radio, 
+  Sparkles, 
+  MapPin, 
+  CheckCircle2, 
   TrendingUp,
-  Info
+  AlertCircle
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory } from '../types';
 import { NavTab } from './Sidebar';
+import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
+import { getCityDemandHotspot } from '../utils/demandAggregation';
+import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState } from './IndiaMapCanvas';
 
 interface OverviewProps {
   districts: District[];
@@ -38,205 +34,332 @@ export const Overview: React.FC<OverviewProps> = ({
   districts,
   requests,
   onNavigate,
-  onSelectCategoryForReporting,
+  onSelectDistrictForPolicy,
   onStartVoiceSubmission,
   onStartWriteSubmission,
 }) => {
-  // Service category definitions
-  const serviceCategories = [
+  const [selectedHotspotId, setSelectedHotspotId] = useState<string>(districts[0]?.id || 'guntur');
+
+  // Compute summary metrics
+  const totalRequests = requests.length;
+  const communityIssuesCount = 327;
+  const priorityDistrictsCount = 42;
+  const openActionsCount = 18;
+
+  // Prepare evaluations for the map
+  const evaluations: EvaluatedDistrict[] = useMemo(() => {
+    return districts.map((district) => {
+      const category: InfrastructureCategory = 'Water';
+      const demandHotspot = getCityDemandHotspot(district, requests);
+      const accessScore = getCategoryAccess(district, category);
+      const demandCount = demandHotspot.totalCitizenRequests;
+      const breakdown = calculatePriorityScore(district, category, demandCount, accessScore);
+      const tier = getPriorityTier(breakdown.total_score);
+
+      const matchedRequests = requests.filter(
+        r => r.location.toLowerCase().includes(district.name.toLowerCase()) || 
+             r.location.toLowerCase().includes(district.state.toLowerCase())
+      );
+
+      return {
+        district,
+        category,
+        demandCount,
+        currentAccess: accessScore,
+        breakdown,
+        matchedRequests,
+        demandHotspot,
+        priorityTier: tier,
+      };
+    });
+  }, [districts, requests]);
+
+  const mapLayers: MapLayerState = {
+    citizen_demand: true,
+    infrastructure: true,
+    population: true,
+    projects: false,
+    healthcare: false,
+    education: false,
+    roads: false,
+    digital: false,
+  };
+
+  // 3-5 Priority issues for "What needs attention"
+  const priorityIssues = [
     {
-      id: 'Roads' as InfrastructureCategory,
-      title: 'Roads & Transport',
-      icon: Route,
-      desc: 'Potholes, streetlights, road damage, traffic signals, pedestrian pathways',
-      badge: '14 Active Reports',
-      color: 'border-amber-700/30 bg-amber-50/40 text-amber-900',
-      iconBg: 'bg-amber-100 text-amber-800'
-    },
-    {
-      id: 'Water' as InfrastructureCategory,
-      title: 'Water & Sanitation',
+      category: 'WATER' as InfrastructureCategory,
+      title: 'Water access deficit & pipeline pressure drops',
+      location: 'Guntur, Andhra Pradesh',
+      districtId: 'guntur',
+      statusNote: 'High and rising demand',
+      signalCount: 742,
+      trend: '+22% vs previous month',
+      severity: 'Critical',
       icon: Droplets,
-      desc: 'Pipe leaks, zero water supply, sewage overflow, contaminated water, drainage',
-      badge: '18 Active Reports',
-      color: 'border-blue-700/30 bg-blue-50/40 text-blue-900',
-      iconBg: 'bg-blue-100 text-blue-800'
     },
     {
-      id: 'Health' as InfrastructureCategory,
-      title: 'Healthcare & Clinics',
+      category: 'ROADS' as InfrastructureCategory,
+      title: 'Arterial hospital corridor craters & flood damage',
+      location: 'Patna, Bihar',
+      districtId: 'dist-01',
+      statusNote: 'Infrastructure gap',
+      signalCount: 512,
+      trend: '+18% vs previous month',
+      severity: 'High',
+      icon: Route,
+    },
+    {
+      category: 'HEALTH' as InfrastructureCategory,
+      title: 'Sub-centre staffing shortfall & cold-chain failures',
+      location: 'Nashik, Maharashtra',
+      districtId: 'dist-04',
+      statusNote: 'Demand increasing',
+      signalCount: 389,
+      trend: '+15% vs previous month',
+      severity: 'High',
       icon: HeartPulse,
-      desc: 'Primary health center supplies, doctor shortage, ambulance access, hygiene',
-      badge: '9 Active Reports',
-      color: 'border-emerald-700/30 bg-emerald-50/40 text-emerald-900',
-      iconBg: 'bg-emerald-100 text-emerald-800'
     },
     {
-      id: 'Education' as InfrastructureCategory,
-      title: 'Education & Schools',
-      icon: GraduationCap,
-      desc: 'School building maintenance, toilet facilities, drinking water, classroom roof',
-      badge: '7 Active Reports',
-      color: 'border-purple-700/30 bg-purple-50/40 text-purple-900',
-      iconBg: 'bg-purple-100 text-purple-800'
-    },
-    {
-      id: 'Electricity' as InfrastructureCategory,
-      title: 'Energy & Power',
+      category: 'POWER' as InfrastructureCategory,
+      title: 'Agricultural feeder transformer breakdowns',
+      location: 'Gaya, Bihar',
+      districtId: 'dist-01',
+      statusNote: 'Recurring outage pattern',
+      signalCount: 294,
+      trend: '+29% vs previous month',
+      severity: 'Moderate',
       icon: Zap,
-      desc: 'Transformer failures, dangerous wiring, power cuts, streetlighting grid',
-      badge: '12 Active Reports',
-      color: 'border-yellow-700/30 bg-yellow-50/40 text-yellow-900',
-      iconBg: 'bg-yellow-100 text-yellow-800'
     },
-    {
-      id: 'Sanitation' as InfrastructureCategory,
-      title: 'Public Facilities',
-      icon: Building2,
-      desc: 'Waste collection bins, public restrooms, community halls, bus shelters',
-      badge: '11 Active Reports',
-      color: 'border-stone-700/30 bg-stone-50/40 text-stone-900',
-      iconBg: 'bg-stone-200 text-stone-800'
-    },
-    {
-      id: 'Drainage' as InfrastructureCategory,
-      title: 'Environment & Greenery',
-      icon: Trees,
-      desc: 'Waterlogging, open dumping, fallen trees, park maintenance, air/water pollution',
-      badge: '6 Active Reports',
-      color: 'border-green-700/30 bg-green-50/40 text-green-900',
-      iconBg: 'bg-green-100 text-green-800'
-    },
-    {
-      id: 'Water' as InfrastructureCategory,
-      title: 'Digital Public Services',
-      icon: Smartphone,
-      desc: 'Certificate assistance, digital scheme connectivity, grievance tracking help',
-      badge: 'DPG Active',
-      color: 'border-orange-700/30 bg-orange-50/40 text-orange-900',
-      iconBg: 'bg-orange-100 text-orange-800'
-    }
   ];
 
-  // Sample recent requests for citizen status pipeline
-  const recentRequests = requests.slice(0, 3);
+  // 3-4 AI / predictive insights
+  const predictiveInsights = [
+    {
+      title: 'Water demand increasing faster than capacity',
+      body: 'Urban peripheries in Guntur and surrounding sub-districts exhibit a 22% monthly rise in water deficit reports, outpacing scheduled reservoir replenishment.',
+      source: 'Gemini analysis · Vertex AI forecast',
+      actionTab: 'patterns' as NavTab,
+    },
+    {
+      title: 'Monsoon arterial road degradation cluster',
+      body: 'Multi-district road distress detected along MDR corridors connecting agricultural mandis to national highways, affecting ambulance turnaround times.',
+      source: 'Gemini analysis · Infrastructure telemetry',
+      actionTab: 'issues' as NavTab,
+    },
+    {
+      title: 'Primary healthcare accessibility gap',
+      body: 'Patient grievance reports correlate strongly with unpaved transit corridors and transformer outages at primary clinics in Nashik rural blocks.',
+      source: 'Cross-domain correlation model',
+      actionTab: 'patterns' as NavTab,
+    },
+  ];
 
-  const handleCategoryClick = (category: InfrastructureCategory) => {
-    if (onSelectCategoryForReporting) {
-      onSelectCategoryForReporting(category);
-    }
-    onNavigate('submit');
-  };
+  // Top 3 Recommendations
+  const topRecommendations = [
+    {
+      rank: '01',
+      type: 'FIX',
+      title: 'Drinking Water Trunk Pipeline & Pressure Booster',
+      location: 'Guntur, Andhra Pradesh',
+      districtId: 'guntur',
+      category: 'Water' as InfrastructureCategory,
+      priority: 'Priority 91 / 100',
+      evidence: '742 citizen signals · +22% demand · High infrastructure gap',
+      horizon: 'Predicted next 30 days: 890 signals',
+      urgency: 'HIGH',
+    },
+    {
+      rank: '02',
+      type: 'BUILD',
+      title: 'Primary Healthcare Clinic & Solar Storage Unit',
+      location: 'Patna, Bihar',
+      districtId: 'dist-01',
+      category: 'Health' as InfrastructureCategory,
+      priority: 'Priority 87 / 100',
+      evidence: '512 citizen signals · Zero current clinic within 8km',
+      horizon: 'Predicted next 30 days: 620 signals',
+      urgency: 'HIGH',
+    },
+    {
+      rank: '03',
+      type: 'UPGRADE',
+      title: 'Corridor Resurfacing & Drainage Culverts',
+      location: 'Nashik, Maharashtra',
+      districtId: 'dist-04',
+      category: 'Roads' as InfrastructureCategory,
+      priority: 'Priority 82 / 100',
+      evidence: '389 citizen signals · 48 verified arterial craters',
+      horizon: 'Predicted next 30 days: 450 signals',
+      urgency: 'MODERATE',
+    },
+  ];
 
   return (
     <div className="space-y-12 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
-      {/* 1. HERO SECTION */}
-      <section className="bg-white border-2 border-[#171717] p-8 sm:p-12 shadow-[6px_6px_0px_#171717] relative overflow-hidden">
-        <div className="max-w-3xl space-y-6">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 bg-[#D65A3A]/10 border border-[#D65A3A]/30 text-[#D65A3A] font-mono text-xs font-bold uppercase tracking-wider">
-            <ShieldCheck className="w-4 h-4 text-[#D65A3A]" />
-            <span>Official Government Public Service Portal</span>
+      {/* 1. CITIZEN INTAKE STRIP */}
+      <section className="bg-white border border-[#171717]/15 p-6 sm:p-7 rounded-sm shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div className="space-y-1.5 max-w-xl">
+          <div className="flex items-center space-x-2 text-[11px] font-mono font-semibold text-[#D65A3A] uppercase tracking-wider">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A]"></span>
+            <span>Citizen Service Portal</span>
           </div>
-
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-[#171717] leading-tight">
-            Tell us what your community needs.
-          </h1>
-
-          <p className="text-base sm:text-lg text-[#171717]/80 font-sans leading-relaxed">
-            Report local infrastructure issues in your native dialect (Telugu, Hindi, Tamil, Kannada, English). AI automatically categorizes and routes your voice note or text to government authorities for priority resolution.
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+            Tell us what needs attention.
+          </h2>
+          <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
+            Report local water, road, health, or electricity issues in your native dialect. AI translates and connects your report to administrative decision-makers.
           </p>
+        </div>
 
-          {/* Primary Action Buttons */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-2">
-            <button
-              onClick={() => {
-                if (onStartVoiceSubmission) {
-                  onStartVoiceSubmission();
-                } else {
-                  onNavigate('submit');
-                }
-              }}
-              className="px-6 py-4 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-bold text-sm tracking-wide transition-all shadow-[4px_4px_0px_#171717] border-2 border-[#171717] flex items-center justify-center gap-3 cursor-pointer"
-            >
-              <Mic className="w-5 h-5 text-amber-200" />
-              <span>🎙 Speak an Issue</span>
-            </button>
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
+          <button
+            onClick={() => onStartVoiceSubmission ? onStartVoiceSubmission() : onNavigate('submit')}
+            className="px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+          >
+            <Mic className="w-4 h-4" />
+            <span>Speak an issue</span>
+          </button>
 
-            <button
-              onClick={() => {
-                if (onStartWriteSubmission) {
-                  onStartWriteSubmission();
-                } else {
-                  onNavigate('submit');
-                }
-              }}
-              className="px-6 py-4 bg-white hover:bg-slate-50 text-[#171717] font-bold text-sm tracking-wide transition-all shadow-[4px_4px_0px_#171717] border-2 border-[#171717] flex items-center justify-center gap-3 cursor-pointer"
-            >
-              <FileEdit className="w-5 h-5 text-[#285943]" />
-              <span>✎ Write an Issue</span>
-            </button>
+          <button
+            onClick={() => onStartWriteSubmission ? onStartWriteSubmission() : onNavigate('submit')}
+            className="px-4 py-2.5 bg-white hover:bg-[#F7F5EF] text-[#171717] border border-[#171717]/25 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+          >
+            <FileEdit className="w-4 h-4 text-[#57534E]" />
+            <span>Write an issue</span>
+          </button>
+
+          <button
+            onClick={() => onNavigate('signals')}
+            className="px-3.5 py-2.5 text-[#57534E] hover:text-[#171717] text-xs font-medium transition-colors flex items-center space-x-1.5 cursor-pointer underline"
+          >
+            <Radio className="w-3.5 h-3.5" />
+            <span>Track my requests</span>
+          </button>
+        </div>
+      </section>
+
+      {/* 2. HEADER & COMPACT SUMMARY STATS */}
+      <section className="space-y-6">
+        <div>
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-bold tracking-tight text-[#171717]">
+            India's civic priorities
+          </h1>
+          <p className="text-sm sm:text-base text-[#57534E] max-w-2xl mt-2 leading-relaxed">
+            Signals from citizens, infrastructure and public investment — brought together to identify where action is needed.
+          </p>
+        </div>
+
+        {/* Compact summary row: small, clean statistics */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
+          <div className="bg-white border border-[#171717]/15 p-4 rounded-sm">
+            <span className="text-[11px] font-sans text-[#78716C] block">Citizen requests</span>
+            <span className="text-2xl font-mono font-bold text-[#171717] mt-1 block">
+              {totalRequests.toLocaleString()}
+            </span>
+            <span className="text-[10px] text-[#57534E] block mt-0.5">Verified citizen submissions</span>
           </div>
 
-          {/* India Coverage Metric Strip */}
-          <div className="pt-4 border-t border-[#171717]/15 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-[#D65A3A]">🇮🇳 BUILT FOR INDIA:</span>
-              <span className="text-[#171717] font-semibold">28 States · 8 UTs · 22 Scheduled Languages</span>
-            </div>
-            <div className="flex items-center space-x-2 bg-[#F7F5EF] px-3 py-1 border border-[#171717]/30 text-[11px]">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-              <span className="font-bold text-[#285943]">8 Active AI Prototype Languages Enabled</span>
-            </div>
+          <div className="bg-white border border-[#171717]/15 p-4 rounded-sm">
+            <span className="text-[11px] font-sans text-[#78716C] block">Community issues</span>
+            <span className="text-2xl font-mono font-bold text-[#171717] mt-1 block">
+              {communityIssuesCount}
+            </span>
+            <span className="text-[10px] text-[#57534E] block mt-0.5">Aggregated issue clusters</span>
+          </div>
+
+          <div className="bg-white border border-[#171717]/15 p-4 rounded-sm">
+            <span className="text-[11px] font-sans text-[#78716C] block">Priority districts</span>
+            <span className="text-2xl font-mono font-bold text-[#D65A3A] mt-1 block">
+              {priorityDistrictsCount}
+            </span>
+            <span className="text-[10px] text-[#57534E] block mt-0.5">Critical response zones</span>
+          </div>
+
+          <div className="bg-white border border-[#171717]/15 p-4 rounded-sm">
+            <span className="text-[11px] font-sans text-[#78716C] block">Open actions</span>
+            <span className="text-2xl font-mono font-bold text-[#285943] mt-1 block">
+              {openActionsCount}
+            </span>
+            <span className="text-[10px] text-[#57534E] block mt-0.5">Under official review</span>
           </div>
         </div>
       </section>
 
-      {/* 2. SERVICE / REQUEST CATEGORIES */}
-      <section className="space-y-6">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-mono font-bold text-[#D65A3A] uppercase tracking-wider mb-1">
-            <span>SERVICE DIRECTORY</span>
+      {/* 3. SECTION: WHAT NEEDS ATTENTION */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+          <div>
+            <h2 className="text-xl font-serif font-bold text-[#171717]">
+              What needs attention
+            </h2>
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Urgent issues experiencing rapid demand acceleration or critical infrastructure failure.
+            </p>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717]">
-            What would you like to improve?
-          </h2>
-          <p className="text-sm text-[#171717]/70 mt-1">
-            Select a category to launch a 2-minute request submission flow.
-          </p>
+          <button
+            onClick={() => onNavigate('issues')}
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
+          >
+            <span>All community issues</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {serviceCategories.map((cat) => {
-            const IconComponent = cat.icon;
+        {/* Compact horizontal rows */}
+        <div className="space-y-2.5">
+          {priorityIssues.map((issue) => {
+            const IconComp = issue.icon;
             return (
               <div
-                key={cat.title}
-                onClick={() => handleCategoryClick(cat.id)}
-                className="bg-white border border-[#171717]/20 p-5 hover:border-[#171717] hover:shadow-[4px_4px_0px_#171717] transition-all cursor-pointer flex flex-col justify-between space-y-4 group"
+                key={issue.title}
+                className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-4 rounded-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3"
               >
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className={`w-10 h-10 rounded border border-[#171717]/20 flex items-center justify-center ${cat.iconBg}`}>
-                      <IconComponent className="w-5 h-5" />
+                <div className="flex items-start space-x-3.5">
+                  <div className="w-8 h-8 rounded-xs bg-[#F7F5EF] border border-[#171717]/10 flex items-center justify-center shrink-0 mt-0.5 text-[#57534E]">
+                    <IconComp className="w-4 h-4" />
+                  </div>
+                  <div className="space-y-0.5">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
+                        {issue.category}
+                      </span>
+                      <span className="text-[#171717]/30 text-xs">·</span>
+                      <span className="text-xs font-medium text-[#57534E]">
+                        {issue.location}
+                      </span>
                     </div>
-                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-200">
-                      {cat.badge}
+                    <div className="text-sm font-semibold text-[#171717]">
+                      {issue.title}
+                    </div>
+                    <div className="text-xs text-[#78716C]">
+                      {issue.statusNote}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between sm:justify-end gap-5 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#171717]/10">
+                  <div className="text-left sm:text-right">
+                    <span className="text-xs font-mono font-bold text-[#171717] block">
+                      {issue.signalCount} signals
+                    </span>
+                    <span className="text-[11px] text-[#D65A3A] font-medium block">
+                      {issue.trend}
                     </span>
                   </div>
 
-                  <h3 className="font-serif font-bold text-base text-[#171717] group-hover:text-[#D65A3A] transition-colors">
-                    {cat.title}
-                  </h3>
-
-                  <p className="text-xs text-[#171717]/70 leading-relaxed">
-                    {cat.desc}
-                  </p>
-                </div>
-
-                <div className="pt-2 flex items-center text-xs font-bold text-[#D65A3A] space-x-1 group-hover:translate-x-1 transition-transform">
-                  <span>Report issue</span>
-                  <ChevronRight className="w-4 h-4" />
+                  <button
+                    onClick={() => {
+                      if (onSelectDistrictForPolicy) {
+                        onSelectDistrictForPolicy(issue.districtId, issue.category);
+                      }
+                      onNavigate('issues');
+                    }}
+                    className="px-3 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
+                  >
+                    View issue
+                  </button>
                 </div>
               </div>
             );
@@ -244,155 +367,203 @@ export const Overview: React.FC<OverviewProps> = ({
         </div>
       </section>
 
-      {/* 3. EXPLORE YOUR AREA (LOCALITY ACTIVITY) */}
-      <section className="bg-white border border-[#171717]/20 p-8 shadow-xs space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/10 pb-5">
+      {/* 4. SECTION: WHERE (LARGE INDIA MAP) */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
           <div>
-            <div className="flex items-center space-x-2 text-xs font-mono font-bold text-[#285943] uppercase tracking-wider mb-1">
-              <MapPin className="w-4 h-4 text-[#285943]" />
-              <span>LOCALITY INTELLIGENCE • ANDHRA PRADESH</span>
-            </div>
-            <h2 className="text-2xl font-serif font-bold text-[#171717]">
-              Community Activity in Your Area
+            <h2 className="text-xl font-serif font-bold text-[#171717]">
+              Where
             </h2>
-            <p className="text-sm text-[#171717]/70 mt-0.5">
-              Real-time civic status across Krishna, Guntur, Visakhapatnam, and Anantapur districts.
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Geographic distribution of citizen demand and infrastructure vulnerability.
             </p>
           </div>
-
           <button
             onClick={() => onNavigate('map')}
-            className="px-5 py-2.5 bg-[#171717] hover:bg-[#D65A3A] text-white font-bold text-xs tracking-wider uppercase transition-colors cursor-pointer border border-[#171717] shadow-[2px_2px_0px_#171717] flex items-center gap-2 shrink-0"
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
           >
-            <MapPin className="w-4 h-4 text-amber-300" />
-            <span>Explore Map View</span>
+            <span>Open full map</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Local Summary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-800 border border-amber-300 flex items-center justify-center font-bold text-lg">
-              📍
+        {/* Large map container as primary visual element */}
+        <div className="bg-white border border-[#171717]/20 rounded-sm overflow-hidden shadow-xs">
+          <div className="p-3 bg-[#F7F5EF] border-b border-[#171717]/15 flex items-center justify-between text-xs font-mono">
+            <div className="flex items-center space-x-3 text-[#57534E]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A]"></span>
+                <span>High priority hotspot</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441]"></span>
+                <span>Medium priority</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#285943]"></span>
+                <span>Monitoring</span>
+              </span>
             </div>
-            <div>
-              <span className="text-2xl font-serif font-bold text-[#171717]">12 Active</span>
-              <p className="text-xs text-[#171717]/70 font-medium">Ingested citizen reports in review</p>
-            </div>
+
+            <span className="text-[11px] text-[#78716C]">
+              Click any hotspot to explore
+            </span>
           </div>
 
-          <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-100 text-blue-800 border border-blue-300 flex items-center justify-center font-bold text-lg">
-              ⚡
-            </div>
-            <div>
-              <span className="text-2xl font-serif font-bold text-[#171717]">4 Projects</span>
-              <p className="text-xs text-[#171717]/70 font-medium">Government works underway</p>
-            </div>
-          </div>
-
-          <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center justify-center font-bold text-lg">
-              ✓
-            </div>
-            <div>
-              <span className="text-2xl font-serif font-bold text-[#171717]">8 Resolved</span>
-              <p className="text-xs text-[#171717]/70 font-medium">Public infrastructure works completed</p>
-            </div>
+          <div className="h-[480px] w-full relative">
+            <IndiaMapCanvas
+              evaluations={evaluations}
+              activeDistrictId={selectedHotspotId}
+              onSelectDistrict={(id) => setSelectedHotspotId(id)}
+              selectedCategory="All"
+              layers={mapLayers}
+              onSelectHotspotForPolicy={(dist, cat) => {
+                if (onSelectDistrictForPolicy) {
+                  onSelectDistrictForPolicy(dist.id, cat);
+                }
+                onNavigate('map');
+              }}
+              selectedCountryCode="IN"
+            />
           </div>
         </div>
       </section>
 
-      {/* 4. MY REQUESTS STATUS PIPELINE PREVIEW */}
-      <section className="bg-white border border-[#171717]/20 p-8 shadow-xs space-y-6">
-        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-4">
+      {/* 5. SECTION: WHAT THE DATA SUGGESTS */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
           <div>
             <h2 className="text-xl font-serif font-bold text-[#171717]">
-              Track Your Requests
+              What the data suggests
             </h2>
-            <p className="text-xs text-[#171717]/70 mt-0.5">
-              Transparent, end-to-end lifecycle tracking for submitted citizen requests.
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Predictive models and correlation analysis grounded in public datasets.
             </p>
           </div>
-
           <button
-            onClick={() => onNavigate('signals')}
-            className="text-xs font-bold text-[#D65A3A] hover:underline flex items-center gap-1 cursor-pointer"
+            onClick={() => onNavigate('patterns')}
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
           >
-            <span>View All Requests</span>
-            <ArrowRight className="w-4 h-4" />
+            <span>View pattern intelligence</span>
+            <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
 
-        {/* Timeline Status System */}
-        <div className="space-y-4">
-          {recentRequests.map((req) => (
-            <div key={req.id} className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="flex items-center space-x-2 font-mono text-xs">
-                  <span className="px-2 py-0.5 bg-[#D65A3A] text-white font-bold">
-                    {req.id}
-                  </span>
-                  <span className="font-semibold text-slate-800 font-sans">
-                    {req.category} Infrastructure
-                  </span>
-                  <span className="text-slate-400">•</span>
-                  <span className="text-slate-600 font-sans">
-                    {req.location}
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {predictiveInsights.map((insight) => (
+            <div
+              key={insight.title}
+              className="bg-white border border-[#171717]/15 p-5 rounded-sm flex flex-col justify-between space-y-4"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center space-x-1.5 text-[10px] font-mono text-[#78716C]">
+                  <Sparkles className="w-3 h-3 text-[#D65A3A]" />
+                  <span>{insight.source}</span>
                 </div>
-
-                <span className="text-[11px] font-mono text-slate-500">
-                  Logged: {new Date(req.timestamp).toLocaleDateString()}
-                </span>
+                <h3 className="text-sm font-serif font-bold text-[#171717] leading-snug">
+                  {insight.title}
+                </h3>
+                <p className="text-xs text-[#57534E] leading-relaxed">
+                  {insight.body}
+                </p>
               </div>
 
-              <p className="text-xs text-slate-700 italic">
-                "{req.summary_en}"
-              </p>
-
-              {/* Lifecycle Progress Bar */}
-              <div className="pt-2">
-                <div className="grid grid-cols-5 text-[10px] font-mono text-center font-bold gap-1 mb-1.5">
-                  <span className="text-emerald-700">1. Submitted ✓</span>
-                  <span className="text-emerald-700">2. In Review ✓</span>
-                  <span className="text-blue-700 font-extrabold">3. Prioritized</span>
-                  <span className="text-slate-400 font-normal">4. Action Plan</span>
-                  <span className="text-slate-400 font-normal">5. Resolved</span>
-                </div>
-                <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden flex">
-                  <div className="bg-emerald-600 h-full w-[20%]"></div>
-                  <div className="bg-emerald-600 h-full w-[20%]"></div>
-                  <div className="bg-blue-600 h-full w-[20%] animate-pulse"></div>
-                  <div className="bg-slate-200 h-full w-[40%]"></div>
-                </div>
-              </div>
+              <button
+                onClick={() => onNavigate(insight.actionTab)}
+                className="text-xs font-medium text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer pt-2 border-t border-[#171717]/10"
+              >
+                <span>Examine pattern</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
             </div>
           ))}
         </div>
       </section>
 
-      {/* 5. GOVERNMENT DASHBOARD GATEWAY */}
-      <section className="bg-[#171717] text-[#F7F5EF] p-8 border-2 border-[#171717] shadow-[6px_6px_0px_#D65A3A] flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-2 max-w-2xl">
-          <div className="inline-block px-2.5 py-0.5 bg-[#D65A3A] text-white font-mono text-[10px] font-bold tracking-widest uppercase">
-            DISTRICT OFFICERS & POLICYMAKERS
+      {/* 6. SECTION: RECOMMENDED ACTIONS */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+          <div>
+            <h2 className="text-xl font-serif font-bold text-[#171717]">
+              Recommended actions
+            </h2>
+            <p className="text-xs text-[#78716C] mt-0.5">
+              Top evidence-backed recommendations ready for sanctioning and administrative execution.
+            </p>
           </div>
-          <h3 className="font-serif font-bold text-2xl text-white">
-            Government Dashboard & Priority Engine
-          </h3>
-          <p className="text-xs text-[#F7F5EF]/80 leading-relaxed font-sans">
-            Access the deterministic 0–100 priority scoring matrix, demographic vulnerability layers, Gemini intervention generator, and capital expenditure action queue.
-          </p>
+          <button
+            onClick={() => onNavigate('recommendations')}
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
+          >
+            <span>All recommendations</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
         </div>
 
-        <button
-          onClick={() => onNavigate('recommendations')}
-          className="px-6 py-3.5 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-bold text-xs tracking-wider uppercase transition-colors shadow-[2px_2px_0px_#F7F5EF] border border-white/20 flex items-center gap-2 shrink-0 cursor-pointer"
-        >
-          <Sparkles className="w-4 h-4 text-amber-200" />
-          <span>Launch Officer Dashboard</span>
-        </button>
+        <div className="space-y-3">
+          {topRecommendations.map((rec) => (
+            <div
+              key={rec.rank}
+              className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 rounded-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+            >
+              <div className="flex items-start space-x-4">
+                <div className="font-mono text-base font-bold text-[#78716C] shrink-0 pt-0.5">
+                  {rec.rank}
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2">
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.2 rounded-xs border ${
+                      rec.type === 'FIX'
+                        ? 'bg-amber-50 text-amber-800 border-amber-300'
+                        : rec.type === 'BUILD'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                        : 'bg-blue-50 text-blue-800 border-blue-300'
+                    }`}>
+                      {rec.type}
+                    </span>
+                    <span className="text-xs font-medium text-[#57534E]">
+                      {rec.location}
+                    </span>
+                    <span className="text-[#171717]/30 text-xs">·</span>
+                    <span className="text-xs font-mono font-semibold text-[#D65A3A]">
+                      {rec.priority}
+                    </span>
+                  </div>
+
+                  <h3 className="text-base font-serif font-bold text-[#171717]">
+                    {rec.title}
+                  </h3>
+
+                  <p className="text-xs text-[#57534E]">
+                    {rec.evidence}
+                  </p>
+                  <p className="text-[11px] font-mono text-[#78716C]">
+                    {rec.horizon}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10">
+                <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs bg-[#F7F5EF] text-[#57534E] border border-[#171717]/15">
+                  Urgency: {rec.urgency}
+                </span>
+
+                <button
+                  onClick={() => {
+                    if (onSelectDistrictForPolicy) {
+                      onSelectDistrictForPolicy(rec.districtId, rec.category);
+                    }
+                    onNavigate('recommendations');
+                  }}
+                  className="px-3.5 py-2 text-xs font-semibold bg-[#171717] hover:bg-[#34322D] text-white rounded-xs transition-colors cursor-pointer"
+                >
+                  Review recommendation
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
     </div>
