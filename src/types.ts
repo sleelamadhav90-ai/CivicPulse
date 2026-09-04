@@ -232,7 +232,7 @@ export interface ActionQueueItem {
   category: InfrastructureCategory;
   interventionType: InterventionType;
   priorityScore: number;
-  status: 'Shortlisted' | 'Under Review' | 'Approved';
+  status: 'Shortlisted' | 'Under Review' | 'Approved' | 'In Progress' | 'Completed';
   addedAt: string;
   estimatedBudgetInr: number;
   targetBeneficiaries: number;

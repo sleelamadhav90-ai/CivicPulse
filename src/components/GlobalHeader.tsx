@@ -47,29 +47,29 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const currentLang = currentCountry.languages.find(l => l.code === selectedLanguage) || currentCountry.languages[0];
 
   return (
-    <header className="sticky top-0 z-40 w-full bg-slate-950 text-slate-100 border-b border-slate-800 font-mono text-xs shadow-xs">
+    <header className="sticky top-0 z-40 w-full bg-[#171717] text-[#F7F5EF] border-b border-[#171717]/40 font-mono text-xs shadow-xs">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
         
         {/* Official Brand Header */}
         <div className="flex items-center space-x-3">
           <button 
             onClick={onOpenPortalDirectory}
-            className="w-7 h-7 bg-blue-700 hover:bg-blue-600 text-white flex items-center justify-center font-mono font-bold text-xs border border-blue-500 cursor-pointer transition-colors"
+            className="w-7 h-7 bg-[#D65A3A] hover:bg-[#c34e2f] text-white flex items-center justify-center font-mono font-bold text-xs border border-[#171717] cursor-pointer transition-colors shadow-[1px_1px_0px_#F7F5EF]"
             title="Open Module Directory"
           >
             CP
           </button>
           <div>
             <div className="flex items-center space-x-2">
-              <span className="font-bold text-sm tracking-wide text-white font-sans">
+              <span className="font-serif font-bold text-base tracking-wide text-white uppercase">
                 CivicPulse
               </span>
-              <span className="hidden md:inline-block px-2 py-0.5 bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[9px] tracking-wider">
-                Public Infrastructure & Citizen Intelligence
+              <span className="hidden md:inline-block px-2 py-0.5 bg-[#D65A3A]/20 border border-[#D65A3A]/40 text-[#D65A3A] font-mono text-[9px] font-bold tracking-wider uppercase">
+                DIGITAL PUBLIC GOODS × CIVIC INTELLIGENCE
               </span>
             </div>
-            <span className="text-[10px] text-slate-400 font-sans hidden sm:block">
-              Public Infrastructure & Need Analytics
+            <span className="text-[10px] text-[#F7F5EF]/70 font-sans hidden sm:block">
+              Built for India. Designed to scale across public systems.
             </span>
           </div>
         </div>

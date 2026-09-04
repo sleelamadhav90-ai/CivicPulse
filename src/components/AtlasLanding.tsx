@@ -12,12 +12,15 @@ export const AtlasLanding: React.FC<AtlasLandingProps> = ({ onEnter }) => {
         
         {/* Newspaper & Open Atlas Header Style */}
         <div className="w-full text-center border-b border-[#171717] pb-6 mb-8 sm:mb-12">
-          <div className="inline-block bg-[#D65A3A] text-white px-3 py-1 text-[10px] font-mono tracking-widest uppercase font-bold mb-3">
-            INDIA STACK × BLOOMBERG DATA VISUALIZATION × OPEN INFRASTRUCTURE
+          <div className="inline-block bg-[#D65A3A] text-white px-3 py-1 text-[10px] font-mono tracking-widest uppercase font-bold mb-2">
+            DIGITAL PUBLIC GOODS × CIVIC INTELLIGENCE × OPEN INFRASTRUCTURE
           </div>
           <h1 className="text-5xl sm:text-7xl font-serif font-bold tracking-tight text-[#171717] uppercase">
             CIVICPULSE
           </h1>
+          <p className="text-sm font-sans font-semibold text-[#171717]/80 mt-2">
+            Built for India. Designed to scale across public systems globally.
+          </p>
           <div className="flex items-center justify-center gap-4 text-xs font-mono tracking-wider uppercase text-[#171717]/80 mt-3 border-t border-[#171717]/10 pt-3">
             <span>Vol. I — Open Civic Intelligence Layer</span>
             <span>•</span>

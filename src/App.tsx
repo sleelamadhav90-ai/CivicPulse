@@ -363,6 +363,8 @@ export default function App() {
             <PriorityEngine
               districts={districts}
               requests={requests}
+              policyTargetDistrictId={policyTargetDistrictId}
+              policyTargetCategory={policyTargetCategory}
               onSelectProjectForPolicy={(districtId, category) => {
                 setPolicyTargetDistrictId(districtId);
                 setPolicyTargetCategory(category);

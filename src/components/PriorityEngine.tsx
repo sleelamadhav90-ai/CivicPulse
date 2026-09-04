@@ -47,6 +47,8 @@ import { CivicRelationshipFlow } from './CivicRelationshipFlow';
 interface PriorityEngineProps {
   districts: District[];
   requests: CitizenRequest[];
+  policyTargetDistrictId?: string;
+  policyTargetCategory?: InfrastructureCategory;
   onSelectProjectForPolicy: (districtId: string, category: InfrastructureCategory) => void;
   onNavigateToImpact: (districtId: string, category: InfrastructureCategory) => void;
   onNavigateToMap: () => void;
@@ -57,6 +59,8 @@ interface PriorityEngineProps {
 export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   districts,
   requests,
+  policyTargetDistrictId,
+  policyTargetCategory,
   onSelectProjectForPolicy,
   onNavigateToImpact,
   onNavigateToMap,
@@ -78,6 +82,19 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   // Modals state
   const [evidenceModalProject, setEvidenceModalProject] = useState<RecommendedProject | null>(null);
   const [impactModalProject, setImpactModalProject] = useState<RecommendedProject | null>(null);
+
+  // Auto-open Evidence modal when navigated with target district
+  React.useEffect(() => {
+    if (policyTargetDistrictId) {
+      const match = recommendedProjects.find(
+        p => p.districtId.toLowerCase() === policyTargetDistrictId.toLowerCase() ||
+             p.districtName.toLowerCase().includes(policyTargetDistrictId.toLowerCase())
+      );
+      if (match) {
+        setEvidenceModalProject(match);
+      }
+    }
+  }, [policyTargetDistrictId, recommendedProjects]);
 
   // Action Queue state
   const [actionQueue, setActionQueue] = useState<ActionQueueItem[]>([
@@ -151,7 +168,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
     }
   };
 
-  const handleUpdateQueueStatus = (id: string, newStatus: 'Shortlisted' | 'Under Review' | 'Approved') => {
+  const handleUpdateQueueStatus = (id: string, newStatus: ActionQueueItem['status']) => {
     setActionQueue(actionQueue.map((item) => item.id === id ? { ...item, status: newStatus } : item));
   };
 
@@ -202,47 +219,51 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300 font-sans text-slate-900 max-w-7xl mx-auto">
+    <div className="space-y-8 animate-in fade-in duration-300 font-sans text-[#171717] max-w-7xl mx-auto">
       {/* Top Banner & Header */}
-      <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
+      <div className="bg-white border border-[#171717] rounded-lg p-6 shadow-[3px_3px_0px_#171717]">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-[#171717]/20">
           <div className="space-y-1">
-            <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mb-1">
-              <span className="font-semibold text-blue-700">CivicPulse</span>
-              <span>•</span>
-              <span>Decide</span>
+            <div className="flex items-center space-x-2 text-xs font-mono font-bold mb-2">
+              <span className="px-2 py-0.5 bg-[#D65A3A] text-white uppercase text-[10px]">
+                DIGITAL PUBLIC GOODS × CIVIC INTELLIGENCE
+              </span>
+              <span className="text-[#171717]/40">•</span>
+              <span className="text-[#171717]/70 uppercase text-[10px]">
+                Built for India. Designed to scale across public systems.
+              </span>
             </div>
 
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-              Recommendations
+            <h1 className="text-3xl sm:text-4xl font-serif font-bold text-[#171717] tracking-tight">
+              Recommendations Portal
             </h1>
-            <p className="text-sm text-slate-600 max-w-3xl leading-relaxed">
-              Answers <span className="font-semibold text-slate-900 font-sans">"Where should the government intervene, and why?"</span> by translating citizen signals and asset audits directly into actionable decision briefs.
+            <p className="text-sm font-sans text-[#171717]/80 max-w-3xl leading-relaxed">
+              Answers <span className="font-bold text-[#171717] font-serif">"Where should the government intervene, and why?"</span> by translating citizen signals and asset audits directly into actionable decision briefs.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => setMainTab('portal')}
-              className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-xs font-sans font-bold rounded transition-colors cursor-pointer border border-[#171717] flex items-center gap-2 ${
                 mainTab === 'portal'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-[#171717] text-white shadow-[2px_2px_0px_#D65A3A]'
+                  : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
               }`}
             >
-              <Sparkles className="w-3.5 h-3.5 text-blue-400" />
+              <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
               <span>Recommendations ({recommendedProjects.length})</span>
             </button>
 
             <button
               onClick={() => setMainTab('queue')}
-              className={`px-4 py-2.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-2 ${
+              className={`px-4 py-2.5 text-xs font-sans font-bold rounded transition-colors cursor-pointer border border-[#171717] flex items-center gap-2 ${
                 mainTab === 'queue'
-                  ? 'bg-slate-900 text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  ? 'bg-[#171717] text-white shadow-[2px_2px_0px_#D65A3A]'
+                  : 'bg-[#F7F5EF] text-[#171717] hover:bg-white'
               }`}
             >
-              <Bookmark className="w-3.5 h-3.5 text-amber-500" />
+              <Bookmark className="w-3.5 h-3.5 text-[#D65A3A]" />
               <span>Action Queue ({actionQueue.length})</span>
             </button>
           </div>
@@ -484,69 +505,88 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                           Empty
                         </div>
                       ) : (
-                        items.map((item) => (
-                          <div key={item.id} className="bg-white border border-slate-200 rounded-lg p-3 shadow-2xs space-y-2 text-xs">
-                            <div className="flex items-center justify-between text-[11px]">
-                              <span className="font-semibold text-blue-700">{item.districtName}</span>
-                              <span className="font-mono font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded text-[10px]">
-                                P-{item.priorityScore}
-                              </span>
-                            </div>
+                        items.map((item) => {
+                          const matchedProj = recommendedProjects.find(p => p.id === item.recommendationId || p.title === item.title);
+                          return (
+                            <div key={item.id} className="bg-white border-2 border-[#171717] rounded-lg p-3.5 shadow-[2px_2px_0px_#171717] space-y-2.5 text-xs font-mono">
+                              <div className="flex items-center justify-between text-[11px]">
+                                <span className="font-bold text-[#D65A3A] uppercase">{item.districtName}</span>
+                                <span className="font-bold text-[#171717] bg-[#F7F5EF] px-2 py-0.5 border border-[#171717]/30 text-[10px]">
+                                  P-{item.priorityScore} / 100
+                                </span>
+                              </div>
 
-                            <h4 className="font-bold text-slate-900 text-xs leading-snug">
-                              {item.title}
-                            </h4>
+                              <h4 className="font-serif font-bold text-[#171717] text-sm leading-snug">
+                                {item.title}
+                              </h4>
 
-                            <div className="text-[11px] text-slate-500 font-mono flex items-center justify-between pt-1 border-t border-slate-100">
-                              <span>Reach: {item.targetBeneficiaries.toLocaleString()}</span>
-                              <span className="font-bold text-slate-900">₹{(item.estimatedBudgetInr / 10000000).toFixed(1)} Cr</span>
-                            </div>
+                              <div className="text-[10px] text-[#171717]/80 flex items-center justify-between pt-1 border-t border-[#171717]/10">
+                                <span>Affected: {item.targetBeneficiaries.toLocaleString()}</span>
+                                <span className="font-bold text-[#171717]">₹{(item.estimatedBudgetInr / 10000000).toFixed(1)} Cr</span>
+                              </div>
 
-                            {/* Status controls */}
-                            <div className="flex flex-wrap items-center gap-1 pt-1 text-[10px]">
-                              {col.status !== 'Shortlisted' && (
+                              {/* View Evidence CTA */}
+                              {matchedProj && (
                                 <button
-                                  onClick={() => handleUpdateQueueStatus(item.id, 'Shortlisted')}
-                                  className="px-1.5 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors cursor-pointer"
+                                  onClick={() => setEvidenceModalProject(matchedProj)}
+                                  className="w-full py-1 text-[10px] font-bold uppercase bg-[#F7F5EF] hover:bg-[#171717] hover:text-white border border-[#171717] text-[#171717] transition-colors cursor-pointer flex items-center justify-center gap-1"
                                 >
-                                  ← Back
+                                  <BarChart3 className="w-3 h-3 text-[#D65A3A]" />
+                                  <span>View Evidence & Voice →</span>
                                 </button>
                               )}
-                              {col.status === 'Shortlisted' && (
-                                <button
-                                  onClick={() => handleUpdateQueueStatus(item.id, 'Under Review')}
-                                  className="w-full py-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
-                                >
-                                  Review →
-                                </button>
-                              )}
-                              {col.status === 'Under Review' && (
-                                <button
-                                  onClick={() => handleUpdateQueueStatus(item.id, 'Approved')}
-                                  className="w-full py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
-                                >
-                                  Approve →
-                                </button>
-                              )}
-                              {col.status === 'Approved' && (
-                                <button
-                                  onClick={() => handleUpdateQueueStatus(item.id, 'In Progress')}
-                                  className="w-full py-1 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded transition-colors cursor-pointer text-center"
-                                >
-                                  Start Progress →
-                                </button>
-                              )}
-                              {col.status === 'In Progress' && (
-                                <button
-                                  onClick={() => handleUpdateQueueStatus(item.id, 'Completed')}
-                                  className="w-full py-1 bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded transition-colors cursor-pointer text-center"
-                                >
-                                  Complete ✓
-                                </button>
-                              )}
+
+                              {/* Status controls */}
+                              <div className="flex flex-wrap items-center gap-1 pt-1 text-[10px] font-sans">
+                                {col.status !== 'Shortlisted' && (
+                                  <button
+                                    onClick={() => handleUpdateQueueStatus(item.id, 'Shortlisted')}
+                                    className="px-2 py-1 bg-[#F7F5EF] hover:bg-[#171717] hover:text-white border border-[#171717] text-[#171717] font-bold transition-colors cursor-pointer"
+                                  >
+                                    ← Back
+                                  </button>
+                                )}
+                                {col.status === 'Shortlisted' && (
+                                  <button
+                                    onClick={() => handleUpdateQueueStatus(item.id, 'Under Review')}
+                                    className="w-full py-1.5 bg-[#171717] hover:bg-[#D65A3A] text-white font-bold uppercase tracking-wider rounded transition-colors cursor-pointer text-center"
+                                  >
+                                    Review →
+                                  </button>
+                                )}
+                                {col.status === 'Under Review' && (
+                                  <button
+                                    onClick={() => {
+                                      handleUpdateQueueStatus(item.id, 'Approved');
+                                      if (matchedProj && onConvertToGovernmentProject) {
+                                        onConvertToGovernmentProject(matchedProj);
+                                      }
+                                    }}
+                                    className="w-full py-1.5 bg-emerald-700 hover:bg-emerald-800 text-white font-bold uppercase tracking-wider rounded transition-colors cursor-pointer text-center"
+                                  >
+                                    Approve & Sanction →
+                                  </button>
+                                )}
+                                {col.status === 'Approved' && (
+                                  <button
+                                    onClick={() => handleUpdateQueueStatus(item.id, 'In Progress')}
+                                    className="w-full py-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold uppercase tracking-wider rounded transition-colors cursor-pointer text-center"
+                                  >
+                                    Start Progress →
+                                  </button>
+                                )}
+                                {col.status === 'In Progress' && (
+                                  <button
+                                    onClick={() => handleUpdateQueueStatus(item.id, 'Completed')}
+                                    className="w-full py-1.5 bg-[#171717] hover:bg-[#D65A3A] text-white font-bold uppercase tracking-wider rounded transition-colors cursor-pointer text-center"
+                                  >
+                                    Complete ✓
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>

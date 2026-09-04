@@ -650,6 +650,45 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
           </div>
         </div>
 
+        {/* Gemini AI Core Intelligence Pipeline Banner */}
+        <div className="bg-[#171717] text-[#F7F5EF] p-5 border-2 border-[#171717] shadow-[4px_4px_0px_#D65A3A] font-mono text-xs space-y-3">
+          <div className="flex items-center justify-between border-b border-white/20 pb-2">
+            <span className="font-bold text-[#D65A3A] uppercase tracking-wider flex items-center gap-1.5">
+              <Sparkles className="w-4 h-4 text-amber-300" />
+              GEMINI AI CORE INTELLIGENCE PIPELINE
+            </span>
+            <span className="text-[10px] bg-white text-[#171717] px-2 py-0.5 font-bold">
+              4-STAGE AI ENGINE
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-[11px]">
+            <div className="bg-white/10 p-3 border border-white/10 space-y-1">
+              <span className="text-[10px] text-amber-300 font-bold block uppercase">1. Speech & Language</span>
+              <span className="font-bold text-white block">Voice/Multilingual → Structured Signal</span>
+              <p className="text-[10px] text-slate-300">Translates Telugu/Hindi/Tamil voice recordings into standardized civic metadata.</p>
+            </div>
+
+            <div className="bg-white/10 p-3 border border-white/10 space-y-1">
+              <span className="text-[10px] text-amber-300 font-bold block uppercase">2. Semantic Clustering</span>
+              <span className="font-bold text-white block">Multilingual Requests → 1 Issue</span>
+              <p className="text-[10px] text-slate-300">Groups 327 individual requests across 8 languages into unified community issues.</p>
+            </div>
+
+            <div className="bg-white/10 p-3 border border-white/10 space-y-1">
+              <span className="text-[10px] text-amber-300 font-bold block uppercase">3. Pattern Discovery</span>
+              <span className="font-bold text-white block">Investment–Outcome Mismatch</span>
+              <p className="text-[10px] text-slate-300">Detects spending anomalies, stalled contracts (+42% complaints), and spatial gaps.</p>
+            </div>
+
+            <div className="bg-white/10 p-3 border border-white/10 space-y-1">
+              <span className="text-[10px] text-amber-300 font-bold block uppercase">4. Recommendation Engine</span>
+              <span className="font-bold text-white block">Multi-Layer Data → Intervention</span>
+              <p className="text-[10px] text-slate-300">Synthesizes demand, capacity, equity & budget to recommend FIX / BUILD actions.</p>
+            </div>
+          </div>
+        </div>
+
         {/* View Selection Tabs */}
         <div className="flex flex-wrap items-center gap-2 pt-2">
           <button

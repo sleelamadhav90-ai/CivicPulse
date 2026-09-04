@@ -137,27 +137,31 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   };
 
   return (
-    <div className="space-y-8 font-sans text-slate-900 pb-12 max-w-7xl mx-auto">
+    <div className="space-y-8 font-sans text-[#171717] pb-12 max-w-7xl mx-auto">
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-200 pb-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[#171717]/20 pb-6">
         <div>
-          <div className="flex items-center space-x-2 text-xs text-slate-500 font-medium mb-1">
-            <span className="font-semibold text-blue-700">CivicPulse</span>
-            <span>•</span>
-            <span>Understand</span>
+          <div className="flex items-center space-x-2 text-xs font-mono font-bold mb-2">
+            <span className="px-2 py-0.5 bg-[#D65A3A] text-white uppercase text-[10px]">
+              DIGITAL PUBLIC GOODS × CIVIC INTELLIGENCE
+            </span>
+            <span className="text-[#171717]/40">•</span>
+            <span className="text-[#171717]/70 uppercase text-[10px]">
+              Built for India. Designed to scale across public systems.
+            </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
             Community Issues
           </h1>
-          <p className="text-sm text-slate-600 mt-1">
-            <span className="font-semibold text-slate-900">2,841 citizen requests</span> have been grouped into <span className="font-semibold text-slate-900">327 community issues</span>.
+          <p className="text-sm font-sans text-[#171717]/80 mt-1">
+            <span className="font-bold text-[#171717]">2,841 citizen requests</span> have been grouped into <span className="font-bold text-[#171717]">327 community issues</span>.
           </p>
         </div>
 
         {onNavigateToRecommendations && (
           <button
             onClick={onNavigateToRecommendations}
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg transition-colors shadow-xs flex items-center gap-2 cursor-pointer shrink-0"
+            className="px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-sans font-bold text-xs rounded transition-colors shadow-[2px_2px_0px_#171717] border border-[#171717] flex items-center gap-2 cursor-pointer shrink-0"
           >
             <span>View Recommendations</span>
             <ArrowRight className="w-4 h-4" />

@@ -123,15 +123,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       `}>
         <div>
           {/* Official Header */}
-          <div className="p-4 border-b border-slate-800 bg-slate-950 flex items-center space-x-3">
-            <div className="w-8 h-8 bg-blue-700 text-white font-mono font-bold text-sm flex items-center justify-center border border-blue-500 shadow-xs shrink-0">
+          <div className="p-4 border-b border-[#171717]/40 bg-[#171717] flex items-center space-x-3">
+            <div className="w-8 h-8 bg-[#D65A3A] text-white font-mono font-bold text-sm flex items-center justify-center border border-white/20 shadow-[1px_1px_0px_#F7F5EF] shrink-0">
               CP
             </div>
             <div>
-              <span className="text-sm font-bold tracking-tight text-white block uppercase leading-tight font-sans">
+              <span className="text-base font-serif font-bold tracking-tight text-white block uppercase leading-tight">
                 CivicPulse
               </span>
-              <span className="text-[9px] font-mono tracking-wider text-slate-400 block mt-0.5">
+              <span className="text-[9px] font-mono tracking-wider text-[#F7F5EF]/70 block mt-0.5">
                 Public Infrastructure & Intelligence
               </span>
             </div>
@@ -145,10 +145,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 className="w-full py-1.5 px-3 bg-slate-800 hover:bg-slate-700 text-white font-mono font-bold text-[10px] uppercase tracking-wider transition-colors flex items-center justify-between cursor-pointer border border-slate-700"
               >
                 <div className="flex items-center space-x-2">
-                  <Grid className="w-3.5 h-3.5 text-blue-400" />
+                  <Grid className="w-3.5 h-3.5 text-[#D65A3A]" />
                   <span>Module Directory</span>
                 </div>
-                <span className="px-1.5 py-0.2 bg-blue-900 text-blue-200 text-[9px] font-mono border border-blue-700">14 Apps</span>
+                <span className="px-1.5 py-0.2 bg-[#D65A3A]/20 text-[#D65A3A] text-[9px] font-mono border border-[#D65A3A]/40 font-bold">14 Apps</span>
               </button>
             </div>
           )}
@@ -178,18 +178,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       }}
                       className={`w-full flex items-center justify-between px-2.5 py-1.5 text-xs font-medium tracking-wide transition-colors cursor-pointer border ${
                         isActive
-                          ? 'bg-blue-800 text-white border-blue-600 font-semibold shadow-xs'
+                          ? 'bg-[#D65A3A] text-white border-[#D65A3A] font-semibold shadow-[2px_2px_0px_#171717]'
                           : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border-transparent'
                       }`}
                     >
                       <div className="flex items-center space-x-2.5">
                         <IconComp className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                        <span className="text-[11px]">{item.label}</span>
+                        <span className="text-[11px] font-sans">{item.label}</span>
                       </div>
                       {item.badge && (
                         <span className={`text-[8px] px-1.5 py-0.2 font-mono uppercase font-bold border ${
                           isActive
-                            ? 'bg-white text-blue-900 border-white'
+                            ? 'bg-white text-[#171717] border-white'
                             : 'bg-slate-800 text-slate-300 border-slate-700'
                         }`}>
                           {item.badge}

@@ -241,7 +241,7 @@ export const PublicInfrastructureBlocks: React.FC = () => {
               <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase bg-[#D65A3A] text-white tracking-widest">
                 ARCHITECTURE SYSTEM
               </span>
-              <span className="text-xs font-mono text-[#171717]/60">India Stack × Open Infrastructure</span>
+              <span className="text-xs font-mono text-[#171717]/60">Digital Public Goods × Open Infrastructure</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717] mt-2 tracking-tight">
               Public Infrastructure Blocks
