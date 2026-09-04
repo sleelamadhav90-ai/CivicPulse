@@ -1,6 +1,7 @@
 import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile, InfrastructureAudit } from '../types';
 import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
 import { getInvestmentAuditByCategory } from '../data/investmentData';
+import { getPublicDataForDistrict, getPublicContextSummary } from '../data/publicDataService';
 
 export const SCORING_WEIGHTS = {
   citizenDemand: 0.30,
@@ -83,6 +84,8 @@ export function calculatePriorityScore(
     ).toFixed(1)
   );
 
+  const publicContext = getPublicContextSummary(district.name, category);
+
   return {
     demand_score: Number(demand_score.toFixed(1)),
     gap_score: Number(gap_score.toFixed(1)),
@@ -100,6 +103,9 @@ export function calculatePriorityScore(
       vulnerability: SCORING_WEIGHTS.populationImpact,
       alignment: SCORING_WEIGHTS.governmentPriority,
     },
+    publicContextSummary: publicContext.headline,
+    publicDataSource: publicContext.primarySourceBadge,
+    isSyntheticDemo: publicContext.isSynthetic,
   };
 }
 
@@ -578,6 +584,15 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       },
       demographics,
       infrastructureAudit,
+      publicDataIndicators: getPublicDataForDistrict(item.districtName, item.category).map(ind => ({
+        indicator: ind.indicator,
+        value: ind.value,
+        unit: ind.unit,
+        source: ind.source,
+        year: ind.year,
+        datasetName: ind.datasetName,
+        isSynthetic: ind.isSyntheticDemo,
+      })),
       investmentAudit: getInvestmentAuditByCategory(item.category),
     };
   });

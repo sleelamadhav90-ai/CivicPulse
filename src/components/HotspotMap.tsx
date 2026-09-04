@@ -18,8 +18,12 @@ import {
   FileText, 
   MapPin,
   Volume2,
-  RotateCcw
+  RotateCcw,
+  Info,
+  Building2,
+  Database
 } from 'lucide-react';
+import { getPublicDataForDistrict } from '../data/publicDataService';
 
 interface HotspotMapProps {
   districts: District[];
@@ -709,6 +713,40 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   </div>
                 </div>
               )}
+
+              {/* Public Data Context (data.gov.in / IMD / WHO) */}
+              {(() => {
+                const targetCat = selectedCategory === 'All' ? activeEvaluation.demandHotspot.primaryCategory : selectedCategory;
+                const publicIndicators = getPublicDataForDistrict(activeEvaluation.district.name, targetCat);
+                if (publicIndicators.length === 0) return null;
+                const primaryInd = publicIndicators[0];
+                return (
+                  <div className="bg-slate-50 border border-slate-300 p-2.5 rounded-xs space-y-1 text-xs font-mono">
+                    <div className="flex items-center justify-between text-[9px] text-slate-500 uppercase tracking-wider font-bold">
+                      <span className="flex items-center gap-1 text-blue-900">
+                        <Database className="w-2.5 h-2.5" />
+                        <span>Public Context</span>
+                      </span>
+                      <span className="text-slate-600 font-sans">
+                        Source: {primaryInd.source} ({primaryInd.year})
+                      </span>
+                    </div>
+                    <div className="text-[11px] font-bold text-slate-900">
+                      {primaryInd.indicator}: {primaryInd.value} {primaryInd.unit}
+                    </div>
+                    {primaryInd.contextSummary && (
+                      <div className="text-[10px] text-slate-600 font-sans leading-tight">
+                        {primaryInd.contextSummary}
+                      </div>
+                    )}
+                    {primaryInd.isSyntheticDemo && (
+                      <div className="text-[8px] text-amber-700 italic">
+                        *Illustrative demo dataset for non-cataloged metrics
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Primary Action Buttons */}
               <div className="grid grid-cols-2 gap-2 pt-1">

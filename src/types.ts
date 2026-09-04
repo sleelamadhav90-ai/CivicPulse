@@ -233,6 +233,9 @@ export interface ScoreBreakdown {
     vulnerability: number;
     alignment: number;
   };
+  publicContextSummary?: string;
+  publicDataSource?: string;
+  isSyntheticDemo?: boolean;
 }
 
 export interface PriorityFactorDetail {
@@ -316,6 +319,16 @@ export interface RecommendedProject {
   // Infrastructure Data Audit ("What exists? What condition/capacity?")
   infrastructureAudit?: InfrastructureAudit;
   infrastructureAssetsList?: InfrastructureAsset[];
+  // Public & Government Open Data Context
+  publicDataIndicators?: Array<{
+    indicator: string;
+    value: number | string;
+    unit: string;
+    source: string;
+    year: number;
+    datasetName?: string;
+    isSynthetic?: boolean;
+  }>;
   // Investment & Government Plan Data Audit ("What has been planned & spent?")
   investmentAudit?: InvestmentAuditSummary;
 }

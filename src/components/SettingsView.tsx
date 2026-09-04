@@ -130,25 +130,62 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Database className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              Data sources
+              Public Data Sources & Open Registries
             </h2>
           </div>
           <p className="text-xs text-[#57534E]">
-            Connected public registry connectors and administrative feeds.
+            CivicPulse integrates authentic public government data to give verifiable context to citizen signals without requiring paid external APIs or billing accounts.
           </p>
           <div className="space-y-2 pt-1 text-xs font-mono">
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-              <span className="text-[#171717]">Jal Jeevan Mission (JJM) Telemetry</span>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · 2,840 nodes</span>
+              <div>
+                <span className="text-[#171717] font-bold block">data.gov.in (Primary Open Data Foundation)</span>
+                <span className="text-[10px] text-[#78716C]">National District Development & Infrastructure Benchmarks</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Verified Official</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-              <span className="text-[#171717]">PMGSY National Rural Roads GIS</span>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Road condition layer</span>
+              <div>
+                <span className="text-[#171717] font-bold block">Jal Jeevan Mission (JJM) / CGWB</span>
+                <span className="text-[10px] text-[#78716C]">Rural Household Tap Telemetry & Aquifer Depletion</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-              <span className="text-[#171717]">Census & Vulnerability Atlas (SECC)</span>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Baseline census layer</span>
+              <div>
+                <span className="text-[#171717] font-bold block">PMGSY & MoRTH Road GIS Registry</span>
+                <span className="text-[10px] text-[#78716C]">All-Weather Habitation Connectivity & Surface Quality Layer</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
             </div>
+            <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+              <div>
+                <span className="text-[#171717] font-bold block">MoHFW & WHO Health Statistics</span>
+                <span className="text-[10px] text-[#78716C]">Primary Health Centre Staffing, Cold-Chain & Emergency Transit</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+            </div>
+            <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+              <div>
+                <span className="text-[#171717] font-bold block">IMD & ISRO Bhuvan (Climate & Flood GIS)</span>
+                <span className="text-[10px] text-[#78716C]">Monsoon Rainfall Anomaly & Urban Stagnation Risk Indices</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+            </div>
+            <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+              <div>
+                <span className="text-[#171717] font-bold block">Census, SECC & NITI Aayog MPI</span>
+                <span className="text-[10px] text-[#78716C]">Multidimensional Poverty & Demographic Vulnerability Atlas</span>
+              </div>
+              <span className="text-[#285943] text-[11px] font-semibold">Active · Baseline Official Data</span>
+            </div>
+          </div>
+          
+          <div className="bg-[#FAF8F5] p-3 border border-[#171717]/10 rounded-xs text-[11px] text-stone-600 flex items-start gap-2 mt-2">
+            <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0 mt-0.5" />
+            <span>
+              <strong>Zero-Payment Architecture Compliance:</strong> All open datasets are bundled with zero billing dependencies, zero Cloud Run/paid functions, and no credit/debit cards required.
+            </span>
           </div>
         </div>
 
