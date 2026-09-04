@@ -142,6 +142,80 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             <p className="text-xs sm:text-sm font-sans text-[#171717]/80">
               Interactive spatial decision platform prioritizing infrastructure interventions based on citizen voice & asset gaps.
             </p>
+
+            {/* INDIA ADMINISTRATIVE HIERARCHY BAR */}
+            <div className="pt-2">
+              <div className="bg-[#171717] text-[#F7F5EF] p-2.5 border border-[#171717] font-mono text-xs flex flex-wrap items-center gap-2 rounded">
+                <span className="font-bold text-[#D65A3A] uppercase tracking-widest text-[10px]">
+                  🇮🇳 INDIA HIERARCHY:
+                </span>
+
+                {/* State Select */}
+                <span className="text-slate-400">State:</span>
+                <select
+                  value={activeEvaluation?.district.state || 'Andhra Pradesh'}
+                  onChange={(e) => {
+                    const targetState = e.target.value;
+                    const matchedDistrict = districts.find(d => d.state === targetState);
+                    if (matchedDistrict) {
+                      setActiveDistrictId(matchedDistrict.id);
+                    }
+                  }}
+                  className="bg-white text-[#171717] font-bold px-2 py-1 text-xs border border-slate-300 rounded cursor-pointer"
+                >
+                  {Array.from(new Set(districts.map(d => d.state))).map(state => (
+                    <option key={state} value={state}>{state}</option>
+                  ))}
+                </select>
+
+                <span className="text-slate-400">→ District:</span>
+                <select
+                  value={activeDistrictId}
+                  onChange={(e) => setActiveDistrictId(e.target.value)}
+                  className="bg-white text-[#171717] font-bold px-2 py-1 text-xs border border-slate-300 rounded cursor-pointer"
+                >
+                  {districts
+                    .filter(d => d.state === (activeEvaluation?.district.state || 'Andhra Pradesh'))
+                    .map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                </select>
+
+                <span className="text-slate-400">→ Block:</span>
+                <span className="bg-white/10 px-2 py-0.5 text-white font-bold border border-white/20">
+                  {activeEvaluation?.district.name} Rural North
+                </span>
+
+                <span className="text-slate-400">→ Village/Ward:</span>
+                <span className="bg-white/10 px-2 py-0.5 text-white font-bold border border-white/20">
+                  Ward 14 (Pumping Station Area)
+                </span>
+              </div>
+            </div>
+
+            {/* END-TO-END CONNECTED INVESTIGATION CHAIN */}
+            <div className="pt-1">
+              <div className="bg-[#F7F5EF] border border-[#171717]/30 p-2 font-mono text-[11px] overflow-x-auto whitespace-nowrap flex items-center gap-2 text-[#171717]">
+                <span className="font-bold text-[#D65A3A] uppercase text-[10px]">INVESTIGATION CHAIN:</span>
+                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">🎙️ Citizen Signal</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">AI Multilingual</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold border border-amber-300">Community Issue (327)</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-rose-100 text-rose-900 font-bold border border-rose-300">Surge ↑42%</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Infra Audit (Poor)</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Demographics (82K)</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Investment (₹39Cr)</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-[#171717] text-white font-bold">🔧 Recommendation (FIX)</span>
+                <span>→</span>
+                <span className="px-2 py-0.5 bg-emerald-700 text-white font-bold">Action Queue ✓</span>
+              </div>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

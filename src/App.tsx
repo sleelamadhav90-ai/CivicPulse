@@ -35,6 +35,10 @@ import { GovernmentBriefing } from './components/GovernmentBriefing';
 import { PatternIntelligence } from './components/PatternIntelligence';
 import { InvestmentIntelligence } from './components/InvestmentIntelligence';
 import { PortalHubModal } from './components/PortalHub';
+import { CitizenSignalsView } from './components/CitizenSignalsView';
+import { CommunityIssuesView } from './components/CommunityIssuesView';
+import { InfrastructureView } from './components/InfrastructureView';
+import { DemographicsView } from './components/DemographicsView';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(false);
@@ -249,6 +253,8 @@ export default function App() {
       <div className={`min-h-screen bg-[#F7F5EF] text-[#171717] flex flex-col font-sans selection:bg-[#D65A3A]/20 selection:text-[#D65A3A] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         
         <GlobalHeader
+          activeTab={activeTab}
+          onNavigate={(tab) => setActiveTab(tab)}
           selectedCountryCode={selectedCountryCode}
           onSelectCountry={(code) => setSelectedCountryCode(code)}
           selectedLanguage={selectedLanguage}
@@ -345,12 +351,28 @@ export default function App() {
             />
           )}
 
+          {(activeTab === 'signals' || activeTab === 'submit') && (
+            <CitizenSignalsView
+              requests={requests}
+              selectedLanguage={selectedLanguage}
+              onNavigateToIssues={() => setActiveTab('issues')}
+            />
+          )}
+
+          {activeTab === 'issues' && (
+            <CommunityIssuesView
+              requests={requests}
+              governmentProjects={governmentProjects}
+              onNavigateToRecommendations={() => setActiveTab('recommendations')}
+            />
+          )}
+
           {activeTab === 'patterns' && (
             <PatternIntelligence
               districts={districts}
               requests={requests}
               onNavigateToMap={() => setActiveTab('map')}
-              onNavigateToRecommendations={() => setActiveTab('engine')}
+              onNavigateToRecommendations={() => setActiveTab('recommendations')}
               onNavigateToPolicyLab={(districtId, category) => {
                 setPolicyTargetDistrictId(districtId);
                 setPolicyTargetCategory(category);
@@ -359,7 +381,21 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'engine' && (
+          {activeTab === 'infrastructure' && (
+            <InfrastructureView
+              districtId={policyTargetDistrictId}
+              onNavigateToRecommendations={() => setActiveTab('recommendations')}
+            />
+          )}
+
+          {activeTab === 'demographics' && (
+            <DemographicsView
+              districts={districts}
+              onNavigateToRecommendations={() => setActiveTab('recommendations')}
+            />
+          )}
+
+          {(activeTab === 'recommendations' || activeTab === 'engine') && (
             <PriorityEngine
               districts={districts}
               requests={requests}
@@ -377,30 +413,19 @@ export default function App() {
               }}
               onNavigateToMap={() => setActiveTab('map')}
               onConvertToGovernmentProject={handleConvertToGovernmentProject}
-              onNavigateToProjects={() => setActiveTab('projects')}
+              onNavigateToProjects={() => setActiveTab('action_queue')}
             />
           )}
 
           {activeTab === 'investment' && (
             <InvestmentIntelligence
               districts={districts}
-              onNavigateToEngine={() => setActiveTab('engine')}
+              onNavigateToEngine={() => setActiveTab('recommendations')}
               onNavigateToPolicyLab={(districtId, category) => {
                 setPolicyTargetDistrictId(districtId);
                 setPolicyTargetCategory(category);
                 setActiveTab('insights');
               }}
-            />
-          )}
-
-          {activeTab === 'submit' && (
-            <CitizenIngestion
-              districts={districts}
-              requests={requests}
-              onAddRequest={handleAddRequest}
-              onOpenScoreModal={handleOpenScoreModal}
-              onNavigateToHotspots={() => setActiveTab('map')}
-              onNavigateToPatterns={() => setActiveTab('patterns')}
             />
           )}
 
@@ -426,7 +451,7 @@ export default function App() {
               onOpenScoreModal={handleOpenScoreModal}
               selectedCountryCode={selectedCountryCode}
               onNavigateToBriefing={() => setActiveTab('briefing')}
-              onNavigateToEngine={() => setActiveTab('engine')}
+              onNavigateToEngine={() => setActiveTab('recommendations')}
             />
           )}
 
@@ -442,7 +467,7 @@ export default function App() {
             />
           )}
 
-          {activeTab === 'projects' && (
+          {(activeTab === 'action_queue' || activeTab === 'projects') && (
             <ProjectsView
               districts={districts}
               projects={governmentProjects}
@@ -453,7 +478,7 @@ export default function App() {
                 setPolicyTargetCategory(category);
                 setActiveTab('insights');
               }}
-              onNavigateToEngine={() => setActiveTab('engine')}
+              onNavigateToEngine={() => setActiveTab('recommendations')}
             />
           )}
 
@@ -484,15 +509,15 @@ export default function App() {
             <div className="flex items-center space-x-3 text-xs text-[#171717]">
               <span className="font-serif font-bold tracking-wider text-[#171717] uppercase">CIVICPULSE</span>
               <span>•</span>
-              <span>REUSABLE CIVIC INFRASTRUCTURE BLOCKS</span>
+              <span className="font-semibold text-[#171717]">Designed for India · Scalable by Design</span>
               <span>•</span>
-              <span className="hidden sm:inline text-[#D65A3A] font-semibold">India Stack × Open Atlas</span>
+              <span className="hidden sm:inline text-[#D65A3A] font-bold">India Stack DPI Engine</span>
             </div>
 
             <div className="flex items-center space-x-6 text-xs">
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-[#285943]"></div>
-                <span>Engine Active</span>
+                <span>India Stack Live</span>
               </div>
               <button
                 onClick={() => setMethodologyModalOpen(true)}

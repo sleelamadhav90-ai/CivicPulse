@@ -62,22 +62,22 @@ export const GlobalConnectorsView: React.FC<GlobalConnectorsViewProps> = ({
         <div className="space-y-1">
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 bg-[#D65A3A] text-white font-mono text-[10px] font-bold uppercase tracking-widest">
             <Box className="w-3.5 h-3.5" />
-            OPEN CIVIC ARCHITECTURE LAYER
+            INDIAN DPI DATA CONNECTORS & SCHEMA ENGINE
           </div>
           <h1 className="text-3xl font-serif font-bold text-[#171717] tracking-tight">
-            LOCALIZED AT THE EDGE. STANDARDIZED AT THE CORE.
+            BUILT FOR INDIA STACK. SCALABLE BY DESIGN.
           </h1>
           <p className="text-sm text-[#171717]/80 font-sans max-w-3xl leading-relaxed">
-            CivicPulse isn't a single monolithic application. It is reusable digital public infrastructure connecting country-specific data adapters, multilingual voice AI, and a universal civic schema.
+            CivicPulse connects directly to Indian public infrastructure sources (Jal Jeevan Mission, PMGSY Roads, Census Baselines, Bhashini Voice AI). Its modular architecture separates intelligence logic from datasets, enabling smooth scale to other public systems.
           </p>
         </div>
 
         {/* Tab Controls */}
         <div className="flex flex-wrap items-center gap-2 font-mono text-xs">
           {[
-            { id: 'adapters', label: 'Country Adapters', icon: Globe },
+            { id: 'adapters', label: 'Data Connectors', icon: Database },
             { id: 'schema', label: 'Universal Schema', icon: Code },
-            { id: 'modules', label: 'Lego Modules', icon: Box },
+            { id: 'modules', label: 'Civic Blocks', icon: Box },
             { id: 'layers', label: 'Layer Stack', icon: Layers },
           ].map((tab) => {
             const Icon = tab.icon;

@@ -68,40 +68,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const primaryNavSections = [
     {
-      title: 'HOME',
+      title: 'PUBLIC PORTAL',
       items: [
-        { id: 'overview' as NavTab, label: 'Home', icon: Home, badge: 'Overview' },
-      ]
-    },
-    {
-      title: 'UNDERSTAND',
-      items: [
-        { id: 'signals' as NavTab, label: 'Citizen Signals', icon: Radio, badge: `${requestsCount}` },
+        { id: 'overview' as NavTab, label: 'Home Portal', icon: Home, badge: 'Overview' },
+        { id: 'submit' as NavTab, label: 'Report an Issue', icon: FileEdit, badge: 'Service' },
+        { id: 'map' as NavTab, label: 'Explore Locality', icon: MapPin, badge: 'Map' },
+        { id: 'signals' as NavTab, label: 'My Requests', icon: Radio, badge: `${requestsCount}` },
         { id: 'issues' as NavTab, label: 'Community Issues', icon: Layers, badge: '327' },
-        { id: 'patterns' as NavTab, label: 'AI Patterns', icon: Cpu, badge: 'Feed' },
       ]
     },
     {
-      title: 'EXPLORE',
+      title: 'GOVERNMENT DASHBOARD',
       items: [
-        { id: 'infrastructure' as NavTab, label: 'Infrastructure', icon: Building2, badge: 'Assets' },
-        { id: 'demographics' as NavTab, label: 'Population', icon: Users, badge: 'Census' },
-        { id: 'investment' as NavTab, label: 'Government Investment', icon: DollarSign, badge: '₹120 Cr' },
-      ]
-    },
-    {
-      title: 'DECIDE',
-      items: [
-        { id: 'recommendations' as NavTab, label: 'Recommendations', icon: Sparkles, badge: 'AI' },
+        { id: 'recommendations' as NavTab, label: 'AI Priority Engine', icon: Sparkles, badge: '0-100' },
         { id: 'action_queue' as NavTab, label: 'Action Queue', icon: CheckSquare, badge: `${projectsCount}` },
-        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp, badge: '4.2M' },
+        { id: 'investment' as NavTab, label: 'Public Capital', icon: DollarSign, badge: '₹120 Cr' },
+        { id: 'infrastructure' as NavTab, label: 'Asset Audits', icon: Building2, badge: 'Assets' },
+        { id: 'demographics' as NavTab, label: 'Demographics', icon: Users, badge: 'Census' },
       ]
     },
     {
-      title: 'SETTINGS',
+      title: 'POLICY & ANALYTICS',
       items: [
-        { id: 'settings' as NavTab, label: 'Settings', icon: Settings, badge: null },
-        { id: 'world' as NavTab, label: 'Global World Atlas', icon: Globe, badge: 'BRICS' },
+        { id: 'patterns' as NavTab, label: 'Pattern Intelligence', icon: Cpu, badge: 'Feed' },
+        { id: 'insights' as NavTab, label: 'Policy Lab', icon: FileText, badge: 'Simulate' },
+        { id: 'connectors' as NavTab, label: 'Data Sources', icon: Box, badge: 'India Grid' },
       ]
     }
   ];
@@ -207,14 +198,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 border-t border-slate-800 bg-slate-950 space-y-2 shrink-0 font-mono text-[10px]">
           <div className="p-2 border border-slate-800 bg-slate-900 text-slate-300">
             <div className="flex items-center justify-between mb-1 border-b border-slate-800 pb-1">
-              <span className="uppercase font-bold text-blue-400 text-[9px]">DPI PIPELINE</span>
+              <span className="uppercase font-bold text-[#D65A3A] text-[9px]">INDIA DPI STACK</span>
               <span className="flex items-center gap-1 text-emerald-400">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>ONLINE</span>
+                <span>OPERATIONAL</span>
               </span>
             </div>
-            <p className="text-[9px] text-slate-400 leading-relaxed font-sans">
-              7-Stage Closed Loop Civic Support Platform.
+            <p className="text-[9px] text-slate-400 leading-relaxed font-sans font-medium">
+              Designed for India · Scalable by Design
             </p>
           </div>
 
@@ -222,7 +213,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={onOpenMethodology}
             className="w-full py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-300 font-mono text-[9px] uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5 cursor-pointer border border-slate-800"
           >
-            <Info className="w-3 h-3 text-blue-400" />
+            <Info className="w-3 h-3 text-[#D65A3A]" />
             <span>Architecture Specs</span>
           </button>
         </div>
