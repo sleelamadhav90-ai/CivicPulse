@@ -10,9 +10,16 @@ import {
   Sparkles,
   ArrowRight,
   PlusCircle,
-  Filter
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory } from '../types';
+import { 
+  getAvailableStates, 
+  getDistrictsForState, 
+  getLocalitiesForDistrict,
+  filterCitizenRequests 
+} from '../utils/geography';
 
 interface CitizenSignalsViewProps {
   requests: CitizenRequest[];
@@ -32,11 +39,14 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedState, setSelectedState] = useState<string>('ALL');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL');
+  const [selectedLocality, setSelectedLocality] = useState<string>('ALL');
   const [selectedLanguageFilter, setSelectedLanguageFilter] = useState<string>('ALL');
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<string>('ALL');
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
 
-  const categories: InfrastructureCategory[] = ['Water', 'Health', 'Roads', 'Electricity', 'Education', 'Drainage', 'Sanitation'];
+  const categories: InfrastructureCategory[] = [
+    'Water', 'Health', 'Roads', 'Electricity', 'Education', 'Drainage', 'Sanitation'
+  ];
 
   // Automatically open modal if requested
   useEffect(() => {
@@ -46,67 +56,95 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     }
   }, [selectedRequestId, requests]);
 
-  // Extract unique filter options
-  const uniqueStates = useMemo(() => {
-    const set = new Set<string>();
-    requests.forEach(r => {
-      const parts = r.location.split(',');
-      if (parts.length > 1) {
-        set.add(parts[parts.length - 1].trim());
-      }
-    });
-    return Array.from(set).filter(Boolean);
-  }, [requests]);
+  // 1. Authoritative States list
+  const availableStates = useMemo(() => {
+    return getAvailableStates('IN');
+  }, []);
 
-  const uniqueDistricts = useMemo(() => {
-    const set = new Set<string>();
-    requests.forEach(r => {
-      const parts = r.location.split(',');
-      if (parts.length > 0) {
-        set.add(parts[0].trim());
-      }
-    });
-    return Array.from(set).filter(Boolean);
-  }, [requests]);
+  // 2. Cascading Districts strictly for the selected state
+  const availableDistricts = useMemo(() => {
+    return getDistrictsForState(selectedState, 'IN');
+  }, [selectedState]);
 
+  // 3. Cascading Localities / Cities strictly for the selected district
+  const availableLocalities = useMemo(() => {
+    return getLocalitiesForDistrict(selectedDistrict, selectedState, requests);
+  }, [selectedDistrict, selectedState, requests]);
+
+  // Unique Languages in dataset
   const uniqueLanguages = useMemo(() => {
     const set = new Set<string>();
     requests.forEach(r => {
       if (r.language) set.add(r.language);
     });
-    return Array.from(set).filter(Boolean);
+    return Array.from(set).filter(Boolean).sort();
   }, [requests]);
 
-  // Filter requests
+  // Cascade Resets:
+  // When State changes: reset District and Locality
+  const handleStateChange = (newState: string) => {
+    setSelectedState(newState);
+    setSelectedDistrict('ALL');
+    setSelectedLocality('ALL');
+  };
+
+  // When District changes: reset Locality
+  const handleDistrictChange = (newDistrict: string) => {
+    setSelectedDistrict(newDistrict);
+    setSelectedLocality('ALL');
+  };
+
+  // Filter requests deterministically
   const filteredRequests = useMemo(() => {
-    return requests.filter(req => {
-      // Search
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q || 
-        req.summary_en.toLowerCase().includes(q) ||
-        req.original_text.toLowerCase().includes(q) ||
-        req.location.toLowerCase().includes(q) ||
-        req.id.toLowerCase().includes(q);
-
-      // Category
-      const matchesCategory = selectedCategory === 'ALL' || req.category === selectedCategory;
-
-      // State
-      const matchesState = selectedState === 'ALL' || req.location.toLowerCase().includes(selectedState.toLowerCase());
-
-      // District
-      const matchesDistrict = selectedDistrict === 'ALL' || req.location.toLowerCase().includes(selectedDistrict.toLowerCase());
-
-      // Language
-      const matchesLang = selectedLanguageFilter === 'ALL' || req.language === selectedLanguageFilter;
-
-      return matchesSearch && matchesCategory && matchesState && matchesDistrict && matchesLang;
+    // Basic filter by geography, category, language, search
+    let list = filterCitizenRequests(requests, {
+      state: selectedState,
+      district: selectedDistrict,
+      locality: selectedLocality,
+      category: selectedCategory,
+      language: selectedLanguageFilter,
+      searchQuery: searchQuery,
     });
-  }, [requests, searchQuery, selectedCategory, selectedState, selectedDistrict, selectedLanguageFilter]);
+
+    // Time filter
+    if (selectedTimePeriod !== 'ALL') {
+      const days = parseInt(selectedTimePeriod, 10);
+      if (!isNaN(days)) {
+        const now = new Date('2026-09-04T12:00:00Z').getTime();
+        const cutoff = now - days * 24 * 60 * 60 * 1000;
+        list = list.filter(r => {
+          if (!r.timestamp) return true;
+          const t = new Date(r.timestamp).getTime();
+          return isNaN(t) || t >= cutoff;
+        });
+      }
+    }
+
+    return list;
+  }, [requests, selectedState, selectedDistrict, selectedLocality, selectedCategory, selectedLanguageFilter, selectedTimePeriod, searchQuery]);
+
+  const hasActiveFilters = 
+    searchQuery.trim() !== '' ||
+    selectedCategory !== 'ALL' ||
+    selectedState !== 'ALL' ||
+    selectedDistrict !== 'ALL' ||
+    selectedLocality !== 'ALL' ||
+    selectedLanguageFilter !== 'ALL' ||
+    selectedTimePeriod !== 'ALL';
+
+  const handleResetFilters = () => {
+    setSearchQuery('');
+    setSelectedCategory('ALL');
+    setSelectedState('ALL');
+    setSelectedDistrict('ALL');
+    setSelectedLocality('ALL');
+    setSelectedLanguageFilter('ALL');
+    setSelectedTimePeriod('ALL');
+  };
 
   const getStatusBadge = (status?: string) => {
     const s = status || 'Received';
-    if (s.toLowerCase().includes('resolved')) {
+    if (s.toLowerCase().includes('resolved') || s.toLowerCase().includes('completed')) {
       return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#285943]/10 text-[#285943] border border-[#285943]/20">Resolved</span>;
     }
     if (s.toLowerCase().includes('prioritized')) {
@@ -128,7 +166,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             Citizen signals
           </h1>
           <p className="text-sm text-[#57534E] mt-1">
-            Understand what people are reporting, where and how frequently.
+            Understand what people are reporting, where and how frequently across India's administrative hierarchy.
           </p>
         </div>
 
@@ -143,7 +181,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
         )}
       </div>
 
-      {/* Top Controls: Search and Filters (Compact, clean inline controls) */}
+      {/* Top Controls: Search and Cascading Filters */}
       <div className="bg-white border border-[#171717]/15 p-4 rounded-sm shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
           {/* Search bar */}
@@ -153,85 +191,125 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reports, keywords, or tracking ID..."
+              placeholder="Search reports, summary keywords, or tracking ID..."
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#FAF8F5] border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
             />
           </div>
 
           {/* Quick Clear */}
-          {(searchQuery || selectedCategory !== 'ALL' || selectedState !== 'ALL' || selectedDistrict !== 'ALL' || selectedLanguageFilter !== 'ALL') && (
+          {hasActiveFilters && (
             <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedCategory('ALL');
-                setSelectedState('ALL');
-                setSelectedDistrict('ALL');
-                setSelectedLanguageFilter('ALL');
-                setSelectedTimePeriod('ALL');
-              }}
-              className="text-xs text-[#D65A3A] hover:underline cursor-pointer px-2 py-1 shrink-0"
+              onClick={handleResetFilters}
+              className="text-xs text-[#D65A3A] hover:underline cursor-pointer px-2 py-1 shrink-0 flex items-center gap-1 font-mono"
             >
-              Reset filters
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset filters</span>
             </button>
           )}
         </div>
 
-        {/* Filter Dropdowns row */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1 border-t border-[#171717]/10 text-xs font-sans">
+        {/* Filter Dropdowns row - Strict Cascading Hierarchy */}
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-2 border-t border-[#171717]/10 text-xs font-sans">
+          
+          {/* 1. STATE / UT */}
           <div>
-            <label className="text-[10px] text-[#78716C] block mb-0.5">Category</label>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              State / UT
+            </label>
+            <select
+              value={selectedState}
+              onChange={(e) => handleStateChange(e.target.value)}
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
+            >
+              <option value="ALL">All States</option>
+              {availableStates.map(st => (
+                <option key={st} value={st}>{st}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 2. DISTRICT */}
+          <div>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              District
+            </label>
+            <select
+              value={selectedDistrict}
+              onChange={(e) => handleDistrictChange(e.target.value)}
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
+            >
+              <option value="ALL">
+                {selectedState !== 'ALL' ? `All ${selectedState} Districts` : 'All Districts'}
+              </option>
+              {availableDistricts.map(d => (
+                <option key={d.name} value={d.name}>{d.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 3. CITY / TOWN / LOCALITY */}
+          <div>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              City / Town
+            </label>
+            <select
+              value={selectedLocality}
+              onChange={(e) => setSelectedLocality(e.target.value)}
+              disabled={selectedDistrict === 'ALL'}
+              className={`w-full px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium ${
+                selectedDistrict === 'ALL' 
+                  ? 'bg-stone-100 text-stone-400 cursor-not-allowed' 
+                  : 'bg-[#FAF8F5] text-[#171717]'
+              }`}
+            >
+              <option value="ALL">
+                {selectedDistrict !== 'ALL' ? `All ${selectedDistrict} Locations` : 'Select District first'}
+              </option>
+              {availableLocalities.map(loc => (
+                <option key={loc} value={loc}>{loc}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* 4. CATEGORY */}
+          <div>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              Category
+            </label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden"
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
             >
-              <option value="ALL">All categories</option>
+              <option value="ALL">All Categories</option>
               {categories.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
 
+          {/* 5. LANGUAGE */}
           <div>
-            <label className="text-[10px] text-[#78716C] block mb-0.5">State</label>
-            <select
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden"
-            >
-              <option value="ALL">All states</option>
-              {uniqueStates.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[10px] text-[#78716C] block mb-0.5">District</label>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => setSelectedDistrict(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden"
-            >
-              <option value="ALL">All districts</option>
-              {uniqueDistricts.map(d => <option key={d} value={d}>{d}</option>)}
-            </select>
-          </div>
-
-          <div>
-            <label className="text-[10px] text-[#78716C] block mb-0.5">Language</label>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              Language
+            </label>
             <select
               value={selectedLanguageFilter}
               onChange={(e) => setSelectedLanguageFilter(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden"
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
             >
-              <option value="ALL">All languages</option>
+              <option value="ALL">All Languages</option>
               {uniqueLanguages.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </div>
 
+          {/* 6. TIME PERIOD */}
           <div>
-            <label className="text-[10px] text-[#78716C] block mb-0.5">Time period</label>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              Time period
+            </label>
             <select
               value={selectedTimePeriod}
               onChange={(e) => setSelectedTimePeriod(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden"
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
             >
               <option value="ALL">All time</option>
               <option value="7">Past 7 days</option>
@@ -239,17 +317,30 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               <option value="90">Past 90 days</option>
             </select>
           </div>
+
         </div>
       </div>
 
       {/* Main Content: Clean Table/List */}
       <div className="bg-white border border-[#171717]/15 rounded-sm overflow-hidden shadow-xs">
-        <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#171717]/10 flex items-center justify-between text-xs text-[#57534E]">
-          <span className="font-medium">
-            Showing <strong className="text-[#171717]">{filteredRequests.length}</strong> citizen signals
-          </span>
+        <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#57534E]">
+          <div className="flex items-center gap-2">
+            <span className="font-medium">
+              Showing <strong className="text-[#171717] font-mono">{filteredRequests.length}</strong> citizen signals
+            </span>
+            {(selectedState !== 'ALL' || selectedDistrict !== 'ALL' || selectedCategory !== 'ALL') && (
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-stone-200/70 text-stone-700">
+                Filtered: {[
+                  selectedState !== 'ALL' ? selectedState : null,
+                  selectedDistrict !== 'ALL' ? selectedDistrict : null,
+                  selectedLocality !== 'ALL' ? selectedLocality : null,
+                  selectedCategory !== 'ALL' ? selectedCategory : null,
+                ].filter(Boolean).join(' › ')}
+              </span>
+            )}
+          </div>
           <span className="text-[11px] text-[#78716C]">
-            Click any row to view complete report
+            Click any row to inspect full telemetry
           </span>
         </div>
 
@@ -269,13 +360,26 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             <tbody className="divide-y divide-[#171717]/10">
               {filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-12 text-center text-sm text-[#78716C]">
-                    No citizen signals matched your filters.
+                  <td colSpan={7} className="py-16 text-center text-sm text-[#78716C]">
+                    <div className="max-w-md mx-auto space-y-2">
+                      <p className="font-medium text-[#171717]">No civic signals match these filters.</p>
+                      <p className="text-xs text-[#78716C]">
+                        Try selecting "All Districts" or clearing the category/search filter to view broader signals.
+                      </p>
+                      {hasActiveFilters && (
+                        <button
+                          onClick={handleResetFilters}
+                          className="mt-2 px-3 py-1.5 bg-[#FAF8F5] border border-[#171717]/20 text-xs font-semibold rounded-xs hover:bg-stone-200 transition-colors cursor-pointer"
+                        >
+                          Reset all filters
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ) : (
                 filteredRequests.map((req) => {
-                  const isVoice = req.source?.includes('voice');
+                  const isVoice = req.source_type?.includes('voice') || req.audio_url;
                   const dateFormatted = req.timestamp 
                     ? new Date(req.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '2 Sep 2026';
@@ -298,12 +402,15 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
                       {/* Location */}
                       <td className="py-3 px-3 text-[#57534E] whitespace-nowrap">
-                        {req.location}
+                        <div className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#78716C] shrink-0" />
+                          <span>{req.location || `${req.district || ''}, ${req.state || ''}`}</span>
+                        </div>
                       </td>
 
                       {/* Category */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="font-mono text-[11px] text-[#171717]">
+                        <span className="font-mono text-[11px] text-[#171717] bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#171717]/10">
                           {req.category}
                         </span>
                       </td>
@@ -311,13 +418,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                       {/* Severity */}
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span className={`inline-flex items-center font-mono text-xs font-semibold ${
-                          (req.urgency_score || req.severity || 5) >= 8 
+                          (req.severity || 5) >= 8 
                             ? 'text-[#D65A3A]' 
-                            : (req.urgency_score || req.severity || 5) >= 6 
+                            : (req.severity || 5) >= 6 
                             ? 'text-amber-800' 
                             : 'text-[#285943]'
                         }`}>
-                          {req.urgency_score || req.severity || 5} / 10
+                          {req.severity || 5} / 10
                         </span>
                       </td>
 
@@ -407,7 +514,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {/* Original Citizen Input */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[#171717] block">
-                Citizen input ({selectedRequest.language || 'Native'} · {selectedRequest.source || 'Written'})
+                Citizen input ({selectedRequest.language || 'Native'} · {selectedRequest.source_type || 'Written'})
               </span>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 text-xs text-[#57534E] rounded-xs leading-relaxed italic">
                 "{selectedRequest.original_text || selectedRequest.summary_en}"
@@ -430,13 +537,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                 <span className="text-[10px] text-[#78716C] block">Severity Score</span>
                 <span className="text-sm font-bold text-[#D65A3A]">
-                  {selectedRequest.urgency_score || selectedRequest.severity || 6} / 10
+                  {selectedRequest.severity || 6} / 10
                 </span>
               </div>
               <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                 <span className="text-[10px] text-[#78716C] block">Reported Infrastructure</span>
                 <span className="text-xs font-bold text-[#171717]">
-                  {selectedRequest.affected_infra || `${selectedRequest.category} Utility Asset`}
+                  {selectedRequest.affected_infrastructure || `${selectedRequest.category} Utility Asset`}
                 </span>
               </div>
             </div>

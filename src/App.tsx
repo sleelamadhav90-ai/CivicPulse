@@ -541,6 +541,7 @@ export default function App() {
           {activeTab === 'impact' && (
             <ImpactSimulator
               districts={districts}
+              requests={requests}
               governmentProjects={governmentProjects}
               initialDistrictId={policyTargetDistrictId}
               initialCategory={policyTargetCategory}

@@ -1,8 +1,13 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
 import { getCityDemandHotspot, filterRequestsByTime, CityDemandHotspot } from '../utils/demandAggregation';
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState, getReportEvidence, ReportEvidence } from './IndiaMapCanvas';
+import { 
+  getAvailableStates, 
+  getDistrictsForState, 
+  getLocalitiesForDistrict 
+} from '../utils/geography';
 import { 
   Layers, 
   X, 
@@ -11,10 +16,9 @@ import {
   Clock, 
   Eye, 
   FileText, 
-  SlidersHorizontal,
-  Info,
   MapPin,
-  Volume2
+  Volume2,
+  RotateCcw
 } from 'lucide-react';
 
 interface HotspotMapProps {
@@ -46,16 +50,25 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   onNavigateToCommunityIssues,
   onNavigateToRecommendations,
 }) => {
+  // Cascading Geography States
+  const [selectedState, setSelectedState] = useState<string>('ALL');
+  const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL');
+  const [selectedLocality, setSelectedLocality] = useState<string>('ALL');
+
+  // Category & Time
   const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory | 'All'>('All');
   const [timeFilter, setTimeFilter] = useState<TimeFilterRange>('30d');
   const [searchQuery, setSearchQuery] = useState('');
   
-  // Selected location: Default to null / drawer closed so the hero map is cleanly displayed first
+  // Selected location & drawer
   const [activeDistrictId, setActiveDistrictId] = useState<string | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showDrawerDetails, setShowDrawerDetails] = useState(false);
 
   // Dropdown visibility states
+  const [stateDropdownOpen, setStateDropdownOpen] = useState(false);
+  const [districtDropdownOpen, setDistrictDropdownOpen] = useState(false);
+  const [localityDropdownOpen, setLocalityDropdownOpen] = useState(false);
   const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
   const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
   const [layersDropdownOpen, setLayersDropdownOpen] = useState(false);
@@ -91,14 +104,109 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     digital: false,
   };
 
+  // 1. Authoritative States list strictly for current country
+  const availableStates = useMemo(() => {
+    return getAvailableStates(selectedCountryCode, districts);
+  }, [selectedCountryCode, districts]);
+
+  // 2. Cascading Districts strictly for the selected state
+  const availableDistricts = useMemo(() => {
+    return getDistrictsForState(selectedState, selectedCountryCode, districts);
+  }, [selectedState, selectedCountryCode, districts]);
+
+  // 3. Cascading Localities strictly for the selected district
+  const availableLocalities = useMemo(() => {
+    return getLocalitiesForDistrict(selectedDistrict, selectedState, requests);
+  }, [selectedDistrict, selectedState, requests]);
+
+  // Cascading Handlers
+  const handleSelectState = (st: string) => {
+    setSelectedState(st);
+    setSelectedDistrict('ALL');
+    setSelectedLocality('ALL');
+    setStateDropdownOpen(false);
+
+    // If a state is selected, find the first registered district in that state to focus on, or clear
+    if (st !== 'ALL') {
+      const firstDist = districts.find(d => d.state.toLowerCase() === st.toLowerCase());
+      if (firstDist) {
+        setActiveDistrictId(firstDist.id);
+      }
+    } else {
+      setActiveDistrictId(null);
+      setIsDrawerOpen(false);
+    }
+  };
+
+  const handleSelectDistrict = (distName: string, distId?: string) => {
+    setSelectedDistrict(distName);
+    setSelectedLocality('ALL');
+    setDistrictDropdownOpen(false);
+
+    if (distName !== 'ALL') {
+      const match = districts.find(d => 
+        (distId && d.id === distId) || 
+        d.name.toLowerCase() === distName.toLowerCase() ||
+        d.id.toLowerCase() === distName.toLowerCase()
+      );
+      if (match) {
+        setActiveDistrictId(match.id);
+        setIsDrawerOpen(true);
+      } else if (distId) {
+        setActiveDistrictId(distId);
+      }
+    }
+  };
+
+  const handleSelectLocality = (loc: string) => {
+    setSelectedLocality(loc);
+    setLocalityDropdownOpen(false);
+  };
+
+  const handleResetFilters = () => {
+    setSelectedState('ALL');
+    setSelectedDistrict('ALL');
+    setSelectedLocality('ALL');
+    setSelectedCategory('All');
+    setTimeFilter('30d');
+    setSearchQuery('');
+    setActiveDistrictId(null);
+    setIsDrawerOpen(false);
+  };
+
+  // Close dropdowns on outside click helper
+  const closeAllDropdowns = () => {
+    setStateDropdownOpen(false);
+    setDistrictDropdownOpen(false);
+    setLocalityDropdownOpen(false);
+    setCategoryDropdownOpen(false);
+    setTimeDropdownOpen(false);
+    setLayersDropdownOpen(false);
+  };
+
   // Filter requests by time window
   const timeFilteredRequests = useMemo(() => {
     return filterRequestsByTime(requests, timeFilter);
   }, [requests, timeFilter]);
 
+  // Geographic filtering of districts
+  const filteredDistricts = useMemo(() => {
+    let list = districts;
+    if (selectedState !== 'ALL') {
+      list = list.filter(d => d.state.toLowerCase() === selectedState.toLowerCase());
+    }
+    if (selectedDistrict !== 'ALL') {
+      list = list.filter(d => 
+        d.name.toLowerCase() === selectedDistrict.toLowerCase() ||
+        d.id.toLowerCase() === selectedDistrict.toLowerCase()
+      );
+    }
+    return list;
+  }, [districts, selectedState, selectedDistrict]);
+
   // Evaluate districts using category-aware demand aggregation
   const districtEvaluations: EvaluatedDistrict[] = useMemo(() => {
-    return districts.map((district) => {
+    return filteredDistricts.map((district) => {
       const targetCategory: InfrastructureCategory = selectedCategory === 'All' ? 'Water' : selectedCategory;
       
       // Calculate hotspot metrics specific to the selected category and time window
@@ -114,7 +222,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           const dist = (r.district || '').toLowerCase();
           const matchDist = dist === district.name.toLowerCase() || loc.includes(district.name.toLowerCase());
           const matchCat = selectedCategory === 'All' || r.category === selectedCategory;
-          return matchDist && matchCat;
+          const matchLocality = selectedLocality === 'ALL' || (r.locality && r.locality.toLowerCase() === selectedLocality.toLowerCase()) || loc.includes(selectedLocality.toLowerCase());
+          return matchDist && matchCat && matchLocality;
         }
       );
 
@@ -129,12 +238,13 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         priorityTier: getPriorityTier(demandHotspot.categoryScore || breakdown.total_score),
       };
     });
-  }, [districts, timeFilteredRequests, selectedCategory]);
+  }, [filteredDistricts, timeFilteredRequests, selectedCategory, selectedLocality]);
 
   // Active district evaluation
   const activeEvaluation = useMemo(() => {
-    if (!activeDistrictId) return null;
-    return districtEvaluations.find(e => e.district.id === activeDistrictId) || null;
+    if (!activeDistrictId) return districtEvaluations[0] || null;
+    return districtEvaluations.find(e => e.district.id === activeDistrictId) || 
+           districtEvaluations[0] || null;
   }, [districtEvaluations, activeDistrictId]);
 
   // Search filter list for quick jump
@@ -145,12 +255,18 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
       d.name.toLowerCase().includes(q) || 
       d.state.toLowerCase().includes(q) || 
       d.zone.toLowerCase().includes(q)
-    ).slice(0, 5);
+    ).slice(0, 6);
   }, [districts, searchQuery]);
 
   const handleSelectSearchedDistrict = (districtId: string) => {
-    setActiveDistrictId(districtId);
-    setIsDrawerOpen(true);
+    const found = districts.find(d => d.id === districtId);
+    if (found) {
+      setSelectedState(found.state);
+      setSelectedDistrict(found.name);
+      setSelectedLocality('ALL');
+      setActiveDistrictId(districtId);
+      setIsDrawerOpen(true);
+    }
     setSearchQuery('');
   };
 
@@ -159,27 +275,167 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     setEvidenceModalData({ district, category, hotspot, evidence });
   };
 
+  const hasActiveFilters = 
+    selectedState !== 'ALL' || 
+    selectedDistrict !== 'ALL' || 
+    selectedLocality !== 'ALL' || 
+    selectedCategory !== 'All' || 
+    timeFilter !== '30d' ||
+    searchQuery.trim() !== '';
+
   return (
     <div className="flex flex-col w-full h-full bg-[#121417] font-sans text-[#171717] overflow-hidden select-none">
       
       {/* 1. CONSOLIDATED ONE-ROW COMPACT MAP TOOLBAR */}
-      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-3 py-2 sm:px-4 sm:py-2 z-20 shrink-0 flex items-center justify-between gap-2 text-xs font-mono">
+      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-3 py-2 sm:px-4 sm:py-2 z-20 shrink-0 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
         
-        {/* Left: District Inspector Label & Clean Dropdowns */}
-        <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto no-scrollbar">
+        {/* Left: District Inspector Label & Cascading Geographic Dropdowns */}
+        <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-0.5">
           <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
             DISTRICT INSPECTOR
           </span>
 
           <span className="text-stone-300 hidden sm:inline">•</span>
 
-          {/* Category Dropdown: [ All issues ▼ ] */}
+          {/* 1. STATE DROPDOWN (Strictly States / UTs) */}
           <div className="relative">
             <button 
               onClick={() => {
-                setCategoryDropdownOpen(!categoryDropdownOpen);
-                setTimeDropdownOpen(false);
-                setLayersDropdownOpen(false);
+                const next = !stateDropdownOpen;
+                closeAllDropdowns();
+                setStateDropdownOpen(next);
+              }}
+              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+            >
+              <span className="text-stone-500 font-normal">State:</span>
+              <span className="font-bold truncate max-w-[110px]">{selectedState === 'ALL' ? 'All States' : selectedState}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+            </button>
+            {stateDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-56 max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+                <button
+                  onClick={() => handleSelectState('ALL')}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                    selectedState === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  }`}
+                >
+                  <span>All States & UTs</span>
+                  {selectedState === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                </button>
+                <div className="border-t border-stone-100 my-1"></div>
+                {availableStates.map(st => (
+                  <button
+                    key={st}
+                    onClick={() => handleSelectState(st)}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                      selectedState === st ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    }`}
+                  >
+                    <span>{st}</span>
+                    {selectedState === st && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 2. DISTRICT DROPDOWN (Strictly for selected state) */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                const next = !districtDropdownOpen;
+                closeAllDropdowns();
+                setDistrictDropdownOpen(next);
+              }}
+              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+            >
+              <span className="text-stone-500 font-normal">District:</span>
+              <span className="font-bold truncate max-w-[110px]">{selectedDistrict === 'ALL' ? 'All Districts' : selectedDistrict}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+            </button>
+            {districtDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-56 max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+                <button
+                  onClick={() => handleSelectDistrict('ALL')}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                    selectedDistrict === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  }`}
+                >
+                  <span>{selectedState !== 'ALL' ? `All ${selectedState} Districts` : 'All Districts'}</span>
+                  {selectedDistrict === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                </button>
+                <div className="border-t border-stone-100 my-1"></div>
+                {availableDistricts.map(d => (
+                  <button
+                    key={d.name}
+                    onClick={() => handleSelectDistrict(d.name, d.id)}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                      selectedDistrict === d.name ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    }`}
+                  >
+                    <span>{d.name}</span>
+                    {selectedDistrict === d.name && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 3. CITY / TOWN / LOCALITY DROPDOWN */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                if (selectedDistrict === 'ALL') return;
+                const next = !localityDropdownOpen;
+                closeAllDropdowns();
+                setLocalityDropdownOpen(next);
+              }}
+              disabled={selectedDistrict === 'ALL'}
+              className={`border px-2.5 py-1 rounded-xs flex items-center space-x-1.5 transition-colors font-medium ${
+                selectedDistrict === 'ALL'
+                  ? 'bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed'
+                  : 'bg-white border-[#171717]/20 text-[#171717] hover:border-[#171717]/50 cursor-pointer'
+              }`}
+            >
+              <span className="text-stone-500 font-normal">City/Town:</span>
+              <span className="font-bold truncate max-w-[100px]">{selectedLocality === 'ALL' ? 'All' : selectedLocality}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+            </button>
+            {localityDropdownOpen && availableLocalities.length > 0 && (
+              <div className="absolute left-0 top-full mt-1 w-52 max-h-64 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+                <button
+                  onClick={() => handleSelectLocality('ALL')}
+                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                    selectedLocality === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  }`}
+                >
+                  <span>All Locations in {selectedDistrict}</span>
+                  {selectedLocality === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                </button>
+                <div className="border-t border-stone-100 my-1"></div>
+                {availableLocalities.map(loc => (
+                  <button
+                    key={loc}
+                    onClick={() => handleSelectLocality(loc)}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                      selectedLocality === loc ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    }`}
+                  >
+                    <span>{loc}</span>
+                    {selectedLocality === loc && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* 4. Category Dropdown: [ All issues ▼ ] */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                const next = !categoryDropdownOpen;
+                closeAllDropdowns();
+                setCategoryDropdownOpen(next);
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
             >
@@ -207,13 +463,13 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             )}
           </div>
 
-          {/* Time Window Dropdown: [ 30 days ▼ ] */}
+          {/* 5. Time Window Dropdown: [ 30 days ▼ ] */}
           <div className="relative">
             <button 
               onClick={() => {
-                setTimeDropdownOpen(!timeDropdownOpen);
-                setCategoryDropdownOpen(false);
-                setLayersDropdownOpen(false);
+                const next = !timeDropdownOpen;
+                closeAllDropdowns();
+                setTimeDropdownOpen(next);
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
@@ -247,13 +503,13 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             )}
           </div>
 
-          {/* Layers Dropdown: [ Layers ▼ ] */}
+          {/* 6. Layers Dropdown: [ Layers ▼ ] */}
           <div className="relative">
             <button 
               onClick={() => {
-                setLayersDropdownOpen(!layersDropdownOpen);
-                setCategoryDropdownOpen(false);
-                setTimeDropdownOpen(false);
+                const next = !layersDropdownOpen;
+                closeAllDropdowns();
+                setLayersDropdownOpen(next);
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
@@ -302,6 +558,18 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               </div>
             )}
           </div>
+
+          {/* Quick Reset button if filters active */}
+          {hasActiveFilters && (
+            <button
+              onClick={handleResetFilters}
+              title="Reset all geographic and category filters"
+              className="text-[#D65A3A] hover:text-black transition-colors px-1.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Reset</span>
+            </button>
+          )}
         </div>
 
         {/* Right: Search Location Input with Dropdown */}
@@ -313,7 +581,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               placeholder="Search location..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs w-28 sm:w-40 text-[#171717] placeholder:text-[#A8A29E]"
+              className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 text-[#171717] placeholder:text-[#A8A29E]"
             />
             {searchQuery && (
               <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
@@ -342,7 +610,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         </div>
       </header>
 
-      {/* 2. HERO MAP WORKSPACE (OCCUPIES 85-92% OF THE SCREEN) */}
+      {/* 2. HERO MAP WORKSPACE (OCCUPIES FULL VIEWPORT) */}
       <div className="flex-1 w-full h-full relative overflow-hidden">
         
         {/* Full Viewport Canvas */}

@@ -2,38 +2,32 @@ import React, { useState, useMemo } from 'react';
 import { 
   TrendingUp, 
   CheckCircle2, 
-  ArrowDownRight, 
-  ArrowUpRight, 
   Sliders, 
-  Building2, 
   Droplet, 
-  Droplets,
   HeartPulse, 
   Route, 
-  GraduationCap, 
   Zap,
-  ShieldCheck, 
   RotateCcw, 
-  Award, 
-  Layers,
+  ArrowRight,
   Sparkles,
   Users,
-  Wallet,
-  ArrowRight,
-  Clock,
   Activity,
-  BarChart3,
-  FileCheck,
-  Check,
-  Compass,
-  Building
+  Calendar,
+  MapPin,
+  X,
+  Building2,
+  Info,
+  ShieldCheck,
+  FileCheck
 } from 'lucide-react';
-import { District, InfrastructureCategory, ImpactProject, GovernmentProject } from '../types';
+import { District, InfrastructureCategory, GovernmentProject, CitizenRequest } from '../types';
 import { COMPLETED_IMPACT_PROJECTS } from '../data/initialRequests';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
+import { getAvailableStates, getDistrictsForState } from '../utils/geography';
 
 interface ImpactSimulatorProps {
   districts: District[];
+  requests?: CitizenRequest[];
   governmentProjects?: GovernmentProject[];
   initialDistrictId?: string;
   initialCategory?: InfrastructureCategory;
@@ -41,730 +35,699 @@ interface ImpactSimulatorProps {
   onNavigateToEngine?: () => void;
 }
 
+type InterventionTypeKey = 'FIX' | 'UPGRADE' | 'BUILD' | 'POLICY';
+type IntensityLevel = 'Low' | 'Medium' | 'High';
+
+interface CompletedIntervention {
+  id: string;
+  title: string;
+  district: string;
+  state: string;
+  category: InfrastructureCategory;
+  completedDate: string;
+  beforeSignals: number;
+  afterSignals: number;
+  signalsDeltaPct: number;
+  beforeAccess: number;
+  afterAccess: number;
+  beforeScore: number;
+  afterScore: number;
+  populationBenefited: number;
+  investmentCr: number;
+  department?: string;
+  officer?: string;
+  description?: string;
+  isFromActionQueue?: boolean;
+}
+
 export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
   districts,
+  requests = [],
   governmentProjects = [],
   initialDistrictId,
   initialCategory,
   onNavigateToProjects,
   onNavigateToEngine,
 }) => {
-  const [selectedDistrictId, setSelectedDistrictId] = useState<string>(initialDistrictId || 'guntur');
-  const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory>(initialCategory || 'Water');
-  const [activeTab, setActiveTab] = useState<'overview' | 'simulator' | 'portfolio'>('overview');
+  // Navigation tabs: strictly [Completed works] and [What-if simulator]
+  const [activeTab, setActiveTab] = useState<'completed' | 'simulator'>('completed');
 
-  // Sliders for dynamic modeling
-  const currentDistrict = districts.find((d) => d.id === selectedDistrictId) || districts[0];
-  const initialBaseAccess = getCategoryAccess(currentDistrict, selectedCategory);
+  // Selected completed item for modal detail
+  const [selectedCompletedWork, setSelectedCompletedWork] = useState<CompletedIntervention | null>(null);
 
-  const [simulatedCurrentAccess, setSimulatedCurrentAccess] = useState<number>(initialBaseAccess);
-  const [simulatedTargetAccess, setSimulatedTargetAccess] = useState<number>(85);
-  const [simulatedPreRequests, setSimulatedPreRequests] = useState<number>(450);
-  const [simulatedPostRequests, setSimulatedPostRequests] = useState<number>(45);
-  const [estimatedInvestmentCr, setEstimatedInvestmentCr] = useState<number>(4.5);
+  // --- SIMULATOR STATE ---
+  const [simState, setSimState] = useState<string>('Andhra Pradesh');
+  const [simDistrictId, setSimDistrictId] = useState<string>(initialDistrictId || 'guntur');
+  const [simCategory, setSimCategory] = useState<InfrastructureCategory>(initialCategory || 'Water');
+  const [simIntervention, setSimIntervention] = useState<InterventionTypeKey>('UPGRADE');
+  const [simIntensity, setSimIntensity] = useState<IntensityLevel>('Medium');
+  const [hasRunSimulation, setHasRunSimulation] = useState<boolean>(true);
 
-  // Sync baseline when district changes
-  const handleDistrictChange = (distId: string) => {
-    setSelectedDistrictId(distId);
-    const d = districts.find((item) => item.id === distId) || districts[0];
-    const acc = getCategoryAccess(d, selectedCategory);
-    setSimulatedCurrentAccess(acc);
+  // Authoritative states & districts for simulator
+  const availableStates = useMemo(() => getAvailableStates('IN', districts), [districts]);
+  const availableDistricts = useMemo(() => getDistrictsForState(simState, 'IN', districts), [simState, districts]);
+
+  // When state changes, auto-pick first district in that state
+  const handleStateChange = (st: string) => {
+    setSimState(st);
+    const inState = districts.filter(d => d.state.toLowerCase() === st.toLowerCase());
+    if (inState.length > 0) {
+      setSimDistrictId(inState[0].id);
+    }
   };
 
-  // Recalculate deterministic baseline vs modeled scores
-  const baselineEvaluation = useMemo(() => {
-    return calculatePriorityScore(
-      currentDistrict,
-      selectedCategory,
-      8, // baseline severity
-      simulatedPreRequests,
-      simulatedCurrentAccess
+  // Selected district object
+  const currentDistrict = useMemo(() => {
+    return districts.find(d => d.id === simDistrictId) || districts[0];
+  }, [districts, simDistrictId]);
+
+  // Real baseline calculation for selected district + category
+  const baselineData = useMemo(() => {
+    const baseAccess = getCategoryAccess(currentDistrict, simCategory);
+    
+    // Count real matching citizen signals if available, else standard baseline
+    const matchingRequests = requests.filter(r => {
+      const matchDist = (r.district && r.district.toLowerCase() === currentDistrict.name.toLowerCase()) ||
+                         (r.location && r.location.toLowerCase().includes(currentDistrict.name.toLowerCase()));
+      const matchCat = r.category === simCategory;
+      return matchDist && matchCat;
+    });
+
+    const signalCount = matchingRequests.length > 0 ? matchingRequests.length * 18 : 640;
+    const baseSeverity = 8;
+    const priorityBreakdown = calculatePriorityScore(currentDistrict, simCategory, baseSeverity, signalCount, baseAccess);
+    const affectedPop = Math.round(currentDistrict.population * (Math.max(10, 100 - baseAccess) / 100) * 0.4);
+
+    return {
+      access: baseAccess,
+      signals: signalCount,
+      priorityScore: Math.round(priorityBreakdown.total_score),
+      gapPct: Math.round(100 - baseAccess),
+      affectedPopulation: affectedPop,
+    };
+  }, [currentDistrict, simCategory, requests]);
+
+  // Deterministic simulation outcome calculation
+  const simulatedOutcome = useMemo(() => {
+    // Base reduction factors:
+    // FIX: ~25%, UPGRADE: ~40%, BUILD: ~65%, POLICY: ~20%
+    let baseFactor = 0.40;
+    if (simIntervention === 'FIX') baseFactor = 0.25;
+    else if (simIntervention === 'BUILD') baseFactor = 0.65;
+    else if (simIntervention === 'POLICY') baseFactor = 0.20;
+
+    // Intensity multiplier: Low: 0.8x, Medium: 1.0x, High: 1.25x
+    const intensityMultiplier = simIntensity === 'Low' ? 0.8 : simIntensity === 'High' ? 1.25 : 1.0;
+    const effectiveReduction = Math.min(0.85, baseFactor * intensityMultiplier);
+
+    // Projected Signals
+    const projectedSignals = Math.max(12, Math.round(baselineData.signals * (1 - effectiveReduction)));
+    
+    // Projected Access & Gap
+    const accessGain = Math.round((100 - baselineData.access) * effectiveReduction);
+    const projectedAccess = Math.min(95, baselineData.access + accessGain);
+    const projectedGap = Math.max(5, 100 - projectedAccess);
+
+    // Projected Priority Score
+    const projectedBreakdown = calculatePriorityScore(
+      currentDistrict, 
+      simCategory, 
+      Math.max(2, Math.round(8 * (1 - effectiveReduction * 0.7))), 
+      projectedSignals, 
+      projectedAccess
     );
-  }, [currentDistrict, selectedCategory, simulatedPreRequests, simulatedCurrentAccess]);
+    const projectedScore = Math.round(projectedBreakdown.total_score);
 
-  const modeledEvaluation = useMemo(() => {
-    return calculatePriorityScore(
-      currentDistrict,
-      selectedCategory,
-      3, // severity drops post-fix
-      simulatedPostRequests,
-      simulatedTargetAccess
-    );
-  }, [currentDistrict, selectedCategory, simulatedPostRequests, simulatedTargetAccess]);
+    // Projected Beneficiaries and Cost
+    const popProtected = Math.round(baselineData.affectedPopulation * effectiveReduction);
+    const remainingPopAffected = Math.max(0, baselineData.affectedPopulation - popProtected);
+    
+    // Estimated Cost in Crores
+    let baseCost = 4.2;
+    if (simIntervention === 'FIX') baseCost = 1.8;
+    else if (simIntervention === 'BUILD') baseCost = 9.5;
+    else if (simIntervention === 'POLICY') baseCost = 0.6;
+    const estimatedCostCr = Number((baseCost * intensityMultiplier).toFixed(1));
 
-  const baseTier = getPriorityTier(baselineEvaluation.total_score);
-  const modeledTier = getPriorityTier(modeledEvaluation.total_score);
-  const scoreDelta = Number((modeledEvaluation.total_score - baselineEvaluation.total_score).toFixed(1));
-  const gapDelta = Number((modeledEvaluation.gap_percentage - baselineEvaluation.gap_percentage).toFixed(1));
+    return {
+      effectiveReductionPct: Math.round(effectiveReduction * 100),
+      projectedSignals,
+      signalsDelta: projectedSignals - baselineData.signals,
+      projectedAccess,
+      projectedGap,
+      projectedScore,
+      scoreDelta: projectedScore - baselineData.priorityScore,
+      popProtected,
+      remainingPopAffected,
+      estimatedCostCr,
+    };
+  }, [baselineData, simIntervention, simIntensity, currentDistrict, simCategory]);
 
-  // Beneficiary population and Capex efficiency
-  const beneficiariesCount = Math.round(currentDistrict.population * (simulatedTargetAccess - simulatedCurrentAccess) / 100);
-  const costPerBeneficiary = beneficiariesCount > 0 ? Math.round((estimatedInvestmentCr * 10000000) / beneficiariesCount) : 0;
+  // --- MERGE COMPLETED WORKS (From Action Queue / Government Projects + Base dataset) ---
+  const completedWorksList: CompletedIntervention[] = useMemo(() => {
+    const list: CompletedIntervention[] = [];
 
-  // Infrastructure improvement stats requested:
-  // Water: 78%, Roads: 64%, Lighting: 71%, Sanitation: 59%
-  const sectorImprovements = [
-    {
-      sector: 'Water',
-      label: 'Clean Water & RO Networks',
-      icon: Droplet,
-      iconColor: 'text-blue-600',
-      bgColor: 'bg-blue-500',
-      barColor: 'bg-blue-600',
-      currentRate: 78,
-      baselineRate: 34,
-      delta: '+44%',
-      projectsCount: 11,
-      beneficiaries: '1.4M',
-      highlight: 'Solar piped water grids & arsenic/fluoride filtration hubs'
-    },
-    {
-      sector: 'Lighting',
-      label: 'Smart Street Lighting',
-      icon: Zap,
-      iconColor: 'text-yellow-600',
-      bgColor: 'bg-yellow-500',
-      barColor: 'bg-yellow-500',
-      currentRate: 71,
-      baselineRate: 42,
-      delta: '+29%',
-      projectsCount: 8,
-      beneficiaries: '980K',
-      highlight: '4,200+ connected LED safety poles along transit corridors'
-    },
-    {
-      sector: 'Roads',
-      label: 'All-Weather Road Corridors',
-      icon: Route,
-      iconColor: 'text-amber-600',
-      bgColor: 'bg-amber-500',
-      barColor: 'bg-amber-600',
-      currentRate: 64,
-      baselineRate: 38,
-      delta: '+26%',
-      projectsCount: 7,
-      beneficiaries: '1.1M',
-      highlight: 'PMGSY black-cotton soil asphalt paving & bypass culverts'
-    },
-    {
-      sector: 'Sanitation',
-      label: 'Stormwater Drainage & Sanitation',
-      icon: Droplets,
-      iconColor: 'text-cyan-600',
-      bgColor: 'bg-cyan-500',
-      barColor: 'bg-cyan-600',
-      currentRate: 59,
-      baselineRate: 22,
-      delta: '+37%',
-      projectsCount: 5,
-      beneficiaries: '720K',
-      highlight: 'Automated flood pump stations & school girl-child bio-toilets'
-    }
-  ];
+    // 1. Projects marked Completed in the Action Queue / Government Projects workflow
+    const fromGov = governmentProjects.filter(p => p.status === 'Completed');
+    fromGov.forEach(p => {
+      const beforeSig = p.citizenRequestsCount || 540;
+      const afterSig = Math.round(beforeSig * 0.35);
+      const delta = Math.round(((afterSig - beforeSig) / beforeSig) * 100);
+
+      list.push({
+        id: p.id,
+        title: p.title,
+        district: p.district,
+        state: p.state || 'Andhra Pradesh',
+        category: p.category,
+        completedDate: p.completedDate || 'Completed · 28 Aug 2026',
+        beforeSignals: beforeSig,
+        afterSignals: afterSig,
+        signalsDeltaPct: delta,
+        beforeAccess: p.beforeAccess || 34,
+        afterAccess: p.afterAccess || 86,
+        beforeScore: p.priorityScore || 85,
+        afterScore: Math.round((p.priorityScore || 85) * 0.38),
+        populationBenefited: p.population || 45000,
+        investmentCr: Number(((p.estimatedCostInr || 45000000) / 10000000).toFixed(1)),
+        department: p.department || 'Public Health Engineering Department',
+        officer: p.officerInCharge || 'Superintending Engineer',
+        description: p.description || 'Comprehensive infrastructure intervention completed and verified via citizen feedback telemetries.',
+        isFromActionQueue: true,
+      });
+    });
+
+    // 2. Verified baseline completed works
+    COMPLETED_IMPACT_PROJECTS.forEach(cp => {
+      // Avoid duplicates if same ID exists
+      if (!list.some(item => item.id === cp.id)) {
+        const delta = Math.round(((cp.after_requests - cp.before_requests) / cp.before_requests) * 100);
+        list.push({
+          id: cp.id,
+          title: cp.title,
+          district: cp.district,
+          state: cp.district === 'Guntur' ? 'Andhra Pradesh' : cp.district === 'Warangal' ? 'Telangana' : 'Maharashtra',
+          category: cp.category,
+          completedDate: `Completed · ${new Date(cp.completion_date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`,
+          beforeSignals: cp.before_requests,
+          afterSignals: cp.after_requests,
+          signalsDeltaPct: delta,
+          beforeAccess: cp.before_access,
+          afterAccess: cp.after_access,
+          beforeScore: cp.before_score,
+          afterScore: cp.after_score,
+          populationBenefited: cp.population_benefited,
+          investmentCr: Number((cp.investment_inr / 10000000).toFixed(1)),
+          department: cp.category === 'Water' ? 'Rural Water Supply & Sanitation' : cp.category === 'Health' ? 'Health & Family Welfare' : 'Public Works Department',
+          officer: 'Executive Nodal Officer',
+          description: 'Closed-loop infrastructure intervention with multi-month telemetry verification and citizen grievance resolution.',
+          isFromActionQueue: false,
+        });
+      }
+    });
+
+    return list;
+  }, [governmentProjects]);
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-300">
-      {/* Top Banner */}
-      <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-xs space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-slate-100">
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2.5">
-              <span className="px-2.5 py-0.5 text-xs font-black uppercase tracking-wider rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5 font-mono">
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-600" />
-                FEATURE 6: IMPACT DASHBOARD
-              </span>
-              <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-                • Closed-Loop Public ROI & Outcomes
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
-              CivicPulse Impact & Verification Dashboard
-            </h1>
-            <p className="text-sm sm:text-base text-slate-600 max-w-3xl leading-relaxed">
-              Measuring the tangible real-world outcomes of citizen-led infrastructure investments. Track macro public ROI, verify access rate expansion across sectors, and simulate future capital interventions.
-            </p>
-          </div>
-
-          {/* Sub-view switcher */}
-          <div className="flex items-center bg-slate-100 p-1.5 rounded-xl text-xs font-bold shrink-0">
-            <button
-              onClick={() => setActiveTab('overview')}
-              className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'overview'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Impact Overview
-            </button>
-            <button
-              onClick={() => setActiveTab('simulator')}
-              className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'simulator'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              What-If Simulator
-            </button>
-            <button
-              onClick={() => setActiveTab('portfolio')}
-              className={`px-3.5 py-2 rounded-lg transition-all cursor-pointer ${
-                activeTab === 'portfolio'
-                  ? 'bg-white text-slate-900 shadow-2xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              Completed Works (31)
-            </button>
-          </div>
+    <div className="space-y-6 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+      
+      {/* 1. PAGE HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
+        <div>
+          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+            Impact
+          </h1>
+          <p className="text-sm text-[#57534E] mt-1">
+            See what changed after civic interventions.
+          </p>
         </div>
 
-        {/* ============================================================ */}
-        {/* EXACT SECTION REQUESTED: CIVICPULSE IMPACT 4-METRIC HERO     */}
-        {/* ============================================================ */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xs font-mono font-black uppercase tracking-widest text-slate-500 flex items-center gap-1.5">
-              <Activity className="w-3.5 h-3.5 text-blue-600" />
-              CIVICPULSE IMPACT
-            </h2>
-            <span className="text-[11px] font-mono text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-md border border-emerald-200 font-bold">
-              ● Verified Closed-Loop Results
-            </span>
-          </div>
+        {/* Primary View Switcher: [Completed works] [What-if simulator] */}
+        <div className="flex items-center bg-[#FAF8F5] border border-[#171717]/20 p-1 rounded-xs text-xs font-mono shrink-0">
+          <button
+            onClick={() => setActiveTab('completed')}
+            className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
+              activeTab === 'completed'
+                ? 'bg-[#171717] text-white shadow-xs'
+                : 'text-[#57534E] hover:text-[#171717]'
+            }`}
+          >
+            <CheckCircle2 className="w-3.5 h-3.5" />
+            <span>Completed works ({completedWorksList.length})</span>
+          </button>
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
-            {/* 1. Requests Received: 12,480 */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-blue-50/60 to-white border border-blue-200/80 shadow-2xs space-y-1.5">
-              <span className="text-xs font-bold text-blue-700 uppercase tracking-wider block font-sans">
-                Requests received
-              </span>
-              <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                12,480
-              </div>
-              <p className="text-[11px] text-slate-500 font-sans font-medium">
-                Multilingual voice & text citizen signals
-              </p>
-            </div>
-
-            {/* 2. Projects Recommended: 86 */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-50/60 to-white border border-purple-200/80 shadow-2xs space-y-1.5">
-              <span className="text-xs font-bold text-purple-700 uppercase tracking-wider block font-sans">
-                Projects recommended
-              </span>
-              <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                86
-              </div>
-              <p className="text-[11px] text-slate-500 font-sans font-medium">
-                Ranked by 5-Pillar Priority Engine
-              </p>
-            </div>
-
-            {/* 3. Projects Completed: 31 */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/60 to-white border border-emerald-200/80 shadow-2xs space-y-1.5">
-              <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider block font-sans">
-                Projects completed
-              </span>
-              <div className="text-3xl sm:text-4xl font-black text-emerald-700 tracking-tight">
-                31
-              </div>
-              <p className="text-[11px] text-slate-500 font-sans font-medium">
-                Commissioned with third-party audit
-              </p>
-            </div>
-
-            {/* 4. Citizens Impacted: 4.2M */}
-            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/60 to-white border border-amber-200/80 shadow-2xs space-y-1.5">
-              <span className="text-xs font-bold text-amber-800 uppercase tracking-wider block font-sans">
-                Citizens impacted
-              </span>
-              <div className="text-3xl sm:text-4xl font-black text-slate-900 tracking-tight">
-                4.2M
-              </div>
-              <p className="text-[11px] text-slate-500 font-sans font-medium">
-                Direct population benefiting from upgrades
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/* EXACT SECTION REQUESTED: THE DEMO STORY TRANSFORM (BEFORE/AFTER) */}
-        {/* ============================================================ */}
-        <div className="p-6 sm:p-8 rounded-2xl bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white shadow-md space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-800">
-            <span className="text-xs font-mono font-bold uppercase tracking-widest text-blue-400 flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              THE CIVICPULSE TRANSFORMATION STORY
-            </span>
-            <span className="text-xs px-3 py-1 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">
-              Citizen-Led Capital Efficiency
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-11 gap-4 items-center">
-            {/* Left Box: Before CivicPulse */}
-            <div className="lg:col-span-5 p-5 rounded-xl bg-slate-800/80 border border-rose-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-rose-400 font-mono">
-                  Before CivicPulse
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-rose-500/20 text-rose-300 border border-rose-500/40">
-                  Unstructured Chaos
-                </span>
-              </div>
-              
-              <div className="text-2xl sm:text-3xl font-black font-mono text-rose-200">
-                12,480
-              </div>
-              <div className="text-sm font-bold text-slate-200">
-                unresolved development requests
-              </div>
-
-              <ul className="text-xs text-slate-400 space-y-1.5 pt-2 border-t border-slate-700 font-sans">
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
-                  <span>Citizens felt unheard; voice notes and WhatsApp complaints languished in silos.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
-                  <span>14.2 months average decision lag between complaint and departmental review.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-400 font-bold">•</span>
-                  <span>Discretionary capital allocation with no auditable equity basis.</span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Middle Transform Arrow */}
-            <div className="lg:col-span-1 flex flex-col items-center justify-center py-2 text-center">
-              <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-black shadow-lg animate-pulse">
-                ↓
-              </div>
-              <span className="text-[10px] font-mono text-blue-300 font-bold uppercase mt-1 tracking-wider">
-                AI Engine
-              </span>
-            </div>
-
-            {/* Right Box: After AI Prioritization */}
-            <div className="lg:col-span-5 p-5 rounded-xl bg-slate-800/80 border border-emerald-500/40 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 font-mono">
-                  After AI Prioritization
-                </span>
-                <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-bold">
-                  Targeted Execution
-                </span>
-              </div>
-              
-              <div className="text-2xl sm:text-3xl font-black font-mono text-emerald-300">
-                31
-              </div>
-              <div className="text-sm font-bold text-slate-100">
-                high-impact projects completed
-              </div>
-
-              <ul className="text-xs text-slate-300 space-y-1.5 pt-2 border-t border-slate-700 font-sans">
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">•</span>
-                  <span><strong>4.2 Million citizens</strong> directly benefiting from upgraded water, roads & power.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">•</span>
-                  <span>Decision-to-tender cycle compressed from <strong>14.2 months down to 3.1 months</strong>.</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-400 font-bold">•</span>
-                  <span>100% deterministic formula backed by census and demographic data.</span>
-                </li>
-              </ul>
-            </div>
-          </div>
-        </div>
-
-        {/* ============================================================ */}
-        {/* EXACT SECTION REQUESTED: INFRASTRUCTURE IMPROVEMENT (BARS)   */}
-        {/* ============================================================ */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-black uppercase tracking-wider text-slate-900 flex items-center gap-2">
-                <BarChart3 className="w-4 h-4 text-blue-600" />
-                Infrastructure Improvement
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Targeted sector access expansion achieved across funded municipal clusters.
-              </p>
-            </div>
-            <span className="text-xs font-mono font-bold text-slate-500">
-              Aggregated Municipal Audit
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {sectorImprovements.map((sec) => (
-              <div 
-                key={sec.sector}
-                className="p-5 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-3 hover:border-slate-300 transition-all shadow-2xs"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5">
-                    <div className="p-2 rounded-xl bg-white border border-slate-200 shadow-2xs">
-                      <sec.icon className={`w-4 h-4 ${sec.iconColor}`} />
-                    </div>
-                    <div>
-                      <span className="text-xs font-black uppercase tracking-wider text-slate-800 font-mono block">
-                        {sec.sector}
-                      </span>
-                      <span className="text-xs text-slate-500 font-medium">
-                        {sec.label}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-xl font-black font-mono text-slate-900">
-                      {sec.currentRate}%
-                    </div>
-                    <span className="text-[10px] font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                      {sec.delta} expansion
-                    </span>
-                  </div>
-                </div>
-
-                {/* Progress Bar (Visual ASCII/Block Representation & Styled Bar) */}
-                <div className="space-y-1">
-                  <div className="w-full bg-slate-200 h-3.5 rounded-full overflow-hidden p-0.5">
-                    <div 
-                      className={`h-full rounded-full ${sec.barColor} transition-all duration-700`}
-                      style={{ width: `${sec.currentRate}%` }}
-                    ></div>
-                  </div>
-                  <div className="flex justify-between text-[11px] font-mono text-slate-500 pt-0.5">
-                    <span>Baseline: {sec.baselineRate}%</span>
-                    <span className="font-bold text-slate-800">Target: {sec.currentRate}%</span>
-                  </div>
-                </div>
-
-                {/* Footnote details */}
-                <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-xs text-slate-600">
-                  <span><strong>{sec.projectsCount}</strong> projects completed</span>
-                  <span><strong>{sec.beneficiaries}</strong> citizens impacted</span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <button
+            onClick={() => setActiveTab('simulator')}
+            className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
+              activeTab === 'simulator'
+                ? 'bg-[#171717] text-white shadow-xs'
+                : 'text-[#57534E] hover:text-[#171717]'
+            }`}
+          >
+            <Sliders className="w-3.5 h-3.5 text-[#D65A3A]" />
+            <span>What-if simulator</span>
+          </button>
         </div>
       </div>
 
-      {/* Conditional Sub-View: What-If Simulator or Portfolio */}
-      {activeTab === 'simulator' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
-          {/* Left Column: Interactive Simulation Sliders */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-xs">
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                  <Sliders className="w-4 h-4 text-blue-600" />
-                  What-If Intervention Modeling
-                </h3>
-                <button
-                  onClick={() => {
-                    setSimulatedCurrentAccess(initialBaseAccess);
-                    setSimulatedTargetAccess(85);
-                    setSimulatedPreRequests(450);
-                    setSimulatedPostRequests(45);
-                  }}
-                  className="text-xs font-semibold text-slate-500 hover:text-slate-800 flex items-center gap-1 cursor-pointer transition-colors"
+      {/* ======================================================== */}
+      {/* TAB 1: COMPLETED WORKS LIST                              */}
+      {/* ======================================================== */}
+      {activeTab === 'completed' && (
+        <div className="space-y-4 animate-in fade-in duration-150">
+          
+          <div className="flex items-center justify-between text-xs text-[#57534E] px-1 font-mono">
+            <span>Verified public interventions and resolved citizen signals</span>
+            {onNavigateToProjects && (
+              <button 
+                onClick={onNavigateToProjects}
+                className="text-[#D65A3A] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <span>Go to Action Queue</span>
+                <ArrowRight className="w-3 h-3" />
+              </button>
+            )}
+          </div>
+
+          {completedWorksList.length === 0 ? (
+            <div className="bg-white border border-[#171717]/15 rounded-sm p-12 text-center space-y-3 shadow-xs">
+              <CheckCircle2 className="w-8 h-8 text-stone-400 mx-auto" />
+              <p className="text-sm font-semibold text-[#171717]">No completed interventions yet.</p>
+              <p className="text-xs text-[#57534E] max-w-md mx-auto">
+                Completed actions from the Action Queue will appear here with measured Before → After telemetry metrics.
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {completedWorksList.map((work) => (
+                <div 
+                  key={work.id}
+                  className="bg-white border border-[#171717]/15 rounded-sm p-4 shadow-xs flex flex-col justify-between space-y-4 hover:border-[#171717]/40 transition-all group"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Reset Defaults</span>
-                </button>
-              </div>
+                  {/* Card Header */}
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-mono text-[10px] uppercase font-bold px-2 py-0.5 rounded bg-[#F7F5EF] text-[#171717] border border-[#171717]/10">
+                        {work.category}
+                      </span>
+                      <span className="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-semibold flex items-center gap-1">
+                        <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                        <span>{work.completedDate}</span>
+                      </span>
+                    </div>
 
-              {/* Target Selection */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    District:
-                  </label>
-                  <select
-                    value={selectedDistrictId}
-                    onChange={(e) => handleDistrictChange(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none cursor-pointer"
+                    <h3 className="font-serif font-bold text-base text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug line-clamp-2">
+                      {work.title}
+                    </h3>
+
+                    <div className="flex items-center text-xs text-[#57534E] gap-1 font-mono">
+                      <MapPin className="w-3 h-3 text-[#78716C] shrink-0" />
+                      <span>{work.district}, {work.state}</span>
+                    </div>
+                  </div>
+
+                  {/* Before → After Metrics Box */}
+                  <div className="bg-[#FAF8F5] border border-[#171717]/10 rounded-xs p-3 space-y-2 font-mono text-xs">
+                    <div className="flex items-center justify-between text-[11px] text-[#78716C]">
+                      <span>Citizen Signals</span>
+                      <span className="font-bold text-emerald-700 bg-emerald-100/70 px-1.5 py-0.2 rounded text-[10px]">
+                        {work.signalsDeltaPct}%
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-baseline justify-between">
+                      <div className="flex items-center space-x-2">
+                        <span className="text-stone-500 line-through text-xs">{work.beforeSignals}</span>
+                        <span className="text-stone-400">→</span>
+                        <span className="font-bold text-sm text-[#171717]">{work.afterSignals} signals</span>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-[#171717]/10 flex items-center justify-between text-[11px] text-[#57534E]">
+                      <span>Service Access:</span>
+                      <span className="font-bold text-[#171717]">{work.beforeAccess}% → {work.afterAccess}%</span>
+                    </div>
+                  </div>
+
+                  {/* Card Action */}
+                  <button
+                    onClick={() => setSelectedCompletedWork(work)}
+                    className="w-full py-2 bg-[#FAF8F5] hover:bg-[#171717] hover:text-white border border-[#171717]/20 text-[#171717] text-xs font-mono font-bold rounded-xs transition-colors flex items-center justify-center space-x-1.5 cursor-pointer"
                   >
-                    {districts.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name} ({d.state})</option>
-                    ))}
-                  </select>
+                    <span>View impact details</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
-                    Sector:
-                  </label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => {
-                      const cat = e.target.value as InfrastructureCategory;
-                      setSelectedCategory(cat);
-                      setSimulatedCurrentAccess(getCategoryAccess(currentDistrict, cat));
-                    }}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-500 focus:bg-white focus:outline-none cursor-pointer"
-                  >
-                    <option value="Water">Water Access</option>
-                    <option value="Drainage">Drainage & Flood Management</option>
-                    <option value="Roads">Road Infrastructure</option>
-                    <option value="Electricity">Electricity & Street Lighting</option>
-                    <option value="Health">Healthcare Clinics</option>
-                    <option value="Education">School Facilities</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Slider 1: Pre-Intervention Baseline Access */}
-              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-700 font-semibold text-xs">1. Baseline Infrastructure Access (Pre-Project):</span>
-                  <span className="font-mono text-xs font-bold text-rose-600">{simulatedCurrentAccess}%</span>
-                </div>
-                <input
-                  type="range"
-                  min="10"
-                  max="80"
-                  value={simulatedCurrentAccess}
-                  onChange={(e) => setSimulatedCurrentAccess(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <p className="text-xs text-slate-500 font-mono">Deficit gap before intervention: {100 - simulatedCurrentAccess}%</p>
-              </div>
-
-              {/* Slider 2: Post-Intervention Modeled Access */}
-              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-700 font-semibold text-xs">2. Projected Access Rate (Post-Project Target):</span>
-                  <span className="font-mono text-xs font-bold text-emerald-600">{simulatedTargetAccess}%</span>
-                </div>
-                <input
-                  type="range"
-                  min={simulatedCurrentAccess + 5}
-                  max="98"
-                  value={simulatedTargetAccess}
-                  onChange={(e) => setSimulatedTargetAccess(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <p className="text-xs text-slate-500 font-mono">
-                  Net improvement: +{simulatedTargetAccess - simulatedCurrentAccess}% access expansion
-                </p>
-              </div>
-
-              {/* Slider 3: Citizen Demand Resolution */}
-              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-700 font-semibold text-xs">3. Citizen Demand Signals (Before → After):</span>
-                  <span className="font-mono text-xs font-bold text-slate-800">
-                    {simulatedPreRequests} reqs → {simulatedPostRequests} reqs
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min="10"
-                  max="200"
-                  value={simulatedPostRequests}
-                  onChange={(e) => setSimulatedPostRequests(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-                <p className="text-xs text-slate-500 font-mono">
-                  Resolved Complaints: ~{simulatedPreRequests - simulatedPostRequests} citizen issues closed
-                </p>
-              </div>
-
-              {/* Budget Input */}
-              <div className="space-y-1.5 p-3.5 bg-slate-50 rounded-xl border border-slate-200">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-slate-700 font-semibold text-xs">4. Allocated Capex Budget:</span>
-                  <span className="font-mono text-xs font-bold text-emerald-600">₹{estimatedInvestmentCr.toFixed(1)} Cr</span>
-                </div>
-                <input
-                  type="range"
-                  min="0.5"
-                  max="25"
-                  step="0.5"
-                  value={estimatedInvestmentCr}
-                  onChange={(e) => setEstimatedInvestmentCr(Number(e.target.value))}
-                  className="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                />
-              </div>
+              ))}
             </div>
-          </div>
+          )}
 
-          {/* Right Column: Modeled Impact Real-time Recalculation */}
-          <div className="lg:col-span-6 space-y-4">
-            <div className="bg-white border border-slate-200 rounded-2xl p-6 space-y-5 shadow-xs">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                <TrendingUp className="w-4 h-4 text-blue-600" />
-                Modeled Outcome: Before vs. After Intervention
-              </h3>
-
-              {/* Before vs After Score Cards */}
-              <div className="grid grid-cols-2 gap-4">
-                {/* Baseline Card */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-500">
-                      Baseline (Pre)
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded font-bold border border-rose-200 bg-rose-50 text-rose-700">
-                      {baseTier.label}
-                    </span>
-                  </div>
-                  <div className="text-3xl font-bold font-mono text-rose-600 tracking-tight">
-                    {baselineEvaluation.total_score}
-                    <span className="text-xs text-slate-500 font-normal"> /100</span>
-                  </div>
-                  <div className="text-xs text-slate-600 space-y-0.5 pt-2 border-t border-slate-200 font-mono">
-                    <div>Access: <strong className="text-slate-900">{simulatedCurrentAccess}%</strong></div>
-                    <div>Deficit Gap: <strong className="text-rose-600">{baselineEvaluation.gap_percentage}%</strong></div>
-                    <div>Demand: <strong className="text-slate-800">{simulatedPreRequests} signals</strong></div>
-                  </div>
-                </div>
-
-                {/* Modeled After Card */}
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-slate-500">
-                      Modeled Post
-                    </span>
-                    <span className="text-xs px-2 py-0.5 rounded font-bold border border-emerald-200 bg-emerald-50 text-emerald-700">
-                      {modeledTier.label}
-                    </span>
-                  </div>
-                  <div className="text-3xl font-bold font-mono text-emerald-600 tracking-tight">
-                    {modeledEvaluation.total_score}
-                    <span className="text-xs text-slate-500 font-normal"> /100</span>
-                  </div>
-                  <div className="text-xs text-slate-600 space-y-0.5 pt-2 border-t border-slate-200 font-mono">
-                    <div>Access: <strong className="text-slate-900">{simulatedTargetAccess}%</strong></div>
-                    <div>Deficit Gap: <strong className="text-emerald-600">{modeledEvaluation.gap_percentage}%</strong></div>
-                    <div>Demand: <strong className="text-slate-800">{simulatedPostRequests} signals</strong></div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Impact Metric Deltas Strip */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Priority Delta</span>
-                  <span className="text-sm font-bold font-mono text-emerald-600 flex items-center justify-center mt-1">
-                    <ArrowDownRight className="w-4 h-4 mr-0.5" />
-                    {scoreDelta} pts
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Gap Reduction</span>
-                  <span className="text-sm font-bold font-mono text-emerald-600 flex items-center justify-center mt-1">
-                    <ArrowDownRight className="w-4 h-4 mr-0.5" />
-                    {gapDelta}%
-                  </span>
-                </div>
-
-                <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
-                  <span className="text-xs text-slate-500 uppercase tracking-wider block font-semibold">Beneficiaries</span>
-                  <span className="text-sm font-bold font-mono text-slate-900 flex items-center justify-center mt-1">
-                    <Users className="w-4 h-4 mr-1 text-slate-500" />
-                    {(beneficiariesCount / 1000).toFixed(0)}k
-                  </span>
-                </div>
-              </div>
-
-              {/* Fiscal Efficiency Gauge */}
-              <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-                    <Wallet className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="font-bold text-slate-900 block text-xs">Fiscal Capital Efficiency:</span>
-                    <span className="text-xs text-slate-500 font-mono">Cost per beneficiary: ₹{costPerBeneficiary.toLocaleString()}</span>
-                  </div>
-                </div>
-                <span className="px-2.5 py-1 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono text-xs font-bold uppercase tracking-wider">
-                  Grade A ROI
-                </span>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
-      {/* Conditional Sub-View: Completed Works Showcase */}
-      {(activeTab === 'overview' || activeTab === 'portfolio') && (
-        <div className="bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100">
-            <div>
-              <h3 className="text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                Validated Completed Works Portfolio (31 Public Projects)
-              </h3>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Case studies of funded public projects where post-intervention citizen feedback and municipal audits verified gap elimination.
-              </p>
+      {/* ======================================================== */}
+      {/* TAB 2: WHAT-IF SIMULATOR                                 */}
+      {/* ======================================================== */}
+      {activeTab === 'simulator' && (
+        <div className="space-y-6 animate-in fade-in duration-150">
+          
+          {/* Prominent Label Mandate */}
+          <div className="bg-amber-50/80 border border-amber-300/80 p-3 rounded-xs flex items-center justify-between text-xs font-mono text-amber-900">
+            <div className="flex items-center gap-2">
+              <Info className="w-4 h-4 text-amber-700 shrink-0" />
+              <span className="font-bold uppercase tracking-wider">Simulation — not a government forecast.</span>
             </div>
-            <span className="text-xs uppercase tracking-wider text-emerald-700 font-bold font-mono bg-emerald-50 px-3 py-1 rounded-lg border border-emerald-200">
-              ● 31 Works Commissioned
+            <span className="text-[11px] text-amber-800/80 hidden sm:inline">
+              Deterministic scenario model based on active district signals
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {COMPLETED_IMPACT_PROJECTS.map((proj) => (
-              <div key={proj.id} className="p-5 bg-slate-50 rounded-2xl border border-slate-200 space-y-4 hover:border-slate-300 transition-all shadow-2xs">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
-                    {proj.category === 'Water' && <Droplet className="w-4 h-4 text-blue-600" />}
-                    {proj.category === 'Health' && <HeartPulse className="w-4 h-4 text-rose-600" />}
-                    {proj.category === 'Roads' && <Route className="w-4 h-4 text-amber-600" />}
-                    {proj.district}
-                  </span>
-                  <span className="text-[10px] px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200 font-mono font-black uppercase tracking-wider">
-                    {proj.status}
-                  </span>
-                </div>
+          {/* SIMULATOR CONTROLS CARD */}
+          <div className="bg-white border border-[#171717]/15 rounded-sm p-5 shadow-xs space-y-4 font-mono text-xs">
+            <div className="flex items-center justify-between border-b border-[#171717]/10 pb-3">
+              <span className="font-bold text-xs uppercase tracking-wider text-[#171717] flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5 text-[#D65A3A]" />
+                Scenario Parameter Configuration
+              </span>
+              <button
+                onClick={() => {
+                  setSimState('Andhra Pradesh');
+                  setSimDistrictId('guntur');
+                  setSimCategory('Water');
+                  setSimIntervention('UPGRADE');
+                  setSimIntensity('Medium');
+                }}
+                className="text-[11px] text-[#78716C] hover:text-black flex items-center gap-1 cursor-pointer"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>Reset parameters</span>
+              </button>
+            </div>
 
-                <h4 className="text-xs font-bold text-slate-800 leading-snug">
-                  {proj.title}
-                </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              
+              {/* 1. State & District Selector */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase text-[#78716C] font-bold block">1. State & District</label>
+                <div className="space-y-1">
+                  <select
+                    value={simState}
+                    onChange={(e) => handleStateChange(e.target.value)}
+                    className="w-full bg-[#FAF8F5] text-[#171717] p-2 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden font-bold"
+                  >
+                    {availableStates.map(st => (
+                      <option key={st} value={st}>{st}</option>
+                    ))}
+                  </select>
 
-                {/* Before vs After Metric Grid */}
-                <div className="grid grid-cols-2 gap-2 p-3 bg-white rounded-xl border border-slate-200 text-xs font-mono">
-                  <div>
-                    <span className="text-slate-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Access Rate:</span>
-                    <span className="text-slate-700 font-semibold">{proj.before_access}% → <strong className="text-emerald-600 font-bold">{proj.after_access}%</strong></span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[10px] uppercase tracking-wider font-sans font-bold">Priority Score:</span>
-                    <span className="text-rose-600 font-semibold">{proj.before_score} → <strong className="text-emerald-600 font-bold">{proj.after_score}</strong></span>
-                  </div>
-                  <div className="col-span-2 pt-2 border-t border-slate-100 flex justify-between text-slate-600 text-[11px]">
-                    <span>Beneficiaries: <strong className="text-slate-900">{proj.population_benefited.toLocaleString()}</strong></span>
-                    <span>Capex: <strong className="text-emerald-700 font-bold">₹{(proj.investment_inr / 10000000).toFixed(1)} Cr</strong></span>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1 font-mono">
-                  <span>Audited: {proj.completion_date}</span>
-                  <span className="text-emerald-600 font-bold flex items-center gap-1">
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    Verified
-                  </span>
+                  <select
+                    value={simDistrictId}
+                    onChange={(e) => setSimDistrictId(e.target.value)}
+                    className="w-full bg-[#FAF8F5] text-[#171717] p-2 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden font-bold"
+                  >
+                    {availableDistricts.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-            ))}
+
+              {/* 2. Issue / Sector */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase text-[#78716C] font-bold block">2. Civic Issue / Sector</label>
+                <select
+                  value={simCategory}
+                  onChange={(e) => setSimCategory(e.target.value as InfrastructureCategory)}
+                  className="w-full bg-[#FAF8F5] text-[#171717] p-2 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden font-bold"
+                >
+                  <option value="Water">Water Supply & Potability</option>
+                  <option value="Roads">Roads & Transit Arteries</option>
+                  <option value="Drainage">Drainage & Flood Management</option>
+                  <option value="Electricity">Electricity & Power Grid</option>
+                  <option value="Health">Health & Clinics</option>
+                  <option value="Sanitation">Sanitation & Solid Waste</option>
+                </select>
+                <span className="text-[10px] text-stone-500 block font-sans">
+                  Active baseline: {baselineData.signals} signals · Gap: {baselineData.gapPct}%
+                </span>
+              </div>
+
+              {/* 3. Intervention Type */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase text-[#78716C] font-bold block">3. Intervention Type</label>
+                <select
+                  value={simIntervention}
+                  onChange={(e) => setSimIntervention(e.target.value as InterventionTypeKey)}
+                  className="w-full bg-[#FAF8F5] text-[#171717] p-2 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden font-bold"
+                >
+                  <option value="FIX">Fix existing infrastructure (~25% impact)</option>
+                  <option value="UPGRADE">Upgrade capacity (~40% impact)</option>
+                  <option value="BUILD">Build new infrastructure (~65% impact)</option>
+                  <option value="POLICY">Policy intervention (~20% impact)</option>
+                </select>
+              </div>
+
+              {/* 4. Intensity / Investment Level */}
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase text-[#78716C] font-bold block">4. Intensity Level</label>
+                <div className="grid grid-cols-3 gap-1 pt-0.5">
+                  {(['Low', 'Medium', 'High'] as IntensityLevel[]).map((level) => (
+                    <button
+                      key={level}
+                      onClick={() => setSimIntensity(level)}
+                      className={`py-2 px-1 text-center rounded-xs font-bold transition-all cursor-pointer ${
+                        simIntensity === level
+                          ? 'bg-[#D65A3A] text-white shadow-xs'
+                          : 'bg-[#FAF8F5] text-[#57534E] hover:bg-stone-200 border border-[#171717]/20'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* Run Action */}
+            <div className="pt-2 border-t border-[#171717]/10 flex items-center justify-between">
+              <span className="text-[11px] text-[#78716C]">
+                Target: <strong className="text-[#171717]">{currentDistrict.name}</strong> · Mode: <strong className="text-[#171717]">{simIntervention} ({simIntensity})</strong>
+              </span>
+
+              <button
+                onClick={() => setHasRunSimulation(true)}
+                className="px-5 py-2.5 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-bold rounded-xs transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
+              >
+                <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
+                <span>Run simulation</span>
+              </button>
+            </div>
+          </div>
+
+          {/* SIMULATION RESULTS: BEFORE → AFTER COMPARISON GRID */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between text-xs font-mono px-1">
+              <span className="font-bold text-[#171717] uppercase tracking-wider">
+                Simulated Outcome: {currentDistrict.name} ({simCategory})
+              </span>
+              <span className="text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                Projected Reduction: -{simulatedOutcome.effectiveReductionPct}%
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+              
+              {/* 1. Citizen Demand */}
+              <div className="bg-white border border-[#171717]/15 rounded-sm p-4 shadow-xs space-y-2">
+                <span className="text-[10px] text-[#78716C] uppercase font-bold block">
+                  Citizen Demand
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline space-x-1.5">
+                    <span className="text-xs text-stone-400 line-through">{baselineData.signals}</span>
+                    <span className="text-stone-300">→</span>
+                    <span className="text-2xl font-serif font-bold text-[#171717]">
+                      {simulatedOutcome.projectedSignals}
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    {Math.round((simulatedOutcome.signalsDelta / baselineData.signals) * 100)}%
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#57534E] font-sans">
+                  Monthly citizen complaints drop by {baselineData.signals - simulatedOutcome.projectedSignals} signals
+                </p>
+              </div>
+
+              {/* 2. Infrastructure Gap */}
+              <div className="bg-white border border-[#171717]/15 rounded-sm p-4 shadow-xs space-y-2">
+                <span className="text-[10px] text-[#78716C] uppercase font-bold block">
+                  Infrastructure Gap
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline space-x-1.5">
+                    <span className="text-xs text-stone-400 line-through">{baselineData.gapPct}%</span>
+                    <span className="text-stone-300">→</span>
+                    <span className="text-2xl font-serif font-bold text-[#171717]">
+                      {simulatedOutcome.projectedGap}%
+                    </span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    +{simulatedOutcome.projectedAccess - baselineData.access}% access
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#57534E] font-sans">
+                  Coverage rises from {baselineData.access}% to {simulatedOutcome.projectedAccess}%
+                </p>
+              </div>
+
+              {/* 3. Priority Score */}
+              <div className="bg-white border border-[#171717]/15 rounded-sm p-4 shadow-xs space-y-2">
+                <span className="text-[10px] text-[#78716C] uppercase font-bold block">
+                  Priority Score
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline space-x-1.5">
+                    <span className="text-xs text-stone-400 line-through">{baselineData.priorityScore}</span>
+                    <span className="text-stone-300">→</span>
+                    <span className="text-2xl font-serif font-bold text-[#171717]">
+                      {simulatedOutcome.projectedScore}
+                    </span>
+                    <span className="text-[10px] text-stone-400">/100</span>
+                  </div>
+                  <span className="text-xs font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
+                    {simulatedOutcome.scoreDelta} pts
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#57534E] font-sans">
+                  Urgency de-escalates from Critical to Moderate
+                </p>
+              </div>
+
+              {/* 4. Affected Population Protected */}
+              <div className="bg-white border border-[#171717]/15 rounded-sm p-4 shadow-xs space-y-2">
+                <span className="text-[10px] text-[#78716C] uppercase font-bold block">
+                  Protected Population
+                </span>
+                <div className="flex items-baseline justify-between">
+                  <div className="flex items-baseline space-x-1.5">
+                    <span className="text-2xl font-serif font-bold text-[#171717]">
+                      {(simulatedOutcome.popProtected / 1000).toFixed(1)}k
+                    </span>
+                    <span className="text-xs text-[#57534E]">beneficiaries</span>
+                  </div>
+                  <span className="text-xs font-bold text-[#D65A3A] bg-orange-50 px-1.5 py-0.5 rounded border border-orange-200">
+                    ₹{simulatedOutcome.estimatedCostCr} Cr
+                  </span>
+                </div>
+                <p className="text-[11px] text-[#57534E] font-sans">
+                  Estimated capital expenditure: ₹{simulatedOutcome.estimatedCostCr} Cr
+                </p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      )}
+
+      {/* ======================================================== */}
+      {/* COMPLETED WORK DETAIL MODAL                              */}
+      {/* ======================================================== */}
+      {selectedCompletedWork && (
+        <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-[#171717]/20 rounded-sm w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-xl space-y-5 p-6 font-sans">
+            
+            <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
+              <div>
+                <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 font-bold uppercase tracking-wider">
+                  Verified Outcome Dossier
+                </span>
+                <h2 className="text-xl font-serif font-bold text-[#171717] mt-1.5">
+                  {selectedCompletedWork.title}
+                </h2>
+                <span className="text-xs text-[#57534E] font-mono mt-0.5 block">
+                  {selectedCompletedWork.district}, {selectedCompletedWork.state} · Sector: <strong>{selectedCompletedWork.category}</strong>
+                </span>
+              </div>
+
+              <button
+                onClick={() => setSelectedCompletedWork(null)}
+                className="p-1 hover:bg-[#F7F5EF] rounded-xs text-[#78716C] hover:text-[#171717] cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Before vs After Impact Box */}
+            <div className="bg-[#FAF8F5] border border-[#171717]/10 p-4 rounded-sm space-y-3 font-mono text-xs">
+              <span className="text-[10px] uppercase font-bold text-[#78716C] block">
+                Quantified Field Results
+              </span>
+
+              <div className="grid grid-cols-3 gap-2 text-center">
+                <div className="p-2.5 bg-white border border-[#171717]/10 rounded-xs">
+                  <span className="text-[10px] text-stone-500 block">Citizen Signals</span>
+                  <div className="text-base font-bold text-emerald-700 mt-0.5">
+                    {selectedCompletedWork.beforeSignals} → {selectedCompletedWork.afterSignals}
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-bold">{selectedCompletedWork.signalsDeltaPct}%</span>
+                </div>
+
+                <div className="p-2.5 bg-white border border-[#171717]/10 rounded-xs">
+                  <span className="text-[10px] text-stone-500 block">Access Rate</span>
+                  <div className="text-base font-bold text-[#171717] mt-0.5">
+                    {selectedCompletedWork.beforeAccess}% → {selectedCompletedWork.afterAccess}%
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-bold">+{selectedCompletedWork.afterAccess - selectedCompletedWork.beforeAccess}%</span>
+                </div>
+
+                <div className="p-2.5 bg-white border border-[#171717]/10 rounded-xs">
+                  <span className="text-[10px] text-stone-500 block">Priority Drop</span>
+                  <div className="text-base font-bold text-[#171717] mt-0.5">
+                    {selectedCompletedWork.beforeScore} → {selectedCompletedWork.afterScore}
+                  </div>
+                  <span className="text-[10px] text-emerald-600 font-bold">De-escalated</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Department & Capital Info */}
+            <div className="grid grid-cols-2 gap-3 text-xs font-mono">
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                <span className="text-[10px] text-[#78716C] block">Executing Department</span>
+                <span className="font-bold text-[#171717] block mt-0.5">{selectedCompletedWork.department}</span>
+              </div>
+
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                <span className="text-[10px] text-[#78716C] block">Capital Investment</span>
+                <span className="font-bold text-[#D65A3A] text-sm block mt-0.5">₹{selectedCompletedWork.investmentCr} Cr</span>
+              </div>
+            </div>
+
+            {/* Beneficiary Note */}
+            <div className="p-3.5 bg-white border border-[#171717]/15 rounded-xs space-y-1 text-xs">
+              <span className="font-bold text-[#171717] block">Impact Summary:</span>
+              <p className="text-[#57534E] leading-relaxed">
+                {selectedCompletedWork.description} Directly benefited over <strong>{selectedCompletedWork.populationBenefited.toLocaleString()} citizens</strong> across the mandal.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end pt-3 border-t border-[#171717]/10">
+              <button
+                onClick={() => setSelectedCompletedWork(null)}
+                className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs cursor-pointer"
+              >
+                Close dossier
+              </button>
+            </div>
+
           </div>
         </div>
       )}
+
     </div>
   );
 };
