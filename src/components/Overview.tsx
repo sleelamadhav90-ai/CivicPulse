@@ -161,6 +161,18 @@ export const Overview: React.FC<OverviewProps> = ({
               <span>✍️ Submit a Written Request</span>
             </button>
           </div>
+
+          {/* India Coverage Metric Strip */}
+          <div className="pt-4 border-t border-[#171717]/15 flex flex-wrap items-center justify-between gap-3 font-mono text-xs">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-[#D65A3A]">🇮🇳 BUILT FOR INDIA:</span>
+              <span className="text-[#171717] font-semibold">28 States · 8 UTs · 22 Scheduled Languages</span>
+            </div>
+            <div className="flex items-center space-x-2 bg-[#F7F5EF] px-3 py-1 border border-[#171717]/30 text-[11px]">
+              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+              <span className="font-bold text-[#285943]">8 Active AI Prototype Languages Enabled</span>
+            </div>
+          </div>
         </div>
       </section>
 

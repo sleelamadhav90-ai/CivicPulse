@@ -107,12 +107,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
         {/* Right Controls: India Location + Language Switcher + Scalability Info */}
         <div className="flex flex-wrap items-center gap-2">
           
-          {/* INDIA LOCATION BADGE */}
+          {/* INDIA LOCATION & COVERAGE BADGE */}
           <div className="px-2.5 py-1.5 bg-[#285943] text-white border border-white/20 flex items-center space-x-1.5 text-[11px] font-bold shadow-[1px_1px_0px_#F7F5EF]">
             <span className="text-xs">🇮🇳</span>
             <span className="uppercase tracking-wider">INDIA</span>
             <span className="text-white/60">•</span>
-            <span className="text-amber-200 font-normal">AP Grid</span>
+            <span className="text-amber-200 font-normal">28 States · 8 UTs · 8 Active Languages</span>
           </div>
 
           {/* DASHBOARD LANGUAGE SWITCHER */}
@@ -127,9 +127,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             </button>
 
             {langDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-300 shadow-lg z-50 py-1 text-slate-900">
-                <div className="px-3 py-1 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
-                  Select Regional Dialect
+              <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-300 shadow-lg z-50 py-1 text-slate-900">
+                <div className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 leading-tight">
+                  8 Active AI Languages <br/>
+                  <span className="text-slate-400 font-normal font-sans">(Out of 22 Scheduled Languages)</span>
                 </div>
                 {currentCountry.languages.map((lang) => (
                   <button
@@ -183,16 +184,22 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
 
             <div className="space-y-3 text-xs leading-relaxed text-[#171717]/90 font-mono">
               <div className="bg-white p-3 border border-[#171717]/30 space-y-1">
-                <span className="font-bold text-[#D65A3A] uppercase block text-[10px]">INDIA-FIRST DEPLOYMENT</span>
-                <p>
-                  CivicPulse is deployed India-first with native support for Indian administrative hierarchies (<strong>India → State → District → Block → Village</strong>) and regional languages (Telugu, Hindi, Tamil, Kannada).
+                <span className="font-bold text-[#D65A3A] uppercase block text-[10px]">🇮🇳 BUILT FOR INDIA — LINGUISTIC & GEOGRAPHIC SCALE</span>
+                <div className="grid grid-cols-2 gap-2 text-center py-1 my-1 bg-[#F7F5EF] border border-[#171717]/10 text-[11px]">
+                  <div><strong className="text-[#171717] font-serif text-sm">28</strong> States</div>
+                  <div><strong className="text-[#171717] font-serif text-sm">8</strong> Union Territories</div>
+                  <div><strong className="text-[#171717] font-serif text-sm">22</strong> Scheduled Languages</div>
+                  <div className="text-[#D65A3A] font-bold"><strong className="font-serif text-sm">8</strong> Active AI Prototype Languages</div>
+                </div>
+                <p className="text-[11px] text-slate-700">
+                  CivicPulse respects the distinction between national scale and prototype readiness. While India spans 22 Eighth Schedule languages, CivicPulse currently enables <strong>8 active regional AI languages</strong> (English, Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Malayalam) with architecture ready to scale across all 22.
                 </p>
               </div>
 
               <div className="bg-white p-3 border border-[#171717]/30 space-y-1">
                 <span className="font-bold text-[#285943] uppercase block text-[10px]">REUSABLE CIVIC INFRASTRUCTURE ENGINE</span>
-                <p>
-                  CivicPulse decouples the intelligence engine from country-specific datasets. The exact same civic issue schema, multilingual voice parser, spatial aggregation pipeline, and Gemini priority engine can consume another country's public infrastructure, demographic, geographic, and investment datasets.
+                <p className="text-[11px] text-slate-700">
+                  CivicPulse decouples the intelligence engine from country-specific datasets. The exact same civic issue schema, multilingual voice parser, spatial aggregation pipeline, and Gemini priority engine can consume public infrastructure, demographic, geographic, and investment datasets across any jurisdiction.
                 </p>
               </div>
 

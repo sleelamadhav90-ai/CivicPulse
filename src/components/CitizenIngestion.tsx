@@ -618,12 +618,26 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
           </div>
 
           <div className="p-6 bg-[#F7F5EF] border border-[#171717] space-y-4">
-            <p className="text-xs font-sans text-slate-800 leading-relaxed">
-              Select your spoken dialect and press the mic button to test live speech ingestion:
-            </p>
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#171717]/10 pb-2">
+              <p className="text-xs font-sans text-slate-800 font-bold leading-relaxed">
+                Select from 8 Active Prototype Languages:
+              </p>
+              <span className="text-[10px] font-mono font-bold text-[#D65A3A]">
+                India Scale: 22 Eighth Schedule Languages
+              </span>
+            </div>
 
             <div className="flex flex-wrap gap-2">
-              {['Telugu (తెలుగు)', 'Hindi (हिंदी)', 'Tamil (தமிழ்)', 'Kannada (కన్నడ)', 'English'].map((lang) => (
+              {[
+                'English', 
+                'Hindi (हिंदी)', 
+                'Telugu (తెలుగు)', 
+                'Tamil (தமிழ்)', 
+                'Kannada (ಕನ್ನಡ)', 
+                'Bengali (বাংলা)', 
+                'Marathi (मराठी)', 
+                'Malayalam (മലയാളം)'
+              ].map((lang) => (
                 <button
                   key={lang}
                   onClick={() => setSelectedLanguage(lang.split(' ')[0])}

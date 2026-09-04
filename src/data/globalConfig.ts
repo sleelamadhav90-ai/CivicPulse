@@ -1,5 +1,22 @@
 import { CountryConfig, CountryCode, UniversalCivicSchema } from '../types';
 
+export const INDIA_COVERAGE_METRICS = {
+  states: 28,
+  unionTerritories: 8,
+  scheduledLanguages: 22,
+  activeAiLanguages: 8,
+  activeLanguageList: [
+    { code: 'en', name: 'English', nativeName: 'English', flagEmoji: '🇬🇧' },
+    { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flagEmoji: '🇮🇳' },
+    { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flagEmoji: '🇮🇳' },
+    { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', flagEmoji: '🇮🇳' },
+    { code: 'kn', name: 'Kannada', nativeName: 'కನ್ನಡ', flagEmoji: '🇮🇳' },
+    { code: 'bn', name: 'Bengali', nativeName: 'বাংলা', flagEmoji: '🇮🇳' },
+    { code: 'mr', name: 'Marathi', nativeName: 'मराठी', flagEmoji: '🇮🇳' },
+    { code: 'ml', name: 'Malayalam', nativeName: 'മലയാളം', flagEmoji: '🇮🇳' },
+  ]
+};
+
 export const GLOBAL_COUNTRIES: Record<CountryCode, CountryConfig> = {
   IN: {
     code: 'IN',
@@ -17,13 +34,7 @@ export const GLOBAL_COUNTRIES: Record<CountryCode, CountryConfig> = {
       level3: 'District',
       level4: 'City / Village'
     },
-    languages: [
-      { code: 'en', name: 'English', nativeName: 'English', flagEmoji: '🇬🇧' },
-      { code: 'te', name: 'Telugu', nativeName: 'తెలుగు', flagEmoji: '🇮🇳' },
-      { code: 'hi', name: 'Hindi', nativeName: 'हिन्दी', flagEmoji: '🇮🇳' },
-      { code: 'ta', name: 'Tamil', nativeName: 'தமிழ்', flagEmoji: '🇮🇳' },
-      { code: 'kn', name: 'Kannada', nativeName: 'ಕನ್ನಡ', flagEmoji: '🇮🇳' },
-    ],
+    languages: INDIA_COVERAGE_METRICS.activeLanguageList,
     defaultCategories: ['Water', 'Roads', 'Drainage', 'Electricity', 'Healthcare', 'Education'],
     coordinates: { lat: 20.5937, lng: 78.9629, zoom: 4.5 },
     sampleCities: ['Vijayawada', 'Guntur', 'Visakhapatnam', 'Tirupati', 'Kakinada', 'Kurnool', 'Anantapur'],

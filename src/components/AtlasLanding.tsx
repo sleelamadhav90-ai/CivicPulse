@@ -48,6 +48,41 @@ export const AtlasLanding: React.FC<AtlasLandingProps> = ({ onEnter }) => {
                 Combining regional voice ingestion (Telugu, Hindi, Tamil, Kannada), deterministic AI priority scoring, census demography baselines, and open public mapping.
               </p>
 
+              {/* BUILT FOR INDIA - COVERAGE & SCALE BADGE */}
+              <div className="p-5 bg-white border-2 border-[#171717] shadow-[3px_3px_0px_#D65A3A] space-y-3">
+                <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
+                  <span className="font-mono text-xs font-bold text-[#D65A3A] tracking-wider uppercase">
+                    🇮🇳 BUILT FOR INDIA — GEOGRAPHIC & LINGUISTIC COVERAGE
+                  </span>
+                  <span className="text-[10px] font-mono bg-[#285943] text-white px-2 py-0.5 font-bold uppercase">
+                    PROTOTYPE CAPABILITY
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
+                  <div className="p-2 bg-[#F7F5EF] border border-[#171717]/20">
+                    <span className="text-xl font-serif font-bold text-[#171717] block">28</span>
+                    <span className="text-[10px] text-slate-600 font-bold uppercase block">STATES</span>
+                  </div>
+                  <div className="p-2 bg-[#F7F5EF] border border-[#171717]/20">
+                    <span className="text-xl font-serif font-bold text-[#171717] block">8</span>
+                    <span className="text-[10px] text-slate-600 font-bold uppercase block">UNION TERRITORIES</span>
+                  </div>
+                  <div className="p-2 bg-[#F7F5EF] border border-[#171717]/20">
+                    <span className="text-xl font-serif font-bold text-[#171717] block">22</span>
+                    <span className="text-[10px] text-slate-600 font-bold uppercase block">SCHEDULED LANGUAGES</span>
+                  </div>
+                  <div className="p-2 bg-orange-100 border border-[#D65A3A]">
+                    <span className="text-xl font-serif font-bold text-[#D65A3A] block">8</span>
+                    <span className="text-[10px] text-[#D65A3A] font-bold uppercase block">ACTIVE AI LANGUAGES</span>
+                  </div>
+                </div>
+
+                <p className="text-xs font-sans text-slate-700 leading-relaxed pt-1">
+                  Designed to understand diverse citizen voices across India's linguistic and geographic regions. CivicPulse currently enables <strong className="text-[#171717]">8 active AI languages</strong> (English, Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Malayalam) with full architectural readiness to support all <strong className="text-[#171717]">22 Eighth Schedule languages</strong>.
+                </p>
+              </div>
+
               {/* Connected ASCII-Style Hierarchy Preview */}
               <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 font-mono text-[11px] text-[#171717] space-y-2">
                 <div className="flex items-center justify-between text-[10px] text-[#171717]/60 border-b border-[#171717]/10 pb-1">
