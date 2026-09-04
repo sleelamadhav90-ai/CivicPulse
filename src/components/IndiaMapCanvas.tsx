@@ -46,6 +46,10 @@ interface IndiaMapCanvasProps {
   selectedCountryCode?: CountryCode;
 }
 
+const isValidCoord = (lat?: number, lon?: number): boolean => {
+  return typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
+};
+
 const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot) => {
   const images = {
     Water: {
@@ -91,9 +95,10 @@ const getReportEvidence = (district: District, category: string, hotspot: CityDe
   };
 
   const defaultEvidence = images[category as keyof typeof images] || images.Water;
+  const safeLatVal = isValidCoord(district.lat, district.lon) ? district.lat : 16.5;
   return {
     ...defaultEvidence,
-    reportId: `CP-${district.name.substring(0, 3).toUpperCase()}-${Math.floor(1000 + (district.lat * 100) % 9000)}`,
+    reportId: `CP-${district.name.substring(0, 3).toUpperCase()}-${Math.floor(1000 + (Math.abs(safeLatVal) * 100) % 9000)}`,
     reporter: 'CivicPulse Citizen Network',
     timestamp: 'Today, 02:34 PM',
     commentsCount: Math.max(4, Math.round(hotspot.totalCitizenRequests / 450)),
@@ -105,7 +110,9 @@ const getReportEvidence = (district: District, category: string, hotspot: CityDe
 const MapController = ({ center, zoom }: { center: [number, number], zoom: number }) => {
   const map = useMap();
   useEffect(() => {
-    map.flyTo(center, zoom, { animate: true, duration: 1 });
+    if (Array.isArray(center) && center.length === 2 && isValidCoord(center[0], center[1])) {
+      map.flyTo(center, zoom, { animate: true, duration: 1 });
+    }
   }, [center, zoom, map]);
   return null;
 };
@@ -125,12 +132,25 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   // Calculate map center based on active district, country evaluations, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
     const active = evaluations.find(e => e.district.id === activeDistrictId);
-    if (active) return [active.district.lat, active.district.lon];
-    if (evaluations.length > 0) return [evaluations[0].district.lat, evaluations[0].district.lon];
-    return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
+    if (active && isValidCoord(active.district.lat, active.district.lon)) {
+      return [active.district.lat, active.district.lon];
+    }
+    const validEval = evaluations.find(e => isValidCoord(e.district?.lat, e.district?.lon));
+    if (validEval) {
+      return [validEval.district.lat, validEval.district.lon];
+    }
+    if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
+      return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
+    }
+    return [16.5062, 80.6480];
   }, [activeDistrictId, evaluations, countryConfig]);
 
   const defaultZoom = countryConfig.coordinates.zoom || 5;
+
+  // Filter evaluations to only those with valid numeric coordinates to avoid Leaflet NaN LatLng errors
+  const validEvaluations = useMemo(() => {
+    return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
+  }, [evaluations]);
 
   // Custom marker icon creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand') => {
@@ -287,7 +307,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         )}
 
         {/* LAYER: POPULATION DENSITY HEATMAP */}
-        {layers.population && evaluations.map((item) => (
+        {layers.population && validEvaluations.map((item) => (
           <CircleMarker
             key={`pop-${item.district.id}`}
             center={[item.district.lat, item.district.lon]}
@@ -304,7 +324,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         ))}
 
         {/* LAYER: INFRASTRUCTURE GAP BOUNDARIES */}
-        {layers.infrastructure && evaluations.map((item) => {
+        {layers.infrastructure && validEvaluations.map((item) => {
           const gap = 100 - item.currentAccess;
           if (gap < 20) return null;
           return (
@@ -347,7 +367,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         )}
 
         {/* LAYER: CITIZEN DEMAND PINS */}
-        {layers.citizen_demand && evaluations.map((item) => {
+        {layers.citizen_demand && validEvaluations.map((item) => {
           const isSelected = item.district.id === activeDistrictId;
           const evidence = getReportEvidence(item.district, item.category, item.demandHotspot);
 
@@ -419,7 +439,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         })}
 
         {/* LAYER: HEALTHCARE CLINICS */}
-        {layers.healthcare && evaluations.map((item) => (
+        {layers.healthcare && validEvaluations.map((item) => (
           <Marker
             key={`hc-${item.district.id}`}
             position={[item.district.lat + 0.04, item.district.lon - 0.04]}
@@ -432,7 +452,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         ))}
 
         {/* LAYER: EDUCATION INSTITUTIONS */}
-        {layers.education && evaluations.map((item) => (
+        {layers.education && validEvaluations.map((item) => (
           <Marker
             key={`edu-${item.district.id}`}
             position={[item.district.lat - 0.04, item.district.lon + 0.04]}
@@ -445,7 +465,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         ))}
 
         {/* LAYER: GOVERNMENT SANCTIONED PROJECTS */}
-        {layers.projects && evaluations.map((item) => (
+        {layers.projects && validEvaluations.map((item) => (
           <Marker
             key={`proj-${item.district.id}`}
             position={[item.district.lat + 0.02, item.district.lon + 0.05]}
@@ -458,7 +478,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         ))}
 
         {/* LAYER: DIGITAL CONNECTIVITY TOWERS */}
-        {layers.digital && evaluations.map((item) => (
+        {layers.digital && validEvaluations.map((item) => (
           <Marker
             key={`dig-${item.district.id}`}
             position={[item.district.lat - 0.03, item.district.lon - 0.05]}

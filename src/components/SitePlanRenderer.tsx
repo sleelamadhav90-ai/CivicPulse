@@ -55,6 +55,10 @@ interface SitePlanRendererProps {
 }
 
 export const SitePlanRenderer: React.FC<SitePlanRendererProps> = ({ category, seed, lat = 16.5062, lon = 80.6480 }) => {
+  // Ensure lat and lon are always valid numbers to avoid Leaflet (NaN, NaN) LatLng errors
+  const safeLat = (typeof lat === 'number' && !isNaN(lat) && isFinite(lat)) ? lat : 16.5062;
+  const safeLon = (typeof lon === 'number' && !isNaN(lon) && isFinite(lon)) ? lon : 80.6480;
+
   // Layer states
   const [showSatellite, setShowSatellite] = useState(true);
   const [showBlueprint, setShowBlueprint] = useState(true);
@@ -63,8 +67,8 @@ export const SitePlanRenderer: React.FC<SitePlanRendererProps> = ({ category, se
   const [showAnnotations, setShowAnnotations] = useState(true);
   const [activeTab, setActiveTab] = useState<'plan' | 'section'>('plan');
 
-  const dmsLat = useMemo(() => toDMS(lat, true), [lat]);
-  const dmsLon = useMemo(() => toDMS(lon, false), [lon]);
+  const dmsLat = useMemo(() => toDMS(safeLat, true), [safeLat]);
+  const dmsLon = useMemo(() => toDMS(safeLon, false), [safeLon]);
 
   // Generate deterministic architectural geometry
   const planData = useMemo(() => {
@@ -327,7 +331,7 @@ export const SitePlanRenderer: React.FC<SitePlanRendererProps> = ({ category, se
             {showSatellite && (
               <div className="absolute inset-0 z-0 opacity-70 grayscale contrast-125" style={{ mixBlendMode: 'multiply' }}>
                 <MapContainer 
-                  center={[lat, lon]} 
+                  center={[safeLat, safeLon]} 
                   zoom={16} 
                   zoomControl={false}
                   scrollWheelZoom={false}

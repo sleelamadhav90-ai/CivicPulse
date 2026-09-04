@@ -120,7 +120,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       problem: inputText || 'Infrastructure deficit',
       urgency: 'HIGH',
       affected_infrastructure: `${selectedCategory} Public Grid`,
-      estimated_impact: 'High Impact',
+      estimated_impact: 'High',
       recommended_action: `Dispatch field team to ${selectedDistrict} for ${selectedCategory} repair.`,
       ai_analysis: {
         category: selectedCategory,

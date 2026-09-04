@@ -592,12 +592,22 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <Building className="w-3.5 h-3.5 text-[#c84b31]" />
                 Architectural Master Plan
               </h4>
-              <SitePlanRenderer 
-                category={selectedProject.category} 
-                seed={selectedProject.id}
-                lat={districts.find(d => d.id === selectedProject.districtId)?.lat}
-                lon={districts.find(d => d.id === selectedProject.districtId)?.lon}
-              />
+              {(() => {
+                const matchedDist = districts.find(d => 
+                  d.id === selectedProject.districtId || 
+                  (selectedProject.district && d.name.toLowerCase() === selectedProject.district.toLowerCase())
+                );
+                const safeLat = (matchedDist && typeof matchedDist.lat === 'number' && !isNaN(matchedDist.lat) && isFinite(matchedDist.lat)) ? matchedDist.lat : 16.5062;
+                const safeLon = (matchedDist && typeof matchedDist.lon === 'number' && !isNaN(matchedDist.lon) && isFinite(matchedDist.lon)) ? matchedDist.lon : 80.6480;
+                return (
+                  <SitePlanRenderer 
+                    category={selectedProject.category} 
+                    seed={selectedProject.id}
+                    lat={safeLat}
+                    lon={safeLon}
+                  />
+                );
+              })()}
             </div>
 
             {/* Prominent Lifecycle Status Box */}
