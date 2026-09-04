@@ -124,107 +124,36 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   const gapScore = activeEvaluation ? Math.min(100, Math.round(activeEvaluation.breakdown.gap_percentage ?? 78)) : 78;
 
   return (
-    <div className="w-full min-h-[90vh] bg-[#F7F5EF] text-[#171717] font-sans flex flex-col border border-[#171717]">
+    <div className="w-full min-h-[90vh] bg-[#F7F5EF] text-[#171717] font-sans flex flex-col border border-[#171717] rounded-lg overflow-hidden shadow-sm">
       {/* 1. TOP POLICY MAP HEADER */}
-      <div className="bg-[#F7F5EF] border-b-2 border-[#171717] p-4 sm:p-6 space-y-4">
+      <div className="bg-[#F7F5EF] border-b border-[#171717]/20 p-4 sm:p-5 space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center space-x-2 text-xs font-mono font-bold uppercase tracking-widest text-[#D65A3A]">
-              <span>CIVICPULSE</span>
-              <span>•</span>
-              <span>POLICY MAP INTERFACE</span>
+            <div className="flex items-center space-x-2 text-[11px] font-mono font-bold uppercase tracking-widest text-[#D65A3A]">
+              <span>CIVICPULSE INTELLIGENCE</span>
               <span>•</span>
               <span className="text-[#171717]/70">{countryConfig.flag} {countryConfig.name}</span>
             </div>
-            <h1 className="font-serif text-2xl sm:text-3xl font-extrabold uppercase tracking-tight text-[#171717]">
-              WHERE SHOULD WE ACT?
-            </h1>
-            <p className="text-xs sm:text-sm font-sans text-[#171717]/80">
-              Interactive spatial decision platform prioritizing infrastructure interventions based on citizen voice & asset gaps.
+            <div className="flex items-baseline space-x-3">
+              <h1 className="font-serif text-2xl sm:text-3xl font-extrabold text-[#171717] tracking-tight">
+                CIVIC PRIORITY MAP
+              </h1>
+              <span className="font-mono text-xs text-[#171717]/60 font-semibold">
+                India · {activeEvaluation?.district.state || 'Andhra Pradesh'} · {selectedCategory === 'All' ? 'All Sectors' : selectedCategory}
+              </span>
+            </div>
+            <p className="text-xs font-sans text-[#171717]/80 max-w-2xl">
+              Spatial decision intelligence platform prioritizing public infrastructure interventions based on citizen demand signals and asset gaps.
             </p>
-
-            {/* INDIA ADMINISTRATIVE HIERARCHY BAR */}
-            <div className="pt-2">
-              <div className="bg-[#171717] text-[#F7F5EF] p-2.5 border border-[#171717] font-mono text-xs flex flex-wrap items-center gap-2 rounded">
-                <span className="font-bold text-[#D65A3A] uppercase tracking-widest text-[10px]">
-                  🇮🇳 INDIA HIERARCHY:
-                </span>
-
-                {/* State Select */}
-                <span className="text-slate-400">State:</span>
-                <select
-                  value={activeEvaluation?.district.state || 'Andhra Pradesh'}
-                  onChange={(e) => {
-                    const targetState = e.target.value;
-                    const matchedDistrict = districts.find(d => d.state === targetState);
-                    if (matchedDistrict) {
-                      setActiveDistrictId(matchedDistrict.id);
-                    }
-                  }}
-                  className="bg-white text-[#171717] font-bold px-2 py-1 text-xs border border-slate-300 rounded cursor-pointer"
-                >
-                  {Array.from(new Set(districts.map(d => d.state))).map(state => (
-                    <option key={state} value={state}>{state}</option>
-                  ))}
-                </select>
-
-                <span className="text-slate-400">→ District:</span>
-                <select
-                  value={activeDistrictId}
-                  onChange={(e) => setActiveDistrictId(e.target.value)}
-                  className="bg-white text-[#171717] font-bold px-2 py-1 text-xs border border-slate-300 rounded cursor-pointer"
-                >
-                  {districts
-                    .filter(d => d.state === (activeEvaluation?.district.state || 'Andhra Pradesh'))
-                    .map(d => (
-                      <option key={d.id} value={d.id}>{d.name}</option>
-                    ))}
-                </select>
-
-                <span className="text-slate-400">→ Block:</span>
-                <span className="bg-white/10 px-2 py-0.5 text-white font-bold border border-white/20">
-                  {activeEvaluation?.district.name} Rural North
-                </span>
-
-                <span className="text-slate-400">→ Village/Ward:</span>
-                <span className="bg-white/10 px-2 py-0.5 text-white font-bold border border-white/20">
-                  Ward 14 (Pumping Station Area)
-                </span>
-              </div>
-            </div>
-
-            {/* END-TO-END CONNECTED INVESTIGATION CHAIN */}
-            <div className="pt-1">
-              <div className="bg-[#F7F5EF] border border-[#171717]/30 p-2 font-mono text-[11px] overflow-x-auto whitespace-nowrap flex items-center gap-2 text-[#171717]">
-                <span className="font-bold text-[#D65A3A] uppercase text-[10px]">INVESTIGATION CHAIN:</span>
-                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">🎙️ Citizen Signal</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">AI Multilingual</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-amber-100 text-amber-900 font-bold border border-amber-300">Community Issue (327)</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-rose-100 text-rose-900 font-bold border border-rose-300">Surge ↑42%</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Infra Audit (Poor)</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Demographics (82K)</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-white border border-[#171717]/30 font-bold">Investment (₹39Cr)</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-[#171717] text-white font-bold">🔧 Recommendation (FIX)</span>
-                <span>→</span>
-                <span className="px-2 py-0.5 bg-emerald-700 text-white font-bold">Action Queue ✓</span>
-              </div>
-            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
             {onNavigateToBriefing && (
               <button
                 onClick={onNavigateToBriefing}
-                className="px-3.5 py-2 bg-white border border-[#171717] font-mono text-xs font-bold uppercase tracking-wider text-[#171717] hover:bg-[#D65A3A] hover:text-white transition-all shadow-[2px_2px_0px_#171717] flex items-center gap-2 cursor-pointer"
+                className="px-3 py-1.5 bg-white border border-[#171717]/30 font-mono text-xs font-bold uppercase tracking-wider text-[#171717] hover:bg-[#D65A3A] hover:text-white hover:border-[#D65A3A] transition-all shadow-sm flex items-center gap-2 cursor-pointer rounded"
               >
-                <FileText className="w-4 h-4 text-[#D65A3A]" />
+                <FileText className="w-3.5 h-3.5 text-[#D65A3A]" />
                 <span>Gov Briefing →</span>
               </button>
             )}
@@ -233,24 +162,24 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             <div className="relative">
               <button
                 onClick={() => setLayersPanelOpen(!layersPanelOpen)}
-                className={`px-3.5 py-2 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2 shadow-[2px_2px_0px_#171717] ${
+                className={`px-3 py-1.5 font-mono text-xs font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-2 rounded shadow-sm ${
                   layersPanelOpen
-                    ? 'bg-[#D65A3A] text-white border-[#171717]'
-                    : 'bg-white text-[#171717] border-[#171717] hover:bg-[#171717]/5'
+                    ? 'bg-[#171717] text-white border-[#171717]'
+                    : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
                 }`}
               >
-                <Layers className="w-4 h-4" />
+                <Layers className="w-3.5 h-3.5 text-[#D65A3A]" />
                 <span>Layers ({activeLayersCount})</span>
               </button>
 
               {/* LAYERS DROPDOWN POPOVER */}
               {layersPanelOpen && (
-                <div className="absolute top-full right-0 mt-2 z-40 w-72 bg-[#F7F5EF] border-2 border-[#171717] shadow-[6px_6px_0px_#171717] font-mono text-xs p-3 space-y-2 rounded-lg">
-                  <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2 mb-2">
+                <div className="absolute top-full right-0 mt-2 z-40 w-72 bg-[#F7F5EF] border border-[#171717]/30 shadow-lg font-mono text-xs p-3 space-y-2 rounded-lg backdrop-blur-md">
+                  <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2 mb-2">
                     <div className="flex items-center space-x-2">
                       <Layers className="w-4 h-4 text-[#D65A3A]" />
                       <span className="font-bold text-[#171717] uppercase tracking-wider text-[11px]">
-                        DATASET OVERLAYS
+                        MAP LAYERS
                       </span>
                     </div>
                     <button
@@ -275,8 +204,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       onClick={() => toggleLayer(item.key as keyof MapLayerState)}
                       className={`w-full flex items-center justify-between p-2 border transition-all cursor-pointer rounded ${
                         item.checked 
-                          ? 'bg-white border-[#171717] text-[#171717] font-bold' 
-                          : 'bg-[#F7F5EF] border-[#171717]/20 text-[#171717]/60 hover:border-[#171717]/40'
+                          ? 'bg-white border-[#171717]/40 text-[#171717] font-bold shadow-sm' 
+                          : 'bg-[#F7F5EF] border-[#171717]/15 text-[#171717]/60 hover:border-[#171717]/30'
                       }`}
                     >
                       <div className="flex items-center space-x-2">
@@ -298,31 +227,84 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
         </div>
 
-        {/* Category Filters Bar */}
-        <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-[#171717]/10 font-mono text-xs">
-          <span className="font-bold uppercase tracking-wider text-[#171717]/60 text-[11px] mr-2">
-            FILTER SECTOR:
-          </span>
-          {CATEGORIES.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1 font-mono text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer rounded ${
-                selectedCategory === cat 
-                  ? 'bg-[#171717] text-[#F7F5EF] shadow-[2px_2px_0px_#D65A3A]' 
-                  : 'bg-white text-[#171717] border border-[#171717]/30 hover:border-[#171717]'
-              }`}
+        {/* INDIA ADMINISTRATIVE HIERARCHY BAR */}
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          <div className="bg-white/80 border border-[#171717]/20 px-3 py-1.5 font-mono text-xs flex flex-wrap items-center gap-2 rounded-md shadow-sm text-[#171717]">
+            <span className="font-bold text-[#D65A3A] uppercase tracking-wider text-[10px] flex items-center gap-1">
+              <span>🇮🇳</span> HIERARCHY:
+            </span>
+
+            {/* State Select */}
+            <span className="text-[#171717]/60 font-medium">State:</span>
+            <select
+              value={activeEvaluation?.district.state || 'Andhra Pradesh'}
+              onChange={(e) => {
+                const targetState = e.target.value;
+                const matchedDistrict = districts.find(d => d.state === targetState);
+                if (matchedDistrict) {
+                  setActiveDistrictId(matchedDistrict.id);
+                }
+              }}
+              className="bg-[#F7F5EF] text-[#171717] font-bold px-2 py-0.5 text-xs border border-[#171717]/30 rounded cursor-pointer hover:border-[#171717]"
             >
-              {cat}
-            </button>
-          ))}
+              {Array.from(new Set(districts.map(d => d.state))).map(state => (
+                <option key={state} value={state}>{state}</option>
+              ))}
+            </select>
+
+            <span className="text-[#171717]/40">→</span>
+            <span className="text-[#171717]/60 font-medium">District:</span>
+            <select
+              value={activeDistrictId}
+              onChange={(e) => setActiveDistrictId(e.target.value)}
+              className="bg-[#F7F5EF] text-[#171717] font-bold px-2 py-0.5 text-xs border border-[#171717]/30 rounded cursor-pointer hover:border-[#171717]"
+            >
+              {districts
+                .filter(d => d.state === (activeEvaluation?.district.state || 'Andhra Pradesh'))
+                .map(d => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+            </select>
+
+            <span className="text-[#171717]/40">→</span>
+            <span className="text-[#171717]/60 font-medium">Block:</span>
+            <span className="bg-[#F7F5EF] px-2 py-0.5 text-[#171717] font-bold border border-[#171717]/20 rounded text-[11px]">
+              {activeEvaluation?.district.name} North
+            </span>
+
+            <span className="text-[#171717]/40">→</span>
+            <span className="text-[#171717]/60 font-medium">Village/Ward:</span>
+            <span className="bg-[#F7F5EF] px-2 py-0.5 text-[#171717] font-bold border border-[#171717]/20 rounded text-[11px]">
+              Ward 14 (Pumping Grid)
+            </span>
+          </div>
+
+          {/* Category Filters Bar */}
+          <div className="flex flex-wrap items-center gap-1 font-mono text-xs">
+            <span className="font-bold uppercase tracking-wider text-[#171717]/50 text-[10px] mr-1">
+              SECTOR:
+            </span>
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-2.5 py-1 font-mono text-xs font-semibold uppercase tracking-wider transition-all cursor-pointer rounded ${
+                  selectedCategory === cat 
+                    ? 'bg-[#171717] text-[#F7F5EF] shadow-sm font-bold' 
+                    : 'bg-white text-[#171717] border border-[#171717]/20 hover:border-[#171717]/50'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
-      {/* 2. MAIN POLICY MAP & PRIORITY AREAS GRID */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 relative min-h-[550px] bg-[#0f172a]">
-        {/* MAP CANVAS (8 Cols on desktop) */}
-        <div className="lg:col-span-8 relative h-[500px] lg:h-auto min-h-[500px] w-full">
+      {/* 2. MAIN POLICY MAP + INTEGRATED DISTRICT INSPECTOR LAYOUT */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 relative min-h-[580px] bg-[#F7F5EF]">
+        {/* MAP CANVAS (68% width on desktop) */}
+        <div className="lg:col-span-8 relative h-[520px] lg:h-auto min-h-[520px] w-full border-r border-[#171717]/20">
           <IndiaMapCanvas
             evaluations={districtEvaluations}
             activeDistrictId={activeDistrictId}
@@ -335,266 +317,217 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             onSelectHotspotForPolicy={onSelectHotspotForPolicy}
             selectedCountryCode={selectedCountryCode}
           />
-
-          {/* Map Hotspot Tier Legend Box */}
-          <div className="absolute bottom-4 left-4 z-20 bg-[#171717]/95 text-white border border-[#333] px-3.5 py-2 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] backdrop-blur-md font-mono text-xs rounded">
-            <div className="flex items-center gap-4 text-[11px]">
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#D65A3A] inline-block border border-white"></span>
-                <span className="font-bold">🔴 High Demand</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#D9A441] inline-block border border-white"></span>
-                <span className="font-bold">🟠 Medium</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-[#285943] inline-block border border-white"></span>
-                <span className="font-bold">🟡 Emerging</span>
-              </span>
-            </div>
-          </div>
         </div>
 
-        {/* PRIORITY AREAS SIDEBAR (4 Cols on desktop) */}
-        <div className="lg:col-span-4 bg-[#F7F5EF] border-t lg:border-t-0 lg:border-l-2 border-[#171717] p-5 flex flex-col justify-between space-y-4 overflow-y-auto">
-          <div className="space-y-4">
-            <div className="flex items-center justify-between border-b-2 border-[#171717] pb-3">
-              <div>
-                <h2 className="font-serif text-lg font-bold uppercase text-[#171717]">
-                  PRIORITY AREAS
+        {/* INTEGRATED DISTRICT INSPECTOR SIDEBAR (32% width on desktop) */}
+        <div className="lg:col-span-4 bg-[#F7F5EF] p-4 sm:p-5 flex flex-col justify-between space-y-4 overflow-y-auto">
+          {activeEvaluation ? (
+            <div className="space-y-4">
+              {/* Inspector Header */}
+              <div className="border-b border-[#171717]/20 pb-3 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-mono text-[10px] font-bold uppercase text-[#D65A3A] tracking-wider flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-[#D65A3A]"></span>
+                    DISTRICT INSPECTOR
+                  </span>
+                  <span className="font-mono text-[10px] bg-[#171717] text-white px-2 py-0.5 font-bold uppercase rounded">
+                    {activeEvaluation.priorityTier.label} PRIORITY
+                  </span>
+                </div>
+                <h2 className="font-serif text-2xl font-bold text-[#171717]">
+                  {activeEvaluation.district.name} District
                 </h2>
-                <span className="font-mono text-[10px] text-[#171717]/60 block uppercase font-semibold">
-                  Ranked by composite deficit score
+                <span className="font-mono text-xs text-[#171717]/60 block">
+                  State: {activeEvaluation.district.state} · Pop: {(activeEvaluation.district.population / 100000).toFixed(1)}L
                 </span>
               </div>
-              <span className="px-2 py-0.5 bg-[#D65A3A] text-white font-mono text-[10px] font-bold uppercase tracking-wider rounded">
-                TOP ACTION ZONES
-              </span>
-            </div>
 
-            {/* Priority Areas Ranked List */}
-            <div className="space-y-3">
-              {sortedEvaluations.slice(0, 4).map((item, idx) => {
-                const isSelected = item.district.id === activeDistrictId;
-                const displayCategory = selectedCategory === 'All' ? item.category : selectedCategory;
+              {/* Priority Score Gauge */}
+              <div className="bg-white border border-[#171717]/30 p-3.5 rounded-lg flex items-center justify-between shadow-sm">
+                <div>
+                  <span className="font-mono text-[11px] font-bold uppercase text-[#171717] block">
+                    Composite Priority Score
+                  </span>
+                  <span className="text-[11px] font-sans text-[#171717]/60">
+                    Ranked #{sortedEvaluations.findIndex(e => e.district.id === activeDistrictId) + 1} of {districts.length} districts
+                  </span>
+                </div>
+                <div className="font-serif text-3xl font-extrabold text-[#D65A3A]">
+                  {activeEvaluation.breakdown.total_score} <span className="text-xs font-sans text-[#171717]/50 font-normal">/ 100</span>
+                </div>
+              </div>
 
-                return (
-                  <div
-                    key={item.district.id}
-                    onClick={() => {
-                      setActiveDistrictId(item.district.id);
-                      setInspectorOpen(true);
-                    }}
-                    className={`p-3.5 border-2 transition-all cursor-pointer rounded-lg space-y-2 ${
-                      isSelected
-                        ? 'bg-white border-[#171717] shadow-[4px_4px_0px_#D65A3A]'
-                        : 'bg-white border-[#171717]/30 hover:border-[#171717] hover:shadow-[2px_2px_0px_#171717]'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-mono font-bold text-sm text-[#D65A3A]">
-                          0{idx + 1}
-                        </span>
-                        <span className="font-serif font-bold text-base text-[#171717]">
-                          {displayCategory}
-                        </span>
-                      </div>
-                      <span className="font-mono text-xs font-bold text-[#D65A3A] bg-[#D65A3A]/10 px-2 py-0.5 border border-[#D65A3A]/30 rounded">
-                        SCORE {item.breakdown.total_score}
-                      </span>
+              {/* Why is this a priority? */}
+              <div className="space-y-2.5">
+                <div className="flex items-center space-x-1.5 text-xs font-mono font-bold uppercase text-[#D65A3A]">
+                  <Flame className="w-3.5 h-3.5 fill-[#D65A3A]" />
+                  <span>WHY THIS DISTRICT IS PRIORITIZED</span>
+                </div>
+
+                <div className="space-y-2 font-mono text-xs bg-white border border-[#171717]/20 p-3 rounded-lg shadow-sm">
+                  {/* Gauge 1: Category access */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span>{activeEvaluation.category} Access Deficit</span>
+                      <span className="text-[#D65A3A]">{waterScore}%</span>
                     </div>
-
-                    <div className="flex items-center justify-between text-xs font-sans text-[#171717]/80">
-                      <span>📍 {item.district.name} District</span>
-                      <span className="font-mono font-semibold text-[#285943]">
-                        {item.demandCount} Signals
-                      </span>
+                    <div className="w-full bg-[#171717]/10 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#D65A3A] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${waterScore}%` }}
+                      ></div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          </div>
 
-          {/* Quick Guidance Prompt */}
-          <div className="bg-white border border-[#171717] p-3.5 rounded-lg space-y-2 font-mono text-xs">
-            <div className="flex items-center space-x-2 text-[#D65A3A] font-bold uppercase text-[11px]">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>POLICY DECISION HELPER</span>
+                  {/* Gauge 2: Citizen demand */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span>Citizen Demand Signals</span>
+                      <span className="text-[#D9A441]">{demandScore}%</span>
+                    </div>
+                    <div className="w-full bg-[#171717]/10 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#D9A441] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${demandScore}%` }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* Gauge 3: Infrastructure gap */}
+                  <div>
+                    <div className="flex justify-between text-[11px] font-bold mb-1">
+                      <span>Infrastructure Asset Gap</span>
+                      <span className="text-[#285943]">{gapScore}%</span>
+                    </div>
+                    <div className="w-full bg-[#171717]/10 h-2 rounded-full overflow-hidden">
+                      <div 
+                        className="bg-[#285943] h-full rounded-full transition-all duration-500"
+                        style={{ width: `${gapScore}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* RECOMMENDED ACTION */}
+              <div className="bg-[#171717] text-[#F7F5EF] p-4 rounded-lg space-y-2 border border-[#171717]">
+                <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#D65A3A]">
+                  RECOMMENDED ACTION
+                </div>
+                <div className="font-serif text-base font-bold text-white leading-snug">
+                  Expand rural {activeEvaluation.category.toLowerCase()} infrastructure & supply grid
+                </div>
+
+                <div className="pt-2 border-t border-white/20 flex items-center justify-between font-mono text-xs">
+                  <span className="text-gray-300 text-[11px]">
+                    Est. reach: <strong className="text-white">{(activeEvaluation.district.population * 0.12).toLocaleString(undefined, { maximumFractionDigits: 0 })} citizens</strong>
+                  </span>
+                  <span className="bg-[#D65A3A] text-white px-2 py-0.5 font-bold uppercase text-[10px] rounded">
+                    Urgency: HIGH
+                  </span>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 font-mono text-xs pt-1">
+                <button
+                  onClick={() => onOpenScoreModal(activeEvaluation.breakdown, activeEvaluation.district, activeEvaluation.category)}
+                  className="px-3 py-2 bg-white border border-[#171717]/30 text-[#171717] font-bold uppercase tracking-wider hover:bg-[#171717]/10 transition-colors rounded text-center cursor-pointer shadow-sm"
+                >
+                  View Evidence
+                </button>
+
+                {onNavigateToEngine ? (
+                  <button
+                    onClick={onNavigateToEngine}
+                    className="px-3 py-2 bg-white border border-[#171717]/30 text-[#171717] font-bold uppercase tracking-wider hover:bg-[#171717]/10 transition-colors rounded text-center cursor-pointer shadow-sm"
+                  >
+                    Compare
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => onSelectHotspotForPolicy(activeEvaluation.district, activeEvaluation.category)}
+                    className="px-3 py-2 bg-[#D65A3A] text-white font-bold uppercase tracking-wider hover:bg-[#171717] transition-colors rounded text-center cursor-pointer shadow-sm"
+                  >
+                    Policy Lab →
+                  </button>
+                )}
+              </div>
+
+              {/* Quick Jump Priority Districts List */}
+              <div className="pt-3 border-t border-[#171717]/15 space-y-2">
+                <div className="font-mono text-[10px] font-bold uppercase tracking-wider text-[#171717]/60">
+                  TOP ACTION ZONES IN {activeEvaluation.district.state.toUpperCase()}
+                </div>
+                <div className="space-y-1.5">
+                  {sortedEvaluations.slice(0, 3).map((item, idx) => {
+                    const isSelected = item.district.id === activeDistrictId;
+                    return (
+                      <div
+                        key={item.district.id}
+                        onClick={() => setActiveDistrictId(item.district.id)}
+                        className={`p-2 border transition-all cursor-pointer rounded flex items-center justify-between text-xs ${
+                          isSelected
+                            ? 'bg-white border-[#171717] font-bold shadow-sm'
+                            : 'bg-white/60 border-[#171717]/20 text-[#171717]/80 hover:bg-white hover:border-[#171717]/40'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-2">
+                          <span className="font-mono text-[10px] text-[#D65A3A] font-bold">0{idx + 1}</span>
+                          <span className="font-sans font-medium">{item.district.name}</span>
+                        </div>
+                        <span className="font-mono text-[11px] font-bold text-[#D65A3A]">
+                          SCORE {item.breakdown.total_score}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
-            <p className="font-sans text-xs text-[#171717]/80 leading-snug">
-              Click any district pin on the physical map or selection above to open the complete Priority Inspector & Evidence Breakdown.
-            </p>
-          </div>
+          ) : (
+            <div className="p-6 text-center text-[#171717]/60 font-mono text-xs">
+              Select a district on the map to inspect priority evidence.
+            </div>
+          )}
         </div>
       </div>
 
       {/* 3. BOTTOM SUMMARY STATS STRIP */}
-      <div className="bg-[#171717] text-[#F7F5EF] p-4 font-mono text-xs border-t-2 border-[#171717]">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-around gap-6 text-center">
-          <div className="flex items-center space-x-3">
-            <span className="text-xl font-serif font-extrabold text-[#D65A3A]">
+      <div className="bg-[#171717] text-[#F7F5EF] p-3 font-mono text-xs border-t border-[#171717]">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-around gap-4 text-center">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-serif font-extrabold text-[#D65A3A]">
               {totalRequestsCount.toLocaleString()}
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
               CITIZEN REQUESTS INGESTED
             </span>
           </div>
 
-          <div className="h-4 w-[1px] bg-gray-700 hidden sm:block"></div>
+          <div className="h-3 w-[1px] bg-gray-700 hidden sm:block"></div>
 
-          <div className="flex items-center space-x-3">
-            <span className="text-xl font-serif font-extrabold text-[#D9A441]">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-serif font-extrabold text-[#D9A441]">
               {totalHotspotsCount}
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
               CITY HOTSPOTS MONITORED
             </span>
           </div>
 
-          <div className="h-4 w-[1px] bg-gray-700 hidden sm:block"></div>
+          <div className="h-3 w-[1px] bg-gray-700 hidden sm:block"></div>
 
-          <div className="flex items-center space-x-3">
-            <span className="text-xl font-serif font-extrabold text-[#285943] bg-white/10 px-2 py-0.5 rounded">
+          <div className="flex items-center space-x-2">
+            <span className="text-lg font-serif font-extrabold text-[#285943] bg-white/10 px-2 py-0.5 rounded">
               {flaggedDistrictsCount}
             </span>
-            <span className="text-[11px] font-bold uppercase tracking-wider text-gray-300">
+            <span className="text-[10px] font-bold uppercase tracking-wider text-gray-300">
               DISTRICTS FLAGGED FOR ACTION
             </span>
           </div>
         </div>
       </div>
-
-      {/* 4. DISTRICT INSPECTOR DRAWER / CARD OVERLAY */}
-      {inspectorOpen && activeEvaluation && (
-        <div className="fixed bottom-6 right-6 z-50 w-full max-w-md bg-white border-2 border-[#171717] shadow-[8px_8px_0px_#171717] p-5 rounded-xl font-sans space-y-4 max-h-[90vh] overflow-y-auto">
-          {/* Drawer Header */}
-          <div className="flex items-center justify-between border-b-2 border-[#171717] pb-3">
-            <div>
-              <span className="font-mono text-[10px] font-bold uppercase text-[#D65A3A] tracking-wider block">
-                DISTRICT INSPECTOR
-              </span>
-              <h2 className="font-serif text-2xl font-bold text-[#171717]">
-                District: {activeEvaluation.district.name}
-              </h2>
-            </div>
-            <button
-              onClick={() => setInspectorOpen(false)}
-              className="p-1 hover:bg-[#171717]/10 rounded border border-[#171717] font-mono text-xs font-bold cursor-pointer"
-            >
-              <X className="w-4 h-4 text-[#171717]" />
-            </button>
-          </div>
-
-          {/* Priority Score Gauge */}
-          <div className="bg-[#F7F5EF] border border-[#171717] p-3.5 rounded-lg flex items-center justify-between">
-            <span className="font-mono text-xs font-bold uppercase text-[#171717]">
-              Priority Score
-            </span>
-            <div className="font-serif text-2xl font-extrabold text-[#D65A3A]">
-              {activeEvaluation.breakdown.total_score} <span className="text-xs font-sans text-[#171717]/50 font-normal">/ 100</span>
-            </div>
-          </div>
-
-          {/* 🔥 Why is this a priority? */}
-          <div className="space-y-3">
-            <div className="flex items-center space-x-1.5 text-xs font-mono font-bold uppercase text-[#D65A3A] border-b border-[#171717]/10 pb-1">
-              <Flame className="w-4 h-4 fill-[#D65A3A]" />
-              <span>WHY IS THIS A PRIORITY?</span>
-            </div>
-
-            <div className="space-y-2 font-mono text-xs">
-              {/* Bar Gauge 1: Water / Category access */}
-              <div>
-                <div className="flex justify-between text-[11px] font-bold mb-1">
-                  <span>{activeEvaluation.category} Access Deficit</span>
-                  <span className="text-[#D65A3A]">{waterScore}</span>
-                </div>
-                <div className="w-full bg-[#171717]/10 h-3 rounded-full overflow-hidden border border-[#171717]/20">
-                  <div 
-                    className="bg-[#D65A3A] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${waterScore}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Bar Gauge 2: Citizen demand */}
-              <div>
-                <div className="flex justify-between text-[11px] font-bold mb-1">
-                  <span>Citizen Demand Signals</span>
-                  <span className="text-[#D65A3A]">{demandScore}</span>
-                </div>
-                <div className="w-full bg-[#171717]/10 h-3 rounded-full overflow-hidden border border-[#171717]/20">
-                  <div 
-                    className="bg-[#D9A441] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${demandScore}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Bar Gauge 3: Infrastructure gap */}
-              <div>
-                <div className="flex justify-between text-[11px] font-bold mb-1">
-                  <span>Infrastructure Asset Gap</span>
-                  <span className="text-[#D65A3A]">{gapScore}</span>
-                </div>
-                <div className="w-full bg-[#171717]/10 h-3 rounded-full overflow-hidden border border-[#171717]/20">
-                  <div 
-                    className="bg-[#285943] h-full rounded-full transition-all duration-500"
-                    style={{ width: `${gapScore}%` }}
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* RECOMMENDED ACTION */}
-          <div className="bg-[#171717] text-[#F7F5EF] p-4 rounded-lg space-y-2 border border-[#171717]">
-            <div className="font-mono text-[10px] font-bold uppercase tracking-widest text-[#D65A3A]">
-              RECOMMENDED ACTION
-            </div>
-            <div className="font-serif text-base font-bold text-white">
-              Expand rural {activeEvaluation.category.toLowerCase()} infrastructure & supply grid
-            </div>
-
-            <div className="pt-2 border-t border-white/20 flex items-center justify-between font-mono text-xs">
-              <span className="text-gray-300">
-                Est. reach: <strong className="text-white">{(activeEvaluation.district.population * 0.12).toLocaleString(undefined, { maximumFractionDigits: 0 })} citizens</strong>
-              </span>
-              <span className="bg-[#D65A3A] text-white px-2 py-0.5 font-bold uppercase text-[10px] rounded">
-                Urgency: HIGH
-              </span>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="grid grid-cols-2 gap-2 font-mono text-xs pt-1">
-            <button
-              onClick={() => onOpenScoreModal(activeEvaluation.breakdown, activeEvaluation.district, activeEvaluation.category)}
-              className="px-3 py-2 bg-white border border-[#171717] text-[#171717] font-bold uppercase tracking-wider hover:bg-[#171717]/10 transition-colors rounded text-center cursor-pointer"
-            >
-              View Evidence
-            </button>
-
-            {onNavigateToEngine ? (
-              <button
-                onClick={onNavigateToEngine}
-                className="px-3 py-2 bg-white border border-[#171717] text-[#171717] font-bold uppercase tracking-wider hover:bg-[#171717]/10 transition-colors rounded text-center cursor-pointer"
-              >
-                Compare Districts
-              </button>
-            ) : (
-              <button
-                onClick={() => onSelectHotspotForPolicy(activeEvaluation.district, activeEvaluation.category)}
-                className="px-3 py-2 bg-[#D65A3A] text-white font-bold uppercase tracking-wider hover:bg-[#171717] transition-colors rounded text-center cursor-pointer border border-[#171717]"
-              >
-                Policy Lab →
-              </button>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

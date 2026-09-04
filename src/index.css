@@ -36,7 +36,7 @@ body {
 }
 .leaflet-container {
   background: #F7F5EF !important;
-  font-family: var(--font-mono) !important;
+  font-family: var(--font-sans) !important;
   z-index: 10;
 }
 .custom-popup .leaflet-popup-close-button {
@@ -44,4 +44,70 @@ body {
   top: 12px !important;
   right: 12px !important;
   z-index: 20 !important;
+}
+
+/* Polished Minimal Map Attribution */
+.leaflet-control-attribution {
+  background: rgba(247, 245, 239, 0.9) !important;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #64748b !important;
+  font-size: 10px !important;
+  font-family: var(--font-mono) !important;
+  border: 1px solid rgba(23, 23, 23, 0.15) !important;
+  border-radius: 4px !important;
+  padding: 2px 8px !important;
+  margin-right: 12px !important;
+  margin-bottom: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+.leaflet-control-attribution a {
+  color: #334155 !important;
+  text-decoration: underline !important;
+}
+
+/* Polished Minimal Zoom Controls */
+.leaflet-touch .leaflet-bar,
+.leaflet-bar {
+  border: 1px solid rgba(23, 23, 23, 0.25) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 2px 2px 0px #171717 !important;
+  border-radius: 6px !important;
+  overflow: hidden !important;
+  background: #ffffff !important;
+  margin-right: 12px !important;
+  margin-bottom: 12px !important;
+}
+.leaflet-bar a {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+  border-bottom: 1px solid rgba(23, 23, 23, 0.12) !important;
+  font-weight: 700 !important;
+  font-family: var(--font-sans) !important;
+  width: 32px !important;
+  height: 32px !important;
+  line-height: 32px !important;
+  font-size: 16px !important;
+  transition: all 0.15s ease !important;
+}
+.leaflet-bar a:hover {
+  background-color: #F7F5EF !important;
+  color: #D65A3A !important;
+}
+.leaflet-bar a:last-child {
+  border-bottom: none !important;
+}
+
+/* Polished Map Tooltips */
+.leaflet-tooltip {
+  background: #171717 !important;
+  color: #F7F5EF !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 6px !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+  padding: 6px 10px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 11px !important;
+}
+.leaflet-tooltip-top:before {
+  border-top-color: #171717 !important;
 }

@@ -126,7 +126,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onSelectHotspotForPolicy,
   selectedCountryCode = 'IN',
 }) => {
-  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'physical_topo' | 'physical_shaded' | 'vector_voyager'>('physical_satellite');
+  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'physical_topo' | 'physical_shaded' | 'vector_voyager'>('vector_voyager');
   const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
 
   // Calculate map center based on active district, country evaluations, or country center coordinates
@@ -142,7 +142,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
       return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
     }
-    return [16.5062, 80.6480];
+    return [20.5937, 78.9629];
   }, [activeDistrictId, evaluations, countryConfig]);
 
   const defaultZoom = countryConfig.coordinates.zoom || 5;
@@ -152,112 +152,174 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
   }, [evaluations]);
 
-  // Custom marker icon creation
-  const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand') => {
+  // Refined high-precision marker icon creation
+  const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
     let iconSymbol = '📍';
     let bg = '#171717';
-    let border = '#D65A3A';
+    let border = '#ffffff';
 
     if (type === 'healthcare') { iconSymbol = '🏥'; bg = '#285943'; border = '#ffffff'; }
     else if (type === 'education') { iconSymbol = '🎓'; bg = '#285943'; border = '#ffffff'; }
     else if (type === 'project') { iconSymbol = '🏗️'; bg = '#D9A441'; border = '#171717'; }
     else if (type === 'digital') { iconSymbol = '📡'; bg = '#171717'; border = '#D9A441'; }
-    else if (category === 'Water') iconSymbol = '💧';
+    else if (score >= 70) {
+      bg = '#D65A3A'; // High Priority CivicPulse Orange/Red
+      border = '#ffffff';
+    } else if (score >= 40) {
+      bg = '#D9A441'; // Medium Priority Amber
+      border = '#ffffff';
+    } else {
+      bg = '#285943'; // Emerging Priority Green
+      border = '#ffffff';
+    }
+
+    if (category === 'Water') iconSymbol = '💧';
     else if (category === 'Drainage') iconSymbol = '🌊';
     else if (category === 'Roads') iconSymbol = '🛣️';
     else if (category === 'Electricity') iconSymbol = '⚡';
 
+    const size = isSelected ? 34 : 26;
+    const ringSize = isSelected ? 46 : 0;
+
     return L.divIcon({
       className: 'bg-transparent border-none',
       html: `
-        <div style="
-          position: relative; 
-          display: flex; 
-          align-items: center; 
-          justify-content: center;
-          width: ${isSelected ? '36px' : '28px'}; 
-          height: ${isSelected ? '36px' : '28px'};
-          background-color: ${bg};
-          border: 2px solid ${border};
-          box-shadow: 2px 2px 0px rgba(0,0,0,0.8);
-          font-size: ${isSelected ? '16px' : '12px'};
-          transition: all 0.2s ease;
-        ">
-          ${iconSymbol}
+        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: ${size}px; height: ${size}px;">
+          ${isSelected ? `
+            <div style="
+              position: absolute;
+              width: ${ringSize}px;
+              height: ${ringSize}px;
+              border-radius: 50%;
+              border: 2px solid ${bg};
+              background: ${bg}1a;
+              animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+            "></div>
+          ` : ''}
+          <div style="
+            position: relative; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            width: ${size}px; 
+            height: ${size}px;
+            border-radius: 50%;
+            background-color: ${bg};
+            border: 2px solid ${border};
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25), 1px 1px 0px #171717;
+            font-size: ${isSelected ? '15px' : '12px'};
+            color: #ffffff;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+            transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+            z-index: ${isSelected ? 50 : 10};
+          ">
+            ${iconSymbol}
+          </div>
         </div>
       `,
-      iconSize: [32, 32],
-      iconAnchor: [16, 16],
-      popupAnchor: [0, -16],
+      iconSize: [size, size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
     });
   };
 
   return (
-    <div className="w-full h-full relative z-0 bg-[#0f172a]" style={{ minHeight: '600px' }}>
-      {/* FLOATING PHYSICAL MAP VIEW SELECTOR */}
-      <div className="absolute top-4 right-4 z-20 bg-[#171717]/90 text-white border border-[#333] p-1.5 shadow-[4px_4px_0px_rgba(0,0,0,0.5)] flex items-center gap-1 font-mono text-[11px] backdrop-blur-sm">
-        <span className="text-[10px] text-gray-400 font-bold px-2 uppercase tracking-wider hidden sm:inline">PHYSICAL MAP:</span>
+    <div className="w-full h-full relative z-0 bg-[#F7F5EF] overflow-hidden" style={{ minHeight: '520px' }}>
+      {/* 1. INDIA CONTEXTUAL BADGE OVERLAY (TOP-LEFT) */}
+      <div className="absolute top-3 left-3 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 px-3 py-1.5 shadow-[2px_2px_0px_#171717] backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] rounded-md">
+        <span className="text-xs">🇮🇳</span>
+        <span className="font-bold text-[#171717] tracking-wider uppercase">INDIA</span>
+        <span className="text-[#171717]/40">•</span>
+        <span className="text-slate-700 font-semibold text-[10px]">28 STATES · 8 UTs</span>
+      </div>
+
+      {/* 2. FLOATING MAP TILE STYLE SELECTOR (TOP-RIGHT) */}
+      <div className="absolute top-3 right-3 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-1 shadow-[2px_2px_0px_#171717] flex items-center gap-1 font-mono text-[10px] backdrop-blur-md rounded-md">
+        <button
+          onClick={() => setBaseTileMode('vector_voyager')}
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
+            baseTileMode === 'vector_voyager'
+              ? 'bg-[#171717] text-white'
+              : 'text-[#171717] hover:bg-[#171717]/10'
+          }`}
+          title="Clean Vector Administrative Map"
+        >
+          🗺️ Vector
+        </button>
         <button
           onClick={() => setBaseTileMode('physical_satellite')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
             baseTileMode === 'physical_satellite'
-              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
-              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+              ? 'bg-[#171717] text-white'
+              : 'text-[#171717] hover:bg-[#171717]/10'
           }`}
-          title="High-resolution physical satellite & terrain imagery with administrative overlays"
+          title="High-Resolution Esri Satellite Imagery"
         >
-          <span>🛰️</span>
-          <span>Satellite</span>
+          🛰️ Satellite
         </button>
         <button
           onClick={() => setBaseTileMode('physical_topo')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
+          className={`px-2.5 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded ${
             baseTileMode === 'physical_topo'
-              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
-              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
+              ? 'bg-[#171717] text-white'
+              : 'text-[#171717] hover:bg-[#171717]/10'
           }`}
-          title="Physical topographic contours, elevation profiles, and relief"
+          title="Esri Topographic Contour Map"
         >
-          <span>🏔️</span>
-          <span>Topo Relief</span>
+          🏔️ Relief
         </button>
-        <button
-          onClick={() => setBaseTileMode('physical_shaded')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
-            baseTileMode === 'physical_shaded'
-              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
-              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
-          }`}
-          title="Shaded physical terrain & geographic landscape view"
-        >
-          <span>🏞️</span>
-          <span>Terrain</span>
-        </button>
-        <button
-          onClick={() => setBaseTileMode('vector_voyager')}
-          className={`px-2.5 py-1 font-bold uppercase tracking-wider border transition-all cursor-pointer flex items-center gap-1.5 ${
-            baseTileMode === 'vector_voyager'
-              ? 'bg-[#D65A3A] text-white border-[#D65A3A] shadow-inner'
-              : 'bg-[#262626] text-gray-300 border-[#404040] hover:bg-[#333] hover:text-white'
-          }`}
-          title="Standard vector administrative road atlas"
-        >
-          <span>🗺️</span>
-          <span>Vector</span>
-        </button>
+      </div>
+
+      {/* 3. REFINED FLOATING PRIORITY LEGEND (BOTTOM-LEFT) */}
+      <div className="absolute bottom-4 left-4 z-20 bg-[#F7F5EF]/95 border border-[#171717]/25 p-3 shadow-[3px_3px_0px_#171717] backdrop-blur-md font-sans text-xs rounded-lg space-y-2 max-w-[210px]">
+        <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider border-b border-[#171717]/15 pb-1 flex items-center justify-between">
+          <span>CIVIC PRIORITY</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
+        </div>
+        <div className="space-y-1.5 font-medium text-[11px] text-[#171717]">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] border border-white shadow-sm inline-block"></span>
+              <span>High Priority</span>
+            </span>
+            <span className="font-mono text-[10px] text-slate-600 font-bold">70+</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441] border border-white shadow-sm inline-block"></span>
+              <span>Medium Priority</span>
+            </span>
+            <span className="font-mono text-[10px] text-slate-600 font-bold">40-69</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#285943] border border-white shadow-sm inline-block"></span>
+              <span>Emerging</span>
+            </span>
+            <span className="font-mono text-[10px] text-slate-600 font-bold">&lt;40</span>
+          </div>
+        </div>
       </div>
 
       <MapContainer 
         center={mapCenter} 
         zoom={defaultZoom} 
         scrollWheelZoom={true}
-        style={{ width: '100%', height: '100%', background: '#0f172a' }}
+        style={{ width: '100%', height: '100%', background: '#F7F5EF' }}
         zoomControl={false}
       >
         <ZoomControl position="bottomright" />
         <MapController center={mapCenter} zoom={activeDistrictId ? (defaultZoom + 1) : defaultZoom} />
         
         {/* DYNAMIC BASE TILE LAYERS */}
+        {baseTileMode === 'vector_voyager' && (
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+            maxZoom={19}
+          />
+        )}
+
         {baseTileMode === 'physical_satellite' && (
           <>
             <TileLayer
@@ -375,7 +437,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             <Marker
               key={`demand-${item.district.id}`}
               position={[item.district.lat, item.district.lon]}
-              icon={createAtlasIcon(item.category, isSelected, 'demand')}
+              icon={createAtlasIcon(item.category, isSelected, 'demand', item.breakdown.total_score)}
               eventHandlers={{
                 click: () => onSelectDistrict(item.district.id),
               }}
