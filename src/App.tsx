@@ -310,6 +310,7 @@ export default function App() {
           onNavigateToConnectors={() => setActiveTab('connectors')}
           onNavigateToSchema={() => setActiveTab('connectors')}
           onOpenPortalDirectory={() => setPortalDirectoryOpen(true)}
+          onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
         <div className="flex-1 flex min-w-0">
@@ -327,38 +328,6 @@ export default function App() {
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0">
-            {/* Mobile Header */}
-            <header className="lg:hidden sticky top-12 z-30 bg-[#F7F5EF]/95 backdrop-blur-md border-b border-[#171717] px-4 py-3 flex items-center justify-between font-mono text-xs">
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setMobileMenuOpen(true)}
-                  className="p-2 bg-[#171717] text-white hover:bg-[#D65A3A] transition-colors cursor-pointer"
-                  aria-label="Open Navigation Menu"
-                >
-                  <Menu className="w-5 h-5" />
-                </button>
-                <div className="flex items-center space-x-2">
-                  <div className="w-7 h-7 bg-[#D65A3A] flex items-center justify-center text-white font-serif font-bold">
-                    CP
-                  </div>
-                  <span className="font-serif font-bold text-[#171717] tracking-tight text-base uppercase">Civic Pulse</span>
-                </div>
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <span className="text-[10px] font-mono font-bold px-2 py-1 bg-[#171717] text-white border border-[#171717] uppercase tracking-wider">
-                  {GLOBAL_COUNTRIES[selectedCountryCode].flag} {selectedCountryCode}
-                </span>
-                <button
-                  onClick={() => setMethodologyModalOpen(true)}
-                  className="p-1.5 bg-[#171717]/10 text-[#171717] hover:text-[#D65A3A]"
-                  title="Methodology"
-                >
-                  <Info className="w-4 h-4" />
-                </button>
-              </div>
-            </header>
-
             {/* Dynamic View Panel */}
             <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-[calc(100vh-48px)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
               {activeTab === 'world' && (
@@ -590,31 +559,33 @@ export default function App() {
           )}
         </main>
 
-        {/* Global Footer */}
-        <footer className="border-t border-[#171717] bg-[#F7F5EF] py-4 mt-8 text-[#171717]/70 font-mono text-xs">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center space-x-3 text-xs text-[#171717]">
-              <span className="font-serif font-bold tracking-wider text-[#171717] uppercase">CIVICPULSE</span>
-              <span>•</span>
-              <span className="font-semibold text-[#171717]">Designed for India · Scalable by Design</span>
-              <span>•</span>
-              <span className="hidden sm:inline text-[#D65A3A] font-bold">India Stack DPI Engine</span>
-            </div>
-
-            <div className="flex items-center space-x-6 text-xs">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-[#285943]"></div>
-                <span>India Stack Live</span>
+        {/* Global Footer (Hidden on map workspace so map has full vertical focus) */}
+        {activeTab !== 'map' && (
+          <footer className="border-t border-[#171717] bg-[#F7F5EF] py-4 mt-8 text-[#171717]/70 font-mono text-xs">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center space-x-3 text-xs text-[#171717]">
+                <span className="font-serif font-bold tracking-wider text-[#171717] uppercase">CIVICPULSE</span>
+                <span>•</span>
+                <span className="font-semibold text-[#171717]">Designed for India · Scalable by Design</span>
+                <span>•</span>
+                <span className="hidden sm:inline text-[#D65A3A] font-bold">India Stack DPI Engine</span>
               </div>
-              <button
-                onClick={() => setMethodologyModalOpen(true)}
-                className="text-[#D65A3A] hover:underline font-bold text-xs transition-colors cursor-pointer"
-              >
-                Architecture Specs
-              </button>
+
+              <div className="flex items-center space-x-6 text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-[#285943]"></div>
+                  <span>India Stack Live</span>
+                </div>
+                <button
+                  onClick={() => setMethodologyModalOpen(true)}
+                  className="text-[#D65A3A] hover:underline font-bold text-xs transition-colors cursor-pointer"
+                >
+                  Architecture Specs
+                </button>
+              </div>
             </div>
-          </div>
-        </footer>
+          </footer>
+        )}
       </div>
 
       {/* Score Breakdown Modal */}

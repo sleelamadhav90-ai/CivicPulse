@@ -8,7 +8,8 @@ import {
   Layers,
   Sparkles,
   MapPin,
-  X
+  X,
+  Menu
 } from 'lucide-react';
 import { CountryCode } from '../types';
 import { GLOBAL_COUNTRIES } from '../data/globalConfig';
@@ -26,6 +27,7 @@ interface GlobalHeaderProps {
   onNavigateToConnectors: () => void;
   onNavigateToSchema: () => void;
   onOpenPortalDirectory?: () => void;
+  onOpenMobileMenu?: () => void;
 }
 
 export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
@@ -36,6 +38,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   selectedLanguage,
   onSelectLanguage,
   onOpenPortalDirectory,
+  onOpenMobileMenu,
 }) => {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
@@ -53,28 +56,31 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#171717] text-[#F7F5EF] border-b border-[#171717]/40 font-mono text-xs shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-3">
         
         {/* Official Brand Header */}
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center space-x-2.5">
+          {/* Mobile hamburger button */}
+          {onOpenMobileMenu && (
+            <button
+              onClick={onOpenMobileMenu}
+              className="p-1.5 bg-[#292824] hover:bg-[#34322D] text-white rounded-xs lg:hidden transition-colors cursor-pointer mr-1"
+              aria-label="Open Navigation Menu"
+            >
+              <Menu className="w-4 h-4" />
+            </button>
+          )}
+
           <button 
             onClick={() => onNavigate ? onNavigate('overview') : onOpenPortalDirectory?.()}
-            className="w-7 h-7 bg-[#D65A3A] hover:bg-[#c34e2f] text-white flex items-center justify-center font-mono font-bold text-xs border border-[#171717] cursor-pointer transition-colors shadow-[1px_1px_0px_#F7F5EF]"
+            className="w-7 h-7 bg-[#D65A3A] hover:bg-[#c34e2f] text-white flex items-center justify-center font-mono font-bold text-xs border border-[#171717] cursor-pointer transition-colors shadow-[1px_1px_0px_#F7F5EF] rounded-xs shrink-0"
             title="CivicPulse Home"
           >
             CP
           </button>
           <div className="cursor-pointer" onClick={() => onNavigate?.('overview')}>
-            <div className="flex items-center space-x-2">
-              <span className="font-serif font-bold text-base tracking-wide text-white uppercase">
-                CivicPulse
-              </span>
-              <span className="hidden md:inline-block px-2 py-0.5 bg-[#D65A3A]/20 border border-[#D65A3A]/40 text-[#D65A3A] font-mono text-[9px] font-bold tracking-wider uppercase">
-                DIGITAL PUBLIC GOODS × INDIA STACK
-              </span>
-            </div>
-            <span className="text-[10px] text-[#F7F5EF]/70 font-sans hidden sm:block">
-              Public Infrastructure & Civic Intelligence
+            <span className="font-serif font-bold text-base tracking-wide text-white uppercase">
+              CivicPulse
             </span>
           </div>
         </div>
@@ -91,9 +97,9 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                 <button
                   key={item.id}
                   onClick={() => onNavigate(item.id)}
-                  className={`px-3 py-1.5 font-medium transition-all cursor-pointer rounded-sm border ${
+                  className={`px-3 py-1 font-medium transition-all cursor-pointer rounded-xs border ${
                     isActive
-                      ? 'bg-[#D65A3A] text-white font-bold border-[#D65A3A] shadow-[1px_1px_0px_#F7F5EF]'
+                      ? 'bg-[#D65A3A] text-white font-bold border-[#D65A3A]'
                       : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
                   }`}
                 >
@@ -104,33 +110,30 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Controls: India Location + Language Switcher + Scalability Info */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Right Controls: India + Language + Info */}
+        <div className="flex items-center space-x-2">
           
-          {/* INDIA LOCATION & COVERAGE BADGE */}
-          <div className="px-2.5 py-1.5 bg-[#285943] text-white border border-white/20 flex items-center space-x-1.5 text-[11px] font-bold shadow-[1px_1px_0px_#F7F5EF]">
+          {/* INDIA JURISDICTION BADGE */}
+          <div className="px-2.5 py-1 bg-[#285943]/90 text-white border border-white/20 flex items-center space-x-1.5 text-[11px] font-bold rounded-xs">
             <span className="text-xs">🇮🇳</span>
-            <span className="uppercase tracking-wider">INDIA</span>
-            <span className="text-white/60">•</span>
-            <span className="text-amber-200 font-normal">28 States · 8 UTs · 8 Active Languages</span>
+            <span className="uppercase tracking-wider">India</span>
           </div>
 
-          {/* DASHBOARD LANGUAGE SWITCHER */}
+          {/* LANGUAGE SWITCHER */}
           <div className="relative">
             <button
               onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-              className="px-2.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-colors cursor-pointer flex items-center space-x-1.5 text-[11px]"
+              className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-slate-200 border border-white/20 transition-colors cursor-pointer flex items-center space-x-1 text-[11px] rounded-xs"
             >
-              <Languages className="w-3.5 h-3.5 text-[#D65A3A]" />
-              <span className="font-bold">{currentLang.nativeName}</span>
+              <Languages className="w-3 h-3 text-[#D65A3A]" />
+              <span className="font-medium">{currentLang.nativeName}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {langDropdownOpen && (
-              <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-slate-300 shadow-lg z-50 py-1 text-slate-900">
-                <div className="px-3 py-1.5 border-b border-slate-200 text-[9px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50 leading-tight">
-                  8 Active AI Languages <br/>
-                  <span className="text-slate-400 font-normal font-sans">(Out of 22 Scheduled Languages)</span>
+              <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-300 shadow-xl z-50 py-1 text-slate-900 rounded-xs">
+                <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
+                  Select Regional Language
                 </div>
                 {currentCountry.languages.map((lang) => (
                   <button
@@ -151,14 +154,14 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             )}
           </div>
 
-          {/* ARCHITECTURE INFO BUTTON */}
+          {/* INFO BUTTON */}
           <button
             onClick={() => setScalabilityModalOpen(true)}
-            className="px-2 py-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center space-x-1 text-[11px] font-mono font-bold"
-            title="Scalable Architecture Overview"
+            className="p-1.5 bg-white/10 hover:bg-white/20 text-white border border-white/20 transition-colors cursor-pointer flex items-center justify-center rounded-xs text-[11px]"
+            title="System Architecture & Scalability Overview"
+            aria-label="System Architecture & Scalability Overview"
           >
             <Info className="w-3.5 h-3.5 text-amber-300" />
-            <span className="uppercase tracking-wider hidden sm:inline">Info</span>
           </button>
         </div>
       </div>

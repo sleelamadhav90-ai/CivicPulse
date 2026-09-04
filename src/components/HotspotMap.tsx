@@ -5,26 +5,16 @@ import { getCityDemandHotspot, filterRequestsByTime, CityDemandHotspot } from '.
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState, getReportEvidence, ReportEvidence } from './IndiaMapCanvas';
 import { 
   Layers, 
-  ArrowRight, 
   X, 
-  ChevronRight, 
-  ChevronLeft,
-  CheckSquare, 
-  Square, 
-  MapPin, 
-  AlertCircle,
-  Search,
-  Clock,
-  ExternalLink,
-  Eye,
-  FileText,
+  ChevronDown,
+  Search, 
+  Clock, 
+  Eye, 
+  FileText, 
   SlidersHorizontal,
   Info,
-  ShieldCheck,
-  Building,
-  Volume2,
-  Calendar,
-  UserCheck
+  MapPin,
+  Volume2
 } from 'lucide-react';
 
 interface HotspotMapProps {
@@ -59,8 +49,16 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<InfrastructureCategory | 'All'>('All');
   const [timeFilter, setTimeFilter] = useState<TimeFilterRange>('30d');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDistrictId, setActiveDistrictId] = useState<string>(districts[0]?.id || 'guntur');
-  const [isDrawerOpen, setIsDrawerOpen] = useState(true);
+  
+  // Selected location: Default to null / drawer closed so the hero map is cleanly displayed first
+  const [activeDistrictId, setActiveDistrictId] = useState<string | null>(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [showDrawerDetails, setShowDrawerDetails] = useState(false);
+
+  // Dropdown visibility states
+  const [categoryDropdownOpen, setCategoryDropdownOpen] = useState(false);
+  const [timeDropdownOpen, setTimeDropdownOpen] = useState(false);
+  const [layersDropdownOpen, setLayersDropdownOpen] = useState(false);
   
   // Evidence modal state
   const [evidenceModalData, setEvidenceModalData] = useState<{
@@ -70,11 +68,11 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     evidence: ReportEvidence;
   } | null>(null);
 
-  // 4 Primary Layers matching the prompt requirements
+  // Map layer states
   const [activeLayers, setActiveLayers] = useState({
     citizenDemand: true,
-    infrastructure: true,
-    populationVulnerability: true,
+    infrastructure: false,
+    populationVulnerability: false,
     governmentProjects: false,
   });
 
@@ -135,7 +133,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
   // Active district evaluation
   const activeEvaluation = useMemo(() => {
-    return districtEvaluations.find(e => e.district.id === activeDistrictId) || districtEvaluations[0];
+    if (!activeDistrictId) return null;
+    return districtEvaluations.find(e => e.district.id === activeDistrictId) || null;
   }, [districtEvaluations, activeDistrictId]);
 
   // Search filter list for quick jump
@@ -163,151 +162,183 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   return (
     <div className="flex flex-col w-full h-full bg-[#121417] font-sans text-[#171717] overflow-hidden select-none">
       
-      {/* 1. COMPACT HERO FILTER BAR (TOP) */}
-      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-3 py-2 sm:px-4 sm:py-2.5 z-20 shrink-0 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5">
+      {/* 1. CONSOLIDATED ONE-ROW COMPACT MAP TOOLBAR */}
+      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-3 py-2 sm:px-4 sm:py-2 z-20 shrink-0 flex items-center justify-between gap-2 text-xs font-mono">
         
-        {/* Left: Branding & Category Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center space-x-2 mr-2">
-            <span className="font-serif font-bold text-sm tracking-tight text-[#171717]">
-              DISTRICT INSPECTOR
-            </span>
-            <span className="text-[10px] font-mono bg-[#D65A3A]/10 text-[#D65A3A] px-2 py-0.5 rounded-full font-bold border border-[#D65A3A]/30 flex items-center gap-1">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
-              LIVE GIS
-            </span>
-          </div>
+        {/* Left: District Inspector Label & Clean Dropdowns */}
+        <div className="flex items-center space-x-2 sm:space-x-3 overflow-x-auto no-scrollbar">
+          <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
+            DISTRICT INSPECTOR
+          </span>
 
-          {/* Category Pills */}
-          <div className="flex items-center space-x-1 overflow-x-auto py-0.5 no-scrollbar">
-            {CATEGORIES.map(cat => {
-              const isActive = selectedCategory === cat;
-              return (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-2.5 py-1 text-xs font-mono font-medium rounded-xs transition-all whitespace-nowrap cursor-pointer ${
-                    isActive
-                      ? 'bg-[#171717] text-white shadow-xs font-semibold'
-                      : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/40 hover:bg-stone-50'
-                  }`}
-                >
-                  {cat === 'All' ? '🌐 All Sectors' : cat}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+          <span className="text-stone-300 hidden sm:inline">•</span>
 
-        {/* Right: Layers, Time Window, Search, & Synthetic Badge */}
-        <div className="flex flex-wrap items-center gap-2 text-xs">
-          
-          {/* Quick Search */}
+          {/* Category Dropdown: [ All issues ▼ ] */}
           <div className="relative">
-            <div className="flex items-center bg-white border border-[#171717]/20 rounded-xs px-2 py-1 text-xs focus-within:border-[#171717] focus-within:ring-1 focus-within:ring-[#171717]">
-              <Search className="w-3.5 h-3.5 text-[#78716C] mr-1.5 shrink-0" />
-              <input
-                type="text"
-                placeholder="Find district or town..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 text-[#171717] placeholder:text-[#A8A29E]"
-              />
-              {searchQuery && (
-                <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black">
-                  <X className="w-3 h-3" />
-                </button>
-              )}
-            </div>
-
-            {/* Search Dropdown */}
-            {searchResults.length > 0 && (
-              <div className="absolute right-0 top-full mt-1 w-64 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-1 font-mono text-xs">
-                {searchResults.map(d => (
+            <button 
+              onClick={() => {
+                setCategoryDropdownOpen(!categoryDropdownOpen);
+                setTimeDropdownOpen(false);
+                setLayersDropdownOpen(false);
+              }}
+              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+            >
+              <span>{selectedCategory === 'All' ? 'All issues' : selectedCategory}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500" />
+            </button>
+            {categoryDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+                {CATEGORIES.map(cat => (
                   <button
-                    key={d.id}
-                    onClick={() => handleSelectSearchedDistrict(d.id)}
-                    className="w-full text-left px-3 py-1.5 hover:bg-[#FAF8F5] rounded-xs flex items-center justify-between text-[#171717] cursor-pointer"
+                    key={cat}
+                    onClick={() => { 
+                      setSelectedCategory(cat); 
+                      setCategoryDropdownOpen(false); 
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                      selectedCategory === cat ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    }`}
                   >
-                    <div>
-                      <div className="font-bold">{d.name}</div>
-                      <div className="text-[10px] text-[#78716C]">{d.state} • {d.zone} Zone</div>
-                    </div>
-                    <span className="text-[10px] text-[#D65A3A] font-bold">Inspect →</span>
+                    <span>{cat === 'All' ? 'All issues' : cat}</span>
+                    {selectedCategory === cat && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Time Window Filter */}
-          <div className="flex items-center bg-white border border-[#171717]/20 rounded-xs p-0.5 font-mono text-[11px]">
-            <span className="text-[#78716C] px-1.5 flex items-center gap-1">
-              <Clock className="w-3 h-3" />
-            </span>
-            {(['7d', '30d', '90d', 'all'] as TimeFilterRange[]).map((tf) => (
-              <button
-                key={tf}
-                onClick={() => setTimeFilter(tf)}
-                className={`px-2 py-0.5 rounded-2xs transition-colors cursor-pointer ${
-                  timeFilter === tf
-                    ? 'bg-[#171717] text-white font-bold'
-                    : 'text-[#57534E] hover:text-black'
-                }`}
-              >
-                {tf === 'all' ? 'ALL' : tf.toUpperCase()}
+          {/* Time Window Dropdown: [ 30 days ▼ ] */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setTimeDropdownOpen(!timeDropdownOpen);
+                setCategoryDropdownOpen(false);
+                setLayersDropdownOpen(false);
+              }}
+              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+            >
+              <Clock className="w-3 h-3 text-stone-500" />
+              <span>{timeFilter === 'all' ? 'All time' : timeFilter === '7d' ? '7 days' : timeFilter === '30d' ? '30 days' : '90 days'}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500" />
+            </button>
+            {timeDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+                {[
+                  { id: '7d', label: '7 days' },
+                  { id: '30d', label: '30 days' },
+                  { id: '90d', label: '90 days' },
+                  { id: 'all', label: 'All time' },
+                ].map(t => (
+                  <button
+                    key={t.id}
+                    onClick={() => { 
+                      setTimeFilter(t.id as TimeFilterRange); 
+                      setTimeDropdownOpen(false); 
+                    }}
+                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
+                      timeFilter === t.id ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    }`}
+                  >
+                    <span>{t.label}</span>
+                    {timeFilter === t.id && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Layers Dropdown: [ Layers ▼ ] */}
+          <div className="relative">
+            <button 
+              onClick={() => {
+                setLayersDropdownOpen(!layersDropdownOpen);
+                setCategoryDropdownOpen(false);
+                setTimeDropdownOpen(false);
+              }}
+              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+            >
+              <Layers className="w-3 h-3 text-stone-500" />
+              <span>Layers</span>
+              <ChevronDown className="w-3 h-3 text-stone-500" />
+            </button>
+            {layersDropdownOpen && (
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-2 font-mono text-xs space-y-1.5">
+                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                  <input 
+                    type="checkbox" 
+                    checked={activeLayers.citizenDemand} 
+                    onChange={() => toggleLayer('citizenDemand')}
+                    className="accent-[#D65A3A]"
+                  />
+                  <span className="font-medium text-[#171717]">Civic signals</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                  <input 
+                    type="checkbox" 
+                    checked={activeLayers.infrastructure} 
+                    onChange={() => toggleLayer('infrastructure')}
+                    className="accent-[#171717]"
+                  />
+                  <span className="font-medium text-[#171717]">Infrastructure assets</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                  <input 
+                    type="checkbox" 
+                    checked={activeLayers.populationVulnerability} 
+                    onChange={() => toggleLayer('populationVulnerability')}
+                    className="accent-[#285943]"
+                  />
+                  <span className="font-medium text-[#171717]">Population vulnerability</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                  <input 
+                    type="checkbox" 
+                    checked={activeLayers.governmentProjects} 
+                    onChange={() => toggleLayer('governmentProjects')}
+                    className="accent-blue-600"
+                  />
+                  <span className="font-medium text-[#171717]">Government projects</span>
+                </label>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right: Search Location Input with Dropdown */}
+        <div className="relative shrink-0">
+          <div className="flex items-center bg-white border border-[#171717]/20 rounded-xs px-2 py-1 text-xs focus-within:border-[#171717]">
+            <Search className="w-3.5 h-3.5 text-[#78716C] mr-1.5 shrink-0" />
+            <input
+              type="text"
+              placeholder="Search location..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent border-none outline-none text-xs w-28 sm:w-40 text-[#171717] placeholder:text-[#A8A29E]"
+            />
+            {searchQuery && (
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
+                <X className="w-3 h-3" />
               </button>
-            ))}
+            )}
           </div>
 
-          {/* Layer Controls Dropdown/Pills */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={() => toggleLayer('citizenDemand')}
-              className={`px-2 py-1 rounded-xs border text-[11px] font-mono transition-colors flex items-center space-x-1 cursor-pointer ${
-                activeLayers.citizenDemand
-                  ? 'bg-[#D65A3A]/10 text-[#D65A3A] border-[#D65A3A]/40 font-bold'
-                  : 'bg-white text-[#78716C] border-[#171717]/15'
-              }`}
-              title="Toggle Citizen Demand Telemetry"
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${activeLayers.citizenDemand ? 'bg-[#D65A3A]' : 'bg-stone-300'}`}></span>
-              <span>Signals</span>
-            </button>
-
-            <button
-              onClick={() => toggleLayer('infrastructure')}
-              className={`px-2 py-1 rounded-xs border text-[11px] font-mono transition-colors flex items-center space-x-1 cursor-pointer ${
-                activeLayers.infrastructure
-                  ? 'bg-[#171717] text-white border-[#171717] font-bold'
-                  : 'bg-white text-[#78716C] border-[#171717]/15'
-              }`}
-              title="Toggle Public Infrastructure Assets"
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${activeLayers.infrastructure ? 'bg-white' : 'bg-stone-300'}`}></span>
-              <span>Assets</span>
-            </button>
-
-            <button
-              onClick={() => toggleLayer('populationVulnerability')}
-              className={`px-2 py-1 rounded-xs border text-[11px] font-mono transition-colors flex items-center space-x-1 cursor-pointer ${
-                activeLayers.populationVulnerability
-                  ? 'bg-[#285943]/10 text-[#285943] border-[#285943]/40 font-bold'
-                  : 'bg-white text-[#78716C] border-[#171717]/15'
-              }`}
-              title="Toggle Population & Vulnerability Index"
-            >
-              <span className={`w-1.5 h-1.5 rounded-full ${activeLayers.populationVulnerability ? 'bg-[#285943]' : 'bg-stone-300'}`}></span>
-              <span>Vulnerability</span>
-            </button>
-          </div>
-
-          {/* Synthetic Data Notice Badge */}
-          <div className="hidden lg:flex items-center text-[10px] font-mono bg-stone-200/80 text-stone-600 px-2 py-1 rounded border border-stone-300">
-            <Info className="w-3 h-3 mr-1 text-stone-500" />
-            <span>Synthetic GIS Data</span>
-          </div>
-
+          {searchResults.length > 0 && (
+            <div className="absolute right-0 top-full mt-1 w-60 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-1 font-mono text-xs">
+              {searchResults.map(d => (
+                <button
+                  key={d.id}
+                  onClick={() => handleSelectSearchedDistrict(d.id)}
+                  className="w-full text-left px-3 py-1.5 hover:bg-[#FAF8F5] rounded-xs flex items-center justify-between text-[#171717] cursor-pointer"
+                >
+                  <div>
+                    <div className="font-bold">{d.name}</div>
+                    <div className="text-[10px] text-[#78716C]">{d.state}</div>
+                  </div>
+                  <span className="text-[10px] text-[#D65A3A] font-bold">Inspect →</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
@@ -318,7 +349,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         <div className="w-full h-full absolute inset-0">
           <IndiaMapCanvas
             evaluations={districtEvaluations}
-            activeDistrictId={activeDistrictId}
+            activeDistrictId={activeDistrictId || ''}
             onSelectDistrict={(id) => {
               setActiveDistrictId(id);
               setIsDrawerOpen(true);
@@ -331,371 +362,192 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           />
         </div>
 
-        {/* Floating Button to Re-open Inspector if closed */}
-        {!isDrawerOpen && (
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="absolute top-4 right-4 z-20 bg-[#FAF8F5] hover:bg-white text-[#171717] border border-[#171717]/30 px-3.5 py-2 rounded-xs shadow-xl flex items-center space-x-2 font-mono text-xs font-bold uppercase transition-all cursor-pointer"
-          >
-            <span>District Inspector</span>
-            <ChevronLeft className="w-4 h-4 text-[#D65A3A]" />
-          </button>
-        )}
-
-        {/* 3. CONTEXTUAL RIGHT DRAWER (360PX - 380PX, COLLAPSIBLE, DOES NOT SQUEEZE MAP) */}
+        {/* 3. PROGRESSIVE CONTEXTUAL DRAWER (OVERLAYS MAP ON HOTSPOT CLICK WITHOUT SQUEEZING CANVAS) */}
         {isDrawerOpen && activeEvaluation && (
-          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[370px] bg-[#FAF8F5]/98 backdrop-blur-md border-l border-[#171717]/20 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
-            
-            <div className="p-4 sm:p-5 space-y-4">
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[340px] bg-[#FAF8F5]/98 backdrop-blur-md border-l border-[#171717]/20 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-150">
+            <div className="p-4 space-y-3.5">
               
-              {/* Drawer Header */}
-              <div className="flex items-start justify-between border-b border-[#171717]/15 pb-3">
+              {/* Header with Close button */}
+              <div className="flex items-start justify-between border-b border-[#171717]/15 pb-2.5">
                 <div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
-                      TELEMETRY DOSSIER
-                    </span>
-                    <span className="text-[10px] font-mono text-[#78716C]">
-                      • {activeEvaluation.district.zone} ZONE
-                    </span>
-                  </div>
-                  <h2 className="text-2xl font-serif font-bold text-[#171717] tracking-tight">
+                  <h2 className="text-xl font-serif font-bold text-[#171717] tracking-tight">
                     {activeEvaluation.district.name}
                   </h2>
-                  <div className="text-xs text-[#57534E] flex items-center gap-1.5 mt-0.5">
-                    <MapPin className="w-3.5 h-3.5 text-[#78716C]" />
-                    <span>{activeEvaluation.district.state}, India</span>
-                    <span className="text-gray-400">•</span>
+                  <div className="text-xs text-[#57534E] flex items-center gap-1 mt-0.5 font-mono">
+                    <span>{activeEvaluation.district.state}</span>
+                    <span className="text-stone-300">•</span>
                     <span>Pop. {(activeEvaluation.district.population / 100000).toFixed(1)}L</span>
                   </div>
                 </div>
-
                 <button
-                  onClick={() => setIsDrawerOpen(false)}
-                  className="p-1.5 rounded-xs text-[#78716C] hover:text-[#171717] hover:bg-stone-200/60 transition-colors cursor-pointer"
+                  onClick={() => { 
+                    setIsDrawerOpen(false); 
+                    setActiveDistrictId(null); 
+                  }}
+                  className="p-1 rounded-xs text-[#78716C] hover:text-[#171717] hover:bg-stone-200/60 transition-colors cursor-pointer"
                   title="Close Inspector"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Priority & Urgency Score Card */}
-              <div className="bg-white border border-[#171717]/15 p-3.5 rounded-xs shadow-2xs space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
-                    <span className="font-mono text-xs font-bold text-[#171717] uppercase">
-                      {selectedCategory === 'All' ? 'Composite Demand' : `${selectedCategory} Sector`}
-                    </span>
-                  </div>
-                  <span className={`text-[11px] font-mono font-bold px-2 py-0.5 rounded ${
-                    activeEvaluation.breakdown.total_score >= 70
-                      ? 'bg-[#D65A3A] text-white'
-                      : activeEvaluation.breakdown.total_score >= 40
-                      ? 'bg-[#D9A441] text-black'
-                      : 'bg-[#285943] text-white'
-                  }`}>
-                    {activeEvaluation.priorityTier.label}
-                  </span>
-                </div>
-
-                <div className="flex items-baseline justify-between pt-1 border-t border-[#171717]/10">
-                  <div>
-                    <span className="text-3xl font-serif font-bold text-[#171717]">
+              {/* Priority Index Score */}
+              <div className="flex items-baseline justify-between bg-white p-3 border border-[#171717]/15 rounded-xs">
+                <div>
+                  <span className="text-[10px] font-mono uppercase text-[#78716C] block">Priority Index</span>
+                  <div className="flex items-baseline space-x-1 mt-0.5">
+                    <span className="text-2xl font-serif font-bold text-[#171717]">
                       {activeEvaluation.demandHotspot.categoryScore || activeEvaluation.breakdown.total_score}
                     </span>
-                    <span className="text-xs text-[#78716C] font-mono"> / 100</span>
-                    <span className="text-[10px] text-[#78716C] block">Priority Index Score</span>
+                    <span className="text-xs text-[#78716C] font-mono">/ 100</span>
                   </div>
-                  <div className="text-right">
-                    <span className="text-lg font-mono font-bold text-[#D65A3A]">
-                      {activeEvaluation.demandCount.toLocaleString()}
-                    </span>
-                    <span className="text-[10px] text-[#78716C] block">Citizen Signals Ingested</span>
-                  </div>
+                </div>
+                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                  activeEvaluation.breakdown.total_score >= 70
+                    ? 'bg-[#ef4444] text-white'
+                    : activeEvaluation.breakdown.total_score >= 40
+                    ? 'bg-[#f97316] text-white'
+                    : 'bg-[#285943] text-white'
+                }`}>
+                  {activeEvaluation.priorityTier.label}
+                </span>
+              </div>
+
+              {/* Main Issue & Request Volume */}
+              <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-1 text-xs">
+                <div className="font-bold text-[#171717] flex items-center justify-between">
+                  <span>{selectedCategory === 'All' ? activeEvaluation.demandHotspot.primaryCategory : selectedCategory} Sector</span>
+                  <span className="font-mono text-[11px] text-[#D65A3A] font-bold">
+                    {activeEvaluation.demandCount.toLocaleString()} signals
+                  </span>
+                </div>
+                <div className="text-[11px] text-[#57534E] flex items-center gap-1 font-mono">
+                  <span className="text-emerald-700 font-bold">↑ 22%</span>
+                  <span>this month</span>
+                  <span className="text-stone-300">•</span>
+                  <span>Gap: {100 - Math.round(activeEvaluation.currentAccess)}%</span>
                 </div>
               </div>
 
-              {/* Category-Specific Detailed Metrics Grid */}
-              <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                <div className="bg-white p-2.5 border border-[#171717]/15 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase">Infrastructure Gap</span>
-                  <span className="text-sm font-bold text-[#171717]">
-                    {100 - Math.round(activeEvaluation.currentAccess)}% Deficit
-                  </span>
-                  <div className="w-full bg-stone-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                    <div 
-                      className="bg-[#D65A3A] h-full"
-                      style={{ width: `${Math.min(100, 100 - activeEvaluation.currentAccess)}%` }}
-                    ></div>
+              {/* One Important Evidence Point */}
+              {activeEvaluation.demandHotspot.representativeQuote && (
+                <div className="bg-[#FAF0E6]/70 border border-[#D65A3A]/25 p-2.5 rounded-xs space-y-1 text-xs">
+                  <div className="text-[9px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider flex items-center gap-1">
+                    <Volume2 className="w-3 h-3" />
+                    <span>Citizen Voice ({activeEvaluation.demandHotspot.representativeQuote.language})</span>
                   </div>
-                </div>
-
-                <div className="bg-white p-2.5 border border-[#171717]/15 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase">Vulnerability Metric</span>
-                  <span className="text-sm font-bold text-[#171717]">
-                    {(activeEvaluation.district.poverty_index * 100).toFixed(0)}% MPI Index
-                  </span>
-                  <div className="w-full bg-stone-200 h-1.5 rounded-full mt-1.5 overflow-hidden">
-                    <div 
-                      className="bg-[#285943] h-full"
-                      style={{ width: `${Math.min(100, activeEvaluation.district.poverty_index * 100)}%` }}
-                    ></div>
+                  <div className="italic text-[11px] text-[#171717]">
+                    "{activeEvaluation.demandHotspot.representativeQuote.english || activeEvaluation.demandHotspot.representativeQuote.text}"
                   </div>
-                </div>
-              </div>
-
-              {/* Representative Citizen Voice Quote */}
-              {activeEvaluation.demandHotspot.representativeQuote ? (
-                <div className="bg-[#FAF0E6]/60 border border-[#D65A3A]/30 p-3 rounded-xs space-y-1.5">
-                  <div className="flex items-center justify-between text-[10px] font-mono text-[#D65A3A] font-bold uppercase">
-                    <span className="flex items-center gap-1">
-                      <Volume2 className="w-3.5 h-3.5" />
-                      <span>Citizen Voice • {activeEvaluation.demandHotspot.representativeQuote.language}</span>
-                    </span>
-                    <span className="bg-[#D65A3A] text-white px-1.5 py-0.2 rounded-2xs text-[9px]">
-                      VERIFIED AUDIO
-                    </span>
-                  </div>
-                  
-                  {/* Original Vernacular */}
-                  <div className="font-serif italic text-xs text-[#171717] bg-white/60 p-2 rounded border border-[#171717]/10">
-                    "{activeEvaluation.demandHotspot.representativeQuote.text}"
-                  </div>
-
-                  {/* English Translation */}
-                  <div className="text-[11px] text-[#44403C]">
-                    <strong className="text-[#171717]">Summary: </strong>
-                    {activeEvaluation.demandHotspot.representativeQuote.english}
-                  </div>
-
-                  <div className="text-[10px] font-mono text-[#78716C] pt-1 flex items-center justify-between border-t border-[#171717]/10">
-                    <span>Locality: {activeEvaluation.demandHotspot.representativeQuote.locality}</span>
-                    <span className="text-[#D65A3A] font-bold">Urgency: {activeEvaluation.demandHotspot.representativeQuote.urgency}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-stone-50 border border-[#171717]/15 p-3 rounded-xs text-xs text-[#78716C]">
-                  Citizen signals actively streaming for this sector.
                 </div>
               )}
 
-              {/* Top Issues Breakdown in this District */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono font-bold uppercase text-[#171717]">
-                    Sector Distribution
-                  </span>
-                  <span className="text-[10px] font-mono text-[#78716C]">
-                    {activeEvaluation.demandHotspot.topIssues.length} Categories
-                  </span>
-                </div>
-
-                <div className="space-y-1.5 bg-white border border-[#171717]/15 p-2.5 rounded-xs">
-                  {activeEvaluation.demandHotspot.topIssues.slice(0, 4).map((issue) => (
-                    <div key={issue.category} className="space-y-0.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="flex items-center gap-1.5">
-                          <span 
-                            className="w-2 h-2 rounded-full inline-block"
-                            style={{ backgroundColor: issue.dotColor }}
-                          ></span>
-                          <span className="font-medium text-[#171717]">{issue.category}</span>
-                        </span>
-                        <span className="font-mono text-[11px] text-[#78716C]">
-                          {issue.percentage}% ({issue.count} req)
-                        </span>
-                      </div>
-                      <div className="w-full bg-stone-100 h-1 rounded-full overflow-hidden">
-                        <div 
-                          className="h-full rounded-full transition-all"
-                          style={{ 
-                            width: `${issue.percentage}%`,
-                            backgroundColor: issue.dotColor 
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* AI Strategic Recommendation */}
-              <div className="bg-white border border-[#171717]/15 p-3 rounded-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-mono font-bold uppercase text-[#171717]">
-                    Executive Recommendation
-                  </span>
-                  <span className="text-[10px] font-mono bg-[#171717] text-white px-1.5 py-0.2 rounded">
-                    GEMINI FLASH
-                  </span>
-                </div>
-                <p className="text-xs text-[#44403C] leading-relaxed">
-                  {activeEvaluation.demandHotspot.aiRecommendation}
-                </p>
-              </div>
-
-            </div>
-
-            {/* Action Buttons (Sticky at Bottom of Drawer) */}
-            <div className="p-4 bg-stone-100/90 border-t border-[#171717]/15 space-y-2 shrink-0">
-              <div className="grid grid-cols-2 gap-2">
-                
-                {/* View Community Issues */}
+              {/* Primary Action Buttons */}
+              <div className="grid grid-cols-2 gap-2 pt-1">
                 <button
                   onClick={() => {
                     if (onNavigateToCommunityIssues) {
                       onNavigateToCommunityIssues(activeEvaluation.district.id, selectedCategory === 'All' ? undefined : selectedCategory);
                     }
                   }}
-                  className="bg-white hover:bg-stone-50 text-[#171717] border border-[#171717]/30 py-2 px-2 text-[11px] font-mono font-bold uppercase transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
-                  title="View individual citizen reports in this district"
+                  className="bg-[#171717] hover:bg-[#292824] text-white py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>Citizen Issues</span>
+                  <span>View issue</span>
                 </button>
 
-                {/* View Field Telemetry Evidence */}
-                <button
-                  onClick={() => handleOpenEvidence(activeEvaluation.district, selectedCategory === 'All' ? 'Water' : selectedCategory, activeEvaluation.demandHotspot)}
-                  className="bg-white hover:bg-stone-50 text-[#171717] border border-[#171717]/30 py-2 px-2 text-[11px] font-mono font-bold uppercase transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
-                  title="Inspect field evidence and engineering sanction logs"
-                >
-                  <Eye className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Field Evidence</span>
-                </button>
-              </div>
-
-              {/* Draft Policy Brief / Recommendations */}
-              <div className="flex gap-2">
                 <button
                   onClick={() => {
-                    if (onNavigateToEngine) {
-                      onNavigateToEngine();
+                    if (onNavigateToRecommendations) {
+                      onNavigateToRecommendations(activeEvaluation.district.id, selectedCategory === 'All' ? undefined : selectedCategory);
+                    } else {
+                      onSelectHotspotForPolicy(activeEvaluation.district, activeEvaluation.category);
                     }
                   }}
-                  className="flex-1 bg-stone-200 hover:bg-stone-300 text-[#171717] border border-[#171717]/20 py-2 px-2 text-[11px] font-mono font-bold uppercase transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
+                  className="bg-white hover:bg-stone-50 text-[#171717] border border-[#171717]/30 py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  <SlidersHorizontal className="w-3.5 h-3.5 text-[#285943]" />
-                  <span>Priority Engine</span>
-                </button>
-
-                <button
-                  onClick={() => onSelectHotspotForPolicy(activeEvaluation.district, activeEvaluation.category)}
-                  className="flex-1 bg-[#171717] hover:bg-[#D65A3A] text-white py-2 px-2 text-[11px] font-mono font-bold uppercase tracking-wider transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <span>Policy Lab →</span>
+                  <span>View recommendation</span>
                 </button>
               </div>
-            </div>
 
+              {/* Progressive Disclosure: Details & Telemetry Toggle */}
+              <div className="pt-2 border-t border-[#171717]/10">
+                <button
+                  onClick={() => setShowDrawerDetails(!showDrawerDetails)}
+                  className="w-full text-left text-[11px] font-mono font-medium text-stone-600 hover:text-black flex items-center justify-between p-1 cursor-pointer"
+                >
+                  <span>{showDrawerDetails ? 'Hide details' : 'View details & telemetry'}</span>
+                  <span>{showDrawerDetails ? '▲' : '▼'}</span>
+                </button>
+
+                {showDrawerDetails && (
+                  <div className="mt-2 space-y-2 text-xs font-mono animate-in fade-in duration-100">
+                    <div className="bg-white p-2.5 border border-[#171717]/15 rounded-xs space-y-1">
+                      <div className="text-[10px] text-stone-500 uppercase">AI Strategic Recommendation</div>
+                      <p className="text-[11px] text-stone-800 leading-relaxed font-sans">
+                        {activeEvaluation.demandHotspot.aiRecommendation}
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => handleOpenEvidence(activeEvaluation.district, selectedCategory === 'All' ? 'Water' : selectedCategory, activeEvaluation.demandHotspot)}
+                      className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 py-1.5 px-2 rounded-xs text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Eye className="w-3 h-3 text-blue-600" />
+                      <span>Open Field Evidence Dossier</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+
+            </div>
           </aside>
         )}
 
       </div>
 
-      {/* 4. FIELD TELEMETRY & EVIDENCE MODAL */}
+      {/* Field Telemetry Evidence Modal */}
       {evidenceModalData && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-[#FAF8F5] border border-[#171717] shadow-2xl max-w-xl w-full rounded-xs overflow-hidden text-[#171717] font-mono animate-in zoom-in-95 duration-150">
-            
-            {/* Modal Top Bar */}
-            <div className="bg-[#171717] text-white px-5 py-3 flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                <ShieldCheck className="w-4 h-4 text-[#D65A3A]" />
-                <span className="font-bold text-xs uppercase tracking-wider">
-                  FIELD VERIFICATION DOSSIER • {evidenceModalData.evidence.reportId}
-                </span>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+          <div className="bg-[#FAF8F5] border border-[#171717]/20 rounded-xs shadow-2xl max-w-lg w-full p-5 space-y-4 font-mono text-xs text-[#171717]">
+            <div className="flex items-start justify-between border-b border-[#171717]/15 pb-2">
+              <div>
+                <span className="text-[10px] text-[#D65A3A] font-bold uppercase">Field Telemetry Evidence</span>
+                <h3 className="text-lg font-serif font-bold">{evidenceModalData.district.name} ({evidenceModalData.category})</h3>
               </div>
               <button 
                 onClick={() => setEvidenceModalData(null)}
-                className="text-stone-400 hover:text-white cursor-pointer"
+                className="p-1 hover:bg-stone-200 rounded text-stone-600 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Modal Body */}
-            <div className="p-5 space-y-4">
-              <div>
-                <span className="text-[10px] text-[#78716C] uppercase block">Subject Investigation</span>
-                <h3 className="font-serif font-bold text-lg text-[#171717]">
-                  {evidenceModalData.evidence.title}
-                </h3>
-                <div className="text-xs text-[#57534E] flex items-center gap-2 mt-0.5">
-                  <span className="font-bold text-[#D65A3A]">{evidenceModalData.district.name}, {evidenceModalData.district.state}</span>
-                  <span>•</span>
-                  <span>Category: {evidenceModalData.category}</span>
-                  <span>•</span>
-                  <span className="text-emerald-700 font-bold">{evidenceModalData.evidence.signalConfidence}% Confidence</span>
-                </div>
-              </div>
-
-              {/* Assessment summary */}
-              <div className="bg-white border border-[#171717]/15 p-3 rounded-xs space-y-1">
-                <span className="text-[10px] text-[#78716C] uppercase block font-bold">Field Inspection Finding:</span>
-                <p className="font-sans text-xs text-[#171717] leading-relaxed">
-                  {evidenceModalData.evidence.sub}
-                </p>
-              </div>
-
-              {/* Administrative Officers & Sanction */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-0.5">
-                  <div className="flex items-center gap-1 text-[10px] text-[#78716C] uppercase">
-                    <UserCheck className="w-3.5 h-3.5 text-blue-600" />
-                    <span>Officer In-Charge</span>
-                  </div>
-                  <div className="font-bold text-[#171717]">{evidenceModalData.evidence.officer}</div>
-                  <div className="text-[10px] text-[#78716C]">{evidenceModalData.evidence.department}</div>
-                </div>
-
-                <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-0.5">
-                  <div className="flex items-center gap-1 text-[10px] text-[#78716C] uppercase">
-                    <Calendar className="w-3.5 h-3.5 text-[#D65A3A]" />
-                    <span>Inspection Date & Status</span>
-                  </div>
-                  <div className="font-bold text-[#171717]">{evidenceModalData.evidence.actionDate}</div>
-                  <div className="text-[10px] text-amber-800 font-bold">{evidenceModalData.evidence.status}</div>
-                </div>
-              </div>
-
-              {/* Grounded Corroborating Signals */}
-              <div className="bg-stone-100 p-3 rounded-xs border border-stone-200 text-xs flex items-center justify-between">
-                <div>
-                  <span className="text-[10px] text-[#78716C] uppercase block">Corroborating Telemetry</span>
-                  <span className="font-bold text-[#171717]">
-                    {evidenceModalData.hotspot.categoryRequests} Citizen Reports Recorded
-                  </span>
-                </div>
-                <button
-                  onClick={() => {
-                    const d = evidenceModalData.district;
-                    const c = evidenceModalData.category;
-                    setEvidenceModalData(null);
-                    if (onNavigateToCommunityIssues) {
-                      onNavigateToCommunityIssues(d.id, c);
-                    }
-                  }}
-                  className="bg-[#171717] text-white hover:bg-[#D65A3A] px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xs cursor-pointer flex items-center gap-1"
-                >
-                  <span>Browse Raw Reports</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
+            <div className="space-y-2 bg-white p-3 border border-[#171717]/15 rounded-xs">
+              <div className="text-xs font-bold">{evidenceModalData.evidence.title}</div>
+              <p className="text-stone-600 text-[11px] font-sans">{evidenceModalData.evidence.sub}</p>
             </div>
 
-            {/* Modal Footer */}
-            <div className="bg-[#FAF8F5] border-t border-[#171717]/15 px-5 py-3 flex justify-end">
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="bg-white p-2 border border-stone-200 rounded">
+                <span className="text-[9px] text-stone-400 uppercase block">Supervisor</span>
+                <span className="font-bold">{evidenceModalData.evidence.officer}</span>
+              </div>
+              <div className="bg-white p-2 border border-stone-200 rounded">
+                <span className="text-[9px] text-stone-400 uppercase block">Department</span>
+                <span className="font-bold">{evidenceModalData.evidence.department}</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-stone-200">
+              <span className="text-[10px] text-stone-500">Confidence: {evidenceModalData.evidence.signalConfidence}%</span>
               <button
                 onClick={() => setEvidenceModalData(null)}
-                className="bg-white hover:bg-stone-100 text-[#171717] border border-[#171717]/30 px-4 py-1.5 text-xs font-bold uppercase rounded-xs cursor-pointer"
+                className="bg-[#171717] text-white px-3 py-1 rounded-xs font-bold cursor-pointer hover:bg-stone-800"
               >
                 Close Dossier
               </button>
             </div>
-
           </div>
         </div>
       )}

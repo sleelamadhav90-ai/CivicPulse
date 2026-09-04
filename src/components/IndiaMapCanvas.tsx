@@ -212,69 +212,39 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   const defaultZoom = countryConfig?.coordinates?.zoom || 5;
   const targetZoom = activeDistrictId ? 8 : defaultZoom;
 
-  // Clean, institutional CivicPulse marker creation
+  // Clean, institutional CivicPulse circular marker creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
-    let iconSymbol = '📍';
-    let bg = '#171717';
+    let bg = '#10b981'; // Emerging (<40)
+    if (score >= 85) bg = '#ef4444'; // Critical (85+)
+    else if (score >= 70) bg = '#f97316'; // High (70-84)
+    else if (score >= 40) bg = '#eab308'; // Medium (40-69)
 
-    if (type === 'healthcare') { iconSymbol = '🏥'; bg = '#285943'; }
-    else if (type === 'education') { iconSymbol = '🎓'; bg = '#285943'; }
-    else if (type === 'project') { iconSymbol = '🏗️'; bg = '#D9A441'; }
-    else if (type === 'digital') { iconSymbol = '📡'; bg = '#171717'; }
-    else if (score >= 70) {
-      bg = '#D65A3A'; // High Priority CivicPulse Orange/Red
-    } else if (score >= 40) {
-      bg = '#D9A441'; // Medium Priority Amber
-    } else {
-      bg = '#285943'; // Emerging Priority Forest Green
-    }
+    if (type === 'healthcare') bg = '#285943';
+    else if (type === 'project') bg = '#D9A441';
 
-    if (category === 'Water') iconSymbol = '💧';
-    else if (category === 'Drainage') iconSymbol = '🌊';
-    else if (category === 'Roads') iconSymbol = '🛣️';
-    else if (category === 'Electricity') iconSymbol = '⚡';
-    else if (category === 'Health') iconSymbol = '🏥';
-    else if (category === 'Sanitation') iconSymbol = '🧹';
-
-    // Size proportional to priority density: 20px (emerging), 24px (medium), 28px (high), 34px (selected)
-    const size = isSelected ? 34 : (score >= 70 ? 28 : score >= 40 ? 24 : 20);
-    const pulseRing = isSelected ? 46 : 0;
+    // Simple, clean circular markers scaled proportionally to intensity
+    const size = isSelected ? 26 : (score >= 85 ? 22 : score >= 70 ? 20 : score >= 40 ? 17 : 14);
 
     return L.divIcon({
       className: 'bg-transparent border-none',
       html: `
-        <div style="position: relative; display: flex; align-items: center; justify-content: center; width: ${size}px; height: ${size}px;">
-          ${isSelected ? `
-            <div style="
-              position: absolute;
-              width: ${pulseRing}px;
-              height: ${pulseRing}px;
-              border-radius: 50%;
-              border: 2px solid #ffffff;
-              background: ${bg}33;
-              animation: ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
-            "></div>
-          ` : ''}
-          <div style="
-            position: relative; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center;
-            width: ${size}px; 
-            height: ${size}px;
-            border-radius: 50%;
-            background-color: ${bg};
-            border: 2px solid #ffffff;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.6), 0 0 0 1px rgba(0,0,0,0.25);
-            font-size: ${isSelected ? '14px' : score >= 70 ? '12px' : '10px'};
-            color: #ffffff;
-            transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-            transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
-            cursor: pointer;
-            z-index: ${isSelected ? 50 : 10};
-          ">
-            ${iconSymbol}
-          </div>
+        <div style="
+          position: relative;
+          display: flex; 
+          align-items: center; 
+          justify-content: center;
+          width: ${size}px; 
+          height: ${size}px;
+          border-radius: 50%;
+          background-color: ${bg};
+          border: 2px solid ${isSelected ? '#171717' : '#ffffff'};
+          box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+          cursor: pointer;
+          transition: transform 0.15s ease;
+          transform: ${isSelected ? 'scale(1.2)' : 'scale(1)'};
+          outline: ${isSelected ? '2px solid #ffffff' : 'none'};
+          z-index: ${isSelected ? 50 : 10};
+        ">
         </div>
       `,
       iconSize: [size, size],
@@ -332,62 +302,45 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         </button>
       </div>
 
-      {/* 3. REFINED FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-[#171717]/90 text-white border border-white/20 p-3 shadow-xl backdrop-blur-md font-sans text-xs rounded-xl space-y-2 max-w-[210px]">
-        <div className="font-mono text-[10px] font-bold text-[#D65A3A] uppercase tracking-wider border-b border-white/15 pb-1 flex items-center justify-between">
-          <span>CIVIC PRIORITY</span>
-          <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] animate-pulse"></span>
-        </div>
-        <div className="space-y-1.5 font-medium text-[11px] text-gray-200">
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] border border-white shadow-xs inline-block"></span>
-              <span>High Priority</span>
-            </span>
-            <span className="font-mono text-[10px] text-gray-300 font-bold">70+</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441] border border-white shadow-xs inline-block"></span>
-              <span>Medium Priority</span>
-            </span>
-            <span className="font-mono text-[10px] text-gray-300 font-bold">40–69</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#285943] border border-white shadow-xs inline-block"></span>
-              <span>Emerging</span>
-            </span>
-            <span className="font-mono text-[10px] text-gray-300 font-bold">&lt;40</span>
-          </div>
-        </div>
-
-        {/* MAP SOURCES DROPDOWN */}
-        <div className="pt-1.5 border-t border-white/15">
-          <button
-            onClick={() => setShowMapSources(!showMapSources)}
-            className="w-full bg-white/10 hover:bg-white/20 text-gray-200 px-2 py-1 text-[9px] font-mono font-bold uppercase transition-all rounded flex items-center justify-between cursor-pointer"
+      {/* 3. COMPACT FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT) */}
+      <div className="absolute bottom-4 left-4 z-20 bg-[#171717]/85 text-white border border-white/15 px-3 py-2 shadow-lg backdrop-blur-md font-sans text-xs rounded-lg space-y-1.5 min-w-[135px]">
+        <div className="flex items-center justify-between text-[10px] font-mono font-bold text-stone-300 uppercase tracking-wider border-b border-white/10 pb-1">
+          <span>Priority</span>
+          <button 
+            onClick={() => setShowMapSources(!showMapSources)} 
+            title="Data Sources"
+            className="text-stone-400 hover:text-white transition-colors cursor-pointer"
           >
-            <span className="flex items-center gap-1">
-              <Info className="w-3 h-3 text-[#D65A3A]" />
-              <span>DATA SOURCES</span>
-            </span>
-            <span>{showMapSources ? '▲' : '▼'}</span>
+            <Info className="w-3 h-3 text-amber-300" />
           </button>
-
-          {showMapSources && (
-            <div className="mt-2 p-2 bg-[#1f2227] border border-white/20 rounded text-[9px] font-mono space-y-1 text-gray-300 shadow-sm">
-              <div>
-                <strong className="block text-white">IMAGERY & CONTEXT:</strong>
-                <span>Esri World Imagery & Reference</span>
-              </div>
-              <div>
-                <strong className="block text-white">CIVIC SIGNALS:</strong>
-                <span>CivicPulse Ingestion Matrix</span>
-              </div>
-            </div>
-          )}
         </div>
+        
+        <div className="space-y-1 text-[11px] font-medium text-stone-200">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#ef4444] border border-white/60 shrink-0"></span>
+            <span>Critical (85+)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#f97316] border border-white/60 shrink-0"></span>
+            <span>High (70–84)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#eab308] border border-white/60 shrink-0"></span>
+            <span>Medium (40–69)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#10b981] border border-white/60 shrink-0"></span>
+            <span>Emerging (&lt;40)</span>
+          </div>
+        </div>
+
+        {showMapSources && (
+          <div className="mt-1.5 pt-1.5 border-t border-white/10 text-[9px] font-mono text-stone-300 space-y-0.5">
+            <div className="text-white font-bold">Sources:</div>
+            <div>• Esri Satellite GIS</div>
+            <div>• Ingested Telemetry</div>
+          </div>
+        )}
       </div>
 
       <MapContainer 
