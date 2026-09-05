@@ -296,7 +296,7 @@ export default function App() {
       {!hasEntered && <AtlasLanding onEnter={() => setHasEntered(true)} />}
       
       {/* Global Header Bar */}
-      <div className={`min-h-screen bg-[#F7F5EF] text-[#171717] flex flex-col font-sans selection:bg-[#D65A3A]/20 selection:text-[#D65A3A] transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
+      <div className={`h-screen w-full bg-[#F7F5EF] text-[#171717] flex flex-col font-sans selection:bg-[#D65A3A]/20 selection:text-[#D65A3A] overflow-hidden transition-opacity duration-1000 ${hasEntered ? 'opacity-100' : 'opacity-0 h-0 overflow-hidden'}`}>
         
         <GlobalHeader
           activeTab={activeTab}
@@ -313,7 +313,7 @@ export default function App() {
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
-        <div className="flex-1 flex min-w-0">
+        <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden relative">
           {/* Sidebar Navigation */}
           <Sidebar
             activeTab={activeTab}
@@ -326,10 +326,10 @@ export default function App() {
             onCloseMobile={() => setMobileMenuOpen(false)}
           />
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0">
+          {/* Main Content Area - Independently Scrollable Container */}
+          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto bg-[#F7F5EF]">
             {/* Dynamic View Panel */}
-            <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-[calc(100vh-48px)] overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
+            <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-full overflow-hidden' : 'p-4 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
               {activeTab === 'world' && (
                 <GlobalWorldMapCanvas
                   selectedCountryCode={selectedCountryCode}
@@ -562,7 +562,7 @@ export default function App() {
 
         {/* Global Footer (Hidden on map workspace so map has full vertical focus) */}
         {activeTab !== 'map' && (
-          <footer className="border-t border-[#171717] bg-[#F7F5EF] py-4 mt-8 text-[#171717]/70 font-mono text-xs">
+          <footer className="border-t border-[#171717] bg-[#F7F5EF] py-4 mt-auto text-[#171717]/70 font-mono text-xs shrink-0">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center space-x-3 text-xs text-[#171717]">
                 <span className="font-serif font-bold tracking-wider text-[#171717] uppercase">CIVICPULSE</span>

@@ -106,11 +106,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       )}
 
       <aside className={`
-        fixed top-0 bottom-0 left-0 z-50 w-64 bg-[#1F1E1B] text-[#E8E6DF] border-r border-[#2D2B26] flex flex-col justify-between transition-transform duration-200 ease-in-out font-sans
-        lg:translate-x-0 lg:static lg:z-auto
+        fixed inset-y-0 left-0 z-50 w-64 bg-[#1F1E1B] text-[#E8E6DF] border-r border-[#2D2B26] flex flex-col justify-between transition-transform duration-200 ease-in-out font-sans
+        lg:static lg:translate-x-0 lg:z-auto lg:h-full lg:shrink-0
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
-        <div className="overflow-y-auto flex-1 py-5 px-3 space-y-5">
+        <div className="overflow-y-auto flex-1 min-h-0 py-5 px-3 space-y-5">
           {/* Platform Header */}
           <div className="px-2 pb-3 border-b border-[#2D2B26]">
             <div className="flex items-center space-x-2.5">
@@ -225,7 +225,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Quiet Footer */}
-        <div className="p-3 border-t border-[#2D2B26] bg-[#1A1916] text-[11px] text-[#8C887B] flex items-center justify-between">
+        <div className="p-3 border-t border-[#2D2B26] bg-[#1A1916] text-[11px] text-[#8C887B] flex items-center justify-between shrink-0">
           <div className="flex items-center space-x-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
             <span className="font-sans">{t('brand.india_stack')}</span>
