@@ -10,6 +10,7 @@ import {
   RotateCcw 
 } from 'lucide-react';
 import { District, CitizenRequest } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface SettingsViewProps {
   districts: District[];
@@ -24,7 +25,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onResetData,
   onOpenMethodology,
 }) => {
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const { language, setLanguage, supportedLanguages, t } = useLanguage();
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [dailyBriefing, setDailyBriefing] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -55,10 +56,10 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
       {/* Header */}
       <div className="space-y-1 border-b border-[#171717]/10 pb-4">
         <h1 className="text-3xl font-serif font-bold tracking-tight text-[#171717]">
-          Settings
+          {t('settings.title')}
         </h1>
         <p className="text-sm text-[#57534E]">
-          Configure language preferences, notification alerts, and data connectors.
+          {t('settings.subtitle')}
         </p>
       </div>
 
@@ -69,24 +70,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Globe className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              Language
+              {t('settings.language_title')}
             </h2>
           </div>
           <p className="text-xs text-[#57534E]">
-            Choose interface language and default speech transcription dialect.
+            {t('settings.language_desc')}
           </p>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
-            {['English', 'Hindi (हिंदी)', 'Telugu (తెలుగు)', 'Marathi (मराठी)', 'Bengali (বাংলা)', 'Tamil (தமிழ்)'].map((lang) => (
+            {supportedLanguages.map((lang) => (
               <button
-                key={lang}
-                onClick={() => setSelectedLanguage(lang)}
-                className={`px-3 py-2 text-left rounded-xs border transition-colors cursor-pointer ${
-                  selectedLanguage === lang
+                key={lang.code}
+                onClick={() => setLanguage(lang.code)}
+                className={`px-3 py-2 text-left rounded-xs border transition-colors cursor-pointer flex items-center justify-between ${
+                  language === lang.code
                     ? 'bg-[#171717] text-white border-[#171717] font-semibold'
                     : 'bg-[#FAF8F5] text-[#57534E] border-[#171717]/15 hover:border-[#171717]/30'
                 }`}
               >
-                {lang}
+                <span>{lang.nativeName} {lang.name !== lang.nativeName && <span className="opacity-75">({lang.name})</span>}</span>
+                {language === lang.code && <Check className="w-3.5 h-3.5 text-[#D65A3A]" />}
               </button>
             ))}
           </div>
@@ -97,11 +99,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Bell className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              Notifications
+              {t('settings.notifications_title')}
             </h2>
           </div>
           <p className="text-xs text-[#57534E]">
-            Alerts for critical infrastructure anomalies and status changes.
+            {t('settings.notifications_desc')}
           </p>
           <div className="space-y-2 pt-1 text-xs">
             <label className="flex items-center space-x-3 cursor-pointer">
@@ -111,7 +113,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setEmailAlerts(e.target.checked)}
                 className="w-4 h-4 rounded-xs text-[#171717] border-[#171717]/30 focus:ring-0 cursor-pointer"
               />
-              <span className="text-[#171717]">Critical severity alerts (immediate notification for high urgency issues)</span>
+              <span className="text-[#171717]">{t('settings.alert_critical')}</span>
             </label>
             <label className="flex items-center space-x-3 cursor-pointer">
               <input
@@ -120,7 +122,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 onChange={(e) => setDailyBriefing(e.target.checked)}
                 className="w-4 h-4 rounded-xs text-[#171717] border-[#171717]/30 focus:ring-0 cursor-pointer"
               />
-              <span className="text-[#171717]">Daily morning executive dispatch (district summary digests)</span>
+              <span className="text-[#171717]">{t('settings.alert_daily')}</span>
             </label>
           </div>
         </div>
@@ -130,11 +132,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Database className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              Public Data Sources & Open Registries
+              {t('settings.public_data_title')}
             </h2>
           </div>
           <p className="text-xs text-[#57534E]">
-            CivicPulse integrates authentic public government data to give verifiable context to citizen signals without requiring paid external APIs or billing accounts.
+            {t('settings.public_data_desc')}
           </p>
           <div className="space-y-2 pt-1 text-xs font-mono">
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
@@ -142,42 +144,42 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span className="text-[#171717] font-bold block">data.gov.in (Primary Open Data Foundation)</span>
                 <span className="text-[10px] text-[#78716C]">National District Development & Infrastructure Benchmarks</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Verified Official</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.verified_official')}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">Jal Jeevan Mission (JJM) / CGWB</span>
                 <span className="text-[10px] text-[#78716C]">Rural Household Tap Telemetry & Aquifer Depletion</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.published_open_data')}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">PMGSY & MoRTH Road GIS Registry</span>
                 <span className="text-[10px] text-[#78716C]">All-Weather Habitation Connectivity & Surface Quality Layer</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.published_open_data')}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">MoHFW & WHO Health Statistics</span>
                 <span className="text-[10px] text-[#78716C]">Primary Health Centre Staffing, Cold-Chain & Emergency Transit</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.published_open_data')}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">IMD & ISRO Bhuvan (Climate & Flood GIS)</span>
                 <span className="text-[10px] text-[#78716C]">Monsoon Rainfall Anomaly & Urban Stagnation Risk Indices</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Published Open Data</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.published_open_data')}</span>
             </div>
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">Census, SECC & NITI Aayog MPI</span>
                 <span className="text-[10px] text-[#78716C]">Multidimensional Poverty & Demographic Vulnerability Atlas</span>
               </div>
-              <span className="text-[#285943] text-[11px] font-semibold">Active · Baseline Official Data</span>
+              <span className="text-[#285943] text-[11px] font-semibold">{t('status.baseline_data')}</span>
             </div>
           </div>
           
@@ -194,11 +196,11 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Download className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              Export data
+              {t('settings.export_title')}
             </h2>
           </div>
           <p className="text-xs text-[#57534E]">
-            Download complete telemetry, citizen submissions, and priority records for external analysis.
+            {t('settings.export_desc')}
           </p>
           <div className="pt-1">
             <button
@@ -206,7 +208,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 cursor-pointer shadow-xs"
             >
               <Download className="w-3.5 h-3.5" />
-              <span>{copied ? 'Exported JSON Package!' : 'Export JSON telemetry package'}</span>
+              <span>{copied ? t('settings.exported_btn') : t('settings.export_btn')}</span>
             </button>
           </div>
         </div>
@@ -216,15 +218,15 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           <div className="flex items-center space-x-2.5">
             <Info className="w-4 h-4 text-[#D65A3A]" />
             <h2 className="text-base font-serif font-bold text-[#171717]">
-              About CivicPulse
+              {t('settings.about_title')}
             </h2>
           </div>
           <div className="text-xs text-[#57534E] space-y-2 leading-relaxed">
             <p>
-              CivicPulse is an open public digital infrastructure platform linking citizen voice, infrastructure audits, and public capital allocations into verifiable, deterministic priorities.
+              {t('settings.about_p1')}
             </p>
             <p>
-              Engineered with institutional transparency: every score is mathematically audit-trailed without ungrounded AI hallucination.
+              {t('settings.about_p2')}
             </p>
           </div>
 
@@ -233,7 +235,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               onClick={onOpenMethodology}
               className="text-[#D65A3A] hover:underline font-semibold cursor-pointer"
             >
-              Read Prioritization Formula Methodology
+              {t('settings.read_methodology')}
             </button>
 
             <button
@@ -241,7 +243,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               className="text-[#78716C] hover:text-red-700 flex items-center space-x-1 cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset demo state</span>
+              <span>{t('settings.reset_demo')}</span>
             </button>
           </div>
         </div>
@@ -251,3 +253,4 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     </div>
   );
 };
+

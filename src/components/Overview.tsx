@@ -24,6 +24,7 @@ import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../u
 import { getCityDemandHotspot } from '../utils/demandAggregation';
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState } from './IndiaMapCanvas';
 import { getPublicDataForDistrict } from '../data/publicDataService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface OverviewProps {
   districts: District[];
@@ -43,6 +44,7 @@ export const Overview: React.FC<OverviewProps> = ({
   onStartVoiceSubmission,
   onStartWriteSubmission,
 }) => {
+  const { t, tCategory, tStatus } = useLanguage();
   const [selectedHotspotId, setSelectedHotspotId] = useState<string>(districts[0]?.id || 'guntur');
   const [activeDrawerIssue, setActiveDrawerIssue] = useState<{
     title: string;
@@ -162,13 +164,13 @@ export const Overview: React.FC<OverviewProps> = ({
         <div>
           <div className="flex items-center space-x-2 text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
             <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A]"></span>
-            <span>Citizen Service Portal</span>
+            <span>{t('brand.name')} · {t('overview.intake_title')}</span>
           </div>
           <h2 className="text-base sm:text-lg font-serif font-bold text-[#171717] mt-0.5">
-            Report a local infrastructure issue
+            {t('overview.intake_title')}
           </h2>
           <p className="text-xs text-[#57534E] mt-0.5">
-            Voice or text in your dialect — automatically translated and prioritized for officials.
+            {t('overview.intake_desc')}
           </p>
         </div>
 
@@ -178,7 +180,7 @@ export const Overview: React.FC<OverviewProps> = ({
             className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
           >
             <Mic className="w-3.5 h-3.5" />
-            <span>Speak issue</span>
+            <span>{t('action.speak_issue')}</span>
           </button>
 
           <button
@@ -186,14 +188,14 @@ export const Overview: React.FC<OverviewProps> = ({
             className="px-3.5 py-2 bg-white hover:bg-[#F7F5EF] text-[#171717] border border-[#171717]/25 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
           >
             <FileEdit className="w-3.5 h-3.5 text-[#57534E]" />
-            <span>Write</span>
+            <span>{t('action.write_issue')}</span>
           </button>
 
           <button
             onClick={() => onNavigate('signals')}
             className="px-3 py-2 text-[#57534E] hover:text-[#171717] text-xs font-medium transition-colors cursor-pointer underline"
           >
-            Track
+            {t('nav.my_requests')}
           </button>
         </div>
       </section>
@@ -203,10 +205,10 @@ export const Overview: React.FC<OverviewProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="bg-[#D65A3A] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs uppercase tracking-wider">
-              Top National Priority
+              {t('overview.urgent_action_title')}
             </span>
             <span className="text-xs font-mono font-semibold text-[#D65A3A]">
-              Score 91 / 100 · Critical
+              {t('metric.priority_score')}: 91 / 100 · {t('status.critical')}
             </span>
           </div>
           <span className="text-xs text-[#78716C] font-mono hidden sm:inline">
@@ -219,15 +221,15 @@ export const Overview: React.FC<OverviewProps> = ({
             Water pipeline deficit requires immediate booster sanction in Guntur
           </h1>
           <p className="text-xs sm:text-sm text-[#57534E] mt-1.5 leading-relaxed">
-            <strong>Conclusion:</strong> 742 verified citizen voice reports backed by Jal Jeevan Mission telemetry indicate acute pipeline pressure collapse affecting 14 habitations.
+            <strong>{t('overview.why_matters')}:</strong> 742 verified citizen voice reports backed by Jal Jeevan Mission telemetry indicate acute pipeline pressure collapse affecting 14 habitations.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#171717]/10">
           <div className="flex items-center space-x-4 text-xs font-mono text-[#57534E]">
-            <span><strong>742</strong> citizen reports (+22%)</span>
+            <span><strong>742</strong> {t('metric.demand_signals')} (+22%)</span>
             <span className="text-stone-300">•</span>
-            <span><strong>31.6%</strong> tap deficit (JJM)</span>
+            <span><strong>31.6%</strong> {t('metric.service_deficit')} (JJM)</span>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -240,7 +242,7 @@ export const Overview: React.FC<OverviewProps> = ({
               }}
               className="px-4 py-1.5 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors cursor-pointer"
             >
-              Review recommendation →
+              {t('action.view_recommendation')} →
             </button>
           </div>
         </div>
@@ -251,17 +253,17 @@ export const Overview: React.FC<OverviewProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-xl font-serif font-bold text-[#171717]">
-              Where action is needed
+              {t('overview.hotspot_map_title')}
             </h2>
             <p className="text-xs text-[#78716C] mt-0.5">
-              Interactive geographic distribution of citizen demand and infrastructure vulnerability.
+              {t('overview.hotspot_map_desc')}
             </p>
           </div>
           <button
             onClick={() => onNavigate('map')}
             className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
           >
-            <span>Full screen map</span>
+            <span>{t('nav.map')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -272,20 +274,20 @@ export const Overview: React.FC<OverviewProps> = ({
             <div className="flex items-center space-x-4 text-[#57534E]">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A]"></span>
-                <span className="font-bold text-[#171717]">High priority</span>
+                <span className="font-bold text-[#171717]">{t('status.critical')}</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441]"></span>
-                <span>Medium</span>
+                <span>{t('status.moderate')}</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#285943]"></span>
-                <span>Monitoring</span>
+                <span>{t('status.low')}</span>
               </span>
             </div>
 
             <span className="text-[11px] text-[#78716C] hidden sm:inline">
-              Click any circle to inspect evidence
+              {t('overview.click_to_inspect')}
             </span>
           </div>
 
@@ -319,17 +321,17 @@ export const Overview: React.FC<OverviewProps> = ({
         <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
           <div>
             <h2 className="text-xl font-serif font-bold text-[#171717]">
-              Priority issues requiring decision
+              {t('overview.priority_list_title')}
             </h2>
             <p className="text-xs text-[#78716C] mt-0.5">
-              Ranked by citizen demand acceleration and open government infrastructure gap.
+              {t('overview.priority_list_desc')}
             </p>
           </div>
           <button
             onClick={() => onNavigate('issues')}
             className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
           >
-            <span>All 327 community issues</span>
+            <span>{t('nav.issues')} ({communityIssuesCount})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -348,7 +350,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 <div className="space-y-0.5">
                   <div className="flex items-center space-x-2">
                     <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-                      {issue.category}
+                      {tCategory(issue.category)}
                     </span>
                     <span className="text-[#171717]/30 text-xs">·</span>
                     <span className="text-xs font-medium text-[#57534E]">
@@ -367,7 +369,7 @@ export const Overview: React.FC<OverviewProps> = ({
               <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#171717]/10">
                 <div className="text-left sm:text-right">
                   <span className="text-xs font-mono font-bold text-[#171717] block">
-                    {issue.signalCount} signals
+                    {issue.signalCount} {t('metric.demand_signals')}
                   </span>
                   <span className="text-[11px] text-[#D65A3A] font-medium block font-mono">
                     {issue.trend}
@@ -381,7 +383,7 @@ export const Overview: React.FC<OverviewProps> = ({
                   }}
                   className="px-3 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
                 >
-                  Inspect →
+                  {t('action.inspect')} →
                 </button>
               </div>
             </div>
@@ -392,11 +394,11 @@ export const Overview: React.FC<OverviewProps> = ({
       {/* 5. SUMMARY FOOTPRINT (Minimal, Calm Stats) */}
       <section className="bg-[#FAF8F5] border border-[#171717]/10 p-4 rounded-xs flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[#57534E]">
         <div className="flex items-center space-x-6">
-          <div><strong className="text-[#171717]">{totalRequests.toLocaleString()}</strong> Citizen signals</div>
+          <div><strong className="text-[#171717]">{totalRequests.toLocaleString()}</strong> {t('metric.demand_signals')}</div>
           <span className="text-stone-300">•</span>
-          <div><strong className="text-[#171717]">{priorityDistrictsCount}</strong> Priority districts</div>
+          <div><strong className="text-[#171717]">{priorityDistrictsCount}</strong> {t('metric.districts')}</div>
           <span className="text-stone-300">•</span>
-          <div><strong className="text-[#171717]">{openActionsCount}</strong> Ready for sanction</div>
+          <div><strong className="text-[#171717]">{openActionsCount}</strong> {t('status.prioritized')}</div>
         </div>
 
         <div className="flex items-center space-x-3 text-xs">
@@ -404,14 +406,14 @@ export const Overview: React.FC<OverviewProps> = ({
             onClick={() => onNavigate('patterns')} 
             className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium"
           >
-            Explore AI Patterns →
+            {t('nav.patterns')} →
           </button>
           <span className="text-stone-300">•</span>
           <button 
             onClick={() => onNavigate('recommendations')} 
             className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium"
           >
-            All Recommendations →
+            {t('overview.view_all_recommendations')} →
           </button>
         </div>
       </section>
@@ -425,7 +427,7 @@ export const Overview: React.FC<OverviewProps> = ({
               <div className="flex items-start justify-between border-b border-[#171717]/15 pb-3">
                 <div>
                   <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-                    {activeDrawerIssue.category} Priority Detail
+                    {tCategory(activeDrawerIssue.category)} · {t('metric.severity')}: {tStatus(activeDrawerIssue.severity)}
                   </span>
                   <h3 className="text-xl font-serif font-bold text-[#171717] mt-1">
                     {activeDrawerIssue.title}
@@ -444,12 +446,12 @@ export const Overview: React.FC<OverviewProps> = ({
 
               {/* 1. Conclusion */}
               <div className="bg-white p-4 border border-[#171717]/15 rounded-xs space-y-1">
-                <div className="text-[10px] font-mono uppercase text-[#78716C]">Diagnosis</div>
+                <div className="text-[10px] font-mono uppercase text-[#78716C]">{t('overview.why_matters')}</div>
                 <p className="text-xs text-[#171717] leading-relaxed">
-                  {activeDrawerIssue.statusNote} with urgent intervention required to prevent service disruption.
+                  {activeDrawerIssue.statusNote}
                 </p>
                 <div className="text-xs font-mono text-[#D65A3A] font-bold pt-1">
-                  Demand Volume: {activeDrawerIssue.signalCount} reports ({activeDrawerIssue.trend})
+                  {t('metric.demand_signals')}: {activeDrawerIssue.signalCount} ({activeDrawerIssue.trend})
                 </div>
               </div>
 
@@ -458,13 +460,13 @@ export const Overview: React.FC<OverviewProps> = ({
                 <div className="bg-white p-4 border border-[#171717]/15 rounded-xs space-y-1.5">
                   <div className="flex items-center space-x-1 text-[10px] font-mono font-bold text-[#57534E] uppercase">
                     <Database className="w-3 h-3 text-[#D65A3A]" />
-                    <span>Open Government Data Telemetry</span>
+                    <span>{t('patterns.grounding_evidence')}</span>
                   </div>
                   <p className="text-xs text-[#57534E] leading-relaxed">
                     {activeDrawerIssue.publicFinding}
                   </p>
                   <div className="text-[10px] font-mono text-[#78716C]">
-                    Source: data.gov.in / Official Administrative Registry
+                    data.gov.in / National Registry
                   </div>
                 </div>
               )}
@@ -473,7 +475,7 @@ export const Overview: React.FC<OverviewProps> = ({
               {activeDrawerIssue.recommendedAction && (
                 <div className="bg-[#FAF0E6] p-4 border border-[#D65A3A]/30 rounded-xs space-y-1">
                   <div className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-                    Recommended Intervention
+                    {t('patterns.suggested_intervention')}
                   </div>
                   <p className="text-xs text-[#171717] leading-relaxed font-medium">
                     {activeDrawerIssue.recommendedAction}
@@ -494,7 +496,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 }}
                 className="w-full py-2.5 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors cursor-pointer text-center"
               >
-                Review Full Recommendation & Evidence →
+                {t('action.review_in_recommendations')} →
               </button>
 
               <button
@@ -504,7 +506,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 }}
                 className="w-full py-2 bg-white hover:bg-[#FAF8F5] text-[#171717] border border-[#171717]/20 text-xs font-medium rounded-xs transition-colors cursor-pointer text-center"
               >
-                View Community Issues
+                {t('action.explore_community_issues')}
               </button>
             </div>
           </aside>
@@ -514,4 +516,5 @@ export const Overview: React.FC<OverviewProps> = ({
     </div>
   );
 };
+
 

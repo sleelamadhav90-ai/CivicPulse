@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { District } from '../types';
 import { DISTRICTS_REGISTRY } from '../data/districts';
+import { useLanguage } from '../context/LanguageContext';
 
 interface DemographicsViewProps {
   districts: District[];
@@ -24,6 +25,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
   districts,
   onNavigateToRecommendations
 }) => {
+  const { t, tCategory, tStatus } = useLanguage();
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>('guntur');
 
   const selectedDistrict = districts.find(d => d.id.toLowerCase() === selectedDistrictId.toLowerCase()) || districts[0];
@@ -59,14 +61,14 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
-              DEMOGRAPHICS & EQUITY
+              {t('nav.demographics')}
             </span>
             <span className="text-slate-400 text-xs font-mono">
               • Census & Vulnerability Profile
             </span>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-white mt-1 font-sans">
-            Demographics & Census Data
+            {t('nav.demographics')}
           </h1>
           <p className="text-xs text-slate-300 mt-0.5 font-sans max-w-3xl">
             Aggregated demographic breakdown by age distribution, rural/urban split, and equity vulnerability indicators. All estimates operate at the anonymized ward & block level.
@@ -78,7 +80,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
             onClick={onNavigateToRecommendations}
             className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-medium px-4 py-2 transition-colors flex items-center gap-1.5 cursor-pointer border border-blue-600 shrink-0"
           >
-            <span>Compare Equity Impact</span>
+            <span>{t('issues.view_recommendation')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
@@ -100,7 +102,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
       <div className="bg-white border border-slate-300 p-5 shadow-xs space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 pb-3 font-mono">
           <div className="flex items-center space-x-3">
-            <span className="text-slate-500 font-bold uppercase text-xs">Target District:</span>
+            <span className="text-slate-500 font-bold uppercase text-xs">{t('geo.district')}:</span>
             <select
               value={selectedDistrictId}
               onChange={(e) => setSelectedDistrictId(e.target.value)}
@@ -201,7 +203,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
                   <span className={`px-2 py-0.5 text-[10px] font-bold border ${
                     ind.status === 'CRITICAL' ? 'bg-red-50 text-red-800 border-red-300' : 'bg-amber-50 text-amber-800 border-amber-300'
                   }`}>
-                    {ind.status}
+                    {tStatus(ind.status)}
                   </span>
                 </div>
                 <p className="text-slate-600 text-xs">{ind.note}</p>
@@ -225,7 +227,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
                   <span className="text-blue-900">{item.affectedCount.toLocaleString()} residents</span>
                 </div>
                 <div className="text-[11px] text-slate-600 flex justify-between font-sans">
-                  <span>Sector: {item.category}</span>
+                  <span>{t('filter.category')}: {tCategory(item.category)}</span>
                   <span className="text-slate-700 font-mono font-bold">Group: {item.equityScore}</span>
                 </div>
               </div>

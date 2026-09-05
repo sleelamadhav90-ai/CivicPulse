@@ -11,6 +11,7 @@ import {
   Globe2
 } from 'lucide-react';
 import { District, CitizenRequest } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface NavbarProps {
   activeTab: 'ingestion' | 'hotspots' | 'policylab' | 'impact';
@@ -29,36 +30,38 @@ export const Navbar: React.FC<NavbarProps> = ({
   onResetData,
   onOpenMethodology,
 }) => {
+  const { t } = useLanguage();
+
   // Aggregate KPI stats
   const totalSignals = requests.length;
   const criticalHotspots = districts.filter(d => d.water_access < 45 || d.health_access < 45 || d.road_quality < 45).length;
   const totalBeneficiaries = districts.reduce((acc, d) => acc + d.population, 0);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
+    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs font-sans">
       {/* Top Banner & Title Bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo & Platform Brand */}
           <div className="flex items-center space-x-3.5">
-            <div className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center shadow-xs">
+            <div className="w-9 h-9 rounded-lg bg-[#D65A3A] flex items-center justify-center shadow-xs">
               <Building2 className="w-5 h-5 text-white" />
             </div>
             <div>
               <div className="flex items-center space-x-2.5">
-                <span className="text-lg font-bold tracking-tight text-slate-900">
-                  CIVICPULSE
+                <span className="text-lg font-bold tracking-tight text-slate-900 font-serif">
+                  {t('brand.name')}
                 </span>
-                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-blue-50 text-blue-700 border border-blue-200">
-                  DPI Engine
+                <span className="px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-orange-50 text-[#D65A3A] border border-orange-200">
+                  {t('brand.dpi_engine')}
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                  Live Telemetry
+                  {t('brand.live_telemetry')}
                 </span>
               </div>
               <p className="text-xs text-slate-500 hidden sm:block">
-                Multilingual Citizen Voice → Deterministic Gap Prioritization → Policy Action
+                {t('brand.subtitle')}
               </p>
             </div>
           </div>
@@ -66,24 +69,24 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Aggregate Telemetry Strip */}
           <div className="hidden lg:flex items-center space-x-6 bg-slate-50 px-4 py-2 rounded-lg border border-slate-200">
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Demand Signals</span>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">{t('metric.demand_signals')}</span>
               <span className="text-sm font-bold text-slate-900 font-mono flex items-center mt-0.5">
-                <Radio className="w-3.5 h-3.5 text-blue-600 mr-1.5" />
+                <Radio className="w-3.5 h-3.5 text-[#D65A3A] mr-1.5" />
                 {totalSignals.toLocaleString()}
               </span>
             </div>
             <div className="h-7 w-px bg-slate-200"></div>
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Deficit Hotspots</span>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">{t('metric.deficit_hotspots')}</span>
               <span className="text-sm font-bold text-rose-600 font-mono mt-0.5">
-                {criticalHotspots} Districts
+                {criticalHotspots} {t('metric.districts')}
               </span>
             </div>
             <div className="h-7 w-px bg-slate-200"></div>
             <div className="flex flex-col">
-              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">Citizen Reach</span>
+              <span className="text-[10px] uppercase font-semibold text-slate-500 tracking-wider">{t('metric.citizen_reach')}</span>
               <span className="text-sm font-bold text-slate-800 font-mono mt-0.5">
-                {(totalBeneficiaries / 1000000).toFixed(1)}M People
+                {(totalBeneficiaries / 1000000).toFixed(1)}M {t('metric.people')}
               </span>
             </div>
           </div>
@@ -95,8 +98,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors cursor-pointer"
               title="View Scoring Methodology & Transparency"
             >
-              <Info className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
-              <span>How It Works</span>
+              <Info className="w-3.5 h-3.5 mr-1.5 text-[#D65A3A]" />
+              <span>{t('nav.how_it_works')}</span>
             </button>
             <button
               onClick={onResetData}
@@ -104,87 +107,13 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Reset Signal Stream"
             >
               <RotateCcw className="w-3.5 h-3.5 mr-1" />
-              <span className="hidden md:inline">Reset</span>
+              <span className="hidden md:inline">{t('nav.reset')}</span>
             </button>
           </div>
-        </div>
-      </div>
-
-      {/* Navigation Tabs Bar */}
-      <div className="bg-slate-50/80 border-t border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-2 sm:space-x-4 overflow-x-auto py-2 no-scrollbar" aria-label="Tabs">
-            <button
-              onClick={() => setActiveTab('ingestion')}
-              className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'ingestion'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <Radio className={`w-3.5 h-3.5 mr-1.5 ${activeTab === 'ingestion' ? 'text-white' : 'text-slate-500'}`} />
-              <span>Step 1: Citizen Ingestion</span>
-              <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded font-mono hidden sm:inline-block ${
-                activeTab === 'ingestion' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-600'
-              }`}>
-                Voice AI
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('hotspots')}
-              className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'hotspots'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <MapPin className={`w-3.5 h-3.5 mr-1.5 ${activeTab === 'hotspots' ? 'text-white' : 'text-slate-500'}`} />
-              <span>Step 2: Hotspots & Gap Map</span>
-              <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded font-mono hidden sm:inline-block ${
-                activeTab === 'hotspots' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-600'
-              }`}>
-                GIS Score
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('policylab')}
-              className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'policylab'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <FileText className={`w-3.5 h-3.5 mr-1.5 ${activeTab === 'policylab' ? 'text-white' : 'text-slate-500'}`} />
-              <span>Step 3: AI Policy Brief</span>
-              <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded font-mono hidden sm:inline-block ${
-                activeTab === 'policylab' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-600'
-              }`}>
-                Gemini
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveTab('impact')}
-              className={`flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold tracking-wide transition-all whitespace-nowrap cursor-pointer ${
-                activeTab === 'impact'
-                  ? 'bg-blue-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
-              }`}
-            >
-              <TrendingUp className={`w-3.5 h-3.5 mr-1.5 ${activeTab === 'impact' ? 'text-white' : 'text-slate-500'}`} />
-              <span>Step 4: Impact Simulator</span>
-              <span className={`ml-2 px-1.5 py-0.5 text-[10px] rounded font-mono hidden sm:inline-block ${
-                activeTab === 'impact' ? 'bg-blue-700 text-blue-100' : 'bg-slate-200 text-slate-600'
-              }`}>
-                DPI Loop
-              </span>
-            </button>
-          </nav>
         </div>
       </div>
     </header>
   );
 };
+
 

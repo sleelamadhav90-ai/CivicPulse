@@ -24,6 +24,7 @@ import {
   Info
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, District, RequestStatus } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CitizenSubmissionViewProps {
   districts: District[];
@@ -58,6 +59,8 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   onAddRequest,
   onViewRequest,
 }) => {
+  const { t, tCategory, tStatus, language } = useLanguage();
+
   // Mode: 'write' or 'voice'
   const [activeMode, setActiveMode] = useState<'write' | 'voice'>(initialMode);
   

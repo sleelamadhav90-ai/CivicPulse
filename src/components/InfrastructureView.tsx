@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { InfrastructureAsset, InfrastructureCategory } from '../types';
 import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
+import { useLanguage } from '../context/LanguageContext';
 
 interface InfrastructureViewProps {
   districtId?: string;
@@ -26,6 +27,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
   districtId,
   onNavigateToRecommendations
 }) => {
+  const { t, tCategory } = useLanguage();
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedCondition, setSelectedCondition] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
@@ -58,14 +60,14 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
         <div>
           <div className="flex items-center space-x-2">
             <span className="bg-blue-700 text-white text-[10px] font-bold px-2 py-0.5 uppercase tracking-wider">
-              INFRASTRUCTURE
+              {t('nav.infrastructure')}
             </span>
             <span className="text-slate-400 text-xs font-mono">
               • Facility Condition & Capacity
             </span>
           </div>
           <h1 className="text-xl font-semibold tracking-tight text-white mt-1 font-sans">
-            Infrastructure Assets
+            {t('nav.infrastructure')}
           </h1>
           <p className="text-xs text-slate-300 mt-0.5 font-sans max-w-3xl">
             Complete inventory of public water filtration plants, primary health centres, schools, sub-stations, roads, and drainage outfalls. Cross-references physical condition against utilization stress.
@@ -77,7 +79,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
             onClick={onNavigateToRecommendations}
             className="bg-blue-700 hover:bg-blue-800 text-white text-xs font-medium px-4 py-2 transition-colors flex items-center gap-1.5 cursor-pointer border border-blue-600 shrink-0"
           >
-            <span>Inspect Recommendations</span>
+            <span>{t('issues.view_recommendation')}</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         )}
@@ -111,7 +113,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
 
           {/* Sector Buttons */}
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-slate-500 font-bold uppercase text-[10px]">Sector:</span>
+            <span className="text-slate-500 font-bold uppercase text-[10px]">{t('filter.category')}:</span>
             {['ALL', 'Water', 'Health', 'Education', 'Roads', 'Electricity', 'Drainage'].map((cat) => (
               <button
                 key={cat}
@@ -122,7 +124,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
                     : 'bg-slate-50 text-slate-700 border-slate-300 hover:bg-slate-100'
                 }`}
               >
-                {cat}
+                {cat === 'ALL' ? t('filter.all') : tCategory(cat)}
               </button>
             ))}
           </div>
@@ -154,12 +156,12 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
             <thead>
               <tr className="bg-slate-100 text-slate-800 border-b border-slate-300 uppercase text-[10px] tracking-wider font-bold">
                 <th className="p-3 border-r border-slate-200">Facility ID & Name</th>
-                <th className="p-3 border-r border-slate-200">District & Location</th>
-                <th className="p-3 border-r border-slate-200">Sector</th>
+                <th className="p-3 border-r border-slate-200">{t('table.location')}</th>
+                <th className="p-3 border-r border-slate-200">{t('table.category')}</th>
                 <th className="p-3 border-r border-slate-200">Condition</th>
                 <th className="p-3 border-r border-slate-200">Capacity & Utilization</th>
                 <th className="p-3 border-r border-slate-200">Access Gap / Distance</th>
-                <th className="p-3 text-right">Action</th>
+                <th className="p-3 text-right">{t('action.inspect')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-sans">
@@ -177,7 +179,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
 
                   <td className="p-3 border-r border-slate-200 font-mono">
                     <span className="bg-slate-100 text-slate-800 px-2 py-0.5 border border-slate-300 text-[10px] uppercase font-bold">
-                      {asset.category}
+                      {tCategory(asset.category)}
                     </span>
                   </td>
 
@@ -218,7 +220,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
                       onClick={() => setSelectedAssetModal(asset)}
                       className="text-blue-700 hover:text-blue-900 font-bold uppercase text-[11px] hover:underline cursor-pointer"
                     >
-                      Inspect Audit
+                      {t('action.inspect')}
                     </button>
                   </td>
                 </tr>
@@ -239,9 +241,9 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
               </div>
               <button
                 onClick={() => setSelectedAssetModal(null)}
-                className="text-slate-500 hover:text-slate-900 text-sm font-bold border border-slate-300 px-2 py-1"
+                className="text-slate-500 hover:text-slate-900 text-sm font-bold border border-slate-300 px-2 py-1 cursor-pointer"
               >
-                Close ✕
+                {t('common.close')} ✕
               </button>
             </div>
 
@@ -262,9 +264,9 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
             <div className="pt-3 border-t border-slate-300 flex justify-end font-mono text-xs">
               <button
                 onClick={() => setSelectedAssetModal(null)}
-                className="bg-slate-900 text-white font-bold px-4 py-2 hover:bg-slate-800"
+                className="bg-slate-900 text-white font-bold px-4 py-2 hover:bg-slate-800 cursor-pointer"
               >
-                Done
+                {t('common.close')}
               </button>
             </div>
           </div>

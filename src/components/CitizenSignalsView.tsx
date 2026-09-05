@@ -20,6 +20,7 @@ import {
   getLocalitiesForDistrict,
   filterCitizenRequests 
 } from '../utils/geography';
+import { useLanguage } from '../context/LanguageContext';
 
 interface CitizenSignalsViewProps {
   requests: CitizenRequest[];
@@ -35,6 +36,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   onNavigateToSubmit,
   selectedRequestId
 }) => {
+  const { t, tCategory, tStatus } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedState, setSelectedState] = useState<string>('ALL');
@@ -96,28 +98,27 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
   // Filter requests deterministically
   const filteredRequests = useMemo(() => {
-    // Basic filter by geography, category, language, search
     let list = filterCitizenRequests(requests, {
-      state: selectedState,
-      district: selectedDistrict,
-      locality: selectedLocality,
-      category: selectedCategory,
-      language: selectedLanguageFilter,
-      searchQuery: searchQuery,
+      state: selectedState !== 'ALL' ? selectedState : undefined,
+      district: selectedDistrict !== 'ALL' ? selectedDistrict : undefined,
+      locality: selectedLocality !== 'ALL' ? selectedLocality : undefined,
+      category: selectedCategory !== 'ALL' ? selectedCategory : undefined,
+      searchQuery: searchQuery.trim() || undefined,
     });
 
-    // Time filter
+    if (selectedLanguageFilter !== 'ALL') {
+      list = list.filter(r => (r.language || '').toLowerCase() === selectedLanguageFilter.toLowerCase());
+    }
+
     if (selectedTimePeriod !== 'ALL') {
       const days = parseInt(selectedTimePeriod, 10);
-      if (!isNaN(days)) {
-        const now = new Date('2026-09-04T12:00:00Z').getTime();
-        const cutoff = now - days * 24 * 60 * 60 * 1000;
-        list = list.filter(r => {
-          if (!r.timestamp) return true;
-          const t = new Date(r.timestamp).getTime();
-          return isNaN(t) || t >= cutoff;
-        });
-      }
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - days);
+      list = list.filter(r => {
+        if (!r.timestamp) return true;
+        const d = new Date(r.timestamp);
+        return d >= cutoff;
+      });
     }
 
     return list;
@@ -145,15 +146,15 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   const getStatusBadge = (status?: string) => {
     const s = status || 'Received';
     if (s.toLowerCase().includes('resolved') || s.toLowerCase().includes('completed')) {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#285943]/10 text-[#285943] border border-[#285943]/20">Resolved</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#285943]/10 text-[#285943] border border-[#285943]/20">{tStatus('Resolved')}</span>;
     }
     if (s.toLowerCase().includes('prioritized')) {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#D65A3A]/10 text-[#D65A3A] border border-[#D65A3A]/20">Prioritized</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#D65A3A]/10 text-[#D65A3A] border border-[#D65A3A]/20">{tStatus('Prioritized')}</span>;
     }
     if (s.toLowerCase().includes('review')) {
-      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-300">Under Review</span>;
+      return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-amber-50 text-amber-800 border border-amber-300">{tStatus('Under Review')}</span>;
     }
-    return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#F7F5EF] text-[#57534E] border border-[#171717]/15">Received</span>;
+    return <span className="inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium bg-[#F7F5EF] text-[#57534E] border border-[#171717]/15">{tStatus('Received')}</span>;
   };
 
   return (
@@ -163,10 +164,10 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
         <div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            Citizen signals
+            {t('signals.title')}
           </h1>
           <p className="text-sm text-[#57534E] mt-1">
-            Understand what people are reporting, where and how frequently across India's administrative hierarchy.
+            {t('signals.subtitle')}
           </p>
         </div>
 
@@ -176,7 +177,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 shrink-0 cursor-pointer shadow-xs"
           >
             <PlusCircle className="w-3.5 h-3.5" />
-            <span>Submit new issue</span>
+            <span>{t('signals.submit_new')}</span>
           </button>
         )}
       </div>
@@ -191,7 +192,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search reports, summary keywords, or tracking ID..."
+              placeholder={t('signals.search_placeholder')}
               className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#FAF8F5] border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
             />
           </div>
@@ -202,8 +203,8 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               onClick={handleResetFilters}
               className="text-xs text-[#D65A3A] hover:underline cursor-pointer px-2 py-1 shrink-0 flex items-center gap-1 font-mono"
             >
-              <RotateCcw className="w-3 h-3" />
-              <span>Reset filters</span>
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>{t('signals.reset_filters')}</span>
             </button>
           )}
         </div>
@@ -214,14 +215,14 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 1. STATE / UT */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              State / UT
+              {t('geo.state')}
             </label>
             <select
               value={selectedState}
               onChange={(e) => handleStateChange(e.target.value)}
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
             >
-              <option value="ALL">All States</option>
+              <option value="ALL">{t('filter.all_states')}</option>
               {availableStates.map(st => (
                 <option key={st} value={st}>{st}</option>
               ))}
@@ -231,7 +232,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 2. DISTRICT */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              District
+              {t('geo.district')}
             </label>
             <select
               value={selectedDistrict}
@@ -239,7 +240,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
             >
               <option value="ALL">
-                {selectedState !== 'ALL' ? `All ${selectedState} Districts` : 'All Districts'}
+                {selectedState !== 'ALL' ? `${t('filter.all')} ${selectedState} ${t('geo.district')}` : t('filter.all_districts')}
               </option>
               {availableDistricts.map(d => (
                 <option key={d.name} value={d.name}>{d.name}</option>
@@ -250,7 +251,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 3. CITY / TOWN / LOCALITY */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              City / Town
+              {t('geo.city_town')}
             </label>
             <select
               value={selectedLocality}
@@ -263,7 +264,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               }`}
             >
               <option value="ALL">
-                {selectedDistrict !== 'ALL' ? `All ${selectedDistrict} Locations` : 'Select District first'}
+                {selectedDistrict !== 'ALL' ? `${t('filter.all')} ${selectedDistrict} ${t('geo.locality')}` : t('geo.select_district_first')}
               </option>
               {availableLocalities.map(loc => (
                 <option key={loc} value={loc}>{loc}</option>
@@ -274,29 +275,29 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 4. CATEGORY */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              Category
+              {t('filter.category')}
             </label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
             >
-              <option value="ALL">All Categories</option>
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              <option value="ALL">{t('filter.all_categories')}</option>
+              {categories.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
             </select>
           </div>
 
           {/* 5. LANGUAGE */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              Language
+              {t('filter.language')}
             </label>
             <select
               value={selectedLanguageFilter}
               onChange={(e) => setSelectedLanguageFilter(e.target.value)}
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
             >
-              <option value="ALL">All Languages</option>
+              <option value="ALL">{t('filter.all_languages')}</option>
               {uniqueLanguages.map(l => <option key={l} value={l}>{l}</option>)}
             </select>
           </div>
@@ -304,17 +305,17 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 6. TIME PERIOD */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              Time period
+              {t('filter.time_period')}
             </label>
             <select
               value={selectedTimePeriod}
               onChange={(e) => setSelectedTimePeriod(e.target.value)}
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
             >
-              <option value="ALL">All time</option>
-              <option value="7">Past 7 days</option>
-              <option value="30">Past 30 days</option>
-              <option value="90">Past 90 days</option>
+              <option value="ALL">{t('filter.all_time')}</option>
+              <option value="7">{t('filter.past_7_days')}</option>
+              <option value="30">{t('filter.past_30_days')}</option>
+              <option value="90">{t('filter.past_90_days')}</option>
             </select>
           </div>
 
@@ -326,21 +327,21 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
         <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#57534E]">
           <div className="flex items-center gap-2">
             <span className="font-medium">
-              Showing <strong className="text-[#171717] font-mono">{filteredRequests.length}</strong> citizen signals
+              {t('filter.showing')} <strong className="text-[#171717] font-mono">{filteredRequests.length}</strong> {t('metric.demand_signals')}
             </span>
             {(selectedState !== 'ALL' || selectedDistrict !== 'ALL' || selectedCategory !== 'ALL') && (
               <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-stone-200/70 text-stone-700">
-                Filtered: {[
+                {[
                   selectedState !== 'ALL' ? selectedState : null,
                   selectedDistrict !== 'ALL' ? selectedDistrict : null,
                   selectedLocality !== 'ALL' ? selectedLocality : null,
-                  selectedCategory !== 'ALL' ? selectedCategory : null,
+                  selectedCategory !== 'ALL' ? tCategory(selectedCategory) : null,
                 ].filter(Boolean).join(' › ')}
               </span>
             )}
           </div>
           <span className="text-[11px] text-[#78716C]">
-            Click any row to inspect full telemetry
+            {t('signals.click_row_telemetry')}
           </span>
         </div>
 
@@ -348,13 +349,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           <table className="w-full text-left text-xs border-collapse">
             <thead>
               <tr className="border-b border-[#171717]/10 bg-[#FAF8F5] text-[#78716C] font-mono text-[10px] uppercase tracking-wider">
-                <th className="py-2.5 px-4 font-semibold">Issue</th>
-                <th className="py-2.5 px-3 font-semibold">Location</th>
-                <th className="py-2.5 px-3 font-semibold">Category</th>
-                <th className="py-2.5 px-3 font-semibold">Severity</th>
-                <th className="py-2.5 px-3 font-semibold">Source</th>
-                <th className="py-2.5 px-3 font-semibold">Date</th>
-                <th className="py-2.5 px-4 font-semibold text-right">Status</th>
+                <th className="py-2.5 px-4 font-semibold">{t('table.issue')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('table.location')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('table.category')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('table.severity')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('table.source')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('table.date')}</th>
+                <th className="py-2.5 px-4 font-semibold text-right">{t('table.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#171717]/10">
@@ -362,16 +363,16 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <tr>
                   <td colSpan={7} className="py-16 text-center text-sm text-[#78716C]">
                     <div className="max-w-md mx-auto space-y-2">
-                      <p className="font-medium text-[#171717]">No civic signals match these filters.</p>
+                      <p className="font-medium text-[#171717]">{t('signals.no_signals_match')}</p>
                       <p className="text-xs text-[#78716C]">
-                        Try selecting "All Districts" or clearing the category/search filter to view broader signals.
+                        {t('signals.no_signals_hint')}
                       </p>
                       {hasActiveFilters && (
                         <button
                           onClick={handleResetFilters}
                           className="mt-2 px-3 py-1.5 bg-[#FAF8F5] border border-[#171717]/20 text-xs font-semibold rounded-xs hover:bg-stone-200 transition-colors cursor-pointer"
                         >
-                          Reset all filters
+                          {t('signals.reset_filters')}
                         </button>
                       )}
                     </div>
@@ -411,7 +412,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                       {/* Category */}
                       <td className="py-3 px-3 whitespace-nowrap">
                         <span className="font-mono text-[11px] text-[#171717] bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#171717]/10">
-                          {req.category}
+                          {tCategory(req.category)}
                         </span>
                       </td>
 
@@ -434,12 +435,12 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                           {isVoice ? (
                             <>
                               <Mic className="w-3.5 h-3.5 text-[#D65A3A]" />
-                              <span>Voice ({req.language || 'Native'})</span>
+                              <span>{t('signals.voice')} ({req.language || 'Native'})</span>
                             </>
                           ) : (
                             <>
                               <FileEdit className="w-3.5 h-3.5 text-[#78716C]" />
-                              <span>Written ({req.language || 'English'})</span>
+                              <span>{t('signals.written')} ({req.language || 'English'})</span>
                             </>
                           )}
                         </span>
@@ -472,13 +473,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
               <div>
                 <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
-                  Citizen Signal Record
+                  {t('signals.record_title')}
                 </span>
                 <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
                   {selectedRequest.id}
                 </h2>
                 <span className="text-xs text-[#57534E] mt-0.5 block">
-                  {selectedRequest.location} · Category: <strong className="text-[#171717]">{selectedRequest.category}</strong>
+                  {selectedRequest.location} · {t('table.category')}: <strong className="text-[#171717]">{tCategory(selectedRequest.category)}</strong>
                 </span>
               </div>
 
@@ -493,20 +494,20 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {/* Status Timeline */}
             <div className="bg-[#FAF8F5] border border-[#171717]/10 p-3.5 rounded-sm">
               <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-2">
-                Processing Status
+                {t('signals.processing_status')}
               </span>
               <div className="grid grid-cols-4 text-center text-[10px] font-medium text-[#57534E] gap-1">
                 <div className="p-1.5 bg-[#285943]/10 text-[#285943] border border-[#285943]/30 rounded-xs font-semibold">
-                  1. Received
+                  1. {tStatus('Received')}
                 </div>
                 <div className="p-1.5 bg-amber-50 text-amber-800 border border-amber-300 rounded-xs font-semibold">
-                  2. Under Review
+                  2. {tStatus('Under Review')}
                 </div>
                 <div className="p-1.5 bg-[#F7F5EF] text-[#78716C] border border-[#171717]/10 rounded-xs">
-                  3. Prioritized
+                  3. {tStatus('Prioritized')}
                 </div>
                 <div className="p-1.5 bg-[#F7F5EF] text-[#78716C] border border-[#171717]/10 rounded-xs">
-                  4. Resolved
+                  4. {tStatus('Resolved')}
                 </div>
               </div>
             </div>
@@ -514,7 +515,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {/* Original Citizen Input */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[#171717] block">
-                Citizen input ({selectedRequest.language || 'Native'} · {selectedRequest.source_type || 'Written'})
+                {t('signals.citizen_input')} ({selectedRequest.language || 'Native'} · {selectedRequest.source_type || 'Written'})
               </span>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 text-xs text-[#57534E] rounded-xs leading-relaxed italic">
                 "{selectedRequest.original_text || selectedRequest.summary_en}"
@@ -525,7 +526,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             <div className="space-y-1">
               <div className="flex items-center space-x-1.5 text-xs font-semibold text-[#171717]">
                 <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
-                <span>What CivicPulse understood</span>
+                <span>{t('signals.what_understood')}</span>
               </div>
               <div className="p-3 bg-white border border-[#171717]/15 text-xs text-[#171717] rounded-xs leading-relaxed">
                 {selectedRequest.summary_en}
@@ -535,15 +536,15 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {/* Key Diagnostic Attributes */}
             <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1">
               <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Severity Score</span>
+                <span className="text-[10px] text-[#78716C] block">{t('signals.severity_score')}</span>
                 <span className="text-sm font-bold text-[#D65A3A]">
                   {selectedRequest.severity || 6} / 10
                 </span>
               </div>
               <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Reported Infrastructure</span>
+                <span className="text-[10px] text-[#78716C] block">{t('signals.reported_infra')}</span>
                 <span className="text-xs font-bold text-[#171717]">
-                  {selectedRequest.affected_infrastructure || `${selectedRequest.category} Utility Asset`}
+                  {selectedRequest.affected_infrastructure || `${tCategory(selectedRequest.category)} Utility Asset`}
                 </span>
               </div>
             </div>
@@ -554,7 +555,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 onClick={() => setSelectedRequest(null)}
                 className="px-3 py-1.5 text-xs text-[#57534E] hover:text-[#171717] cursor-pointer"
               >
-                Close
+                {t('common.close')}
               </button>
 
               {onNavigateToIssues && (
@@ -565,7 +566,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                   }}
                   className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
                 >
-                  <span>Explore in community issues</span>
+                  <span>{t('action.explore_community_issues')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}

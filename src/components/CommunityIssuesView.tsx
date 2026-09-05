@@ -14,6 +14,7 @@ import {
   ArrowDown
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, GovernmentProject } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface CommunityIssue {
   id: string;
@@ -115,6 +116,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   governmentProjects,
   onNavigateToRecommendations,
 }) => {
+  const { t, tCategory, tStatus } = useLanguage();
   const [issuesList, setIssuesList] = useState<CommunityIssue[]>(INITIAL_COMMUNITY_ISSUES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -168,10 +170,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       <div className="space-y-6 border-b border-[#171717]/10 pb-8">
         <div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            Community issues
+            {t('issues.title')}
           </h1>
           <p className="text-sm sm:text-base text-[#57534E] mt-1 max-w-2xl leading-relaxed">
-            Individual reports become meaningful when many people describe the same underlying problem.
+            {t('issues.subtitle')}
           </p>
         </div>
 
@@ -184,10 +186,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 {requests.length.toLocaleString()}
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                individual requests
+                {t('issues.flow_requests')}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                Raw citizen voice & text notes
+                {t('issues.flow_raw_notes')}
               </span>
             </div>
 
@@ -202,10 +204,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 327
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                community issues
+                {t('issues.flow_issues')}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                Clustered by locality & failure type
+                {t('issues.flow_clustered')}
               </span>
             </div>
 
@@ -220,10 +222,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 42
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                priority hotspots
+                {t('issues.flow_hotspots')}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                Cross-referenced with asset audits
+                {t('issues.flow_audits')}
               </span>
             </div>
           </div>
@@ -238,13 +240,13 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Filter community issues by location, title or keyword..."
+            placeholder={t('issues.filter_placeholder')}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
           />
         </div>
 
         <div className="flex items-center space-x-2 text-xs">
-          <span className="text-[#78716C] text-[11px]">Sector:</span>
+          <span className="text-[#78716C] text-[11px]">{t('filter.category')}:</span>
           {['ALL', 'Water', 'Roads', 'Health', 'Electricity'].map((cat) => (
             <button
               key={cat}
@@ -255,7 +257,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
               }`}
             >
-              {cat}
+              {cat === 'ALL' ? t('filter.all') : tCategory(cat)}
             </button>
           ))}
         </div>
@@ -276,7 +278,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
               <div className="space-y-1">
                 <div className="flex items-center space-x-2">
                   <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-                    {issue.category}
+                    {tCategory(issue.category)}
                   </span>
                   <span className="text-[#171717]/30 text-xs">·</span>
                   <span className="text-xs font-medium text-[#57534E]">
@@ -290,13 +292,13 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-[#57534E] pt-0.5">
                   <span className="font-mono font-semibold text-[#171717]">
-                    {issue.requestCount} related requests
+                    {issue.requestCount} {t('issues.related_requests')}
                   </span>
                   <span className="text-[#171717]/30">·</span>
                   <span className={`font-medium ${
                     issue.severity === 'Critical' ? 'text-[#D65A3A]' : 'text-amber-800'
                   }`}>
-                    {issue.severity} severity
+                    {tStatus(issue.severity)}
                   </span>
                   <span className="text-[#171717]/30">·</span>
                   <span className="text-emerald-800 font-mono text-[11px]">
@@ -311,7 +313,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 onClick={() => setActiveIssueModal(issue)}
                 className="px-3.5 py-1.5 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
               >
-                Explore
+                {t('action.inspect')}
               </button>
             </div>
           </div>
@@ -326,7 +328,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
             <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
               <div>
                 <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
-                  Community Issue Cluster · {activeIssueModal.id}
+                  {t('issues.cluster_title')} · {activeIssueModal.id}
                 </span>
                 <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
                   {activeIssueModal.title}
@@ -346,21 +348,21 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
             <div className="grid grid-cols-3 gap-2 text-xs font-mono">
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Citizen Signals</span>
+                <span className="text-[10px] text-[#78716C] block">{t('metric.demand_signals')}</span>
                 <span className="text-base font-bold text-[#171717]">{activeIssueModal.requestCount}</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Severity</span>
-                <span className="text-base font-bold text-[#D65A3A]">{activeIssueModal.severity}</span>
+                <span className="text-[10px] text-[#78716C] block">{t('table.severity')}</span>
+                <span className="text-base font-bold text-[#D65A3A]">{tStatus(activeIssueModal.severity)}</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Monthly Demand</span>
+                <span className="text-[10px] text-[#78716C] block">{t('issues.monthly_demand')}</span>
                 <span className="text-base font-bold text-emerald-800">{activeIssueModal.trend}</span>
               </div>
             </div>
 
             <div className="space-y-1 text-xs">
-              <span className="font-semibold text-[#171717] block">Underlying Public Asset:</span>
+              <span className="font-semibold text-[#171717] block">{t('issues.underlying_asset')}:</span>
               <p className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs text-[#57534E]">
                 {activeIssueModal.infrastructureName} · Aligned with {activeIssueModal.relatedScheme}
               </p>
@@ -368,7 +370,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
             {activeIssueModal.sampleRequests && activeIssueModal.sampleRequests.length > 0 && (
               <div className="space-y-1.5 text-xs">
-                <span className="font-semibold text-[#171717] block">Recently ingested citizen signals ({activeIssueModal.sampleRequests.length}):</span>
+                <span className="font-semibold text-[#171717] block">{t('issues.recent_signals')} ({activeIssueModal.sampleRequests.length}):</span>
                 <div className="space-y-1 max-h-36 overflow-y-auto">
                   {activeIssueModal.sampleRequests.map(sr => (
                     <div key={sr.id} className="p-2.5 bg-white border border-[#171717]/10 rounded-xs text-[11px] text-[#57534E]">
@@ -388,7 +390,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 onClick={() => setActiveIssueModal(null)}
                 className="px-3 py-1.5 text-xs text-[#57534E] hover:text-[#171717] cursor-pointer"
               >
-                Close
+                {t('common.close')}
               </button>
 
               {onNavigateToRecommendations && (
@@ -399,7 +401,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                   }}
                   className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
                 >
-                  <span>View official recommendation</span>
+                  <span>{t('issues.view_recommendation')}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}

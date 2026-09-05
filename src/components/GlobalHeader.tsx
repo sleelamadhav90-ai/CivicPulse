@@ -12,20 +12,20 @@ import {
   Menu
 } from 'lucide-react';
 import { CountryCode } from '../types';
-import { GLOBAL_COUNTRIES } from '../data/globalConfig';
 import { NavTab } from './Sidebar';
+import { useLanguage } from '../context/LanguageContext';
 
 interface GlobalHeaderProps {
   activeTab?: NavTab;
   onNavigate?: (tab: NavTab) => void;
   selectedCountryCode: CountryCode;
   onSelectCountry: (code: CountryCode) => void;
-  selectedLanguage: string;
-  onSelectLanguage: (langCode: string) => void;
-  isWorldAtlasActive: boolean;
-  onToggleWorldAtlas: () => void;
-  onNavigateToConnectors: () => void;
-  onNavigateToSchema: () => void;
+  selectedLanguage?: string;
+  onSelectLanguage?: (langCode: string) => void;
+  isWorldAtlasActive?: boolean;
+  onToggleWorldAtlas?: () => void;
+  onNavigateToConnectors?: () => void;
+  onNavigateToSchema?: () => void;
   onOpenPortalDirectory?: () => void;
   onOpenMobileMenu?: () => void;
 }
@@ -35,23 +35,19 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   onNavigate,
   selectedCountryCode,
   onSelectCountry,
-  selectedLanguage,
-  onSelectLanguage,
   onOpenPortalDirectory,
   onOpenMobileMenu,
 }) => {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
+  const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
 
-  const currentCountry = GLOBAL_COUNTRIES['IN'];
-  const currentLang = currentCountry.languages.find(l => l.code === selectedLanguage) || currentCountry.languages[0];
-
-  const mainNavItems: { id: NavTab; label: string; icon?: React.ReactNode }[] = [
-    { id: 'overview', label: 'Home' },
-    { id: 'submit', label: 'Report an Issue' },
-    { id: 'map', label: 'Explore Area' },
-    { id: 'signals', label: 'My Requests' },
-    { id: 'recommendations', label: 'Government Dashboard' },
+  const mainNavItems: { id: NavTab; labelKey: string }[] = [
+    { id: 'overview', labelKey: 'nav.home' },
+    { id: 'submit', labelKey: 'nav.report_issue' },
+    { id: 'map', labelKey: 'nav.explore_area' },
+    { id: 'signals', labelKey: 'nav.my_requests' },
+    { id: 'recommendations', labelKey: 'nav.government_dashboard' },
   ];
 
   return (
@@ -80,7 +76,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </button>
           <div className="cursor-pointer" onClick={() => onNavigate?.('overview')}>
             <span className="font-serif font-bold text-base tracking-wide text-white uppercase">
-              CivicPulse
+              {t('brand.name')}
             </span>
           </div>
         </div>
@@ -103,7 +99,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                       : 'text-slate-300 hover:text-white hover:bg-white/10 border-transparent'
                   }`}
                 >
-                  {item.label}
+                  {t(item.labelKey)}
                 </button>
               );
             })}
@@ -116,7 +112,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           {/* INDIA JURISDICTION BADGE */}
           <div className="px-2.5 py-1 bg-[#285943]/90 text-white border border-white/20 flex items-center space-x-1.5 text-[11px] font-bold rounded-xs">
             <span className="text-xs">🇮🇳</span>
-            <span className="uppercase tracking-wider">India</span>
+            <span className="uppercase tracking-wider">{t('brand.jurisdiction')}</span>
           </div>
 
           {/* LANGUAGE SWITCHER */}
@@ -126,28 +122,28 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
               className="px-2.5 py-1 bg-white/10 hover:bg-white/15 text-slate-200 border border-white/20 transition-colors cursor-pointer flex items-center space-x-1 text-[11px] rounded-xs"
             >
               <Languages className="w-3 h-3 text-[#D65A3A]" />
-              <span className="font-medium">{currentLang.nativeName}</span>
+              <span className="font-medium">{currentLanguageConfig.nativeName}</span>
               <ChevronDown className="w-3 h-3 text-slate-400" />
             </button>
 
             {langDropdownOpen && (
               <div className="absolute right-0 top-full mt-1 w-56 bg-white border border-slate-300 shadow-xl z-50 py-1 text-slate-900 rounded-xs">
                 <div className="px-3 py-1.5 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider bg-slate-50">
-                  Select Regional Language
+                  {t('brand.select_language')}
                 </div>
-                {currentCountry.languages.map((lang) => (
+                {supportedLanguages.map((lang) => (
                   <button
                     key={lang.code}
                     onClick={() => {
-                      onSelectLanguage(lang.code);
+                      setLanguage(lang.code);
                       setLangDropdownOpen(false);
                     }}
-                    className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-slate-100 transition-colors text-xs font-mono ${
-                      selectedLanguage === lang.code ? 'bg-orange-50 font-bold text-[#D65A3A]' : ''
+                    className={`w-full text-left px-3 py-1.5 flex items-center justify-between hover:bg-slate-100 transition-colors text-xs font-mono cursor-pointer ${
+                      language === lang.code ? 'bg-orange-50 font-bold text-[#D65A3A]' : ''
                     }`}
                   >
-                    <span>{lang.nativeName} ({lang.name})</span>
-                    {selectedLanguage === lang.code && <Check className="w-3 h-3 text-[#D65A3A]" />}
+                    <span>{lang.nativeName} {lang.name !== lang.nativeName && <span className="text-slate-500 text-[11px]">({lang.name})</span>}</span>
+                    {language === lang.code && <Check className="w-3 h-3 text-[#D65A3A]" />}
                   </button>
                 ))}
               </div>
@@ -179,7 +175,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
               </div>
               <button
                 onClick={() => setScalabilityModalOpen(false)}
-                className="p-1 text-[#171717] hover:text-[#D65A3A] font-bold"
+                className="p-1 text-[#171717] hover:text-[#D65A3A] font-bold cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -195,7 +191,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                   <div className="text-[#D65A3A] font-bold"><strong className="font-serif text-sm">8</strong> Active AI Prototype Languages</div>
                 </div>
                 <p className="text-[11px] text-slate-700">
-                  CivicPulse respects the distinction between national scale and prototype readiness. While India spans 22 Eighth Schedule languages, CivicPulse currently enables <strong>8 active regional AI languages</strong> (English, Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Malayalam) with architecture ready to scale across all 22.
+                  CivicPulse enables 8 regional languages (English, Hindi, Telugu, Tamil, Kannada, Marathi, Bengali, Odia) with global translation switching across all views and telemetry.
                 </p>
               </div>
 
@@ -228,4 +224,5 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
     </header>
   );
 };
+
 

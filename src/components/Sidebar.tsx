@@ -14,6 +14,7 @@ import {
   Settings, 
   PlusCircle
 } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 export type NavTab = 
   | 'overview' 
@@ -57,32 +58,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isOpenMobile,
   onCloseMobile,
 }) => {
+  const { t } = useLanguage();
+
   // Navigation structure adhering strictly to the recommended taxonomy:
   // Overview -> UNDERSTAND -> EXPLORE -> DECIDE -> Settings
   const navSections = [
     {
-      title: 'UNDERSTAND',
+      titleKey: 'section.understand',
       items: [
-        { id: 'signals' as NavTab, label: 'Citizen signals', icon: Radio, count: requestsCount },
-        { id: 'issues' as NavTab, label: 'Community issues', icon: Layers },
-        { id: 'patterns' as NavTab, label: 'AI patterns', icon: Cpu },
+        { id: 'signals' as NavTab, labelKey: 'nav.signals', icon: Radio, count: requestsCount },
+        { id: 'issues' as NavTab, labelKey: 'nav.issues', icon: Layers },
+        { id: 'patterns' as NavTab, labelKey: 'nav.patterns', icon: Cpu },
       ]
     },
     {
-      title: 'EXPLORE',
+      titleKey: 'section.explore',
       items: [
-        { id: 'map' as NavTab, label: 'Map', icon: MapPin },
-        { id: 'infrastructure' as NavTab, label: 'Infrastructure', icon: Building2 },
-        { id: 'demographics' as NavTab, label: 'Population & vulnerability', icon: Users },
-        { id: 'investment' as NavTab, label: 'Government investment', icon: DollarSign },
+        { id: 'map' as NavTab, labelKey: 'nav.map', icon: MapPin },
+        { id: 'infrastructure' as NavTab, labelKey: 'nav.infrastructure', icon: Building2 },
+        { id: 'demographics' as NavTab, labelKey: 'nav.demographics', icon: Users },
+        { id: 'investment' as NavTab, labelKey: 'nav.investment', icon: DollarSign },
       ]
     },
     {
-      title: 'DECIDE',
+      titleKey: 'section.decide',
       items: [
-        { id: 'recommendations' as NavTab, label: 'Recommendations', icon: Sparkles },
-        { id: 'action_queue' as NavTab, label: 'Action queue', icon: CheckSquare, count: projectsCount },
-        { id: 'impact' as NavTab, label: 'Impact', icon: TrendingUp },
+        { id: 'recommendations' as NavTab, labelKey: 'nav.recommendations', icon: Sparkles },
+        { id: 'action_queue' as NavTab, labelKey: 'nav.action_queue', icon: CheckSquare, count: projectsCount },
+        { id: 'impact' as NavTab, labelKey: 'nav.impact', icon: TrendingUp },
       ]
     }
   ];
@@ -116,10 +119,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
               <div>
                 <span className="text-lg font-serif font-bold tracking-tight text-white block leading-none">
-                  CivicPulse
+                  {t('brand.name')}
                 </span>
                 <span className="text-[11px] text-[#A6A296] font-sans block mt-1">
-                  Public digital infrastructure
+                  {t('brand.tagline')}
                 </span>
               </div>
             </div>
@@ -135,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 }`}
               >
                 <PlusCircle className="w-3.5 h-3.5 text-[#D65A3A]" />
-                <span>Report an issue</span>
+                <span>{t('nav.report_issue')}</span>
               </button>
             </div>
           </div>
@@ -152,7 +155,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             >
               <div className="flex items-center space-x-2.5">
                 <Home className={`w-4 h-4 ${activeTab === 'overview' ? 'text-white' : 'text-[#A6A296]'}`} />
-                <span>Overview</span>
+                <span>{t('nav.overview')}</span>
               </div>
             </button>
           </div>
@@ -160,9 +163,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {/* Grouped Nav Sections */}
           <nav className="space-y-5 px-1" aria-label="Main Navigation">
             {navSections.map((sec) => (
-              <div key={sec.title} className="space-y-1">
+              <div key={sec.titleKey} className="space-y-1">
                 <div className="px-3 text-[10px] font-mono font-semibold text-[#8C887B] tracking-wider uppercase">
-                  {sec.title}
+                  {t(sec.titleKey)}
                 </div>
 
                 <div className="space-y-0.5">
@@ -184,7 +187,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       >
                         <div className="flex items-center space-x-2.5">
                           <IconComp className={`w-3.5 h-3.5 ${isActive ? 'text-white' : 'text-[#8C887B]'}`} />
-                          <span>{item.label}</span>
+                          <span>{t(item.labelKey)}</span>
                         </div>
                         {item.count !== undefined && item.count > 0 && (
                           <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-xs ${
@@ -214,7 +217,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div className="flex items-center space-x-2.5">
                   <Settings className="w-3.5 h-3.5 text-[#8C887B]" />
-                  <span>Settings</span>
+                  <span>{t('nav.settings')}</span>
                 </div>
               </button>
             </div>
@@ -225,16 +228,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="p-3 border-t border-[#2D2B26] bg-[#1A1916] text-[11px] text-[#8C887B] flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span className="font-sans">India DPI Stack</span>
+            <span className="font-sans">{t('brand.india_stack')}</span>
           </div>
           <button
             onClick={onOpenMethodology}
             className="text-[11px] text-[#A6A296] hover:text-white underline cursor-pointer"
           >
-            Methodology
+            {t('nav.methodology')}
           </button>
         </div>
       </aside>
     </>
   );
 };
+
