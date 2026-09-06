@@ -77,7 +77,61 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
   const isRtl = currentLanguageConfig.dir === 'rtl';
 
   const t = useMemo(() => {
+    // Curated human-readable fallback mappings for any internal/technical keys
+    const TECHNICAL_KEY_MAPPINGS: Record<string, string> = {
+      'issues.flow_requests': 'Citizen Reports',
+      'issues.flow_raw_notes': 'Submitted Reports',
+      'issues.flow_issues': 'Community Issues',
+      'issues.flow_clustered': 'Identified Issue Clusters',
+      'issues.flow_hotspots': 'Priority Hotspots',
+      'issues.flow_audits': 'Analysis Checks',
+      'citizen_signal_count': 'Citizen Signals',
+      'affected_population': 'People Affected',
+      'infrastructure_gap': 'Infrastructure Gap',
+      'avg_severity': 'Average Severity',
+      'source_type': 'Source',
+      'created_at': 'Submitted',
+      'request_id': 'Request ID',
+      'geo_level': 'Geographic Level',
+      'raw_notes': 'Submitted Description',
+      'cluster_id': 'Issue Cluster',
+      'priority_score': 'Priority Score',
+      'model_confidence': 'AI Confidence',
+      'source_origin': 'Data Source',
+      'civicpulse_user': 'CivicPulse Citizen',
+      'government_baseline': 'Government Baseline',
+      'synthetic_demo': 'Illustrative Demo Data',
+      'CIVICPULSE_USER': 'CivicPulse Signals',
+      'GOVERNMENT_BASELINE': 'Government Baseline',
+      'SYNTHETIC_DEMO': 'Illustrative Demo Data',
+      'data.raw': 'Raw Data',
+      'request.status': 'Request Status',
+      'api_response': 'System Response',
+      'null': 'Not available',
+      'undefined': 'Not available',
+      'NaN': 'No data available',
+      '[object Object]': 'Record Details'
+    };
+
+    const humanizeTechnicalKey = (k: string): string => {
+      if (!k) return '';
+      if (TECHNICAL_KEY_MAPPINGS[k]) return TECHNICAL_KEY_MAPPINGS[k];
+      
+      // If it contains dots like "namespace.sub_key", take the sub_key
+      const leaf = k.includes('.') ? k.split('.').pop() || k : k;
+      if (TECHNICAL_KEY_MAPPINGS[leaf]) return TECHNICAL_KEY_MAPPINGS[leaf];
+
+      // Convert snake_case or kebab-case to Title Case words
+      const cleaned = leaf
+        .replace(/[_-]+/g, ' ')
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        .replace(/\b\w/g, char => char.toUpperCase())
+        .trim();
+      return cleaned || k;
+    };
+
     return (key: string, params?: Record<string, string | number>): string => {
+      if (!key) return '';
       const activeDict = TRANSLATIONS[language] || TRANSLATIONS.en;
       let text = activeDict[key];
 
@@ -86,9 +140,9 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
         text = TRANSLATIONS.en[key];
       }
 
-      // If still missing, return key itself gracefully
+      // If still missing, resolve through human-facing fallback layer
       if (!text) {
-        return key;
+        text = humanizeTechnicalKey(key);
       }
 
       // Replace dynamic parameters like {count}, {status}, etc.

@@ -1263,35 +1263,35 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
               </div>
               <div className="flex items-center space-x-2">
                 <span className="px-3 py-1 bg-[#285943] text-white font-mono text-xs font-bold uppercase tracking-wider">
-                  Status: Received
+                  {t('table.status')}: {tStatus('Received')}
                 </span>
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 font-mono text-xs">
               <div className="space-y-1">
-                <span className="text-slate-500 uppercase text-[10px] font-bold block">Category</span>
+                <span className="text-slate-500 uppercase text-[10px] font-bold block">{t('table.category')}</span>
                 <span className="font-bold text-[#171717] text-sm">
-                  {submittedReceipt.category === 'Water' ? 'Water & Sanitation' : submittedReceipt.category === 'Roads' ? 'Roads & Transport' : submittedReceipt.category}
+                  {tCategory(submittedReceipt.category)}
                 </span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-500 uppercase text-[10px] font-bold block">Location</span>
+                <span className="text-slate-500 uppercase text-[10px] font-bold block">{t('table.location')}</span>
                 <span className="font-bold text-[#171717] text-sm">
                   📍 {submittedReceipt.location}
                 </span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-500 uppercase text-[10px] font-bold block">Source Ingestion Mode</span>
-                <span className="font-bold text-slate-800 uppercase">
-                  {submittedReceipt.source_type} ({submittedReceipt.language})
+                <span className="text-slate-500 uppercase text-[10px] font-bold block">{t('table.source')}</span>
+                <span className="font-bold text-slate-800">
+                  {submittedReceipt.source_type?.toLowerCase().includes('voice') ? t('signals.voice') : t('signals.written')} ({submittedReceipt.language || 'English'})
                 </span>
               </div>
 
               <div className="space-y-1">
-                <span className="text-slate-500 uppercase text-[10px] font-bold block">Lodgement Timestamp</span>
+                <span className="text-slate-500 uppercase text-[10px] font-bold block">{t('field.submitted')}</span>
                 <span className="font-bold text-slate-800">
                   {new Date(submittedReceipt.timestamp).toLocaleDateString('en-IN', {
                     day: '2-digit',
@@ -1307,7 +1307,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             {/* Summarized problem description */}
             <div className="pt-2 border-t border-[#171717]/10 font-sans text-xs text-slate-800">
               <span className="font-mono text-[10px] uppercase font-bold text-slate-500 block mb-0.5">
-                Summary of Incident:
+                {t('field.submitted_description')}:
               </span>
               <p className="italic">
                 "{submittedReceipt.summary_en}"

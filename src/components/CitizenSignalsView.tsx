@@ -319,16 +319,16 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           {/* 5. DATA SOURCE ORIGIN */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              Source Origin
+              {t('data_source.title')}
             </label>
             <select
               value={selectedSourceOrigin}
               onChange={(e) => setSelectedSourceOrigin(e.target.value)}
               className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium font-mono"
             >
-              <option value="ALL">All Sources</option>
-              <option value="CIVICPULSE_USER">🟢 Live Submissions</option>
-              <option value="SYNTHETIC_DEMO">⚪ Demo Baseline</option>
+              <option value="ALL">{t('filter.all')} {t('data_source.title')}</option>
+              <option value="CIVICPULSE_USER">🟢 {t('data_source.civicpulse_signals')}</option>
+              <option value="SYNTHETIC_DEMO">⚪ {t('data_source.synthetic_demo')}</option>
             </select>
           </div>
 
@@ -575,7 +575,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {/* Original Citizen Input */}
             <div className="space-y-1">
               <span className="text-xs font-semibold text-[#171717] block">
-                {t('signals.citizen_input')} ({selectedRequest.language || 'Native'} · {selectedRequest.source_type || 'Written'})
+                {t('signals.citizen_input')} ({selectedRequest.language || 'Native'} · {selectedRequest.source_type?.toLowerCase().includes('voice') ? t('signals.voice') : t('signals.written')})
               </span>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 text-xs text-[#57534E] rounded-xs leading-relaxed italic">
                 "{selectedRequest.original_text || selectedRequest.summary_en}"
@@ -621,8 +621,8 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                     : 'bg-stone-200 text-stone-700 border border-stone-300'
                 }`}>
                   {selectedRequest.source_origin === 'CIVICPULSE_USER' || selectedRequest.id.startsWith('CP-202')
-                    ? 'Verified Live Citizen Signal'
-                    : 'Illustrative Demo Signal'}
+                    ? t('data_source.civicpulse_signals')
+                    : t('data_source.synthetic_demo')}
                 </span>
               </div>
               <p className="text-[11px] text-[#57534E] leading-relaxed">
