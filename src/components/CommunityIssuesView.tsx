@@ -116,7 +116,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   governmentProjects,
   onNavigateToRecommendations,
 }) => {
-  const { t, tCategory, tStatus } = useLanguage();
+  const { t, tCategory, tStatus, tCommunityIssue, tSignalSummary } = useLanguage();
   const [issuesList, setIssuesList] = useState<CommunityIssue[]>(INITIAL_COMMUNITY_ISSUES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
@@ -150,8 +150,12 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
     }
   }, [requests]);
 
+  const localizedIssues = useMemo(() => {
+    return issuesList.map(iss => tCommunityIssue(iss));
+  }, [issuesList, tCommunityIssue]);
+
   const filteredIssues = useMemo(() => {
-    return issuesList.filter(iss => {
+    return localizedIssues.filter(iss => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = !q || 
         iss.title.toLowerCase().includes(q) ||
@@ -161,7 +165,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       const matchesCat = selectedCategory === 'ALL' || iss.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [issuesList, searchQuery, selectedCategory]);
+  }, [localizedIssues, searchQuery, selectedCategory]);
 
   return (
     <div className="space-y-10 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
@@ -378,7 +382,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                         <span>{sr.id}</span>
                         <span>{sr.location}</span>
                       </div>
-                      <p className="italic">"{sr.summary_en || sr.original_text}"</p>
+                      <p className="italic">"{tSignalSummary(sr)}"</p>
                     </div>
                   ))}
                 </div>

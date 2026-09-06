@@ -36,7 +36,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   onNavigateToSubmit,
   selectedRequestId
 }) => {
-  const { t, tCategory, tStatus } = useLanguage();
+  const { t, tCategory, tStatus, tSignalSummary, tDistrict, tState } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [selectedState, setSelectedState] = useState<string>('ALL');
@@ -394,7 +394,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                       {/* Issue */}
                       <td className="py-3 px-4 max-w-sm">
                         <div className="font-medium text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug line-clamp-2">
-                          {req.summary_en || req.original_text}
+                          {tSignalSummary(req)}
                         </div>
                         <div className="text-[10px] font-mono text-[#78716C] mt-0.5">
                           {req.id}
@@ -405,7 +405,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                       <td className="py-3 px-3 text-[#57534E] whitespace-nowrap">
                         <div className="flex items-center gap-1">
                           <MapPin className="w-3 h-3 text-[#78716C] shrink-0" />
-                          <span>{req.location || `${req.district || ''}, ${req.state || ''}`}</span>
+                          <span>{tDistrict(req.district || req.location || '')}, {tState(req.state || '')}</span>
                         </div>
                       </td>
 
@@ -529,7 +529,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <span>{t('signals.what_understood')}</span>
               </div>
               <div className="p-3 bg-white border border-[#171717]/15 text-xs text-[#171717] rounded-xs leading-relaxed">
-                {selectedRequest.summary_en}
+                {tSignalSummary(selectedRequest)}
               </div>
             </div>
 

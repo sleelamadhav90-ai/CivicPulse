@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ProjectsViewProps {
   districts: District[];
@@ -40,6 +41,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   onNavigateToImpact,
   onNavigateToEngine,
 }) => {
+  const { t, tCategory, tStatus, tGovernmentProject, tDistrict, tState } = useLanguage();
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -47,7 +49,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
   // Normalize projects to the 5 requested stages
   const activeProjects = useMemo(() => {
-    const list = projects.length > 0 ? projects : getAIRecommendedProjects(districts, []).map((rec, idx) => ({
+    const rawList = projects.length > 0 ? projects : getAIRecommendedProjects(districts, []).map((rec, idx) => ({
       id: `gov-${rec.id}`,
       title: rec.title,
       district: rec.districtName,
@@ -73,7 +75,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       history: [],
     }));
 
-    return list.map((p, idx) => {
+    const localizedList = rawList.map(p => tGovernmentProject(p));
+
+    return localizedList.map((p, idx) => {
       // Map existing status to one of the 5 requested columns
       let stage: ActionStage = 'In Progress';
       if (p.status === 'Completed' || p.progress === 100) stage = 'Completed';
@@ -89,7 +93,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         departmentName: p.department || 'Public Works & Municipal Engineering',
       };
     });
-  }, [projects, districts]);
+  }, [projects, districts, tGovernmentProject]);
 
   const filteredProjects = useMemo(() => {
     return activeProjects.filter(p => {
@@ -111,10 +115,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
         <div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            Action queue
+            {t('action_queue.title')}
           </h1>
           <p className="text-sm text-[#57534E] mt-1">
-            Tracking what administrative officials and engineering divisions are actively executing.
+            {t('action_queue.subtitle')}
           </p>
         </div>
 
@@ -129,7 +133,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             }`}
           >
             <TableIcon className="w-3.5 h-3.5" />
-            <span>Table</span>
+            <span>{t('view.table') || 'Table'}</span>
           </button>
           <button
             onClick={() => setViewMode('kanban')}
@@ -140,7 +144,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             }`}
           >
             <KanbanIcon className="w-3.5 h-3.5" />
-            <span>Kanban</span>
+            <span>{t('view.kanban') || 'Kanban'}</span>
           </button>
         </div>
       </div>
@@ -153,13 +157,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects, departments or districts..."
+            placeholder={t('action_queue.search_placeholder') || 'Search projects, departments or districts...'}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
           />
         </div>
 
         <div className="flex items-center space-x-1 text-xs">
-          <span className="text-[#78716C] text-[11px] mr-1">Sector:</span>
+          <span className="text-[#78716C] text-[11px] mr-1">{t('filter.sector')}:</span>
           {['All', 'Water', 'Roads', 'Health', 'Electricity'].map(cat => (
             <button
               key={cat}
@@ -170,7 +174,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
               }`}
             >
-              {cat}
+              {cat === 'All' ? t('filter.all') : tCategory(cat)}
             </button>
           ))}
         </div>
@@ -183,12 +187,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#171717]/10 bg-[#FAF8F5] text-[#78716C] font-mono text-[10px] uppercase tracking-wider">
-                  <th className="py-2.5 px-4 font-semibold">Project Name</th>
-                  <th className="py-2.5 px-3 font-semibold">District</th>
-                  <th className="py-2.5 px-3 font-semibold">Department</th>
-                  <th className="py-2.5 px-3 font-semibold">Budget</th>
-                  <th className="py-2.5 px-4 font-semibold">Progress</th>
-                  <th className="py-2.5 px-4 font-semibold text-right">Status</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('table.project_name') || 'Project Name'}</th>
+                  <th className="py-2.5 px-3 font-semibold">{t('table.district') || 'District'}</th>
+                  <th className="py-2.5 px-3 font-semibold">{t('table.department') || 'Department'}</th>
+                  <th className="py-2.5 px-3 font-semibold">{t('table.budget') || 'Budget'}</th>
+                  <th className="py-2.5 px-4 font-semibold">{t('table.progress') || 'Progress'}</th>
+                  <th className="py-2.5 px-4 font-semibold text-right">{t('table.status')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#171717]/10">
@@ -204,7 +208,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         {p.title}
                       </div>
                       <div className="text-[10px] font-mono text-[#78716C] mt-0.5">
-                        {p.id} · {p.category}
+                        {p.id} · {tCategory(p.category)}
                       </div>
                     </td>
 
@@ -251,7 +255,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                           ? 'bg-amber-50 text-amber-800 border-amber-300'
                           : 'bg-[#F7F5EF] text-[#57534E] border-[#171717]/15'
                       }`}>
-                        {p.stage}
+                        {tStatus(p.stage)}
                       </span>
                     </td>
                   </tr>
@@ -271,7 +275,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               <div key={stage} className="bg-[#FAF8F5] border border-[#171717]/15 rounded-xs p-3 space-y-3">
                 <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
                   <span className="text-[11px] font-mono font-bold text-[#171717] uppercase">
-                    {stage}
+                    {tStatus(stage)}
                   </span>
                   <span className="text-[10px] font-mono text-[#78716C] bg-white px-1.5 py-0.2 rounded-xs border border-[#171717]/10">
                     {stageProjects.length}
@@ -286,7 +290,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                       className="bg-white border border-[#171717]/10 hover:border-[#171717]/30 p-3 rounded-xs shadow-2xs cursor-pointer transition-all space-y-2"
                     >
                       <span className="text-[9px] font-mono text-[#D65A3A] uppercase font-bold block">
-                        {p.category}
+                        {tCategory(p.category)}
                       </span>
                       <h4 className="text-xs font-serif font-bold text-[#171717] leading-snug">
                         {p.title}
@@ -315,13 +319,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
               <div>
                 <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
-                  Action Queue Item · {selectedProject.id}
+                  {t('action_queue.modal_item') || 'Action Queue Item'} · {selectedProject.id}
                 </span>
                 <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
                   {selectedProject.title}
                 </h2>
                 <span className="text-xs text-[#57534E] mt-0.5 block">
-                  {selectedProject.district}, {selectedProject.state} · Department: {selectedProject.departmentName}
+                  {selectedProject.district}, {selectedProject.state} · {t('table.department')}: {selectedProject.departmentName}
                 </span>
               </div>
 
@@ -335,28 +339,28 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
             <div className="grid grid-cols-3 gap-2 text-xs font-mono">
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Budget</span>
+                <span className="text-[10px] text-[#78716C] block">{t('table.budget')}</span>
                 <span className="text-base font-bold text-[#171717]">{selectedProject.formattedBudget}</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Status</span>
-                <span className="text-base font-bold text-[#D65A3A]">{selectedProject.stage}</span>
+                <span className="text-[10px] text-[#78716C] block">{t('table.status')}</span>
+                <span className="text-base font-bold text-[#D65A3A]">{tStatus(selectedProject.stage)}</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Progress</span>
+                <span className="text-[10px] text-[#78716C] block">{t('table.progress')}</span>
                 <span className="text-base font-bold text-[#285943]">{selectedProject.progress || 25}%</span>
               </div>
             </div>
 
             <div className="space-y-1 text-xs">
-              <span className="font-semibold text-[#171717] block">Administrative Scope & Description:</span>
+              <span className="font-semibold text-[#171717] block">{t('action_queue.modal_description') || 'Administrative Scope & Description'}:</span>
               <p className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs text-[#57534E] leading-relaxed">
                 {selectedProject.description || 'Targeted infrastructure engineering response sanctioned under municipal priority allocation.'}
               </p>
             </div>
 
             <div className="space-y-2 pt-2 border-t border-[#171717]/10">
-              <span className="text-xs font-semibold text-[#171717] block">Update Status:</span>
+              <span className="text-xs font-semibold text-[#171717] block">{t('action_queue.modal_update_status') || 'Update Status'}:</span>
               <div className="flex flex-wrap gap-1.5">
                 {(['Approved', 'In Progress', 'Completed'] as ProjectLifecycleStatus[]).map(st => (
                   <button
@@ -367,7 +371,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     }}
                     className="px-2.5 py-1 bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 text-xs font-medium rounded-xs transition-colors cursor-pointer"
                   >
-                    Mark as {st}
+                    {t('action.mark_as') || 'Mark as'} {tStatus(st)}
                   </button>
                 ))}
               </div>
@@ -378,7 +382,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 onClick={() => setSelectedProject(null)}
                 className="px-4 py-2 bg-[#171717] text-white text-xs font-semibold rounded-xs cursor-pointer"
               >
-                Close
+                {t('common.close')}
               </button>
             </div>
 

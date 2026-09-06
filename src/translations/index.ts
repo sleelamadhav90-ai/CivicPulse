@@ -9,6 +9,7 @@ import { or } from './or';
 import { SUPPORTED_LANGUAGES, SupportedLanguageCode } from './languages';
 
 export * from './languages';
+export * from './civicLocalization';
 
 export type TranslationKey = keyof typeof en;
 

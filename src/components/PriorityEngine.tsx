@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, RecommendedProject, InterventionType } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PriorityEngineProps {
   districts: District[];
@@ -40,14 +41,19 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   onConvertToGovernmentProject,
   onNavigateToProjects,
 }) => {
+  const { t, tRecommendation, tCategory, tIntervention, tDistrict, tState } = useLanguage();
   const [selectedType, setSelectedType] = useState<'ALL' | InterventionType>('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [evidenceProject, setEvidenceProject] = useState<RecommendedProject | null>(null);
   const [queuedProjectIds, setQueuedProjectIds] = useState<Set<string>>(new Set());
 
-  const recommendedProjects = useMemo(() => {
+  const rawRecommendedProjects = useMemo(() => {
     return getAIRecommendedProjects(districts, requests);
   }, [districts, requests]);
+
+  const recommendedProjects = useMemo(() => {
+    return rawRecommendedProjects.map(p => tRecommendation(p));
+  }, [rawRecommendedProjects, tRecommendation]);
 
   // Handle policy target auto-open
   React.useEffect(() => {
@@ -89,10 +95,10 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
       {/* 1. Header (Executive Decision Memo style) */}
       <div className="space-y-1.5 border-b border-[#171717]/10 pb-5">
         <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-          Recommended actions
+          {t('recommendations.title')}
         </h1>
         <p className="text-sm sm:text-base text-[#57534E] max-w-2xl leading-relaxed">
-          Evidence-backed infrastructure recommendations prioritized by urgency and impact.
+          {t('recommendations.subtitle')}
         </p>
       </div>
 
@@ -104,14 +110,14 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search recommendations by title, district or scheme..."
+            placeholder={t('recommendations.search_placeholder')}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
           />
         </div>
 
         {/* Type pills: ALL / FIX / BUILD / UPGRADE */}
         <div className="flex items-center space-x-1.5 text-xs">
-          <span className="text-[#78716C] text-[11px]">Intervention:</span>
+          <span className="text-[#78716C] text-[11px]">{t('filter.intervention') || 'Intervention'}:</span>
           {(['ALL', 'FIX', 'BUILD', 'UPGRADE'] as const).map(type => (
             <button
               key={type}
@@ -122,7 +128,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
               }`}
             >
-              {type}
+              {tIntervention(type)}
             </button>
           ))}
         </div>
@@ -149,7 +155,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                       ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
                       : 'bg-blue-50 text-blue-800 border-blue-300'
                   }`}>
-                    {proj.interventionType}
+                    {tIntervention(proj.interventionType)}
                   </span>
 
                   <span className="text-xs font-medium text-[#57534E]">
@@ -159,12 +165,12 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   <span className="text-[#171717]/30 text-xs">·</span>
 
                   <span className="text-xs font-mono text-[#78716C]">
-                    {proj.category}
+                    {tCategory(proj.category)}
                   </span>
                 </div>
 
                 <div className="flex items-center space-x-2 text-xs font-mono">
-                  <span className="text-[#78716C]">Priority Score:</span>
+                  <span className="text-[#78716C]">{t('metric.priority_score')}:</span>
                   <span className="text-sm font-bold text-[#D65A3A]">
                     {priorityScore} / 100
                   </span>
@@ -177,36 +183,36 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   {proj.title}
                 </h2>
                 <p className="text-xs text-[#78716C] font-mono mt-0.5">
-                  Alignment: {proj.alignedScheme} · Estimated Outlay: {proj.estimatedCost}
+                  {t('action_queue.aligned_scheme') || 'Alignment'}: {proj.alignedScheme} · {t('metric.estimated_cost') || 'Estimated Outlay'}: {proj.estimatedCost}
                 </p>
               </div>
 
               {/* Why this is recommended: 4 bullet points */}
               <div className="bg-[#FAF8F5] border border-[#171717]/10 p-4 rounded-xs space-y-2 text-xs">
-                <span className="font-semibold text-[#171717] block">Why this is recommended:</span>
+                <span className="font-semibold text-[#171717] block">{t('recommendations.why_recommended')}</span>
                 <ul className="space-y-1.5 text-[#57534E]">
                   <li className="flex items-start space-x-2">
                     <span className="text-[#D65A3A] font-bold">•</span>
                     <span>
-                      <strong className="text-[#171717]">Citizen demand:</strong> {proj.demandCount} citizen signals ({proj.trendChange || '+22% growth'}) documenting acute local deficiency.
+                      <strong className="text-[#171717]">{t('recommendations.point_demand')}</strong> {proj.demandCount} {t('metric.demand_signals').toLowerCase()} ({proj.trendChange || '+22%'})
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <span className="text-[#D65A3A] font-bold">•</span>
                     <span>
-                      <strong className="text-[#171717]">Infrastructure gap:</strong> Verified baseline access is currently at {Math.round(proj.currentAccess)}%, representing a {Math.round(100 - proj.currentAccess)}% service deficit.
+                      <strong className="text-[#171717]">{t('recommendations.point_gap')}</strong> {t('metric.baseline_access')} {Math.round(proj.currentAccess)}%, {Math.round(100 - proj.currentAccess)}% {t('metric.service_deficit').toLowerCase()}.
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <span className="text-[#D65A3A] font-bold">•</span>
                     <span>
-                      <strong className="text-[#171717]">Population impact:</strong> Directly benefits an estimated {proj.affectedPopulation || '42,000'} residents across underserved gram panchayats.
+                      <strong className="text-[#171717]">{t('recommendations.point_population')}</strong> {proj.affectedPopulation || '42,000'} {t('metric.people').toLowerCase()}.
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
                     <span className="text-[#D65A3A] font-bold">•</span>
                     <span>
-                      <strong className="text-[#171717]">Predicted trend:</strong> Projected to escalate to {(proj.demandCount * 1.3).toFixed(0)} grievances over the next quarter without intervention.
+                      <strong className="text-[#171717]">{t('recommendations.point_trend')}</strong> ~{(proj.demandCount * 1.3).toFixed(0)} {t('metric.demand_signals').toLowerCase()} ({t('trend.escalating') || 'escalating'}).
                     </span>
                   </li>
                 </ul>
@@ -215,7 +221,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               {/* Action Buttons: [Review evidence] [Add to action queue] */}
               <div className="pt-2 border-t border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="text-[11px] text-[#78716C]">
-                  Target Execution Window: <strong className="text-[#171717]">{proj.executionWindow}</strong>
+                  {t('metric.target_window')}: <strong className="text-[#171717]">{proj.executionWindow}</strong>
                 </div>
 
                 <div className="flex items-center space-x-2.5">
@@ -223,7 +229,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     onClick={() => setEvidenceProject(proj)}
                     className="px-3.5 py-2 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
                   >
-                    Review evidence
+                    {t('recommendations.review_evidence') || 'Review evidence'}
                   </button>
 
                   <button
@@ -238,12 +244,12 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     {isQueued ? (
                       <>
                         <BookmarkCheck className="w-3.5 h-3.5" />
-                        <span>Added to action queue</span>
+                        <span>{t('recommendations.added_to_queue') || 'Added to action queue'}</span>
                       </>
                     ) : (
                       <>
                         <Plus className="w-3.5 h-3.5" />
-                        <span>Add to action queue</span>
+                        <span>{t('recommendations.add_to_queue') || 'Add to action queue'}</span>
                       </>
                     )}
                   </button>
@@ -263,13 +269,13 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
               <div>
                 <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
-                  Executive Decision Brief · {evidenceProject.id}
+                  {t('recommendations.modal_brief')} · {evidenceProject.id}
                 </span>
                 <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
                   {evidenceProject.title}
                 </h2>
                 <span className="text-xs text-[#57534E] mt-0.5 block">
-                  {evidenceProject.districtName}, {evidenceProject.state} · Sector: {evidenceProject.category}
+                  {evidenceProject.districtName}, {evidenceProject.state} · {t('filter.sector')}: {tCategory(evidenceProject.category)}
                 </span>
               </div>
 
@@ -283,32 +289,32 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
 
             <div className="grid grid-cols-3 gap-2 text-xs font-mono">
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Priority Score</span>
+                <span className="text-[10px] text-[#78716C] block">{t('metric.priority_score')}</span>
                 <span className="text-base font-bold text-[#D65A3A]">{Math.round(evidenceProject.priorityScore || 85)} / 100</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Estimated Cost</span>
+                <span className="text-[10px] text-[#78716C] block">{t('metric.estimated_cost')}</span>
                 <span className="text-base font-bold text-[#171717]">{evidenceProject.estimatedCost}</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">Execution Horizon</span>
+                <span className="text-[10px] text-[#78716C] block">{t('metric.execution_window')}</span>
                 <span className="text-base font-bold text-emerald-800">{evidenceProject.executionWindow}</span>
               </div>
             </div>
 
             <div className="space-y-2 text-xs">
-              <span className="font-semibold text-[#171717] block">Analytical Justification & Evidence Basis:</span>
+              <span className="font-semibold text-[#171717] block">{t('recommendations.modal_justification')}</span>
               <p className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs text-[#57534E] leading-relaxed">
                 {evidenceProject.description}
               </p>
             </div>
 
             <div className="space-y-1.5 text-xs">
-              <span className="font-semibold text-[#171717] block">Cross-Domain Telemetry Grounding:</span>
+              <span className="font-semibold text-[#171717] block">{t('recommendations.modal_cross_domain')}</span>
               <div className="p-3 bg-white border border-[#171717]/15 rounded-xs space-y-1 text-[#57534E]">
-                <p>• Census 2011 & National Geospatial Data Registry</p>
-                <p>• Public works telemetry and Jal Jeevan Mission physical audits</p>
-                <p>• {evidenceProject.demandCount} verified local citizen grievance submissions</p>
+                <p>• {t('modal.census_registry') || 'Census & National Geospatial Data Registry'}</p>
+                <p>• {t('modal.telemetry_audits') || 'Public works telemetry and Jal Jeevan Mission physical audits'}</p>
+                <p>• {evidenceProject.demandCount} {t('modal.verified_complaints') || 'verified local citizen grievance submissions'}</p>
               </div>
             </div>
 
@@ -317,7 +323,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 onClick={() => setEvidenceProject(null)}
                 className="px-3 py-1.5 text-xs text-[#57534E] hover:text-[#171717] cursor-pointer"
               >
-                Close
+                {t('button.cancel') || 'Close'}
               </button>
 
               <button
@@ -328,7 +334,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
               >
                 <Plus className="w-3.5 h-3.5" />
-                <span>Sanction & Add to Action Queue</span>
+                <span>{t('button.sanction_add') || 'Sanction & Add to Action Queue'}</span>
               </button>
             </div>
 

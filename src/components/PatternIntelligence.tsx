@@ -13,6 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 export interface AnalyticalPattern {
   id: string;
@@ -167,22 +168,27 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
   onNavigateToRecommendations,
   onNavigateToPolicyLab,
 }) => {
+  const { t, tCategory, tUrgency, tPattern } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [activePatternModal, setActivePatternModal] = useState<AnalyticalPattern | null>(null);
 
+  const localizedPatterns = useMemo(() => {
+    return CORE_PATTERNS.map(p => tPattern(p));
+  }, [tPattern]);
+
   const filteredPatterns = useMemo(() => {
-    return CORE_PATTERNS.filter(pat => {
+    return localizedPatterns.filter(pat => {
       const q = searchQuery.toLowerCase();
       const matchesSearch = !q ||
         pat.name.toLowerCase().includes(q) ||
         pat.description.toLowerCase().includes(q) ||
-        pat.affectedDistricts.some(d => d.name.toLowerCase().includes(q));
+        pat.affectedDistricts.some((d: any) => d.name.toLowerCase().includes(q));
 
       const matchesCat = selectedCategory === 'ALL' || pat.category === selectedCategory;
       return matchesSearch && matchesCat;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [localizedPatterns, searchQuery, selectedCategory]);
 
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
@@ -190,10 +196,10 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
       {/* 1. Page Header */}
       <div className="space-y-1.5 border-b border-[#171717]/10 pb-5">
         <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-          AI patterns
+          {t('patterns.title')}
         </h1>
         <p className="text-sm text-[#57534E] max-w-2xl leading-relaxed">
-          Cross-domain correlations and early signals detected across public datasets.
+          {t('patterns.subtitle')}
         </p>
       </div>
 
@@ -205,13 +211,13 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search patterns, keywords, or districts..."
+            placeholder={t('patterns.search_placeholder') || 'Search patterns, keywords, or districts...'}
             className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
           />
         </div>
 
         <div className="flex items-center space-x-1.5 text-xs">
-          <span className="text-[#78716C] text-[11px]">Domain:</span>
+          <span className="text-[#78716C] text-[11px]">{t('filter.domain') || 'Domain'}:</span>
           {['ALL', 'Water', 'Health', 'Electricity', 'Drainage'].map(cat => (
             <button
               key={cat}
@@ -222,7 +228,7 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
               }`}
             >
-              {cat}
+              {cat === 'ALL' ? t('filter.all') : tCategory(cat)}
             </button>
           ))}
         </div>
@@ -239,7 +245,7 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#171717]/10 pb-3">
               <div className="flex items-center space-x-2.5">
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs bg-[#F7F5EF] text-[#D65A3A] border border-[#171717]/10 uppercase tracking-wider">
-                  {pat.category}
+                  {tCategory(pat.category)}
                 </span>
                 <span className="text-xs font-mono text-[#78716C]">
                   {pat.type} · {pat.id}
@@ -252,7 +258,7 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
                     ? 'bg-[#D65A3A]/10 text-[#D65A3A] border border-[#D65A3A]/20'
                     : 'bg-amber-50 text-amber-800 border border-amber-300'
                 }`}>
-                  Urgency: {pat.urgency}
+                  {t('metric.urgency') || 'Urgency'}: {tUrgency(pat.urgency)}
                 </span>
                 <span className="text-[#78716C]">
                   {pat.timeline}
@@ -276,15 +282,15 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
               <div className="bg-[#FAF8F5] border border-[#171717]/10 p-3.5 rounded-xs space-y-2 text-xs">
                 <div className="flex items-center space-x-1.5 font-semibold text-[#171717]">
                   <Database className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>Grounding Evidence & Data Sources</span>
+                  <span>{t('patterns.grounding_evidence') || 'Grounding Evidence & Data Sources'}</span>
                 </div>
                 <ul className="space-y-1 text-[#57534E] list-disc list-inside text-[11px] leading-relaxed">
-                  {pat.evidence.dataSources.map((ds, idx) => (
+                  {pat.evidence.dataSources.map((ds: string, idx: number) => (
                     <li key={idx}>{ds}</li>
                   ))}
                 </ul>
                 <div className="pt-1 text-[11px] font-mono text-[#78716C] border-t border-[#171717]/10">
-                  {pat.evidence.totalCitizenSignals.toLocaleString()} citizen reports analyzed · {pat.evidence.correlations}
+                  {pat.evidence.totalCitizenSignals.toLocaleString()} {t('patterns.citizen_reports_analyzed') || 'citizen reports analyzed'}
                 </div>
               </div>
 
@@ -292,10 +298,10 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
               <div className="bg-[#FAF8F5] border border-[#171717]/10 p-3.5 rounded-xs space-y-2 text-xs">
                 <div className="flex items-center space-x-1.5 font-semibold text-[#171717]">
                   <MapPin className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>Affected Districts</span>
+                  <span>{t('patterns.affected_districts') || 'Affected Districts'}</span>
                 </div>
                 <div className="space-y-1.5">
-                  {pat.affectedDistricts.map((dist, idx) => (
+                  {pat.affectedDistricts.map((dist: any, idx: number) => (
                     <div key={idx} className="flex items-center justify-between text-[11px]">
                       <span className="font-medium text-[#171717]">
                         {dist.name}, {dist.state}
@@ -312,7 +318,7 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
             {/* Suggested Intervention & Action Button */}
             <div className="pt-2 border-t border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
               <div className="space-y-0.5">
-                <span className="font-semibold text-[#171717] block">Suggested intervention:</span>
+                <span className="font-semibold text-[#171717] block">{t('patterns.suggested_intervention') || 'Suggested intervention'}:</span>
                 <p className="text-[#57534E] leading-relaxed">
                   {pat.suggestedIntervention}
                 </p>
@@ -323,7 +329,7 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
                   onClick={onNavigateToRecommendations}
                   className="px-3.5 py-1.5 bg-[#171717] hover:bg-[#34322D] text-white font-medium rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
                 >
-                  <span>Review in recommendations</span>
+                  <span>{t('patterns.review_recommendations') || 'Review in recommendations'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               </div>

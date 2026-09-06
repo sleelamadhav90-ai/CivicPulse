@@ -5,8 +5,18 @@ import {
   SupportedLanguageCode, 
   LanguageOption,
   translateCategory,
-  translateStatus
+  translateStatus,
+  getLocalizedDistrict,
+  getLocalizedState,
+  getLocalizedIntervention,
+  getLocalizedUrgency,
+  getLocalizedRecommendation,
+  getLocalizedGovernmentProject,
+  getLocalizedSignalSummary,
+  getLocalizedPattern,
+  getLocalizedCommunityIssue
 } from '../translations';
+import { RecommendedProject, GovernmentProject, CitizenRequest } from '../types';
 
 interface LanguageContextType {
   language: SupportedLanguageCode;
@@ -14,6 +24,15 @@ interface LanguageContextType {
   t: (key: string, params?: Record<string, string | number>) => string;
   tCategory: (category: string) => string;
   tStatus: (status: string) => string;
+  tIntervention: (type: string) => string;
+  tUrgency: (urgency: string) => string;
+  tDistrict: (district: string) => string;
+  tState: (state: string) => string;
+  tRecommendation: (rec: RecommendedProject) => RecommendedProject;
+  tGovernmentProject: (proj: GovernmentProject) => GovernmentProject;
+  tSignalSummary: (req: CitizenRequest) => string;
+  tPattern: (pat: any) => any;
+  tCommunityIssue: (issue: any) => any;
   supportedLanguages: LanguageOption[];
   currentLanguageConfig: LanguageOption;
   isRtl: boolean;
@@ -87,12 +106,57 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return (status: string) => translateStatus(status, language);
   }, [language]);
 
+  const tInterv = useMemo(() => {
+    return (type: string) => getLocalizedIntervention(type, language);
+  }, [language]);
+
+  const tUrg = useMemo(() => {
+    return (urgency: string) => getLocalizedUrgency(urgency, language);
+  }, [language]);
+
+  const tDist = useMemo(() => {
+    return (district: string) => getLocalizedDistrict(district, language);
+  }, [language]);
+
+  const tSt = useMemo(() => {
+    return (state: string) => getLocalizedState(state, language);
+  }, [language]);
+
+  const tRec = useMemo(() => {
+    return (rec: RecommendedProject) => getLocalizedRecommendation(rec, language);
+  }, [language]);
+
+  const tGovProj = useMemo(() => {
+    return (proj: GovernmentProject) => getLocalizedGovernmentProject(proj, language);
+  }, [language]);
+
+  const tSigSum = useMemo(() => {
+    return (req: CitizenRequest) => getLocalizedSignalSummary(req, language);
+  }, [language]);
+
+  const tPat = useMemo(() => {
+    return (pat: any) => getLocalizedPattern(pat, language);
+  }, [language]);
+
+  const tCommIss = useMemo(() => {
+    return (issue: any) => getLocalizedCommunityIssue(issue, language);
+  }, [language]);
+
   const value: LanguageContextType = {
     language,
     setLanguage,
     t,
     tCategory: tCat,
     tStatus: tStat,
+    tIntervention: tInterv,
+    tUrgency: tUrg,
+    tDistrict: tDist,
+    tState: tSt,
+    tRecommendation: tRec,
+    tGovernmentProject: tGovProj,
+    tSignalSummary: tSigSum,
+    tPattern: tPat,
+    tCommunityIssue: tCommIss,
     supportedLanguages: SUPPORTED_LANGUAGES,
     currentLanguageConfig,
     isRtl,

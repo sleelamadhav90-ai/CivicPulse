@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { District, InfrastructureCategory, CitizenRequest } from '../types';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
+import { useLanguage } from '../context/LanguageContext';
 
 interface PolicyLabProps {
   districts: District[];
@@ -41,6 +42,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
   onSelectCategory,
   onNavigateToImpact,
 }) => {
+  const { t, language, tCategory, tDistrict, tState } = useLanguage();
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedBrief, setGeneratedBrief] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -77,6 +79,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
           population: currentDistrict.population,
           povertyIndex: currentDistrict.poverty_index,
           plannedInvestment: currentDistrict.planned_investment,
+          language,
         }),
       });
 
@@ -157,7 +160,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
                 >
                   {districts.map((d) => (
                     <option key={d.id} value={d.id}>
-                      {d.name} ({d.state}) — Pop: {(d.population / 100000).toFixed(1)}L
+                      {tDistrict(d.name)} ({tState(d.state)}) — Pop: {(d.population / 100000).toFixed(1)}L
                     </option>
                   ))}
                 </select>
@@ -188,7 +191,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
                       {cat === 'Roads' && <Route className="w-3.5 h-3.5 text-amber-600" />}
                       {cat === 'Electricity' && <Zap className="w-3.5 h-3.5 text-yellow-600" />}
                       {cat === 'Education' && <GraduationCap className="w-3.5 h-3.5 text-purple-600" />}
-                      <span>{cat}</span>
+                      <span>{tCategory(cat)}</span>
                     </button>
                   ))}
                 </div>
