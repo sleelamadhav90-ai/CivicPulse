@@ -1,5 +1,6 @@
 import { District, CitizenRequest, CountryCode } from '../types';
 import { DISTRICTS_REGISTRY, COUNTRY_DISTRICTS_REGISTRY } from '../data/districts';
+import { matchCitizenRequestIntent } from '../services/humanSearchService';
 
 export interface StateDistrictHierarchy {
   state: string;
@@ -389,17 +390,21 @@ export function filterCitizenRequests(
       if (req.language !== language) return false;
     }
 
-    // 6. Search Query
+    // 6. Human-First Search Query
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const matchSearch = 
+      const directMatch = 
         (req.summary_en && req.summary_en.toLowerCase().includes(q)) ||
         (req.original_text && req.original_text.toLowerCase().includes(q)) ||
         (req.location && req.location.toLowerCase().includes(q)) ||
         (req.id && req.id.toLowerCase().includes(q)) ||
+        (req.request_id && req.request_id.toLowerCase().includes(q)) ||
         (req.district && req.district.toLowerCase().includes(q)) ||
         (req.locality && req.locality.toLowerCase().includes(q));
-      if (!matchSearch) return false;
+
+      if (!directMatch && !matchCitizenRequestIntent(req, searchQuery)) {
+        return false;
+      }
     }
 
     return true;

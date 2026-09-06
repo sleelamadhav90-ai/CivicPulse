@@ -40,6 +40,7 @@ import { CitizenSubmissionView } from './components/CitizenSubmissionView';
 import { CommunityIssuesView } from './components/CommunityIssuesView';
 import { InfrastructureView } from './components/InfrastructureView';
 import { DemographicsView } from './components/DemographicsView';
+import { GlobalSearchModal } from './components/GlobalSearchModal';
 
 export default function App() {
   const [hasEntered, setHasEntered] = useState(true);
@@ -134,6 +135,22 @@ export default function App() {
 
   // Methodology Modal State
   const [methodologyModalOpen, setMethodologyModalOpen] = useState(false);
+
+  // Human-First Global Search Modal State
+  const [searchModalOpen, setSearchModalOpen] = useState(false);
+  const [searchInitialQuery, setSearchInitialQuery] = useState('');
+
+  // Global keyboard shortcut for search (⌘K or Ctrl+K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setSearchModalOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // Persist requests to localStorage
   useEffect(() => {
@@ -311,6 +328,7 @@ export default function App() {
           onNavigateToSchema={() => setActiveTab('connectors')}
           onOpenPortalDirectory={() => setPortalDirectoryOpen(true)}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
+          onOpenSearch={() => setSearchModalOpen(true)}
         />
 
         <div className="flex-1 flex min-h-0 min-w-0 overflow-hidden relative">
@@ -715,6 +733,37 @@ export default function App() {
         }}
         requestsCount={requests.length}
         projectsCount={governmentProjects.length}
+      />
+
+      {/* HUMAN-FIRST GLOBAL SEARCH MODAL */}
+      <GlobalSearchModal
+        isOpen={searchModalOpen}
+        onClose={() => setSearchModalOpen(false)}
+        requests={requests}
+        districts={districts}
+        governmentProjects={governmentProjects}
+        initialQuery={searchInitialQuery}
+        onNavigateToSignal={(requestId) => {
+          setFocusedRequestId(requestId);
+          setActiveTab('signals');
+        }}
+        onNavigateToIssues={() => {
+          setActiveTab('issues');
+        }}
+        onNavigateToDistrict={(districtId, category) => {
+          setPolicyTargetDistrictId(districtId);
+          if (category) setPolicyTargetCategory(category);
+          setActiveTab('map');
+        }}
+        onNavigateToProjects={() => {
+          setActiveTab('action_queue');
+        }}
+        onNavigateToInfrastructure={() => {
+          setActiveTab('infrastructure');
+        }}
+        onNavigateToRecommendations={() => {
+          setActiveTab('recommendations');
+        }}
       />
         </div>
       </div>

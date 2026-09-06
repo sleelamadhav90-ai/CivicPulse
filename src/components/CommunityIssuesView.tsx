@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, GovernmentProject } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { parseSearchIntent } from '../services/humanSearchService';
 
 export interface CommunityIssue {
   id: string;
@@ -154,18 +155,69 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
     return issuesList.map(iss => tCommunityIssue(iss));
   }, [issuesList, tCommunityIssue]);
 
-  const filteredIssues = useMemo(() => {
-    return localizedIssues.filter(iss => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q || 
-        iss.title.toLowerCase().includes(q) ||
-        iss.location.toLowerCase().includes(q) ||
-        iss.category.toLowerCase().includes(q);
+  const searchIntent = useMemo(() => {
+    return searchQuery.trim() ? parseSearchIntent(searchQuery) : null;
+  }, [searchQuery]);
 
-      const matchesCat = selectedCategory === 'ALL' || iss.category === selectedCategory;
-      return matchesSearch && matchesCat;
+  const filteredIssues = useMemo(() => {
+    if (!searchQuery.trim() && selectedCategory === 'ALL') return localizedIssues;
+
+    return localizedIssues.filter(iss => {
+      if (selectedCategory !== 'ALL' && iss.category !== selectedCategory) {
+        return false;
+      }
+
+      if (!searchIntent) return true;
+
+      if (searchIntent.exactId && (iss.id.toLowerCase().includes(searchIntent.exactId.toLowerCase()) || iss.rank.includes(searchIntent.exactId))) {
+        return true;
+      }
+
+      const normTitle = iss.title.toLowerCase();
+      const normLoc = iss.location.toLowerCase();
+      const normCat = iss.category.toLowerCase();
+      const normScheme = (iss.relatedScheme || '').toLowerCase();
+      const normInfra = (iss.infrastructureName || '').toLowerCase();
+
+      // Check detected category
+      if (searchIntent.detectedCategories.length > 0) {
+        const matchesCat = searchIntent.detectedCategories.some(c => c.toLowerCase() === normCat);
+        if (matchesCat) {
+          if (searchIntent.detectedLocations.length > 0) {
+            return searchIntent.detectedLocations.some(l => normLoc.includes(l.toLowerCase()));
+          }
+          return true;
+        }
+      }
+
+      // Check detected location
+      if (searchIntent.detectedLocations.length > 0) {
+        if (searchIntent.detectedLocations.some(l => normLoc.includes(l.toLowerCase()))) {
+          return true;
+        }
+      }
+
+      // Urgency match
+      if (searchIntent.isUrgent && (iss.severity === 'Critical' || iss.severity === 'High')) {
+        return true;
+      }
+
+      // Query substring match
+      if (normTitle.includes(searchIntent.normalizedQuery) || normLoc.includes(searchIntent.normalizedQuery) || normScheme.includes(searchIntent.normalizedQuery) || normInfra.includes(searchIntent.normalizedQuery)) {
+        return true;
+      }
+
+      // Keyword match
+      if (searchIntent.keywords.length > 0) {
+        const matchesKw = searchIntent.keywords.some(kw => 
+          normTitle.includes(kw) || normLoc.includes(kw) || normCat.includes(kw) || normScheme.includes(kw) || normInfra.includes(kw)
+        );
+        if (matchesKw) return true;
+      }
+
+      return false;
     });
-  }, [localizedIssues, searchQuery, selectedCategory]);
+  }, [localizedIssues, searchQuery, searchIntent, selectedCategory]);
 
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">

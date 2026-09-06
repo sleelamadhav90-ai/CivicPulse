@@ -9,7 +9,8 @@ import {
   Sparkles,
   MapPin,
   X,
-  Menu
+  Menu,
+  Search
 } from 'lucide-react';
 import { CountryCode } from '../types';
 import { NavTab } from './Sidebar';
@@ -28,6 +29,7 @@ interface GlobalHeaderProps {
   onNavigateToSchema?: () => void;
   onOpenPortalDirectory?: () => void;
   onOpenMobileMenu?: () => void;
+  onOpenSearch?: () => void;
 }
 
 export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
@@ -37,6 +39,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   onSelectCountry,
   onOpenPortalDirectory,
   onOpenMobileMenu,
+  onOpenSearch,
 }) => {
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
@@ -106,9 +109,27 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </nav>
         )}
 
-        {/* Right Controls: India + Language + Info */}
+        {/* Right Controls: Search + India + Language + Info */}
         <div className="flex items-center space-x-2">
           
+          {/* HUMAN-FIRST QUICK SEARCH BUTTON */}
+          {onOpenSearch && (
+            <button
+              onClick={onOpenSearch}
+              className="flex items-center space-x-1.5 px-2.5 py-1 bg-white/10 hover:bg-white/15 text-slate-200 border border-white/20 transition-colors cursor-pointer rounded-xs text-[11px] font-sans group"
+              title="Search CivicPulse (Press ⌘K or Ctrl+K)"
+              aria-label="Search CivicPulse"
+            >
+              <Search className="w-3.5 h-3.5 text-[#D65A3A] group-hover:scale-110 transition-transform" />
+              <span className="hidden sm:inline text-slate-300">
+                Search CivicPulse...
+              </span>
+              <kbd className="hidden md:inline-block px-1 py-0.2 text-[9px] font-mono bg-black/40 text-slate-400 border border-white/10 rounded-xs">
+                ⌘K
+              </kbd>
+            </button>
+          )}
+
           {/* INDIA JURISDICTION BADGE */}
           <div className="px-2.5 py-1 bg-[#285943]/90 text-white border border-white/20 flex items-center space-x-1.5 text-[11px] font-bold rounded-xs">
             <span className="text-xs">🇮🇳</span>

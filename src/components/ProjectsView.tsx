@@ -14,6 +14,7 @@ import {
 import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
 import { useLanguage } from '../context/LanguageContext';
+import { parseSearchIntent } from '../services/humanSearchService';
 
 interface ProjectsViewProps {
   districts: District[];
@@ -96,17 +97,57 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   }, [projects, districts, tGovernmentProject]);
 
   const filteredProjects = useMemo(() => {
-    return activeProjects.filter(p => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q ||
-        p.title.toLowerCase().includes(q) ||
-        p.district.toLowerCase().includes(q) ||
-        p.departmentName.toLowerCase().includes(q);
+    if (!searchQuery.trim() && selectedCategory === 'All') return activeProjects;
 
+    const intent = searchQuery.trim() ? parseSearchIntent(searchQuery, districts) : null;
+
+    return activeProjects.filter(p => {
       const matchesCat = selectedCategory === 'All' || p.category === selectedCategory;
-      return matchesSearch && matchesCat;
+      if (!matchesCat) return false;
+
+      if (!intent) return true;
+
+      // Exact ID
+      if (intent.exactId && p.id.toLowerCase().includes(intent.exactId.toLowerCase())) {
+        return true;
+      }
+
+      const normTitle = p.title.toLowerCase();
+      const normDist = p.district.toLowerCase();
+      const normDept = p.departmentName.toLowerCase();
+      const normCat = p.category.toLowerCase();
+
+      // Check category intent
+      if (intent.detectedCategories.length > 0) {
+        const matchesCatIntent = intent.detectedCategories.some(c => c.toLowerCase() === normCat);
+        if (matchesCatIntent) {
+          if (intent.detectedLocations.length > 0) {
+            return intent.detectedLocations.some(l => normDist.includes(l.toLowerCase()));
+          }
+          return true;
+        }
+      }
+
+      // Check location intent
+      if (intent.detectedLocations.length > 0) {
+        if (intent.detectedLocations.some(l => normDist.includes(l.toLowerCase()))) {
+          return true;
+        }
+      }
+
+      // Check direct substring
+      if (normTitle.includes(intent.normalizedQuery) || normDist.includes(intent.normalizedQuery) || normDept.includes(intent.normalizedQuery)) {
+        return true;
+      }
+
+      // Check keywords
+      if (intent.keywords.length > 0) {
+        return intent.keywords.some(kw => normTitle.includes(kw) || normDist.includes(kw) || normDept.includes(kw) || normCat.includes(kw));
+      }
+
+      return false;
     });
-  }, [activeProjects, searchQuery, selectedCategory]);
+  }, [activeProjects, searchQuery, selectedCategory, districts]);
 
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
