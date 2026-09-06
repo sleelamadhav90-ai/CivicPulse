@@ -1239,7 +1239,11 @@ export const COUNTRY_CITIZEN_REQUESTS: Record<import('../types').CountryCode, Ci
 };
 
 export function getRequestsForCountry(code: import('../types').CountryCode): CitizenRequest[] {
-  return COUNTRY_CITIZEN_REQUESTS[code] || INITIAL_CITIZEN_REQUESTS;
+  const list = COUNTRY_CITIZEN_REQUESTS[code] || INITIAL_CITIZEN_REQUESTS;
+  return list.map(req => ({
+    ...req,
+    source_origin: req.source_origin || 'SYNTHETIC_DEMO',
+  }));
 }
 
 export const COMPLETED_IMPACT_PROJECTS: ImpactProject[] = [

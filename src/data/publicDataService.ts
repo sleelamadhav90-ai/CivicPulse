@@ -713,9 +713,19 @@ export const PUBLIC_DATA_PROVIDERS: Record<CountryCode, PublicDataProvider> = {
   },
 };
 
-/**
- * Convenience helper to retrieve public indicators for a district
- */
+export {
+  OGD_DATASET_METADATA,
+  DEPARTMENT_GRIEVANCE_BASELINES,
+  STATE_GRIEVANCE_BASELINES,
+  DISTRICT_INFRASTRUCTURE_BENCHMARKS,
+  getGovernmentDatasetMetadata,
+  getAllDepartmentGrievanceBaselines,
+  getDepartmentGrievanceByCategory,
+  getStateGrievanceBaseline,
+  getDistrictInfrastructureBenchmark,
+  getNationalGrievanceOverview,
+} from './governmentBaselineData';
+export type { StateGrievanceBaseline, DistrictInfrastructureBenchmark } from './governmentBaselineData';
 export function getPublicDataForDistrict(
   districtNameOrId: string, 
   category?: string, 

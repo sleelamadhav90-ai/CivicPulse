@@ -509,9 +509,16 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
     const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
+    const finalLocation = isEditingAiResult ? editedLocation : aiResult.location;
+    const matchedDist = districts.find(d => 
+      finalLocation.toLowerCase().includes(d.name.toLowerCase()) || 
+      (d.state && finalLocation.toLowerCase().includes(d.state.toLowerCase()))
+    ) || districts[0];
+
     const newRequest: CitizenRequest = {
       id: trackingId,
       request_id: trackingId,
+      created_at: new Date().toISOString(),
       timestamp: new Date().toISOString(),
       original_text: aiResult.original_text,
       language: aiResult.language,
@@ -519,7 +526,13 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       category: isEditingAiResult ? editedCategory : aiResult.category,
       subcategory: aiResult.subcategory,
       issue_title: `${isEditingAiResult ? editedCategory : aiResult.category} — ${aiResult.subcategory}`,
-      location: isEditingAiResult ? editedLocation : aiResult.location,
+      location: finalLocation,
+      state: matchedDist ? matchedDist.state : 'Andhra Pradesh',
+      district: matchedDist ? matchedDist.name : 'Vijayawada',
+      city_or_town: finalLocation,
+      locality: finalLocation,
+      latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,
+      longitude: matchedDist ? matchedDist.lon + (Math.random() - 0.5) * 0.04 : 80.6480,
       severity: isEditingAiResult ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : 5) : aiResult.severity_number,
       severity_label: isEditingAiResult ? editedSeverity : aiResult.severity,
       priority_tier: (isEditingAiResult ? editedSeverity : aiResult.severity) as any,
@@ -531,6 +544,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       affected_area: aiResult.affected_area,
       affected_population_if_available: aiResult.affected_population_if_available,
       source_type: sourceType,
+      source_origin: 'CIVICPULSE_USER',
       status: 'Received' as RequestStatus,
       photo_url: attachedPhoto || undefined,
       timeline: [

@@ -236,7 +236,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#171717]/10">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-[#57534E]">
-            <span className="whitespace-nowrap"><strong>742</strong> {t('metric.demand_signals')} (+22%)</span>
+            <span className="whitespace-nowrap"><strong>{priorityIssues[0]?.signalCount || totalRequests}</strong> {t('metric.demand_signals')} (+22%)</span>
             <span className="text-stone-300 hidden sm:inline">•</span>
             <span className="whitespace-nowrap"><strong>31.6%</strong> {t('metric.service_deficit')} (JJM)</span>
           </div>

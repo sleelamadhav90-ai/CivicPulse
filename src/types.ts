@@ -172,9 +172,43 @@ export interface AIAnalysisResult {
   recommended_action: string;
 }
 
+export type SourceOrigin = 'GOVERNMENT_BASELINE' | 'CIVICPULSE_USER' | 'SYNTHETIC_DEMO';
+
+export interface GovernmentDatasetMetadata {
+  source_name: string;
+  source_organization: string;
+  source_url: string;
+  dataset_title: string;
+  dataset_description: string;
+  license: string;
+  retrieved_at: string;
+  data_period: string;
+  geographic_level: 'National' | 'State' | 'District' | 'Department';
+  data_type: 'Government aggregate grievance statistics' | 'Infrastructure Benchmark' | 'Demographic Census / MPI';
+  legal_notice?: string;
+}
+
+export interface GovernmentGrievanceAggregate {
+  id: string;
+  source_metadata: GovernmentDatasetMetadata;
+  state?: string;
+  district?: string;
+  department: string;
+  ministry?: string;
+  category: InfrastructureCategory | 'Public Services' | 'Revenue' | 'General';
+  received_count: number;
+  disposed_count: number;
+  pending_count: number;
+  disposal_rate_pct: number;
+  avg_resolution_days: number;
+  reporting_period: string;
+  source_origin: 'GOVERNMENT_BASELINE';
+}
+
 export interface CitizenRequest {
   id: string; // e.g. "CP-2026-004821"
   request_id?: string;
+  created_at?: string;
   timestamp: string;
   original_text: string;
   language: string;
@@ -185,6 +219,7 @@ export interface CitizenRequest {
   location: string; // e.g. "Vijayawada Rural"
   state?: string;
   district?: string;
+  city_or_town?: string;
   locality?: string;
   latitude?: number;
   longitude?: number;
@@ -205,6 +240,7 @@ export interface CitizenRequest {
   audio_url?: string;
   photo_url?: string;
   source_type: 'voice' | 'text' | 'photo' | 'voice+photo' | 'text+photo' | 'sample';
+  source_origin?: SourceOrigin;
   status: RequestStatus;
   timeline?: RequestTimelineEntry[];
 

@@ -235,6 +235,21 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Official Data Source Attribution & Compliance Footer */}
+      <div className="p-4 bg-slate-50 border border-slate-300 text-xs font-mono text-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-2">
+          <Info className="w-4 h-4 text-blue-800 shrink-0" />
+          <span>
+            <strong>Baseline Source:</strong> Office of the Registrar General & Census Commissioner (Census of India / SECC) via data.gov.in
+          </span>
+        </div>
+        <div className="flex items-center space-x-2 text-[11px] text-slate-500">
+          <span>License: Government Open Data License - India (GODL)</span>
+          <span>•</span>
+          <span className="text-emerald-800 font-semibold">Strictly Aggregate & Privacy Protected</span>
+        </div>
+      </div>
     </div>
   );
 };

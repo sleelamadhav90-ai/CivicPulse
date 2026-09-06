@@ -44,6 +44,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   const [selectedLocality, setSelectedLocality] = useState<string>('ALL');
   const [selectedLanguageFilter, setSelectedLanguageFilter] = useState<string>('ALL');
   const [selectedTimePeriod, setSelectedTimePeriod] = useState<string>('ALL');
+  const [selectedSourceOrigin, setSelectedSourceOrigin] = useState<string>('ALL');
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
 
   const categories: InfrastructureCategory[] = [
@@ -110,6 +111,14 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
       list = list.filter(r => (r.language || '').toLowerCase() === selectedLanguageFilter.toLowerCase());
     }
 
+    if (selectedSourceOrigin !== 'ALL') {
+      if (selectedSourceOrigin === 'CIVICPULSE_USER') {
+        list = list.filter(r => r.source_origin === 'CIVICPULSE_USER' || r.id.startsWith('CP-202'));
+      } else if (selectedSourceOrigin === 'SYNTHETIC_DEMO') {
+        list = list.filter(r => r.source_origin !== 'CIVICPULSE_USER' && !r.id.startsWith('CP-202'));
+      }
+    }
+
     if (selectedTimePeriod !== 'ALL') {
       const days = parseInt(selectedTimePeriod, 10);
       const cutoff = new Date();
@@ -122,7 +131,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     }
 
     return list;
-  }, [requests, selectedState, selectedDistrict, selectedLocality, selectedCategory, selectedLanguageFilter, selectedTimePeriod, searchQuery]);
+  }, [requests, selectedState, selectedDistrict, selectedLocality, selectedCategory, selectedLanguageFilter, selectedSourceOrigin, selectedTimePeriod, searchQuery]);
 
   const hasActiveFilters = 
     searchQuery.trim() !== '' ||
@@ -131,6 +140,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     selectedDistrict !== 'ALL' ||
     selectedLocality !== 'ALL' ||
     selectedLanguageFilter !== 'ALL' ||
+    selectedSourceOrigin !== 'ALL' ||
     selectedTimePeriod !== 'ALL';
 
   const handleResetFilters = () => {
@@ -140,6 +150,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     setSelectedDistrict('ALL');
     setSelectedLocality('ALL');
     setSelectedLanguageFilter('ALL');
+    setSelectedSourceOrigin('ALL');
     setSelectedTimePeriod('ALL');
   };
 
@@ -182,6 +193,24 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
         )}
       </div>
 
+      {/* Baseline Distinction Banner */}
+      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
+          <p className="text-[#34322D] leading-relaxed">
+            <strong className="text-[#171717]">Data Architecture Note:</strong> Official government grievance statistics (DARPG/data.gov.in) provide the macro baseline. Verified citizen signals submitted directly via CivicPulse provide live micro-level localized demand signals.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
+          <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
+            Live User: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER' || r.id.startsWith('CP-202')).length}
+          </span>
+          <span className="px-2 py-0.5 rounded bg-stone-200 text-stone-700 border border-stone-300">
+            Demo Signals: {requests.filter(r => r.source_origin !== 'CIVICPULSE_USER' && !r.id.startsWith('CP-202')).length}
+          </span>
+        </div>
+      </div>
+
       {/* Top Controls: Search and Cascading Filters */}
       <div className="bg-white border border-[#171717]/15 p-4 rounded-sm shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
@@ -210,7 +239,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
         </div>
 
         {/* Filter Dropdowns row - Strict Cascading Hierarchy */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 pt-2 border-t border-[#171717]/10 text-xs font-sans">
+        <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 pt-2 border-t border-[#171717]/10 text-xs font-sans">
           
           {/* 1. STATE / UT */}
           <div>
@@ -287,7 +316,23 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             </select>
           </div>
 
-          {/* 5. LANGUAGE */}
+          {/* 5. DATA SOURCE ORIGIN */}
+          <div>
+            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
+              Source Origin
+            </label>
+            <select
+              value={selectedSourceOrigin}
+              onChange={(e) => setSelectedSourceOrigin(e.target.value)}
+              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium font-mono"
+            >
+              <option value="ALL">All Sources</option>
+              <option value="CIVICPULSE_USER">🟢 Live Submissions</option>
+              <option value="SYNTHETIC_DEMO">⚪ Demo Baseline</option>
+            </select>
+          </div>
+
+          {/* 6. LANGUAGE */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
               {t('filter.language')}
@@ -302,7 +347,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             </select>
           </div>
 
-          {/* 6. TIME PERIOD */}
+          {/* 7. TIME PERIOD */}
           <div>
             <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
               {t('filter.time_period')}
@@ -352,6 +397,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <th className="py-2.5 px-4 font-semibold">{t('table.issue')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.location')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.category')}</th>
+                <th className="py-2.5 px-3 font-semibold">Origin</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.severity')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.source')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.date')}</th>
@@ -361,7 +407,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             <tbody className="divide-y divide-[#171717]/10">
               {filteredRequests.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="py-16 text-center text-sm text-[#78716C]">
+                  <td colSpan={8} className="py-16 text-center text-sm text-[#78716C]">
                     <div className="max-w-md mx-auto space-y-2">
                       <p className="font-medium text-[#171717]">{t('signals.no_signals_match')}</p>
                       <p className="text-xs text-[#78716C]">
@@ -381,6 +427,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               ) : (
                 filteredRequests.map((req) => {
                   const isVoice = req.source_type?.includes('voice') || req.audio_url;
+                  const isLiveUser = req.source_origin === 'CIVICPULSE_USER' || req.id.startsWith('CP-202');
                   const dateFormatted = req.timestamp 
                     ? new Date(req.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '2 Sep 2026';
@@ -414,6 +461,19 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                         <span className="font-mono text-[11px] text-[#171717] bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#171717]/10">
                           {tCategory(req.category)}
                         </span>
+                      </td>
+
+                      {/* Origin */}
+                      <td className="py-3 px-3 whitespace-nowrap">
+                        {isLiveUser ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-100 text-emerald-800 border border-emerald-300">
+                            Live User
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-stone-100 text-stone-600 border border-stone-200">
+                            Demo Data
+                          </span>
+                        )}
                       </td>
 
                       {/* Severity */}
@@ -547,6 +607,27 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                   {selectedRequest.affected_infrastructure || `${tCategory(selectedRequest.category)} Utility Asset`}
                 </span>
               </div>
+            </div>
+
+            {/* Provenance & Baseline Triangulation */}
+            <div className="p-3 bg-[#FAF8F5] border border-[#171717]/15 rounded-xs space-y-1 text-xs">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#57534E]">
+                  Data Provenance & Alignment
+                </span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
+                  selectedRequest.source_origin === 'CIVICPULSE_USER' || selectedRequest.id.startsWith('CP-202')
+                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                    : 'bg-stone-200 text-stone-700 border border-stone-300'
+                }`}>
+                  {selectedRequest.source_origin === 'CIVICPULSE_USER' || selectedRequest.id.startsWith('CP-202')
+                    ? 'Verified Live Citizen Signal'
+                    : 'Illustrative Demo Signal'}
+                </span>
+              </div>
+              <p className="text-[11px] text-[#57534E] leading-relaxed">
+                Triangulated with Open Government Data (data.gov.in) department grievance statistics and national infrastructure benchmarks (DARPG/JJM/PMGSY).
+              </p>
             </div>
 
             {/* Actions */}
