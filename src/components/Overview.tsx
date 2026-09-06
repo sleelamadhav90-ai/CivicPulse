@@ -166,43 +166,43 @@ export const Overview: React.FC<OverviewProps> = ({
   }, [rawPriorityIssues, tOverviewPriorityIssue]);
 
   return (
-    <div className="space-y-10 font-sans text-[#171717] pb-16 max-w-5xl mx-auto">
+    <div className="space-y-10 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
       
-      {/* 1. CITIZEN INTAKE BAR: Clean, compact, non-intrusive */}
-      <section className="bg-[#FAF8F5] border border-[#171717]/15 p-4 sm:p-5 rounded-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
+      {/* 1. CITIZEN INTAKE BAR: Clean, compact, flexible for all languages */}
+      <section className="bg-[#FAF8F5] border border-[#171717]/15 p-4 sm:p-5 rounded-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+        <div className="flex-1 min-w-0 space-y-1">
           <div className="flex items-center space-x-2 text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A]"></span>
-            <span>{t('brand.name')} · {t('overview.intake_title')}</span>
+            <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] shrink-0"></span>
+            <span className="truncate">{t('brand.name')} · {t('overview.intake_title')}</span>
           </div>
-          <h2 className="text-base sm:text-lg font-serif font-bold text-[#171717] mt-0.5">
+          <h2 className="text-base sm:text-lg font-serif font-bold text-[#171717] leading-snug">
             {t('overview.intake_title')}
           </h2>
-          <p className="text-xs text-[#57534E] mt-0.5">
+          <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
             {t('overview.intake_desc')}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0">
+        <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-1 lg:pt-0">
           <button
             onClick={() => onStartVoiceSubmission ? onStartVoiceSubmission() : onNavigate('submit')}
-            className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs"
+            className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
           >
-            <Mic className="w-3.5 h-3.5" />
+            <Mic className="w-3.5 h-3.5 shrink-0" />
             <span>{t('action.speak_issue')}</span>
           </button>
 
           <button
             onClick={() => onStartWriteSubmission ? onStartWriteSubmission() : onNavigate('submit')}
-            className="px-3.5 py-2 bg-white hover:bg-[#F7F5EF] text-[#171717] border border-[#171717]/25 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
+            className="px-3.5 py-2 bg-white hover:bg-[#F7F5EF] text-[#171717] border border-[#171717]/25 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer whitespace-nowrap"
           >
-            <FileEdit className="w-3.5 h-3.5 text-[#57534E]" />
+            <FileEdit className="w-3.5 h-3.5 text-[#57534E] shrink-0" />
             <span>{t('action.write_issue')}</span>
           </button>
 
           <button
             onClick={() => onNavigate('signals')}
-            className="px-3 py-2 text-[#57534E] hover:text-[#171717] text-xs font-medium transition-colors cursor-pointer underline"
+            className="px-3 py-2 text-[#57534E] hover:text-[#171717] text-xs font-medium transition-colors cursor-pointer underline whitespace-nowrap"
           >
             {t('nav.my_requests')}
           </button>
@@ -210,38 +210,38 @@ export const Overview: React.FC<OverviewProps> = ({
       </section>
 
       {/* 2. PRIMARY EXECUTIVE CONCLUSION (The One Key Finding) */}
-      <section className="bg-white border-2 border-[#D65A3A]/40 p-5 sm:p-6 rounded-xs shadow-xs space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="bg-[#D65A3A] text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs uppercase tracking-wider">
+      <section className="bg-white border-2 border-[#D65A3A]/40 p-5 sm:p-6 rounded-xs shadow-xs space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="bg-[#D65A3A] text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-xs uppercase tracking-wider whitespace-nowrap inline-block">
               {t('overview.urgent_action_title')}
             </span>
-            <span className="text-xs font-mono font-semibold text-[#D65A3A]">
+            <span className="text-xs font-mono font-semibold text-[#D65A3A] whitespace-nowrap">
               {t('metric.priority_score')}: 91 / 100 · {t('status.critical')}
             </span>
           </div>
-          <span className="text-xs text-[#78716C] font-mono hidden sm:inline">
+          <span className="text-xs text-[#78716C] font-mono whitespace-nowrap">
             {conclusion.district}, {conclusion.state}
           </span>
         </div>
 
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#171717]">
+        <div className="space-y-2">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold tracking-tight text-[#171717] leading-snug break-words">
             {conclusion.title}
           </h1>
-          <p className="text-xs sm:text-sm text-[#57534E] mt-1.5 leading-relaxed">
-            <strong>{t('overview.why_matters')}:</strong> {conclusion.whyMatters}
+          <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed break-words">
+            <strong className="text-[#171717]">{t('overview.why_matters')}:</strong> {conclusion.whyMatters}
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#171717]/10">
-          <div className="flex items-center space-x-4 text-xs font-mono text-[#57534E]">
-            <span><strong>742</strong> {t('metric.demand_signals')} (+22%)</span>
-            <span className="text-stone-300">•</span>
-            <span><strong>31.6%</strong> {t('metric.service_deficit')} (JJM)</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#171717]/10">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-[#57534E]">
+            <span className="whitespace-nowrap"><strong>742</strong> {t('metric.demand_signals')} (+22%)</span>
+            <span className="text-stone-300 hidden sm:inline">•</span>
+            <span className="whitespace-nowrap"><strong>31.6%</strong> {t('metric.service_deficit')} (JJM)</span>
           </div>
 
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 shrink-0">
             <button
               onClick={() => {
                 if (onSelectDistrictForPolicy) {
@@ -249,9 +249,10 @@ export const Overview: React.FC<OverviewProps> = ({
                 }
                 onNavigate('recommendations');
               }}
-              className="px-4 py-1.5 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors cursor-pointer"
+              className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5"
             >
-              {t('action.view_recommendation')} →
+              <span>{t('action.view_recommendation')}</span>
+              <span>→</span>
             </button>
           </div>
         </div>
@@ -259,7 +260,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
       {/* 3. ONE DOMINANT VISUALIZATION (Interactive Priority Hotspots Map) */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
             <h2 className="text-xl font-serif font-bold text-[#171717]">
               {t('overview.hotspot_map_title')}
@@ -270,7 +271,7 @@ export const Overview: React.FC<OverviewProps> = ({
           </div>
           <button
             onClick={() => onNavigate('map')}
-            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer whitespace-nowrap"
           >
             <span>{t('nav.map')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -279,23 +280,23 @@ export const Overview: React.FC<OverviewProps> = ({
 
         {/* Map Container as the Primary Visual Anchor */}
         <div className="bg-white border border-[#171717]/20 rounded-xs overflow-hidden shadow-xs">
-          <div className="px-4 py-2.5 bg-[#FAF8F5] border-b border-[#171717]/15 flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center space-x-4 text-[#57534E]">
-              <span className="flex items-center gap-1.5">
+          <div className="px-4 py-2.5 bg-[#FAF8F5] border-b border-[#171717]/15 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+            <div className="flex flex-wrap items-center gap-4 text-[#57534E]">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A]"></span>
                 <span className="font-bold text-[#171717]">{t('status.critical')}</span>
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#D9A441]"></span>
                 <span>{t('status.moderate')}</span>
               </span>
-              <span className="flex items-center gap-1.5">
+              <span className="flex items-center gap-1.5 whitespace-nowrap">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#285943]"></span>
                 <span>{t('status.low')}</span>
               </span>
             </div>
 
-            <span className="text-[11px] text-[#78716C] hidden sm:inline">
+            <span className="text-[11px] text-[#78716C] whitespace-nowrap">
               {t('overview.click_to_inspect')}
             </span>
           </div>
@@ -327,7 +328,7 @@ export const Overview: React.FC<OverviewProps> = ({
 
       {/* 4. ESSENTIAL EVIDENCE: Clean 4-Item Ranked Attention List */}
       <section className="space-y-3">
-        <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#171717]/10 pb-2">
           <div>
             <h2 className="text-xl font-serif font-bold text-[#171717]">
               {t('overview.priority_list_title')}
@@ -338,7 +339,7 @@ export const Overview: React.FC<OverviewProps> = ({
           </div>
           <button
             onClick={() => onNavigate('issues')}
-            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer"
+            className="text-xs font-semibold text-[#D65A3A] hover:underline flex items-center space-x-1 cursor-pointer whitespace-nowrap"
           >
             <span>{t('nav.issues')} ({communityIssuesCount})</span>
             <ArrowRight className="w-3.5 h-3.5" />
@@ -350,37 +351,37 @@ export const Overview: React.FC<OverviewProps> = ({
             <div
               key={issue.title}
               onClick={() => setActiveDrawerIssue(issue)}
-              className="bg-white border border-[#171717]/15 hover:border-[#171717]/40 p-4 rounded-xs transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer group"
+              className="bg-white border border-[#171717]/15 hover:border-[#171717]/40 p-4 rounded-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
             >
-              <div className="flex items-start space-x-3.5">
+              <div className="flex items-start space-x-3.5 flex-1 min-w-0">
                 <span className="font-mono text-sm font-bold text-[#78716C] pt-0.5 shrink-0">
                   0{idx + 1}
                 </span>
-                <div className="space-y-0.5">
-                  <div className="flex items-center space-x-2">
-                    <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
                       {tCategory(issue.category)}
                     </span>
                     <span className="text-[#171717]/30 text-xs">·</span>
-                    <span className="text-xs font-medium text-[#57534E]">
+                    <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
                       {issue.location}
                     </span>
                   </div>
-                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors">
+                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
                     {issue.title}
                   </div>
-                  <div className="text-xs text-[#78716C]">
+                  <div className="text-xs text-[#78716C] leading-relaxed break-words">
                     {issue.statusNote}
                   </div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between sm:justify-end gap-4 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#171717]/10">
-                <div className="text-left sm:text-right">
-                  <span className="text-xs font-mono font-bold text-[#171717] block">
+              <div className="flex items-center justify-between md:justify-end gap-4 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10 shrink-0">
+                <div className="text-left md:text-right">
+                  <span className="text-xs font-mono font-bold text-[#171717] block whitespace-nowrap">
                     {issue.signalCount} {t('metric.demand_signals')}
                   </span>
-                  <span className="text-[11px] text-[#D65A3A] font-medium block font-mono">
+                  <span className="text-[11px] text-[#D65A3A] font-medium block font-mono whitespace-nowrap">
                     {issue.trend}
                   </span>
                 </div>
@@ -390,7 +391,7 @@ export const Overview: React.FC<OverviewProps> = ({
                     e.stopPropagation();
                     setActiveDrawerIssue(issue);
                   }}
-                  className="px-3 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
+                  className="px-3.5 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
                 >
                   {t('action.inspect')} →
                 </button>
@@ -401,26 +402,26 @@ export const Overview: React.FC<OverviewProps> = ({
       </section>
 
       {/* 5. SUMMARY FOOTPRINT (Minimal, Calm Stats) */}
-      <section className="bg-[#FAF8F5] border border-[#171717]/10 p-4 rounded-xs flex flex-wrap items-center justify-between gap-4 text-xs font-mono text-[#57534E]">
-        <div className="flex items-center space-x-6">
-          <div><strong className="text-[#171717]">{totalRequests.toLocaleString()}</strong> {t('metric.demand_signals')}</div>
-          <span className="text-stone-300">•</span>
-          <div><strong className="text-[#171717]">{priorityDistrictsCount}</strong> {t('metric.districts')}</div>
-          <span className="text-stone-300">•</span>
-          <div><strong className="text-[#171717]">{openActionsCount}</strong> {t('status.prioritized')}</div>
+      <section className="bg-[#FAF8F5] border border-[#171717]/10 p-4 rounded-xs flex flex-col md:flex-row md:items-center justify-between gap-4 text-xs font-mono text-[#57534E]">
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+          <div className="whitespace-nowrap"><strong className="text-[#171717]">{totalRequests.toLocaleString()}</strong> {t('metric.demand_signals')}</div>
+          <span className="text-stone-300 hidden sm:inline">•</span>
+          <div className="whitespace-nowrap"><strong className="text-[#171717]">{priorityDistrictsCount}</strong> {t('metric.districts')}</div>
+          <span className="text-stone-300 hidden sm:inline">•</span>
+          <div className="whitespace-nowrap"><strong className="text-[#171717]">{openActionsCount}</strong> {t('status.prioritized')}</div>
         </div>
 
-        <div className="flex items-center space-x-3 text-xs">
+        <div className="flex flex-wrap items-center gap-3 text-xs shrink-0">
           <button 
             onClick={() => onNavigate('patterns')} 
-            className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium"
+            className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium whitespace-nowrap"
           >
             {t('nav.patterns')} →
           </button>
-          <span className="text-stone-300">•</span>
+          <span className="text-stone-300 hidden sm:inline">•</span>
           <button 
             onClick={() => onNavigate('recommendations')} 
-            className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium"
+            className="text-[#D65A3A] hover:underline cursor-pointer font-sans font-medium whitespace-nowrap"
           >
             {t('overview.view_all_recommendations')} →
           </button>

@@ -168,15 +168,15 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   }, [localizedIssues, searchQuery, selectedCategory]);
 
   return (
-    <div className="space-y-10 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+    <div className="space-y-8 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
       
       {/* 1. PAGE HEADER & AGGREGATION EXPLANATION */}
       <div className="space-y-6 border-b border-[#171717]/10 pb-8">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
             {t('issues.title')}
           </h1>
-          <p className="text-sm sm:text-base text-[#57534E] mt-1 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-3xl leading-relaxed break-words">
             {t('issues.subtitle')}
           </p>
         </div>
@@ -237,7 +237,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       </div>
 
       {/* 2. SEARCH & CONTROLS */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -249,13 +249,13 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center space-x-2 text-xs">
-          <span className="text-[#78716C] text-[11px]">{t('filter.category')}:</span>
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[#78716C] text-[11px] whitespace-nowrap">{t('filter.category')}:</span>
           {['ALL', 'Water', 'Roads', 'Health', 'Electricity'].map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs ${
+              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs whitespace-nowrap ${
                 selectedCategory === cat
                   ? 'bg-[#171717] text-white font-medium'
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
@@ -272,50 +272,50 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
         {filteredIssues.map((issue) => (
           <div
             key={issue.id}
-            className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 rounded-sm transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 rounded-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
           >
-            <div className="flex items-start space-x-4">
+            <div className="flex items-start space-x-4 flex-1 min-w-0">
               <span className="font-mono text-base font-bold text-[#78716C] shrink-0 pt-0.5">
                 {issue.rank}
               </span>
 
-              <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
+              <div className="space-y-1 min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
                     {tCategory(issue.category)}
                   </span>
                   <span className="text-[#171717]/30 text-xs">·</span>
-                  <span className="text-xs font-medium text-[#57534E]">
+                  <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
                     {issue.location}
                   </span>
                 </div>
 
-                <h3 className="text-base font-serif font-bold text-[#171717]">
+                <h3 className="text-base font-serif font-bold text-[#171717] leading-snug break-words">
                   {issue.title}
                 </h3>
 
                 <div className="flex flex-wrap items-center gap-3 text-xs text-[#57534E] pt-0.5">
-                  <span className="font-mono font-semibold text-[#171717]">
+                  <span className="font-mono font-semibold text-[#171717] whitespace-nowrap">
                     {issue.requestCount} {t('issues.related_requests')}
                   </span>
-                  <span className="text-[#171717]/30">·</span>
-                  <span className={`font-medium ${
+                  <span className="text-[#171717]/30 hidden sm:inline">·</span>
+                  <span className={`font-medium whitespace-nowrap ${
                     issue.severity === 'Critical' ? 'text-[#D65A3A]' : 'text-amber-800'
                   }`}>
                     {tStatus(issue.severity)}
                   </span>
-                  <span className="text-[#171717]/30">·</span>
-                  <span className="text-emerald-800 font-mono text-[11px]">
+                  <span className="text-[#171717]/30 hidden sm:inline">·</span>
+                  <span className="text-emerald-800 font-mono text-[11px] whitespace-nowrap">
                     {issue.trend}
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className="flex items-center space-x-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-[#171717]/10">
+            <div className="flex items-center space-x-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10">
               <button
                 onClick={() => setActiveIssueModal(issue)}
-                className="px-3.5 py-1.5 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
+                className="px-3.5 py-1.5 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
               >
                 {t('action.inspect')}
               </button>

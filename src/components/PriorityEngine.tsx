@@ -90,20 +90,20 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   };
 
   return (
-    <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+    <div className="space-y-8 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
       
       {/* 1. Header (Executive Decision Memo style) */}
       <div className="space-y-1.5 border-b border-[#171717]/10 pb-5">
-        <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
           {t('recommendations.title')}
         </h1>
-        <p className="text-sm sm:text-base text-[#57534E] max-w-2xl leading-relaxed">
+        <p className="text-xs sm:text-sm text-[#57534E] max-w-3xl leading-relaxed break-words">
           {t('recommendations.subtitle')}
         </p>
       </div>
 
       {/* 2. Controls & Filter Pills */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
           <Search className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
@@ -116,13 +116,13 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
         </div>
 
         {/* Type pills: ALL / FIX / BUILD / UPGRADE */}
-        <div className="flex items-center space-x-1.5 text-xs">
-          <span className="text-[#78716C] text-[11px]">{t('filter.intervention') || 'Intervention'}:</span>
+        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+          <span className="text-[#78716C] text-[11px] whitespace-nowrap">{t('filter.intervention') || 'Intervention'}:</span>
           {(['ALL', 'FIX', 'BUILD', 'UPGRADE'] as const).map(type => (
             <button
               key={type}
               onClick={() => setSelectedType(type)}
-              className={`px-3 py-1 rounded-xs transition-colors cursor-pointer text-xs ${
+              className={`px-3 py-1 rounded-xs transition-colors cursor-pointer text-xs whitespace-nowrap ${
                 selectedType === type
                   ? 'bg-[#171717] text-white font-medium'
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
@@ -143,12 +143,12 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
           return (
             <div
               key={proj.id}
-              className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-6 rounded-sm shadow-xs transition-all space-y-4"
+              className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 sm:p-6 rounded-sm shadow-xs transition-all space-y-4"
             >
               {/* Card Header: Type Badge, Location, and Priority Score */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#171717]/10 pb-3">
-                <div className="flex items-center space-x-3">
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs border uppercase tracking-wider ${
+              <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[#171717]/10 pb-3">
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className={`text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-xs border uppercase tracking-wider whitespace-nowrap ${
                     proj.interventionType === 'FIX'
                       ? 'bg-amber-50 text-amber-800 border-amber-300'
                       : proj.interventionType === 'BUILD'
@@ -158,18 +158,18 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     {tIntervention(proj.interventionType)}
                   </span>
 
-                  <span className="text-xs font-medium text-[#57534E]">
+                  <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
                     {proj.districtName}, {proj.state}
                   </span>
 
-                  <span className="text-[#171717]/30 text-xs">·</span>
+                  <span className="text-[#171717]/30 text-xs hidden sm:inline">·</span>
 
-                  <span className="text-xs font-mono text-[#78716C]">
+                  <span className="text-xs font-mono text-[#78716C] whitespace-nowrap">
                     {tCategory(proj.category)}
                   </span>
                 </div>
 
-                <div className="flex items-center space-x-2 text-xs font-mono">
+                <div className="flex items-center space-x-2 text-xs font-mono whitespace-nowrap">
                   <span className="text-[#78716C]">{t('metric.priority_score')}:</span>
                   <span className="text-sm font-bold text-[#D65A3A]">
                     {priorityScore} / 100
@@ -178,11 +178,11 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               </div>
 
               {/* Title */}
-              <div>
-                <h2 className="text-lg sm:text-xl font-serif font-bold text-[#171717] leading-snug">
+              <div className="space-y-1">
+                <h2 className="text-lg sm:text-xl font-serif font-bold text-[#171717] leading-snug break-words">
                   {proj.title}
                 </h2>
-                <p className="text-xs text-[#78716C] font-mono mt-0.5">
+                <p className="text-xs text-[#78716C] font-mono break-words">
                   {t('action_queue.aligned_scheme') || 'Alignment'}: {proj.alignedScheme} · {t('metric.estimated_cost') || 'Estimated Outlay'}: {proj.estimatedCost}
                 </p>
               </div>
@@ -192,26 +192,26 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 <span className="font-semibold text-[#171717] block">{t('recommendations.why_recommended')}</span>
                 <ul className="space-y-1.5 text-[#57534E]">
                   <li className="flex items-start space-x-2">
-                    <span className="text-[#D65A3A] font-bold">•</span>
-                    <span>
+                    <span className="text-[#D65A3A] font-bold shrink-0">•</span>
+                    <span className="break-words">
                       <strong className="text-[#171717]">{t('recommendations.point_demand')}</strong> {proj.demandCount} {t('metric.demand_signals').toLowerCase()} ({proj.trendChange || '+22%'})
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
-                    <span className="text-[#D65A3A] font-bold">•</span>
-                    <span>
+                    <span className="text-[#D65A3A] font-bold shrink-0">•</span>
+                    <span className="break-words">
                       <strong className="text-[#171717]">{t('recommendations.point_gap')}</strong> {t('metric.baseline_access')} {Math.round(proj.currentAccess)}%, {Math.round(100 - proj.currentAccess)}% {t('metric.service_deficit').toLowerCase()}.
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
-                    <span className="text-[#D65A3A] font-bold">•</span>
-                    <span>
+                    <span className="text-[#D65A3A] font-bold shrink-0">•</span>
+                    <span className="break-words">
                       <strong className="text-[#171717]">{t('recommendations.point_population')}</strong> {proj.affectedPopulation || '42,000'} {t('metric.people').toLowerCase()}.
                     </span>
                   </li>
                   <li className="flex items-start space-x-2">
-                    <span className="text-[#D65A3A] font-bold">•</span>
-                    <span>
+                    <span className="text-[#D65A3A] font-bold shrink-0">•</span>
+                    <span className="break-words">
                       <strong className="text-[#171717]">{t('recommendations.point_trend')}</strong> ~{(proj.demandCount * 1.3).toFixed(0)} {t('metric.demand_signals').toLowerCase()} ({t('trend.escalating') || 'escalating'}).
                     </span>
                   </li>
@@ -220,14 +220,14 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
 
               {/* Action Buttons: [Review evidence] [Add to action queue] */}
               <div className="pt-2 border-t border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="text-[11px] text-[#78716C]">
+                <div className="text-[11px] text-[#78716C] break-words">
                   {t('metric.target_window')}: <strong className="text-[#171717]">{proj.executionWindow}</strong>
                 </div>
 
-                <div className="flex items-center space-x-2.5">
+                <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                   <button
                     onClick={() => setEvidenceProject(proj)}
-                    className="px-3.5 py-2 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer"
+                    className="px-3.5 py-2 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
                   >
                     {t('recommendations.review_evidence') || 'Review evidence'}
                   </button>
@@ -235,7 +235,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   <button
                     onClick={() => handleAddToQueue(proj)}
                     disabled={isQueued}
-                    className={`px-4 py-2 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer ${
+                    className={`px-4 py-2 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer whitespace-nowrap ${
                       isQueued
                         ? 'bg-[#285943] text-white cursor-default'
                         : 'bg-[#171717] hover:bg-[#34322D] text-white shadow-xs'
@@ -243,12 +243,12 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   >
                     {isQueued ? (
                       <>
-                        <BookmarkCheck className="w-3.5 h-3.5" />
+                        <BookmarkCheck className="w-3.5 h-3.5 shrink-0" />
                         <span>{t('recommendations.added_to_queue') || 'Added to action queue'}</span>
                       </>
                     ) : (
                       <>
-                        <Plus className="w-3.5 h-3.5" />
+                        <Plus className="w-3.5 h-3.5 shrink-0" />
                         <span>{t('recommendations.add_to_queue') || 'Add to action queue'}</span>
                       </>
                     )}
