@@ -14,7 +14,9 @@ import {
   getLocalizedGovernmentProject,
   getLocalizedSignalSummary,
   getLocalizedPattern,
-  getLocalizedCommunityIssue
+  getLocalizedCommunityIssue,
+  getLocalizedOverviewConclusion,
+  getLocalizedOverviewPriorityIssue
 } from '../translations';
 import { RecommendedProject, GovernmentProject, CitizenRequest } from '../types';
 
@@ -33,6 +35,8 @@ interface LanguageContextType {
   tSignalSummary: (req: CitizenRequest) => string;
   tPattern: (pat: any) => any;
   tCommunityIssue: (issue: any) => any;
+  tOverviewConclusion: () => { title: string; whyMatters: string; district: string; state: string };
+  tOverviewPriorityIssue: (issue: any) => any;
   supportedLanguages: LanguageOption[];
   currentLanguageConfig: LanguageOption;
   isRtl: boolean;
@@ -142,6 +146,14 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return (issue: any) => getLocalizedCommunityIssue(issue, language);
   }, [language]);
 
+  const tOverConc = useMemo(() => {
+    return () => getLocalizedOverviewConclusion(language);
+  }, [language]);
+
+  const tOverPriIss = useMemo(() => {
+    return (issue: any) => getLocalizedOverviewPriorityIssue(issue, language);
+  }, [language]);
+
   const value: LanguageContextType = {
     language,
     setLanguage,
@@ -157,6 +169,8 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     tSignalSummary: tSigSum,
     tPattern: tPat,
     tCommunityIssue: tCommIss,
+    tOverviewConclusion: tOverConc,
+    tOverviewPriorityIssue: tOverPriIss,
     supportedLanguages: SUPPORTED_LANGUAGES,
     currentLanguageConfig,
     isRtl,

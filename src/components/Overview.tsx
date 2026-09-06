@@ -44,7 +44,7 @@ export const Overview: React.FC<OverviewProps> = ({
   onStartVoiceSubmission,
   onStartWriteSubmission,
 }) => {
-  const { t, tCategory, tStatus } = useLanguage();
+  const { t, tCategory, tStatus, tOverviewConclusion, tOverviewPriorityIssue } = useLanguage();
   const [selectedHotspotId, setSelectedHotspotId] = useState<string>(districts[0]?.id || 'guntur');
   const [activeDrawerIssue, setActiveDrawerIssue] = useState<{
     title: string;
@@ -64,6 +64,11 @@ export const Overview: React.FC<OverviewProps> = ({
   const communityIssuesCount = 327;
   const priorityDistrictsCount = 42;
   const openActionsCount = 18;
+
+  // Localized Executive Conclusion
+  const conclusion = useMemo(() => {
+    return tOverviewConclusion();
+  }, [tOverviewConclusion]);
 
   // Prepare evaluations for the map
   const evaluations: EvaluatedDistrict[] = useMemo(() => {
@@ -105,7 +110,7 @@ export const Overview: React.FC<OverviewProps> = ({
   };
 
   // 3-4 Top Priority issues with progressive disclosure
-  const priorityIssues = [
+  const rawPriorityIssues = useMemo(() => [
     {
       category: 'Water' as InfrastructureCategory,
       title: 'Water access deficit & pipeline pressure collapse',
@@ -154,7 +159,11 @@ export const Overview: React.FC<OverviewProps> = ({
       publicFinding: 'CEA feeder telemetry records 6.4 daily agricultural feeder trips during paddy transplantation.',
       recommendedAction: 'Replace overloaded 63 kVA transformers with 100 kVA units under RDSS scheme.',
     },
-  ];
+  ], []);
+
+  const priorityIssues = useMemo(() => {
+    return rawPriorityIssues.map(issue => tOverviewPriorityIssue(issue));
+  }, [rawPriorityIssues, tOverviewPriorityIssue]);
 
   return (
     <div className="space-y-10 font-sans text-[#171717] pb-16 max-w-5xl mx-auto">
@@ -212,16 +221,16 @@ export const Overview: React.FC<OverviewProps> = ({
             </span>
           </div>
           <span className="text-xs text-[#78716C] font-mono hidden sm:inline">
-            Guntur, Andhra Pradesh
+            {conclusion.district}, {conclusion.state}
           </span>
         </div>
 
         <div>
           <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#171717]">
-            Water pipeline deficit requires immediate booster sanction in Guntur
+            {conclusion.title}
           </h1>
           <p className="text-xs sm:text-sm text-[#57534E] mt-1.5 leading-relaxed">
-            <strong>{t('overview.why_matters')}:</strong> 742 verified citizen voice reports backed by Jal Jeevan Mission telemetry indicate acute pipeline pressure collapse affecting 14 habitations.
+            <strong>{t('overview.why_matters')}:</strong> {conclusion.whyMatters}
           </p>
         </div>
 
