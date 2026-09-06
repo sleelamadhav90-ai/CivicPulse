@@ -7,6 +7,33 @@ import { CitizenRequest, ImpactProject } from '../types';
  */
 export const INITIAL_CITIZEN_REQUESTS: CitizenRequest[] = [
   // ==========================================
+  // CITIZEN VERIFIED REPORT (Guntur Water Supply)
+  // ==========================================
+  {
+    id: 'CP-2026-004821',
+    request_id: 'CP-2026-004821',
+    timestamp: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 min ago
+    state: 'Andhra Pradesh',
+    district: 'Guntur',
+    locality: 'Old Guntur Market Yard',
+    location: 'Old Guntur Market Yard, Guntur',
+    latitude: 16.3067,
+    longitude: 80.4365,
+    category: 'Water',
+    subcategory: 'Water supply interruption',
+    original_text: 'గుంటూరు పాత మార్కెట్ యార్డ్ పరిసరాల్లో తాగునీటి సరఫరా నిలిచిపోయింది. పైపులైన్లలో ప్రెషర్ లేదు.',
+    language: 'Telugu',
+    severity: 8,
+    urgency: 'HIGH',
+    source_type: 'text',
+    source_origin: 'CIVICPULSE_USER',
+    status: 'Prioritized',
+    affected_population: 14500,
+    infrastructure_gap: 72,
+    summary_en: 'Water supply interruption and low pipeline pressure in municipal residential colony.',
+    urgency_reasoning: 'Primary municipal trunk feeder pressure dropped to near zero affecting domestic households.',
+  },
+  // ==========================================
   // WATER HOTSPOTS (Arid, Drought, Saline belts)
   // ==========================================
   {

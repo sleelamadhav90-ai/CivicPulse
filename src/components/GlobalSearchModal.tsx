@@ -87,33 +87,6 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
 
   // Execute human-first search
   const searchResults: HumanSearchResults = useMemo(() => {
-    if (!query.trim()) {
-      return {
-        intent: {
-          rawQuery: '',
-          normalizedQuery: '',
-          exactId: null,
-          detectedCategories: [],
-          detectedLocations: [],
-          isUrgent: false,
-          isRecent: false,
-          isHighScale: false,
-          keywords: [],
-          typoCorrection: null,
-        },
-        exactMatch: null,
-        bestMatch: null,
-        communityIssues: [],
-        priorityHotspots: [],
-        citizenReports: [],
-        actionProjects: [],
-        infrastructure: [],
-        governmentBaseline: [],
-        suggestions: getSearchSuggestions('', districts),
-        totalResultsCount: 0,
-      };
-    }
-
     return searchCivicPulse(
       query, 
       { requests, districts, governmentProjects, communityIssues },
@@ -258,20 +231,24 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </div>
           )}
 
-          {/* Smart Suggestions Chips */}
+          {/* Smart Suggestions Chips (Grounded in Real Data) */}
           <div className="mt-3 flex items-center space-x-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
             <span className="text-[11px] font-mono text-[#57534E] uppercase tracking-wider shrink-0 mr-1">
-              Suggestions:
+              {searchResults.suggestionsType === 'POPULAR_OR_RECENT' ? 'Popular & Recent:' : 'Matching Suggestions:'}
             </span>
-            {(searchResults.suggestions.length > 0 ? searchResults.suggestions : defaultStarterQueries).map((sug) => (
-              <button
-                key={sug}
-                onClick={() => handleApplySuggestion(sug)}
-                className="px-2.5 py-1 bg-white hover:bg-[#F7F5EF] border border-[#171717]/20 hover:border-[#171717] text-xs text-[#171717] rounded-xs shrink-0 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
-              >
-                {sug}
-              </button>
-            ))}
+            {searchResults.suggestions.length > 0 ? (
+              searchResults.suggestions.map((sug) => (
+                <button
+                  key={sug}
+                  onClick={() => handleApplySuggestion(sug)}
+                  className="px-2.5 py-1 bg-white hover:bg-[#F7F5EF] border border-[#171717]/20 hover:border-[#171717] text-xs text-[#171717] rounded-xs shrink-0 transition-all cursor-pointer shadow-2xs hover:shadow-xs"
+                >
+                  {sug}
+                </button>
+              ))
+            ) : query.trim() ? (
+              <span className="text-xs text-stone-500 italic">No matching CivicPulse issues found.</span>
+            ) : null}
           </div>
         </div>
 
@@ -326,8 +303,23 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </div>
           )}
 
+          {/* EXACT ID NOT FOUND STATE (Section 10) */}
+          {searchResults.exactMatchNotFoundId && !searchResults.exactMatch && (
+            <div className="border-2 border-stone-400 bg-stone-50 p-4 sm:p-5 shadow-[4px_4px_0px_#78716c] space-y-2">
+              <div className="flex items-center space-x-2 text-stone-800">
+                <Search className="w-5 h-5 text-stone-500 shrink-0" />
+                <h4 className="font-serif font-bold text-base text-[#171717]">
+                  No CivicPulse request found for {searchResults.exactMatchNotFoundId}.
+                </h4>
+              </div>
+              <p className="text-xs text-[#57534E] leading-relaxed">
+                We verified all records in the CivicPulse database, but no citizen report or public project matches this exact tracking ID. Verify the code or search using normal language like <span className="font-bold text-[#171717]">"water in Guntur"</span> or <span className="font-bold text-[#171717]">"road damage"</span>.
+              </p>
+            </div>
+          )}
+
           {/* NO RESULTS FOUND STATE */}
-          {query.trim() && searchResults.totalResultsCount === 0 && (
+          {query.trim() && searchResults.totalResultsCount === 0 && !searchResults.exactMatchNotFoundId && (
             <div className="py-12 text-center space-y-3">
               <div className="w-12 h-12 bg-amber-100 border border-amber-300 rounded-full flex items-center justify-center mx-auto text-amber-800">
                 <AlertTriangle className="w-6 h-6" />
