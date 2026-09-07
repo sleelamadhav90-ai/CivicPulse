@@ -24,6 +24,7 @@ import {
   Database
 } from 'lucide-react';
 import { getPublicDataForDistrict } from '../data/publicDataService';
+import { useLanguage } from '../context/LanguageContext';
 
 interface HotspotMapProps {
   districts: District[];
@@ -54,6 +55,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
   onNavigateToCommunityIssues,
   onNavigateToRecommendations,
 }) => {
+  const { t, tCategory, tPriority } = useLanguage();
+
   // Cascading Geography States
   const [selectedState, setSelectedState] = useState<string>('ALL');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('ALL');
@@ -296,7 +299,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         {/* Left: District Inspector Label & Cascading Geographic Dropdowns */}
         <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-0.5">
           <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
-            DISTRICT INSPECTOR
+            {t('map.inspect_hotspot')}
           </span>
 
           <span className="text-stone-300 hidden sm:inline">•</span>
@@ -311,8 +314,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
             >
-              <span className="text-stone-500 font-normal">State:</span>
-              <span className="font-bold truncate max-w-[110px]">{selectedState === 'ALL' ? 'All States' : selectedState}</span>
+              <span className="text-stone-500 font-normal">{t('state')}:</span>
+              <span className="font-bold truncate max-w-[110px]">{selectedState === 'ALL' ? t('filter.all_states') : selectedState}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {stateDropdownOpen && (
@@ -323,7 +326,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     selectedState === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>All States & UTs</span>
+                  <span>{t('filter.all_states_uts')}</span>
                   {selectedState === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -353,8 +356,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
             >
-              <span className="text-stone-500 font-normal">District:</span>
-              <span className="font-bold truncate max-w-[110px]">{selectedDistrict === 'ALL' ? 'All Districts' : selectedDistrict}</span>
+              <span className="text-stone-500 font-normal">{t('district')}:</span>
+              <span className="font-bold truncate max-w-[110px]">{selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {districtDropdownOpen && (
@@ -365,7 +368,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     selectedDistrict === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>{selectedState !== 'ALL' ? `All ${selectedState} Districts` : 'All Districts'}</span>
+                  <span>{selectedState !== 'ALL' ? `${t('filter.all_districts')} (${selectedState})` : t('filter.all_districts')}</span>
                   {selectedDistrict === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -401,8 +404,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   : 'bg-white border-[#171717]/20 text-[#171717] hover:border-[#171717]/50 cursor-pointer'
               }`}
             >
-              <span className="text-stone-500 font-normal">City/Town:</span>
-              <span className="font-bold truncate max-w-[100px]">{selectedLocality === 'ALL' ? 'All' : selectedLocality}</span>
+              <span className="text-stone-500 font-normal">{t('locality')}:</span>
+              <span className="font-bold truncate max-w-[100px]">{selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {localityDropdownOpen && availableLocalities.length > 0 && (
@@ -413,7 +416,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     selectedLocality === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>All Locations in {selectedDistrict}</span>
+                  <span>{t('filter.all_locations_in', { district: selectedDistrict })}</span>
                   {selectedLocality === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -443,7 +446,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               }}
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
             >
-              <span>{selectedCategory === 'All' ? 'All issues' : selectedCategory}</span>
+              <span>{selectedCategory === 'All' ? t('filter.all_issues') : tCategory(selectedCategory)}</span>
               <ChevronDown className="w-3 h-3 text-stone-500" />
             </button>
             {categoryDropdownOpen && (
@@ -459,7 +462,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       selectedCategory === cat ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{cat === 'All' ? 'All issues' : cat}</span>
+                    <span>{cat === 'All' ? t('filter.all_issues') : tCategory(cat)}</span>
                     {selectedCategory === cat && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
@@ -478,29 +481,29 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
               <Clock className="w-3 h-3 text-stone-500" />
-              <span>{timeFilter === 'all' ? 'All time' : timeFilter === '7d' ? '7 days' : timeFilter === '30d' ? '30 days' : '90 days'}</span>
+              <span>{timeFilter === 'all' ? t('time.all_time') : timeFilter === '7d' ? t('time.7_days') : timeFilter === '30d' ? t('time.30_days') : t('time.90_days')}</span>
               <ChevronDown className="w-3 h-3 text-stone-500" />
             </button>
             {timeDropdownOpen && (
               <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
                 {[
-                  { id: '7d', label: '7 days' },
-                  { id: '30d', label: '30 days' },
-                  { id: '90d', label: '90 days' },
-                  { id: 'all', label: 'All time' },
-                ].map(t => (
+                  { id: '7d', label: t('time.7_days') },
+                  { id: '30d', label: t('time.30_days') },
+                  { id: '90d', label: t('time.90_days') },
+                  { id: 'all', label: t('time.all_time') },
+                ].map(item => (
                   <button
-                    key={t.id}
+                    key={item.id}
                     onClick={() => { 
-                      setTimeFilter(t.id as TimeFilterRange); 
+                      setTimeFilter(item.id as TimeFilterRange); 
                       setTimeDropdownOpen(false); 
                     }}
                     className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      timeFilter === t.id ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                      timeFilter === item.id ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{t.label}</span>
-                    {timeFilter === t.id && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    <span>{item.label}</span>
+                    {timeFilter === item.id && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -518,7 +521,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
               <Layers className="w-3 h-3 text-stone-500" />
-              <span>Layers</span>
+              <span>{t('layers.title')}</span>
               <ChevronDown className="w-3 h-3 text-stone-500" />
             </button>
             {layersDropdownOpen && (
@@ -530,7 +533,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     onChange={() => toggleLayer('citizenDemand')}
                     className="accent-[#D65A3A]"
                   />
-                  <span className="font-medium text-[#171717]">Civic signals</span>
+                  <span className="font-medium text-[#171717]">{t('layers.civic_signals')}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
                   <input 
@@ -539,7 +542,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     onChange={() => toggleLayer('infrastructure')}
                     className="accent-[#171717]"
                   />
-                  <span className="font-medium text-[#171717]">Infrastructure assets</span>
+                  <span className="font-medium text-[#171717]">{t('layers.infrastructure')}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
                   <input 
@@ -548,7 +551,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     onChange={() => toggleLayer('populationVulnerability')}
                     className="accent-[#285943]"
                   />
-                  <span className="font-medium text-[#171717]">Population vulnerability</span>
+                  <span className="font-medium text-[#171717]">{t('layers.vulnerability')}</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
                   <input 
@@ -557,7 +560,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     onChange={() => toggleLayer('governmentProjects')}
                     className="accent-blue-600"
                   />
-                  <span className="font-medium text-[#171717]">Government projects</span>
+                  <span className="font-medium text-[#171717]">{t('layers.projects')}</span>
                 </label>
               </div>
             )}
@@ -571,7 +574,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               className="text-[#D65A3A] hover:text-black transition-colors px-1.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
             >
               <RotateCcw className="w-3 h-3" />
-              <span>Reset</span>
+              <span>{t('filter.reset')}</span>
             </button>
           )}
         </div>
@@ -582,7 +585,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             <Search className="w-3.5 h-3.5 text-[#78716C] mr-1.5 shrink-0" />
             <input
               type="text"
-              placeholder="Search location..."
+              placeholder={t('map.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 text-[#171717] placeholder:text-[#A8A29E]"
@@ -648,7 +651,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   <div className="text-xs text-[#57534E] flex items-center gap-1 mt-0.5 font-mono">
                     <span>{activeEvaluation.district.state}</span>
                     <span className="text-stone-300">•</span>
-                    <span>Pop. {(activeEvaluation.district.population / 100000).toFixed(1)}L</span>
+                    <span>{t('map.pop_lakhs', { count: (activeEvaluation.district.population / 100000).toFixed(1) })}</span>
                   </div>
                 </div>
                 <button
@@ -666,7 +669,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               {/* Priority Index Score */}
               <div className="flex items-baseline justify-between bg-white p-3 border border-[#171717]/15 rounded-xs">
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-[#78716C] block">Priority Index</span>
+                  <span className="text-[10px] font-mono uppercase text-[#78716C] block">{t('map.priority_index')}</span>
                   <div className="flex items-baseline space-x-1 mt-0.5">
                     <span className="text-2xl font-serif font-bold text-[#171717]">
                       {activeEvaluation.demandHotspot.categoryScore || activeEvaluation.breakdown.total_score}
@@ -681,23 +684,23 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     ? 'bg-[#f97316] text-white'
                     : 'bg-[#285943] text-white'
                 }`}>
-                  {activeEvaluation.priorityTier.label}
+                  {tPriority(activeEvaluation.priorityTier.label)}
                 </span>
               </div>
 
               {/* Main Issue & Request Volume */}
               <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-1 text-xs">
                 <div className="font-bold text-[#171717] flex items-center justify-between">
-                  <span>{selectedCategory === 'All' ? activeEvaluation.demandHotspot.primaryCategory : selectedCategory} Sector</span>
+                  <span>{selectedCategory === 'All' ? tCategory(activeEvaluation.demandHotspot.primaryCategory) : tCategory(selectedCategory)} {t('map.sector')}</span>
                   <span className="font-mono text-[11px] text-[#D65A3A] font-bold">
-                    {activeEvaluation.demandCount.toLocaleString()} signals
+                    {activeEvaluation.demandCount.toLocaleString()} {t('map.signals_unit')}
                   </span>
                 </div>
                 <div className="text-[11px] text-[#57534E] flex items-center gap-1 font-mono">
                   <span className="text-emerald-700 font-bold">↑ 22%</span>
-                  <span>this month</span>
+                  <span>{t('time.this_month')}</span>
                   <span className="text-stone-300">•</span>
-                  <span>Gap: {100 - Math.round(activeEvaluation.currentAccess)}%</span>
+                  <span>{t('map.gap_label')} {100 - Math.round(activeEvaluation.currentAccess)}%</span>
                 </div>
               </div>
 
@@ -706,7 +709,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 <div className="bg-[#FAF0E6]/70 border border-[#D65A3A]/25 p-2.5 rounded-xs space-y-1 text-xs">
                   <div className="text-[9px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider flex items-center gap-1">
                     <Volume2 className="w-3 h-3" />
-                    <span>Citizen Voice ({activeEvaluation.demandHotspot.representativeQuote.language})</span>
+                    <span>{t('map.citizen_voice')} ({activeEvaluation.demandHotspot.representativeQuote.language})</span>
                   </div>
                   <div className="italic text-[11px] text-[#171717]">
                     "{activeEvaluation.demandHotspot.representativeQuote.english || activeEvaluation.demandHotspot.representativeQuote.text}"
@@ -725,10 +728,10 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     <div className="flex items-center justify-between text-[9px] text-slate-500 uppercase tracking-wider font-bold">
                       <span className="flex items-center gap-1 text-blue-900">
                         <Database className="w-2.5 h-2.5" />
-                        <span>Public Context</span>
+                        <span>{t('map.public_context')}</span>
                       </span>
                       <span className="text-slate-600 font-sans">
-                        Source: {primaryInd.source} ({primaryInd.year})
+                        {t('map.source_label')} {primaryInd.source} ({primaryInd.year})
                       </span>
                     </div>
                     <div className="text-[11px] font-bold text-slate-900">
@@ -759,7 +762,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   className="bg-[#171717] hover:bg-[#292824] text-white py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>View issue</span>
+                  <span>{t('map.explore_issues')}</span>
                 </button>
 
                 <button
@@ -772,7 +775,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   }}
                   className="bg-white hover:bg-stone-50 text-[#171717] border border-[#171717]/30 py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
                 >
-                  <span>View recommendation</span>
+                  <span>{t('map.synthesize_project')}</span>
                 </button>
               </div>
 
@@ -782,14 +785,14 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   onClick={() => setShowDrawerDetails(!showDrawerDetails)}
                   className="w-full text-left text-[11px] font-mono font-medium text-stone-600 hover:text-black flex items-center justify-between p-1 cursor-pointer"
                 >
-                  <span>{showDrawerDetails ? 'Hide details' : 'View details & telemetry'}</span>
+                  <span>{showDrawerDetails ? t('map.hide_details') : t('map.view_details_telemetry')}</span>
                   <span>{showDrawerDetails ? '▲' : '▼'}</span>
                 </button>
 
                 {showDrawerDetails && (
                   <div className="mt-2 space-y-2 text-xs font-mono animate-in fade-in duration-100">
                     <div className="bg-white p-2.5 border border-[#171717]/15 rounded-xs space-y-1">
-                      <div className="text-[10px] text-stone-500 uppercase">AI Strategic Recommendation</div>
+                      <div className="text-[10px] text-stone-500 uppercase">{t('map.ai_recommendation')}</div>
                       <p className="text-[11px] text-stone-800 leading-relaxed font-sans">
                         {activeEvaluation.demandHotspot.aiRecommendation}
                       </p>
@@ -800,7 +803,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 py-1.5 px-2 rounded-xs text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <Eye className="w-3 h-3 text-blue-600" />
-                      <span>Open Field Evidence Dossier</span>
+                      <span>{t('map.open_evidence_dossier')}</span>
                     </button>
                   </div>
                 )}
@@ -818,8 +821,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           <div className="bg-[#FAF8F5] border border-[#171717]/20 rounded-xs shadow-2xl max-w-lg w-full p-5 space-y-4 font-mono text-xs text-[#171717]">
             <div className="flex items-start justify-between border-b border-[#171717]/15 pb-2">
               <div>
-                <span className="text-[10px] text-[#D65A3A] font-bold uppercase">Field Telemetry Evidence</span>
-                <h3 className="text-lg font-serif font-bold">{evidenceModalData.district.name} ({evidenceModalData.category})</h3>
+                <span className="text-[10px] text-[#D65A3A] font-bold uppercase">{t('map.field_evidence_title')}</span>
+                <h3 className="text-lg font-serif font-bold">{evidenceModalData.district.name} ({tCategory(evidenceModalData.category)})</h3>
               </div>
               <button 
                 onClick={() => setEvidenceModalData(null)}
@@ -836,22 +839,22 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
             <div className="grid grid-cols-2 gap-2 text-[11px]">
               <div className="bg-white p-2 border border-stone-200 rounded">
-                <span className="text-[9px] text-stone-400 uppercase block">Supervisor</span>
+                <span className="text-[9px] text-stone-400 uppercase block">{t('evidence.supervisor')}</span>
                 <span className="font-bold">{evidenceModalData.evidence.officer}</span>
               </div>
               <div className="bg-white p-2 border border-stone-200 rounded">
-                <span className="text-[9px] text-stone-400 uppercase block">Department</span>
+                <span className="text-[9px] text-stone-400 uppercase block">{t('evidence.department')}</span>
                 <span className="font-bold">{evidenceModalData.evidence.department}</span>
               </div>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-stone-200">
-              <span className="text-[10px] text-stone-500">Confidence: {evidenceModalData.evidence.signalConfidence}%</span>
+              <span className="text-[10px] text-stone-500">{t('evidence.confidence')}: {evidenceModalData.evidence.signalConfidence}%</span>
               <button
                 onClick={() => setEvidenceModalData(null)}
                 className="bg-[#171717] text-white px-3 py-1 rounded-xs font-bold cursor-pointer hover:bg-stone-800"
               >
-                Close Dossier
+                {t('map.close_dossier')}
               </button>
             </div>
           </div>

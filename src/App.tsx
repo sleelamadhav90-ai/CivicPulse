@@ -455,7 +455,17 @@ export default function App() {
           {activeTab === 'demographics' && (
             <DemographicsView
               districts={districts}
-              onNavigateToRecommendations={() => setActiveTab('recommendations')}
+              requests={requests}
+              onNavigateToRecommendations={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('recommendations');
+              }}
+              onNavigateToIssues={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('issues');
+              }}
             />
           )}
 

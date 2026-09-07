@@ -37,6 +37,7 @@ interface LanguageContextType {
   tCommunityIssue: (issue: any) => any;
   tOverviewConclusion: () => { title: string; whyMatters: string; district: string; state: string };
   tOverviewPriorityIssue: (issue: any) => any;
+  tPriority: (priority: string) => string;
   supportedLanguages: LanguageOption[];
   currentLanguageConfig: LanguageOption;
   isRtl: boolean;
@@ -208,6 +209,17 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     return (issue: any) => getLocalizedOverviewPriorityIssue(issue, language);
   }, [language]);
 
+  const tPrio = useMemo(() => {
+    return (priority: string) => {
+      const p = (priority || '').toLowerCase();
+      if (p.includes('crit')) return t('status.critical');
+      if (p.includes('high')) return t('status.high');
+      if (p.includes('mod') || p.includes('med')) return t('status.moderate');
+      if (p.includes('low')) return t('status.low');
+      return priority;
+    };
+  }, [t]);
+
   const value: LanguageContextType = {
     language,
     setLanguage,
@@ -225,6 +237,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     tCommunityIssue: tCommIss,
     tOverviewConclusion: tOverConc,
     tOverviewPriorityIssue: tOverPriIss,
+    tPriority: tPrio,
     supportedLanguages: SUPPORTED_LANGUAGES,
     currentLanguageConfig,
     isRtl,
