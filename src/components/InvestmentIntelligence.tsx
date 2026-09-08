@@ -1,4 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
 import { 
   DollarSign, 
   TrendingUp, 
@@ -14,719 +16,1288 @@ import {
   FileCheck, 
   Layers, 
   BarChart3, 
-  Sparkles,
-  Info,
-  ChevronRight,
-  RefreshCw,
-  HelpCircle,
-  ExternalLink
+  Sparkles, 
+  Info, 
+  ChevronRight, 
+  ChevronDown, 
+  ChevronUp, 
+  RefreshCw, 
+  ExternalLink, 
+  MapPin, 
+  FileText, 
+  ArrowUpRight 
 } from 'lucide-react';
-import { District, InfrastructureCategory, InterventionType, InvestmentSchemeData, InvestmentAnomalySignal, InvestmentQuadrantType } from '../types';
+import { District, InfrastructureCategory, CitizenRequest, InvestmentSchemeData, InvestmentAnomalySignal, AnomalySignalType, InterventionType } from '../types';
 import { STATE_INVESTMENT_OVERVIEW, MAJOR_GOVERNMENT_SCHEMES, ALL_INVESTMENT_ANOMALIES } from '../data/investmentData';
+import { INITIAL_GOVERNMENT_PROJECTS } from '../data/initialProjects';
+import { getAvailableStates, getDistrictsForState } from '../utils/geography';
+import { useLanguage } from '../context/LanguageContext';
 
 interface InvestmentIntelligenceProps {
   districts: District[];
+  requests?: CitizenRequest[];
   onNavigateToEngine?: () => void;
-  onNavigateToPolicyLab?: (districtId: string, category: InfrastructureCategory) => void;
+  onNavigateToRecommendations?: (districtId?: string, category?: string) => void;
+  onNavigateToIssues?: (districtId?: string, category?: string) => void;
+  onNavigateToPolicyLab?: (districtId?: string, category?: InfrastructureCategory) => void;
+}
+
+// Map helper to smoothly pan/zoom when selected district changes
+function MapFocusController({ center, zoom }: { center: [number, number]; zoom: number }) {
+  const map = useMap();
+  useEffect(() => {
+    if (center && center[0] && center[1]) {
+      map.flyTo(center, zoom, { duration: 0.9 });
+    }
+  }, [center, zoom, map]);
+  return null;
 }
 
 export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
-  districts,
+  districts = [],
+  requests = [],
   onNavigateToEngine,
+  onNavigateToRecommendations,
+  onNavigateToIssues,
   onNavigateToPolicyLab
 }) => {
-  const [selectedSchemeId, setSelectedSchemeId] = useState<string>('ALL');
-  const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
-  const [selectedQuadrant, setSelectedQuadrant] = useState<string>('ALL');
-  const [anomalySearchQuery, setAnomalySearchQuery] = useState<string>('');
-  const [activeQuestionTab, setActiveQuestionTab] = useState<'FLOW' | 'UTILIZATION' | 'RESULTS' | 'MATRIX' | 'ANOMALIES'>('FLOW');
+  const { t, language } = useLanguage();
 
-  // Modal inspection state for anomalies
+  const getCategoryLabel = (cat: string) => {
+    switch (cat.toLowerCase()) {
+      case 'water': return t('category.water');
+      case 'roads': return t('category.roads');
+      case 'healthcare':
+      case 'health': return t('category.health');
+      case 'electricity': return t('category.electricity');
+      case 'drainage': return t('category.drainage');
+      case 'education': return t('category.education');
+      default: return cat;
+    }
+  };
+
+  // Filters
+  const [selectedState, setSelectedState] = useState<string>('ALL');
+  const [selectedDistrictId, setSelectedDistrictId] = useState<string>('ALL');
+  const [selectedSector, setSelectedSector] = useState<string>('ALL');
+
+  // Progressive Disclosure toggle for Detailed Data
+  const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
+  const [detailSearchQuery, setDetailSearchQuery] = useState<string>('');
+
+  // Anomaly modal state (preserved from previous version)
   const [selectedAnomalyModal, setSelectedAnomalyModal] = useState<InvestmentAnomalySignal | null>(null);
 
-  // Filter schemes
-  const filteredSchemes = MAJOR_GOVERNMENT_SCHEMES.filter(scheme => {
-    if (selectedSchemeId !== 'ALL' && scheme.schemeId !== selectedSchemeId) return false;
-    if (selectedCategory !== 'ALL' && scheme.category !== selectedCategory) return false;
-    if (selectedQuadrant !== 'ALL' && scheme.quadrant !== selectedQuadrant) return false;
-    return true;
-  });
+  // States list: Only actual states/UTs
+  const availableStates = useMemo(() => {
+    return getAvailableStates('IN', districts);
+  }, [districts]);
 
-  // Filter anomalies
-  const filteredAnomalies = ALL_INVESTMENT_ANOMALIES.filter(anomaly => {
-    if (selectedCategory !== 'ALL' && anomaly.schemeName.toLowerCase().indexOf(selectedCategory.toLowerCase()) === -1) return false;
-    if (anomalySearchQuery) {
-      const q = anomalySearchQuery.toLowerCase();
-      return anomaly.title.toLowerCase().includes(q) || 
-             anomaly.districtName.toLowerCase().includes(q) ||
-             anomaly.department.toLowerCase().includes(q);
+  // Districts list strictly dependent on selectedState
+  const availableDistricts = useMemo(() => {
+    return getDistrictsForState(selectedState, 'IN', districts);
+  }, [selectedState, districts]);
+
+  // Reset district selection if state changes and district no longer valid
+  useEffect(() => {
+    if (selectedDistrictId !== 'ALL') {
+      const exists = availableDistricts.some(d => d.id === selectedDistrictId);
+      if (!exists) {
+        setSelectedDistrictId('ALL');
+      }
     }
-    return true;
-  });
+  }, [selectedState, availableDistricts, selectedDistrictId]);
 
+  // Format currency in Indian Crores
   const formatCr = (inr: number) => `₹${(inr / 10000000).toFixed(1)} Cr`;
 
+  // Calculated metrics
+  const totalAllocated = useMemo(() => {
+    if (selectedSector !== 'ALL') {
+      const schemes = MAJOR_GOVERNMENT_SCHEMES.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+      return schemes.reduce((acc, s) => acc + s.stateAllocationInr, 0);
+    }
+    return STATE_INVESTMENT_OVERVIEW.allocatedInr;
+  }, [selectedSector]);
+
+  const totalSpent = useMemo(() => {
+    if (selectedSector !== 'ALL') {
+      const schemes = MAJOR_GOVERNMENT_SCHEMES.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+      return schemes.reduce((acc, s) => acc + s.spentInr, 0);
+    }
+    return STATE_INVESTMENT_OVERVIEW.spentInr;
+  }, [selectedSector]);
+
+  const totalProjects = useMemo(() => {
+    if (selectedSector !== 'ALL') {
+      const schemes = MAJOR_GOVERNMENT_SCHEMES.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+      return schemes.reduce((acc, s) => acc + s.totalProjects, 0);
+    }
+    return STATE_INVESTMENT_OVERVIEW.totalProjects;
+  }, [selectedSector]);
+
+  const completedProjects = useMemo(() => {
+    if (selectedSector !== 'ALL') {
+      const schemes = MAJOR_GOVERNMENT_SCHEMES.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+      return schemes.reduce((acc, s) => acc + s.completedProjects, 0);
+    }
+    return STATE_INVESTMENT_OVERVIEW.completedProjects;
+  }, [selectedSector]);
+
+  const delayedProjects = useMemo(() => {
+    if (selectedSector !== 'ALL') {
+      const schemes = MAJOR_GOVERNMENT_SCHEMES.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+      return schemes.reduce((acc, s) => acc + s.delayedProjects, 0);
+    }
+    return STATE_INVESTMENT_OVERVIEW.delayedProjects;
+  }, [selectedSector]);
+
+  const completionRatePct = useMemo(() => {
+    if (totalProjects === 0) return 0;
+    return Math.round((completedProjects / totalProjects) * 100);
+  }, [completedProjects, totalProjects]);
+
+  // Geographic investment aggregation by district
+  const districtInvestments = useMemo(() => {
+    // Map existing districts to deterministic tracked investment data
+    const map = new Map<string, {
+      id: string;
+      name: string;
+      state: string;
+      lat: number;
+      lon: number;
+      investmentInr: number;
+      activeProjectsCount: number;
+      topSector: string;
+      topSectorKey: InfrastructureCategory;
+      demandCount: number;
+      deficitLabel: string;
+      alignmentStatus: 'ALIGNED' | 'INVESTMENT_GAP' | 'HIGH_INVESTMENT_LOW_DEMAND';
+      alignmentVerdict: string;
+      hasData: boolean;
+    }>();
+
+    // Baseline definitions for anchor districts
+    const anchorData: Record<string, {
+      investmentInr: number;
+      activeProjects: number;
+      topSector: string;
+      topSectorKey: InfrastructureCategory;
+      demandCount: number;
+      deficitLabel: string;
+      alignmentStatus: 'ALIGNED' | 'INVESTMENT_GAP' | 'HIGH_INVESTMENT_LOW_DEMAND';
+      alignmentVerdict: string;
+    }> = {
+      'guntur': {
+        investmentInr: 590000000, // ₹59.0 Cr
+        activeProjects: 145,
+        topSector: 'Water',
+        topSectorKey: 'Water',
+        demandCount: 4820,
+        deficitLabel: 'Water access at 38% (62% deficit)',
+        alignmentStatus: 'INVESTMENT_GAP',
+        alignmentVerdict: 'High investment in progress, but persistent delivery delay on 25 piped water contracts leaves 37 villages in critical need.'
+      },
+      'vijayawada': {
+        investmentInr: 449000000, // ₹44.9 Cr
+        activeProjects: 110,
+        topSector: 'Drainage',
+        topSectorKey: 'Drainage',
+        demandCount: 5120,
+        deficitLabel: 'Drainage & Clinic access deficit in outer periphery',
+        alignmentStatus: 'INVESTMENT_GAP',
+        alignmentVerdict: 'Urban core investment is advancing, but outer rural healthcare clinics face ₹11 Cr unutilized NHM allocations.'
+      },
+      'kurnool': {
+        investmentInr: 205000000, // ₹20.5 Cr
+        activeProjects: 48,
+        topSector: 'Electricity',
+        topSectorKey: 'Electricity',
+        demandCount: 2310,
+        deficitLabel: '108% transformer overload in agrarian belts',
+        alignmentStatus: 'INVESTMENT_GAP',
+        alignmentVerdict: 'High citizen complaints on power dropouts despite ₹10 Cr pending sanction release.'
+      },
+      'krishna': {
+        investmentInr: 120000000, // ₹12.0 Cr
+        activeProjects: 32,
+        topSector: 'Education',
+        topSectorKey: 'Education',
+        demandCount: 1420,
+        deficitLabel: 'School lab facility & sanitation deficit',
+        alignmentStatus: 'ALIGNED',
+        alignmentVerdict: 'Capital deployment aligns with local infrastructure refurbishment goals.'
+      },
+      'nagpur': {
+        investmentInr: 92000000, // ₹9.2 Cr
+        activeProjects: 24,
+        topSector: 'Roads',
+        topSectorKey: 'Roads',
+        demandCount: 1150,
+        deficitLabel: 'Pothole density in industrial feeder lanes',
+        alignmentStatus: 'ALIGNED',
+        alignmentVerdict: 'Surface road upgrades track planned maintenance targets.'
+      }
+    };
+
+    districts.forEach(d => {
+      const key = d.id.toLowerCase();
+      const anchor = anchorData[key];
+
+      if (anchor) {
+        map.set(d.id, {
+          id: d.id,
+          name: d.name,
+          state: d.state || 'Andhra Pradesh',
+          lat: d.lat || 16.3067,
+          lon: d.lon || 80.4365,
+          investmentInr: anchor.investmentInr,
+          activeProjectsCount: anchor.activeProjects,
+          topSector: anchor.topSector,
+          topSectorKey: anchor.topSectorKey,
+          demandCount: anchor.demandCount,
+          deficitLabel: anchor.deficitLabel,
+          alignmentStatus: anchor.alignmentStatus,
+          alignmentVerdict: anchor.alignmentVerdict,
+          hasData: true
+        });
+      } else if (d.planned_investment && d.planned_investment > 0) {
+        map.set(d.id, {
+          id: d.id,
+          name: d.name,
+          state: d.state || 'India',
+          lat: d.lat || 16.5,
+          lon: d.lon || 80.5,
+          investmentInr: d.planned_investment,
+          activeProjectsCount: Math.max(5, Math.round(d.planned_investment / 1500000)),
+          topSector: 'Roads',
+          topSectorKey: 'Roads',
+          demandCount: Math.round(d.population ? d.population * 0.0003 : 600),
+          deficitLabel: `Road quality index at ${Math.round((d.road_quality || 0.5) * 100)}%`,
+          alignmentStatus: 'ALIGNED',
+          alignmentVerdict: 'Capital deployment is proportionate to localized grievance volume.',
+          hasData: true
+        });
+      }
+    });
+
+    return Array.from(map.values()).sort((a, b) => b.investmentInr - a.investmentInr);
+  }, [districts]);
+
+  // Filtered district investments based on State & Sector dropdowns
+  const filteredDistrictInvestments = useMemo(() => {
+    return districtInvestments.filter(item => {
+      if (selectedState !== 'ALL' && item.state.toLowerCase() !== selectedState.toLowerCase()) {
+        return false;
+      }
+      if (selectedDistrictId !== 'ALL' && item.id !== selectedDistrictId) {
+        return false;
+      }
+      if (selectedSector !== 'ALL' && item.topSector.toLowerCase() !== selectedSector.toLowerCase()) {
+        return false;
+      }
+      return true;
+    });
+  }, [districtInvestments, selectedState, selectedDistrictId, selectedSector]);
+
+  // Selected district entity for the Insight panel
+  const selectedDistrictData = useMemo(() => {
+    if (selectedDistrictId === 'ALL') {
+      // If "ALL" is selected, highlight the top district in current filter view (or Guntur by default)
+      if (filteredDistrictInvestments.length > 0) {
+        return filteredDistrictInvestments[0];
+      }
+      return null;
+    }
+    return districtInvestments.find(d => d.id === selectedDistrictId) || null;
+  }, [selectedDistrictId, filteredDistrictInvestments, districtInvestments]);
+
+  // Map center calculation
+  const mapCenter = useMemo<[number, number]>(() => {
+    if (selectedDistrictData && selectedDistrictData.lat && selectedDistrictData.lon) {
+      return [selectedDistrictData.lat, selectedDistrictData.lon];
+    }
+    if (filteredDistrictInvestments.length > 0) {
+      return [filteredDistrictInvestments[0].lat, filteredDistrictInvestments[0].lon];
+    }
+    return [16.3067, 80.4365]; // Andhra Pradesh / Guntur centroid
+  }, [selectedDistrictData, filteredDistrictInvestments]);
+
+  // Sector breakdown calculations for "What is it being spent on?"
+  const sectorBreakdown = useMemo(() => {
+    const totalAlloc = MAJOR_GOVERNMENT_SCHEMES.reduce((sum, s) => sum + s.stateAllocationInr, 0);
+    const sectors: {
+      category: InfrastructureCategory;
+      name: string;
+      allocatedInr: number;
+      spentInr: number;
+      percentage: number;
+      totalProjects: number;
+      completedProjects: number;
+      delayedProjects: number;
+    }[] = [
+      {
+        category: 'Water',
+        name: 'Water & Sanitation (JJM)',
+        allocatedInr: 500000000,
+        spentInr: 390000000,
+        percentage: Math.round((500000000 / totalAlloc) * 1000) / 10,
+        totalProjects: 120,
+        completedProjects: 82,
+        delayedProjects: 25
+      },
+      {
+        category: 'Roads',
+        name: 'Rural Roads (PMGSY)',
+        allocatedInr: 320000000,
+        spentInr: 200000000,
+        percentage: Math.round((320000000 / totalAlloc) * 1000) / 10,
+        totalProjects: 85,
+        completedProjects: 54,
+        delayedProjects: 22
+      },
+      {
+        category: 'Healthcare',
+        name: 'Healthcare Centers (NHM)',
+        allocatedInr: 220000000,
+        spentInr: 110000000,
+        percentage: Math.round((220000000 / totalAlloc) * 1000) / 10,
+        totalProjects: 45,
+        completedProjects: 28,
+        delayedProjects: 12
+      },
+      {
+        category: 'Drainage',
+        name: 'Urban Drainage & Sewage (SBM)',
+        allocatedInr: 180000000,
+        spentInr: 130000000,
+        percentage: Math.round((180000000 / totalAlloc) * 1000) / 10,
+        totalProjects: 60,
+        completedProjects: 30,
+        delayedProjects: 16
+      },
+      {
+        category: 'Electricity',
+        name: 'Power Distribution (AP Transco)',
+        allocatedInr: 160000000,
+        spentInr: 60000000,
+        percentage: Math.round((160000000 / totalAlloc) * 1000) / 10,
+        totalProjects: 30,
+        completedProjects: 16,
+        delayedProjects: 10
+      }
+    ];
+
+    if (selectedSector !== 'ALL') {
+      return sectors.filter(s => s.category.toLowerCase() === selectedSector.toLowerCase());
+    }
+    return sectors;
+  }, [selectedSector]);
+
+  // Sector with highest investment for the short automatic explanation
+  const topSectorExplanation = useMemo(() => {
+    if (sectorBreakdown.length === 0) return '';
+    const top = [...sectorBreakdown].sort((a, b) => b.allocatedInr - a.allocatedInr)[0];
+    return `${top.name.split(' (')[0]} accounts for the largest share (${top.percentage}%) of tracked public investment.`;
+  }, [sectorBreakdown]);
+
+  // Comparative alignment data: Investment Share % vs Citizen Demand %
+  const alignmentComparisons = useMemo(() => {
+    const totalComplaints = 18450;
+    const totalAlloc = 1380000000;
+
+    const data: {
+      category: InfrastructureCategory;
+      name: string;
+      investmentPct: number;
+      demandPct: number;
+      status: 'ALIGNED' | 'INVESTMENT_GAP' | 'HIGH_INVESTMENT_LOW_DEMAND';
+      explanation: string;
+    }[] = [
+      {
+        category: 'Water',
+        name: getCategoryLabel('Water'),
+        investmentPct: 36.2,
+        demandPct: 26.1, // 4,820 complaints / 18,450
+        status: 'INVESTMENT_GAP',
+        explanation: 'High capital allocation exists, but execution bottlenecks on 25 delayed contracts leave acute access deficits unresolved.'
+      },
+      {
+        category: 'Healthcare',
+        name: getCategoryLabel('Healthcare'),
+        investmentPct: 15.9,
+        demandPct: 27.7, // 5,120 complaints / 18,450
+        status: 'INVESTMENT_GAP',
+        explanation: 'Citizen demand represents 27.7% of all recorded grievances, yet primary health receives only 15.9% of capital allocation.'
+      },
+      {
+        category: 'Roads',
+        name: getCategoryLabel('Roads'),
+        investmentPct: 23.2,
+        demandPct: 21.1, // 3,890 complaints / 18,450
+        status: 'ALIGNED',
+        explanation: 'Investment broadly matches citizen demand volume, though quality monitoring is recommended for monsoon resilience.'
+      },
+      {
+        category: 'Drainage',
+        name: getCategoryLabel('Drainage'),
+        investmentPct: 13.0,
+        demandPct: 12.5, // 2,310 complaints / 18,450
+        status: 'ALIGNED',
+        explanation: 'Capital allocation is proportionate to grievance density in urban drainage basins.'
+      },
+      {
+        category: 'Electricity',
+        name: getCategoryLabel('Electricity'),
+        investmentPct: 11.6,
+        demandPct: 12.5, // 2,310 complaints / 18,450
+        status: 'HIGH_INVESTMENT_LOW_DEMAND',
+        explanation: 'Capital expenditure utilization remains low (37.5%), indicating funds are committed but not yet drawn down on the ground.'
+      }
+    ];
+
+    if (selectedSector !== 'ALL') {
+      return data.filter(d => d.category.toLowerCase() === selectedSector.toLowerCase());
+    }
+    return data;
+  }, [t, selectedSector]);
+
+  // High priority mismatches for "Where are the gaps?"
+  const priorityGaps = useMemo(() => {
+    return [
+      {
+        id: 'gap-water-guntur',
+        location: 'Guntur Rural',
+        districtId: 'guntur',
+        category: 'Water' as InfrastructureCategory,
+        sectorName: getCategoryLabel('Water'),
+        status: 'HIGH_NEED' as const,
+        whyItMatters: '₹39 Cr expended, but 37 rural habitations lack functioning piped water due to contractor stalls on 25 pipeline extensions.',
+        actionTarget: 'recommendations'
+      },
+      {
+        id: 'gap-health-vijayawada',
+        location: 'Vijayawada Outer Rural',
+        districtId: 'vijayawada',
+        category: 'Healthcare' as InfrastructureCategory,
+        sectorName: getCategoryLabel('Healthcare'),
+        status: 'INVESTMENT_GAP' as const,
+        whyItMatters: '14,200 residents isolated from primary health centers with 5,120 complaints logged, while ₹11 Cr in NHM capital remains unspent.',
+        actionTarget: 'recommendations'
+      },
+      {
+        id: 'gap-power-kurnool',
+        location: 'Kurnool Agrarian Belt',
+        districtId: 'kurnool',
+        category: 'Electricity' as InfrastructureCategory,
+        sectorName: getCategoryLabel('Electricity'),
+        status: 'INVESTMENT_GAP' as const,
+        whyItMatters: '108% transformer overload recorded during peak agricultural irrigation cycles with ₹10 Cr pending sanction release.',
+        actionTarget: 'issues'
+      },
+      {
+        id: 'gap-road-guntur',
+        location: 'Guntur Highway Corridor',
+        districtId: 'guntur',
+        category: 'Roads' as InfrastructureCategory,
+        sectorName: getCategoryLabel('Roads'),
+        status: 'HIGH_NEED' as const,
+        whyItMatters: '42 km asphalt constructed under PMGSY Phase 3, but citizen complaints surged +31% within 90 days from heavy rain erosion.',
+        actionTarget: 'recommendations'
+      }
+    ];
+  }, [t]);
+
+  // Filter detailed schemes table
+  const detailedFilteredSchemes = useMemo(() => {
+    return MAJOR_GOVERNMENT_SCHEMES.filter(scheme => {
+      if (selectedSector !== 'ALL' && scheme.category.toLowerCase() !== selectedSector.toLowerCase()) {
+        return false;
+      }
+      if (detailSearchQuery.trim()) {
+        const q = detailSearchQuery.toLowerCase();
+        return scheme.schemeName.toLowerCase().includes(q) ||
+               scheme.department.toLowerCase().includes(q) ||
+               scheme.category.toLowerCase().includes(q);
+      }
+      return true;
+    });
+  }, [selectedSector, detailSearchQuery]);
+
   return (
-    <div className="space-[#171717] space-y-8 font-sans">
+    <div id="government-investment-page" className="space-y-8 font-sans text-[#171717] pb-12">
       
-      {/* HEADER & STATE FINANCIAL OVERVIEW HERO */}
-      <div className="bg-[#171717] text-[#F7F5EF] p-6 border-2 border-[#171717] shadow-[6px_6px_0px_#D65A3A]">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/20 pb-5">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="px-2 py-0.5 bg-[#D65A3A] text-white text-[10px] font-mono font-bold tracking-widest uppercase">
-                DATA LAYER #4
+      {/* 1. HEADER & HIGH-LEVEL FILTERS */}
+      <div id="investment-header-section" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[#171717]/10 pb-6">
+          <div className="space-y-1.5 max-w-3xl">
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 bg-[#D65A3A] text-white text-[11px] font-mono font-bold tracking-wider uppercase rounded-xs">
+                {t('investment.page_title')}
               </span>
-              <span className="text-xs font-mono text-amber-300 font-bold uppercase tracking-wider flex items-center gap-1">
-                <Sparkles className="w-3.5 h-3.5" />
-                INVESTMENT & PLAN INTELLIGENCE
+              <span className="text-xs font-mono text-[#171717]/60 uppercase tracking-wider">
+                Public Policy & Capital Intelligence
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight uppercase">
-              GOVERNMENT INVESTMENT & OUTCOME AUDIT
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#171717] tracking-tight">
+              {t('investment.page_title')}
             </h1>
-            <p className="text-xs sm:text-sm font-mono text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Comparing what citizens ask for with what infrastructure exists and where state capital has been allocated, spent, or delayed.
+            <p className="text-sm sm:text-base text-[#171717]/80 leading-relaxed">
+              {t('investment.page_subtitle')}
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2 text-xs font-mono">
-            <button 
-              onClick={onNavigateToEngine}
-              className="px-3 py-2 bg-[#D65A3A] hover:bg-[#c24a2c] text-white font-bold transition-all shadow-[2px_2px_0px_#ffffff] flex items-center gap-1.5 cursor-pointer"
+          {onNavigateToEngine && (
+            <div className="shrink-0">
+              <button
+                id="btn-navigate-priority-engine"
+                onClick={onNavigateToEngine}
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-xs font-mono font-bold uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <Sparkles className="w-4 h-4" />
+                <span>{t('investment.explore')} Priority Engine</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* GEOGRAPHIC & SECTOR FILTERS */}
+        <div id="investment-filter-controls" className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
+          {/* State Filter */}
+          <div className="space-y-1">
+            <label htmlFor="filter-select-state" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+              {t('investment.filter_state')}
+            </label>
+            <select
+              id="filter-select-state"
+              value={selectedState}
+              onChange={(e) => {
+                setSelectedState(e.target.value);
+                setSelectedDistrictId('ALL');
+              }}
+              className="w-full px-3 py-2 bg-[#F7F5EF] border border-[#171717]/25 text-xs font-mono font-medium text-[#171717] focus:outline-none focus:border-[#D65A3A] transition-colors"
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Priority Engine</span>
-            </button>
-          </div>
-        </div>
-
-        {/* FINANCIAL SUMMARY METRICS (4 CAPITAL PIPELINE STATS) */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-2 font-mono">
-          <div className="bg-white/10 p-3.5 border border-white/10 space-y-1">
-            <span className="text-[10px] text-slate-300 uppercase tracking-widest block font-bold">TOTAL ALLOCATED</span>
-            <div className="text-xl sm:text-2xl font-bold text-white flex items-baseline gap-1">
-              {formatCr(STATE_INVESTMENT_OVERVIEW.allocatedInr)}
-            </div>
-            <span className="text-[9px] text-slate-400 block">6 Core Infrastructure Schemes</span>
+              <option value="ALL">{t('investment.all_states')}</option>
+              {availableStates.map(stateName => (
+                <option key={stateName} value={stateName}>
+                  {stateName}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="bg-white/10 p-3.5 border border-white/10 space-y-1">
-            <span className="text-[10px] text-amber-300 uppercase tracking-widest block font-bold">RELEASED FUNDS</span>
-            <div className="text-xl sm:text-2xl font-bold text-amber-300 flex items-baseline gap-1">
-              {formatCr(STATE_INVESTMENT_OVERVIEW.releasedInr)}
-            </div>
-            <span className="text-[9px] text-slate-400 block">81.6% of State Sanctions</span>
+          {/* District Filter */}
+          <div className="space-y-1">
+            <label htmlFor="filter-select-district" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+              {t('investment.filter_district')}
+            </label>
+            <select
+              id="filter-select-district"
+              value={selectedDistrictId}
+              onChange={(e) => setSelectedDistrictId(e.target.value)}
+              className="w-full px-3 py-2 bg-[#F7F5EF] border border-[#171717]/25 text-xs font-mono font-medium text-[#171717] focus:outline-none focus:border-[#D65A3A] transition-colors"
+            >
+              <option value="ALL">{t('investment.all_districts')}</option>
+              {availableDistricts.map(d => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          <div className="bg-white/10 p-3.5 border border-white/10 space-y-1">
-            <span className="text-[10px] text-emerald-400 uppercase tracking-widest block font-bold">SPENT / EXPENDED</span>
-            <div className="text-xl sm:text-2xl font-bold text-emerald-400 flex items-baseline gap-1">
-              {formatCr(STATE_INVESTMENT_OVERVIEW.spentInr)}
-            </div>
-            <span className="text-[9px] text-slate-400 block">{STATE_INVESTMENT_OVERVIEW.utilizationPct}% Utilization Rate</span>
-          </div>
-
-          <div className="bg-white/10 p-3.5 border border-white/10 space-y-1">
-            <span className="text-[10px] text-[#D65A3A] uppercase tracking-widest block font-bold">UNUTILIZED / REMAINING</span>
-            <div className="text-xl sm:text-2xl font-bold text-[#D65A3A] flex items-baseline gap-1">
-              {formatCr(STATE_INVESTMENT_OVERVIEW.remainingInr)}
-            </div>
-            <span className="text-[9px] text-slate-400 block">22.5% Capital Sitting Idle</span>
+          {/* Sector Filter */}
+          <div className="space-y-1">
+            <label htmlFor="filter-select-sector" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+              {t('investment.filter_sector')}
+            </label>
+            <select
+              id="filter-select-sector"
+              value={selectedSector}
+              onChange={(e) => setSelectedSector(e.target.value)}
+              className="w-full px-3 py-2 bg-[#F7F5EF] border border-[#171717]/25 text-xs font-mono font-medium text-[#171717] focus:outline-none focus:border-[#D65A3A] transition-colors"
+            >
+              <option value="ALL">{t('investment.all_sectors')}</option>
+              <option value="Water">{getCategoryLabel('Water')}</option>
+              <option value="Roads">{getCategoryLabel('Roads')}</option>
+              <option value="Healthcare">{getCategoryLabel('Healthcare')}</option>
+              <option value="Drainage">{getCategoryLabel('Drainage')}</option>
+              <option value="Electricity">{getCategoryLabel('Electricity')}</option>
+            </select>
           </div>
         </div>
       </div>
 
-      {/* 5 CORE QUESTIONS TAB NAVIGATION */}
-      <div className="bg-[#F7F5EF] border border-[#171717] p-2 space-y-2 shadow-[3px_3px_0px_#171717]">
-        <div className="text-[10px] font-mono font-bold text-[#171717]/70 uppercase tracking-widest px-2 pt-1">
-          FIVE AUDIT QUESTIONS & DATA EXPLORATION MODULES:
+      {/* 2. INVESTMENT SNAPSHOT (HERO METRICS) */}
+      <div id="investment-snapshot-section" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 space-y-4">
+        <div className="border-b border-[#171717]/10 pb-2">
+          <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#D65A3A] block">
+            EXECUTIVE AUDIT SUMMARY
+          </span>
+          <h2 className="text-lg font-serif font-bold text-[#171717]">
+            Public Investment Snapshot
+          </h2>
         </div>
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-xs font-mono font-bold">
-          <button
-            onClick={() => setActiveQuestionTab('FLOW')}
-            className={`p-2.5 text-left border transition-all cursor-pointer ${
-              activeQuestionTab === 'FLOW'
-                ? 'bg-[#171717] text-[#F7F5EF] border-[#171717] shadow-[2px_2px_0px_#D65A3A]'
-                : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
-            }`}
-          >
-            <div className="text-[9px] text-[#D65A3A] uppercase font-mono">Q1. ALLOCATION</div>
-            <div className="truncate font-serif font-bold text-xs mt-0.5">💰 Where is money going?</div>
-          </button>
 
-          <button
-            onClick={() => setActiveQuestionTab('UTILIZATION')}
-            className={`p-2.5 text-left border transition-all cursor-pointer ${
-              activeQuestionTab === 'UTILIZATION'
-                ? 'bg-[#171717] text-[#F7F5EF] border-[#171717] shadow-[2px_2px_0px_#D65A3A]'
-                : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
-            }`}
-          >
-            <div className="text-[9px] text-[#D65A3A] uppercase font-mono">Q2. UTILIZATION</div>
-            <div className="truncate font-serif font-bold text-xs mt-0.5">📉 Is money spent?</div>
-          </button>
-
-          <button
-            onClick={() => setActiveQuestionTab('RESULTS')}
-            className={`p-2.5 text-left border transition-all cursor-pointer ${
-              activeQuestionTab === 'RESULTS'
-                ? 'bg-[#171717] text-[#F7F5EF] border-[#171717] shadow-[2px_2px_0px_#D65A3A]'
-                : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
-            }`}
-          >
-            <div className="text-[9px] text-[#D65A3A] uppercase font-mono">Q3. RESULTS</div>
-            <div className="truncate font-serif font-bold text-xs mt-0.5">🏗️ Output vs Complaints</div>
-          </button>
-
-          <button
-            onClick={() => setActiveQuestionTab('MATRIX')}
-            className={`p-2.5 text-left border transition-all cursor-pointer ${
-              activeQuestionTab === 'MATRIX'
-                ? 'bg-[#171717] text-[#F7F5EF] border-[#171717] shadow-[2px_2px_0px_#D65A3A]'
-                : 'bg-white text-[#171717] border-[#171717]/30 hover:border-[#171717]'
-            }`}
-          >
-            <div className="text-[9px] text-[#D65A3A] uppercase font-mono">Q4. TARGETING</div>
-            <div className="truncate font-serif font-bold text-xs mt-0.5">🗺️ Need vs Investment</div>
-          </button>
-
-          <button
-            onClick={() => setActiveQuestionTab('ANOMALIES')}
-            className={`p-2.5 text-left border transition-all cursor-pointer relative ${
-              activeQuestionTab === 'ANOMALIES'
-                ? 'bg-[#171717] text-[#F7F5EF] border-[#171717] shadow-[2px_2px_0px_#D65A3A]'
-                : 'bg-amber-100 text-[#171717] border-amber-400 hover:border-[#171717]'
-            }`}
-          >
-            <div className="text-[9px] text-[#D65A3A] uppercase font-mono flex items-center justify-between">
-              <span>Q5. ANOMALIES</span>
-              <span className="w-2 h-2 rounded-full bg-[#D65A3A] animate-pulse"></span>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+          {/* Total Investment */}
+          <div id="metric-total-investment" className="bg-[#F7F5EF] p-4 border border-[#171717]/15 space-y-1">
+            <span className="text-[10px] text-[#171717]/70 uppercase tracking-wider block font-bold">
+              {t('investment.total_investment')}
+            </span>
+            <div className="text-2xl lg:text-3xl font-bold text-[#171717] tracking-tight">
+              {formatCr(totalAllocated)}
             </div>
-            <div className="truncate font-serif font-bold text-xs mt-0.5 text-[#D65A3A]">🚨 AI Audit Signals ({ALL_INVESTMENT_ANOMALIES.length})</div>
-          </button>
+            <p className="text-[11px] text-[#171717]/70 leading-normal">
+              {t('investment.total_investment_desc')}
+            </p>
+          </div>
+
+          {/* Active Projects */}
+          <div id="metric-active-projects" className="bg-[#F7F5EF] p-4 border border-[#171717]/15 space-y-1">
+            <span className="text-[10px] text-[#171717]/70 uppercase tracking-wider block font-bold">
+              {t('investment.active_projects')}
+            </span>
+            <div className="text-2xl lg:text-3xl font-bold text-[#171717] tracking-tight">
+              {totalProjects}
+            </div>
+            <p className="text-[11px] text-[#171717]/70 leading-normal">
+              {delayedProjects} delayed, {completedProjects} completed
+            </p>
+          </div>
+
+          {/* Completion Rate */}
+          <div id="metric-completion-rate" className="bg-[#F7F5EF] p-4 border border-[#171717]/15 space-y-1">
+            <span className="text-[10px] text-[#171717]/70 uppercase tracking-wider block font-bold">
+              {t('investment.completion_rate')}
+            </span>
+            <div className="text-2xl lg:text-3xl font-bold text-emerald-800 tracking-tight">
+              {completionRatePct}%
+            </div>
+            <p className="text-[11px] text-[#171717]/70 leading-normal">
+              {t('investment.completion_rate_desc')}
+            </p>
+          </div>
+
+          {/* High-Need Areas Without Adequate Investment */}
+          <div id="metric-high-need-areas" className="bg-[#F7F5EF] p-4 border border-[#171717]/15 space-y-1">
+            <span className="text-[10px] text-[#D65A3A] uppercase tracking-wider block font-bold">
+              {t('investment.high_need_areas')}
+            </span>
+            <div className="text-2xl lg:text-3xl font-bold text-[#D65A3A] tracking-tight">
+              3 Districts
+            </div>
+            <p className="text-[11px] text-[#171717]/70 leading-normal">
+              {t('investment.high_need_areas_desc')}
+            </p>
+          </div>
+        </div>
+
+        {/* Short explanation beneath */}
+        <div className="p-3 bg-[#F7F5EF]/60 border-l-2 border-[#D65A3A] text-xs text-[#171717]/80 leading-relaxed">
+          <strong>Key Takeaway:</strong> Out of {formatCr(totalAllocated)} approved state capital, {formatCr(totalSpent)} has been expended on ground projects. While {completionRatePct}% of planned infrastructure works have reached completion, 3 high-need rural pockets show sustained citizen grievance signals alongside delayed public contracts.
         </div>
       </div>
 
-      {/* MODULE 1: Q1 — SCHEME ALLOCATION EXPLORER */}
-      {activeQuestionTab === 'FLOW' && (
-        <div className="space-y-6">
-          <div className="bg-white border border-[#171717] p-5 space-y-4 shadow-[4px_4px_0px_#171717]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#171717]/15 pb-3">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#171717] uppercase flex items-center gap-2">
-                  <DollarSign className="w-5 h-5 text-[#D65A3A]" />
-                  1. WHERE IS THE MONEY GOING? (SCHEME & DEPT ALLOCATION)
-                </h2>
-                <p className="text-xs font-mono text-[#171717]/70">
-                  Breakdown by State → District → Department → Scheme → Project.
-                </p>
-              </div>
+      {/* 3. WHERE IS THE MONEY GOING? (MAP + RANKED LIST) */}
+      <div id="section-where-money-going" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6">
+        <div className="border-b border-[#171717]/10 pb-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-[#D65A3A]" />
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+              {t('investment.where_money_going')}
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[#171717]/70 mt-1">
+            {t('investment.where_money_desc')}
+          </p>
+        </div>
 
-              {/* Filters */}
-              <div className="flex flex-wrap items-center gap-2 text-xs font-mono">
-                <select
-                  value={selectedCategory}
-                  onChange={(e) => setSelectedCategory(e.target.value)}
-                  className="p-1.5 bg-[#F7F5EF] border border-[#171717] font-bold"
-                >
-                  <option value="ALL">All Categories</option>
-                  <option value="Water">Water</option>
-                  <option value="Roads">Roads</option>
-                  <option value="Healthcare">Healthcare</option>
-                  <option value="Electricity">Electricity</option>
-                  <option value="Drainage">Drainage</option>
-                </select>
-              </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Map Column (7 cols on lg) */}
+          <div className="lg:col-span-7 bg-[#F7F5EF] border border-[#171717]/20 p-2 relative h-[380px] sm:h-[440px] flex flex-col">
+            <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-xs px-2.5 py-1 text-[10px] font-mono font-bold uppercase border border-[#171717]/20 shadow-xs">
+              📍 Capital Distribution Map (Circle Size = Investment)
             </div>
 
-            {/* Scheme Allocation Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredSchemes.map((scheme) => (
+            <MapContainer
+              center={mapCenter}
+              zoom={7}
+              scrollWheelZoom={false}
+              className="w-full h-full z-0"
+              style={{ background: '#f5f5f4' }}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
+                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+              />
+              <MapFocusController center={mapCenter} zoom={7} />
+
+              {filteredDistrictInvestments.map(item => {
+                const isSelected = selectedDistrictData?.id === item.id;
+                // Radius proportional to investment: 12px min to 28px max
+                const radius = Math.max(12, Math.min(28, Math.round(item.investmentInr / 25000000)));
+
+                return (
+                  <CircleMarker
+                    key={item.id}
+                    center={[item.lat, item.lon]}
+                    radius={radius}
+                    pathOptions={{
+                      color: isSelected ? '#171717' : '#D65A3A',
+                      fillColor: isSelected ? '#D65A3A' : '#b45309',
+                      fillOpacity: isSelected ? 0.9 : 0.65,
+                      weight: isSelected ? 3 : 1.5
+                    }}
+                    eventHandlers={{
+                      click: () => {
+                        setSelectedDistrictId(item.id);
+                      }
+                    }}
+                  >
+                    <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
+                      <div className="text-xs font-mono p-1">
+                        <strong className="block text-[#171717]">{item.name}</strong>
+                        <span className="text-[#D65A3A] font-bold">{formatCr(item.investmentInr)}</span>
+                        <span className="block text-[#171717]/70 text-[10px]">
+                          {item.activeProjectsCount} projects · {item.topSector}
+                        </span>
+                      </div>
+                    </Tooltip>
+                  </CircleMarker>
+                );
+              })}
+            </MapContainer>
+          </div>
+
+          {/* Ranked List Column (5 cols on lg) */}
+          <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-mono font-bold uppercase text-[#171717]/70 tracking-wider">
+                  Top Districts by Tracked Capital
+                </span>
+                <span className="text-[11px] font-mono text-[#171717]/50">
+                  {filteredDistrictInvestments.length} tracked
+                </span>
+              </div>
+
+              {filteredDistrictInvestments.length === 0 ? (
+                <div className="p-6 bg-[#F7F5EF] border border-[#171717]/15 text-center text-xs font-mono text-[#171717]/70">
+                  {t('investment.no_investment_data')}
+                </div>
+              ) : (
+                <div className="border border-[#171717]/15 divide-y divide-[#171717]/10 bg-white">
+                  {filteredDistrictInvestments.slice(0, 5).map((item, idx) => {
+                    const isSelected = selectedDistrictData?.id === item.id;
+                    return (
+                      <div
+                        key={item.id}
+                        onClick={() => setSelectedDistrictId(item.id)}
+                        className={`p-3.5 transition-colors cursor-pointer flex items-center justify-between ${
+                          isSelected ? 'bg-[#D65A3A]/10 border-l-4 border-l-[#D65A3A]' : 'hover:bg-[#F7F5EF]'
+                        }`}
+                      >
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-bold text-[#171717]/40 w-4">
+                              #{idx + 1}
+                            </span>
+                            <span className="text-sm font-bold text-[#171717]">
+                              {item.name}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-[#171717]/70 block pl-6">
+                            Top Sector: <strong>{item.topSector}</strong> · {item.activeProjectsCount} projects
+                          </span>
+                        </div>
+
+                        <div className="text-right font-mono">
+                          <span className="text-sm font-bold text-[#171717] block">
+                            {formatCr(item.investmentInr)}
+                          </span>
+                          <span className="text-[10px] text-[#D65A3A] font-semibold">
+                            {item.alignmentStatus === 'INVESTMENT_GAP' ? 'High Gap' : 'Aligned'}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Short explanation beneath */}
+            <div className="p-3 bg-[#F7F5EF] border border-[#171717]/15 text-xs text-[#171717]/80 leading-relaxed">
+              <strong>Geographic Insight:</strong> Public investment is heavily concentrated along the coastal and central corridors (Guntur and Vijayawada receiving &gt;75% of state allocations), while western dryland districts remain dependent on decentralized local allocations.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. WHAT IS IT BEING SPENT ON? (SECTOR BREAKDOWN) */}
+      <div id="section-what-spent-on" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6">
+        <div className="border-b border-[#171717]/10 pb-3">
+          <div className="flex items-center gap-2">
+            <PieChart className="w-5 h-5 text-[#D65A3A]" />
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+              {t('investment.what_spent_on')}
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[#171717]/70 mt-1">
+            {t('investment.what_spent_desc')}
+          </p>
+        </div>
+
+        {/* Horizontal Bars */}
+        <div className="space-y-4">
+          {sectorBreakdown.map((sec) => (
+            <div key={sec.category} className="p-4 bg-[#F7F5EF] border border-[#171717]/15 space-y-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs font-mono gap-1">
+                <span className="font-bold text-sm text-[#171717]">
+                  {sec.name}
+                </span>
+                <div className="flex items-center gap-3">
+                  <span className="text-[#171717]/70">
+                    {sec.totalProjects} projects ({sec.completedProjects} done, <span className="text-amber-700 font-bold">{sec.delayedProjects} delayed</span>)
+                  </span>
+                  <span className="font-bold text-sm text-[#171717]">
+                    {formatCr(sec.allocatedInr)} ({sec.percentage}%)
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress track */}
+              <div className="w-full h-3.5 bg-slate-200 border border-[#171717]/15 overflow-hidden">
                 <div 
-                  key={scheme.schemeId}
-                  className="bg-[#F7F5EF] border-2 border-[#171717] p-4 space-y-3 shadow-[3px_3px_0px_#171717] font-mono hover:border-[#D65A3A] transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-2 border-b border-[#171717]/15 pb-2">
-                    <div>
-                      <span className="text-[9px] font-bold uppercase tracking-wider text-[#D65A3A] block">
-                        {scheme.department}
-                      </span>
-                      <h3 className="text-sm font-bold text-[#171717] leading-snug">
-                        {scheme.schemeName}
-                      </h3>
-                    </div>
-                    <span className={`text-[9px] font-bold px-2 py-0.5 border ${
-                      scheme.quadrant === 'RED_HIGH_NEED_LOW_INVESTMENT' 
-                        ? 'bg-rose-100 text-rose-900 border-rose-400'
-                        : scheme.quadrant === 'YELLOW_HIGH_INVESTMENT_POOR_OUTCOME'
-                        ? 'bg-amber-100 text-amber-900 border-amber-400'
-                        : 'bg-emerald-100 text-emerald-900 border-emerald-400'
-                    }`}>
-                      {scheme.quadrant === 'RED_HIGH_NEED_LOW_INVESTMENT' ? '🔴 High Need / Low Funding'
-                        : scheme.quadrant === 'YELLOW_HIGH_INVESTMENT_POOR_OUTCOME' ? '🟡 High Spent / Poor Outcome'
-                        : '🟢 Adequate Funding'}
+                  className="h-full bg-[#171717] transition-all duration-500"
+                  style={{ width: `${Math.min(100, sec.percentage * 2.5)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Short calculated explanation beneath */}
+        <div className="p-3 bg-[#F7F5EF] border-l-2 border-[#D65A3A] text-xs text-[#171717]/80 leading-relaxed">
+          <strong>Sectoral Insight:</strong> {topSectorExplanation} Rural road networks follow at 23.2%, while primary healthcare represents 15.9% of capital allocation.
+        </div>
+      </div>
+
+      {/* 5. DOES THAT INVESTMENT ALIGN WITH CITIZEN DEMAND? (COMPARATIVE VISUALIZATION) */}
+      <div id="section-investment-alignment" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6">
+        <div className="border-b border-[#171717]/10 pb-3">
+          <div className="flex items-center gap-2">
+            <BarChart3 className="w-5 h-5 text-[#D65A3A]" />
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+              {t('investment.is_aligned')}
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[#171717]/70 mt-1">
+            {t('investment.is_aligned_desc')}
+          </p>
+        </div>
+
+        <div className="space-y-4">
+          {alignmentComparisons.map((row) => {
+            const isGap = row.status === 'INVESTMENT_GAP';
+            const isLowDemand = row.status === 'HIGH_INVESTMENT_LOW_DEMAND';
+
+            return (
+              <div 
+                key={row.category} 
+                className="p-4 bg-[#F7F5EF] border border-[#171717]/15 space-y-3"
+              >
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#171717]/10 pb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-sm text-[#171717]">
+                      {row.name}
                     </span>
                   </div>
 
-                  {/* Financial Flow Numbers */}
-                  <div className="grid grid-cols-4 gap-2 text-center text-xs bg-white p-2 border border-[#171717]/30">
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Allocated</span>
-                      <span className="font-bold text-[#171717]">{formatCr(scheme.stateAllocationInr)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Released</span>
-                      <span className="font-bold text-amber-800">{formatCr(scheme.releasedInr)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Spent</span>
-                      <span className="font-bold text-emerald-800">{formatCr(scheme.spentInr)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Unspent</span>
-                      <span className="font-bold text-[#D65A3A]">{formatCr(scheme.remainingInr)}</span>
-                    </div>
+                  {/* Status Badge */}
+                  <div>
+                    {isGap && (
+                      <span className="px-2.5 py-0.5 bg-rose-100 text-rose-900 border border-rose-400 text-[11px] font-mono font-bold uppercase rounded-xs">
+                        {t('investment.investment_gap')}
+                      </span>
+                    )}
+                    {isLowDemand && (
+                      <span className="px-2.5 py-0.5 bg-amber-100 text-amber-900 border border-amber-400 text-[11px] font-mono font-bold uppercase rounded-xs">
+                        {t('investment.high_invest_lower_demand')}
+                      </span>
+                    )}
+                    {!isGap && !isLowDemand && (
+                      <span className="px-2.5 py-0.5 bg-emerald-100 text-emerald-900 border border-emerald-400 text-[11px] font-mono font-bold uppercase rounded-xs">
+                        {t('investment.aligned')}
+                      </span>
+                    )}
                   </div>
+                </div>
 
-                  {/* Progress bar */}
+                {/* Dual comparative bars */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs font-mono">
+                  {/* Public Investment Bar */}
                   <div className="space-y-1">
-                    <div className="flex justify-between text-[10px] text-[#171717]/80">
-                      <span>Fund Expenditure Utilization:</span>
-                      <span className="font-bold">{scheme.utilizationPct}%</span>
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-[#171717]/70 font-semibold">{t('investment.public_investment')} Share</span>
+                      <span className="font-bold text-[#171717]">{row.investmentPct}%</span>
                     </div>
-                    <div className="w-full h-2 bg-slate-200 border border-[#171717]/20 overflow-hidden">
+                    <div className="w-full h-2.5 bg-slate-200 border border-[#171717]/15 overflow-hidden">
                       <div 
-                        className={`h-full ${scheme.utilizationPct > 80 ? 'bg-emerald-600' : scheme.utilizationPct > 65 ? 'bg-amber-500' : 'bg-rose-500'}`}
-                        style={{ width: `${scheme.utilizationPct}%` }}
+                        className="h-full bg-[#171717]"
+                        style={{ width: `${Math.min(100, row.investmentPct * 2.5)}%` }}
                       />
                     </div>
                   </div>
 
-                  {/* Projects Status Summary */}
-                  <div className="flex justify-between items-center text-[10px] text-[#171717]/80 pt-1 border-t border-[#171717]/10">
-                    <span>
-                      <strong>{scheme.totalProjects}</strong> Projects ({scheme.completedProjects} Completed, <span className="text-amber-800 font-bold">{scheme.delayedProjects} Delayed</span>)
-                    </span>
-                    <span className="bg-rose-50 text-rose-800 font-bold px-1.5 py-0.2 border border-rose-300">
-                      🗣️ {scheme.citizenComplaintsCount.toLocaleString()} Complaints
-                    </span>
-                  </div>
-
-                  {/* Primary Anomaly Signal Note */}
-                  {scheme.primaryAnomaly && (
-                    <div className="p-2 bg-amber-50 border border-amber-300 text-[10px] space-y-1">
-                      <span className="font-bold text-amber-900 flex items-center gap-1 uppercase">
-                        <AlertTriangle className="w-3 h-3 text-amber-700" />
-                        AI Audit Signal: {scheme.primaryAnomaly.type}
-                      </span>
-                      <p className="text-amber-950 italic">
-                        "{scheme.primaryAnomaly.outcomeTrend}"
-                      </p>
+                  {/* Citizen Demand Bar */}
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[11px]">
+                      <span className="text-[#D65A3A] font-semibold">{t('investment.citizen_demand')} Share</span>
+                      <span className="font-bold text-[#D65A3A]">{row.demandPct}%</span>
                     </div>
+                    <div className="w-full h-2.5 bg-slate-200 border border-[#171717]/15 overflow-hidden">
+                      <div 
+                        className="h-full bg-[#D65A3A]"
+                        style={{ width: `${Math.min(100, row.demandPct * 2.5)}%` }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Derived 1-line explanation */}
+                <p className="text-xs text-[#171717]/80 leading-relaxed italic">
+                  "{row.explanation}"
+                </p>
+
+                {/* Action Links */}
+                <div className="flex flex-wrap items-center gap-4 text-xs font-mono pt-1">
+                  {onNavigateToIssues && (
+                    <button
+                      onClick={() => onNavigateToIssues(selectedDistrictData?.id, row.category)}
+                      className="text-[#D65A3A] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{t('investment.view_related_issues')}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {onNavigateToRecommendations && (
+                    <button
+                      onClick={() => onNavigateToRecommendations(selectedDistrictData?.id, row.category)}
+                      className="text-[#171717] hover:underline font-bold flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>{t('investment.view_related_recs')}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
+                    </button>
                   )}
                 </div>
-              ))}
-            </div>
-          </div>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </div>
 
-      {/* MODULE 2: Q2 — MONEY UTILIZATION PIPELINE */}
-      {activeQuestionTab === 'UTILIZATION' && (
-        <div className="space-y-6 font-mono">
-          <div className="bg-white border border-[#171717] p-5 space-y-5 shadow-[4px_4px_0px_#171717]">
-            <div className="border-b border-[#171717]/15 pb-3">
-              <h2 className="text-lg font-serif font-bold text-[#171717] uppercase flex items-center gap-2">
-                <PieChart className="w-5 h-5 text-[#D65A3A]" />
-                2. IS MONEY BEING UTILIZED? (CAPITAL PIPELINE AUDIT)
-              </h2>
-              <p className="text-xs text-[#171717]/70">
-                Tracking fund leakages and bottlenecks between Allocation → Release → Expenditure → Idle Funds.
-              </p>
-            </div>
+      {/* 6. SELECTED DISTRICT INSIGHT PANEL */}
+      <div id="section-selected-district-insight" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-5">
+        <div className="border-b border-[#171717]/10 pb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] block">
+              {t('investment.selected_district_insight')}
+            </span>
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+              {selectedDistrictData ? `${selectedDistrictData.name}, ${selectedDistrictData.state}` : 'Statewide Perspective'}
+            </h2>
+          </div>
 
-            {/* CAPITAL WATERFALL FLOW */}
-            <div className="bg-[#F7F5EF] border border-[#171717] p-4 space-y-4">
-              <span className="text-xs font-bold text-[#171717] uppercase block tracking-wider">
-                STATE CAPITAL PIPELINE STAGE COMPARISON (STATEWIDE)
-              </span>
+          {selectedDistrictData && (
+            <span className={`px-2.5 py-1 text-xs font-mono font-bold uppercase border rounded-xs ${
+              selectedDistrictData.alignmentStatus === 'INVESTMENT_GAP'
+                ? 'bg-rose-100 text-rose-900 border-rose-400'
+                : 'bg-emerald-100 text-emerald-900 border-emerald-400'
+            }`}>
+              {selectedDistrictData.alignmentStatus === 'INVESTMENT_GAP' ? t('investment.investment_gap') : t('investment.aligned')}
+            </span>
+          )}
+        </div>
 
-              <div className="space-y-3">
-                {/* Allocation */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold text-[#171717]">
-                    <span>1. Approved Budget Allocation:</span>
-                    <span>{formatCr(STATE_INVESTMENT_OVERVIEW.allocatedInr)} (100%)</span>
-                  </div>
-                  <div className="w-full h-4 bg-slate-200 border border-[#171717]">
-                    <div className="h-full bg-[#171717]" style={{ width: '100%' }} />
-                  </div>
-                </div>
+        {selectedDistrictData ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
+              <div className="p-3 bg-[#F7F5EF] border border-[#171717]/15 space-y-1">
+                <span className="text-[10px] text-[#171717]/60 uppercase block font-bold">
+                  {t('investment.tracked_investment')}
+                </span>
+                <span className="text-lg font-bold text-[#171717] block">
+                  {formatCr(selectedDistrictData.investmentInr)}
+                </span>
+                <span className="text-[10px] text-[#171717]/70">
+                  {selectedDistrictData.activeProjectsCount} {t('investment.active_projects')}
+                </span>
+              </div>
 
-                {/* Released */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold text-[#171717]">
-                    <span>2. Released to State Treasury / Departments:</span>
-                    <span className="text-amber-800">{formatCr(STATE_INVESTMENT_OVERVIEW.releasedInr)} (81.6%)</span>
-                  </div>
-                  <div className="w-full h-4 bg-slate-200 border border-[#171717]">
-                    <div className="h-full bg-amber-600" style={{ width: '81.6%' }} />
-                  </div>
-                </div>
+              <div className="p-3 bg-[#F7F5EF] border border-[#171717]/15 space-y-1">
+                <span className="text-[10px] text-[#171717]/60 uppercase block font-bold">
+                  {t('investment.largest_sector')}
+                </span>
+                <span className="text-lg font-bold text-[#171717] block">
+                  {selectedDistrictData.topSector}
+                </span>
+                <span className="text-[10px] text-[#171717]/70">
+                  Primary infrastructure allocation
+                </span>
+              </div>
 
-                {/* Spent */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold text-[#171717]">
-                    <span>3. Actual Ground Expenditure (Invoices Paid):</span>
-                    <span className="text-emerald-800">{formatCr(STATE_INVESTMENT_OVERVIEW.spentInr)} (63.3% of total)</span>
-                  </div>
-                  <div className="w-full h-4 bg-slate-200 border border-[#171717]">
-                    <div className="h-full bg-emerald-600" style={{ width: '63.3%' }} />
-                  </div>
-                </div>
-
-                {/* Idle / Unutilized */}
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs font-bold text-[#D65A3A]">
-                    <span>4. Unutilized Balance (Idle Capital):</span>
-                    <span>{formatCr(STATE_INVESTMENT_OVERVIEW.remainingInr)} (22.5% of released funds)</span>
-                  </div>
-                  <div className="w-full h-4 bg-slate-200 border border-[#171717]">
-                    <div className="h-full bg-[#D65A3A]" style={{ width: '22.5%' }} />
-                  </div>
-                </div>
+              <div className="p-3 bg-[#F7F5EF] border border-[#171717]/15 space-y-1">
+                <span className="text-[10px] text-[#D65A3A] uppercase block font-bold">
+                  {t('investment.civicpulse_signal')}
+                </span>
+                <span className="text-lg font-bold text-rose-800 block">
+                  {selectedDistrictData.demandCount.toLocaleString()} {t('investment.citizen_reports')}
+                </span>
+                <span className="text-[10px] text-[#171717]/70">
+                  {selectedDistrictData.deficitLabel}
+                </span>
               </div>
             </div>
 
-            {/* Department Utilization Leaderboard */}
-            <div className="space-y-3">
-              <span className="text-xs font-bold text-[#171717] uppercase block tracking-wider">
-                DEPARTMENTAL UTILIZATION & UNSPENT BALANCES
+            {/* Concise calculated alignment verdict */}
+            <div className="p-4 bg-[#F7F5EF] border-l-3 border-[#D65A3A] space-y-2">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+                {t('investment.investment_alignment')} Verdict
               </span>
-
-              <div className="border border-[#171717] divide-y divide-[#171717]/20 text-xs">
-                {MAJOR_GOVERNMENT_SCHEMES.map(s => (
-                  <div key={s.schemeId} className="p-3 bg-white flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                    <div className="space-y-0.5">
-                      <span className="font-bold text-[#171717]">{s.schemeName}</span>
-                      <p className="text-[10px] text-[#171717]/70">{s.department}</p>
-                    </div>
-
-                    <div className="flex items-center gap-4 text-right">
-                      <div>
-                        <span className="text-[9px] text-[#171717]/60 block uppercase">Spent / Allocated</span>
-                        <span className="font-bold">{formatCr(s.spentInr)} / {formatCr(s.stateAllocationInr)}</span>
-                      </div>
-
-                      <div className="w-24">
-                        <span className="text-[9px] text-[#171717]/60 block uppercase">Utilization</span>
-                        <span className={`font-bold ${s.utilizationPct > 80 ? 'text-emerald-700' : 'text-amber-800'}`}>
-                          {s.utilizationPct}%
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MODULE 3: Q3 — SPENDING VS CITIZEN OUTCOMES */}
-      {activeQuestionTab === 'RESULTS' && (
-        <div className="space-y-6 font-mono">
-          <div className="bg-white border border-[#171717] p-5 space-y-5 shadow-[4px_4px_0px_#171717]">
-            <div className="border-b border-[#171717]/15 pb-3">
-              <h2 className="text-lg font-serif font-bold text-[#171717] uppercase flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-[#D65A3A]" />
-                3. IS SPENDING PRODUCING RESULTS? (INVESTMENT → OUTPUT → OUTCOME)
-              </h2>
-              <p className="text-xs text-[#171717]/70">
-                Cross-matching state capital spent against ground infrastructure outputs and citizen complaint trends.
+              <p className="text-xs sm:text-sm text-[#171717] leading-relaxed">
+                {selectedDistrictData.alignmentVerdict}
               </p>
             </div>
 
-            {/* CONVERSION PIPELINE EXAMPLES */}
-            <div className="space-y-4">
-              {/* Example 1: Water */}
-              <div className="p-4 bg-[#F7F5EF] border-2 border-[#171717] space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2">
-                  <span className="text-xs font-bold text-[#171717] uppercase flex items-center gap-1.5">
-                    💧 RURAL WATER INFRASTRUCTURE AUDIT
+            {/* Direct action link */}
+            {onNavigateToRecommendations && (
+              <div className="pt-1 flex justify-end">
+                <button
+                  onClick={() => onNavigateToRecommendations(selectedDistrictData.id, selectedDistrictData.topSectorKey)}
+                  className="px-4 py-2 bg-[#171717] hover:bg-[#D65A3A] text-white text-xs font-mono font-bold uppercase transition-colors shadow-xs flex items-center gap-1.5 cursor-pointer"
+                >
+                  <span>{t('investment.view_related_recs')} for {selectedDistrictData.name}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="p-6 bg-[#F7F5EF] border border-[#171717]/15 text-center text-xs font-mono text-[#171717]/70">
+            {t('investment.no_investment_data')}
+          </div>
+        )}
+      </div>
+
+      {/* 7. WHERE ARE THE GAPS? (PRIORITY INVESTMENT MISMATCHES) */}
+      <div id="section-where-are-gaps" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6">
+        <div className="border-b border-[#171717]/10 pb-3">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-5 h-5 text-[#D65A3A]" />
+            <h2 className="text-xl sm:text-2xl font-serif font-bold text-[#171717]">
+              {t('investment.where_gaps')}
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-[#171717]/70 mt-1">
+            {t('investment.attention_needed')}: Priority investment mismatches requiring closer administrative review.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {priorityGaps.map((gap) => (
+            <div 
+              key={gap.id}
+              className="p-4 bg-[#F7F5EF] border border-[#171717]/15 space-y-3 flex flex-col justify-between"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center justify-between gap-2 border-b border-[#171717]/10 pb-2">
+                  <span className="text-xs font-mono font-bold text-[#171717]">
+                    📍 {gap.location} · {gap.sectorName}
                   </span>
-                  <span className="text-[9px] bg-amber-100 text-amber-900 border border-amber-400 px-2 py-0.5 font-bold">
-                    🔧 FIX / AUDIT REQUIRED
+                  <span className={`px-2 py-0.5 text-[9px] font-mono font-bold uppercase border rounded-xs ${
+                    gap.status === 'HIGH_NEED' 
+                      ? 'bg-rose-100 text-rose-900 border-rose-400' 
+                      : 'bg-amber-100 text-amber-900 border-amber-400'
+                  }`}>
+                    {gap.status === 'HIGH_NEED' ? t('investment.high_need') : t('investment.investment_gap')}
                   </span>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">1. INVESTMENT INPUT</span>
-                    <span className="font-bold text-[#171717] text-sm block">₹39 Cr Spent</span>
-                    <span className="text-[10px] text-[#171717]/70">Out of ₹50 Cr allocated under Jal Jeevan Mission.</span>
-                  </div>
-
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">2. INFRASTRUCTURE OUTPUT</span>
-                    <span className="font-bold text-[#171717] text-sm block">82 Projects Completed</span>
-                    <span className="text-[10px] text-amber-800 font-bold block">25 Projects Delayed / Stalled</span>
-                  </div>
-
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">3. CITIZEN GROUND OUTCOME</span>
-                    <span className="font-bold text-rose-800 text-sm block">4,820 Complaints Active</span>
-                    <span className="text-[10px] text-[#171717]/70">37 villages still lack functioning piped supply.</span>
-                  </div>
-                </div>
-
-                <div className="p-2.5 bg-[#171717] text-[#F7F5EF] text-xs space-y-1">
-                  <span className="text-amber-400 text-[10px] font-bold uppercase block">AI GAP EVALUATION:</span>
-                  <p className="text-white text-[11px] leading-relaxed">
-                    "₹39 Cr has already been spent, but 37 villages continue reporting water-access problems due to contractor delays on 25 pending pipelines. The AI Engine recommends 🔧 FIX / AUDIT rather than building new uncoordinated schemes."
+                <div className="space-y-1">
+                  <span className="text-[10px] font-mono font-bold uppercase text-[#171717]/60 block">
+                    {t('investment.why_it_matters')}
+                  </span>
+                  <p className="text-xs text-[#171717]/80 leading-relaxed">
+                    {gap.whyItMatters}
                   </p>
                 </div>
               </div>
 
-              {/* Example 2: Roads */}
-              <div className="p-4 bg-[#F7F5EF] border-2 border-[#171717] space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-[#171717]/15 pb-2">
-                  <span className="text-xs font-bold text-[#171717] uppercase flex items-center gap-1.5">
-                    🛣️ RURAL HIGHWAY CORRIDOR AUDIT
-                  </span>
-                  <span className="text-[9px] bg-rose-100 text-rose-900 border border-rose-400 px-2 py-0.5 font-bold">
-                    🚨 POST-COMPLETION SPIKE
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">1. INVESTMENT INPUT</span>
-                    <span className="font-bold text-[#171717] text-sm block">₹20 Cr Spent</span>
-                    <span className="text-[10px] text-[#171717]/70">PMGSY Rural Roads Phase 3.</span>
-                  </div>
-
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">2. INFRASTRUCTURE OUTPUT</span>
-                    <span className="font-bold text-[#171717] text-sm block">42 km Asphalt Constructed</span>
-                    <span className="text-[10px] text-[#171717]/70">Completed 90 days ago.</span>
-                  </div>
-
-                  <div className="bg-white p-3 border border-[#171717] space-y-1">
-                    <span className="text-[9px] text-[#D65A3A] uppercase font-bold block">3. CITIZEN GROUND OUTCOME</span>
-                    <span className="font-bold text-rose-800 text-sm block">+31% Complaint Surge</span>
-                    <span className="text-[10px] text-rose-800 font-bold block">3,890 Pothole & Erosion Signals</span>
-                  </div>
-                </div>
-
-                <div className="p-2.5 bg-[#171717] text-[#F7F5EF] text-xs space-y-1">
-                  <span className="text-amber-400 text-[10px] font-bold uppercase block">AI GAP EVALUATION:</span>
-                  <p className="text-white text-[11px] leading-relaxed">
-                    "High spending (₹20 Cr) produced 42 km of road, but complaints increased 31% due to immediate asphalt surface peeling under monsoon traffic. Triggers contractor quality defect liability audit."
-                  </p>
-                </div>
+              <div className="pt-2 border-t border-[#171717]/10 flex justify-end text-xs font-mono font-bold">
+                {gap.actionTarget === 'recommendations' && onNavigateToRecommendations && (
+                  <button
+                    onClick={() => onNavigateToRecommendations(gap.districtId, gap.category)}
+                    className="text-[#D65A3A] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{t('investment.view_related_recs')}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                {gap.actionTarget === 'issues' && onNavigateToIssues && (
+                  <button
+                    onClick={() => onNavigateToIssues(gap.districtId, gap.category)}
+                    className="text-[#D65A3A] hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>{t('investment.view_related_issues')}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
               </div>
             </div>
-          </div>
+          ))}
         </div>
-      )}
+      </div>
 
-      {/* MODULE 4: Q4 — NEED VS INVESTMENT MATRIX */}
-      {activeQuestionTab === 'MATRIX' && (
-        <div className="space-y-6 font-mono">
-          <div className="bg-white border border-[#171717] p-5 space-y-5 shadow-[4px_4px_0px_#171717]">
-            <div className="border-b border-[#171717]/15 pb-3">
-              <h2 className="text-lg font-serif font-bold text-[#171717] uppercase flex items-center gap-2">
-                <Layers className="w-5 h-5 text-[#D65A3A]" />
-                4. ARE INVESTMENTS REACHING THE PLACES THAT NEED THEM? (4-QUADRANT MATRIX)
-              </h2>
-              <p className="text-xs text-[#171717]/70">
-                Overlaying citizen demand intensity against government capital allocation per district.
+      {/* 8. DETAILED DATA (PROGRESSIVE DISCLOSURE) */}
+      <div id="section-detailed-data" className="bg-[#FFFFFF] border border-[#171717]/15">
+        <button
+          id="btn-toggle-detailed-data"
+          onClick={() => setShowDetailedData(!showDetailedData)}
+          className="w-full p-5 text-left flex items-center justify-between hover:bg-[#F7F5EF] transition-colors cursor-pointer"
+        >
+          <div className="flex items-center gap-2.5">
+            <FileText className="w-5 h-5 text-[#D65A3A]" />
+            <div>
+              <h3 className="text-base font-serif font-bold text-[#171717]">
+                {showDetailedData ? t('investment.hide_detailed_data') : t('investment.view_detailed_data')}
+              </h3>
+              <p className="text-xs text-[#171717]/60 font-mono">
+                Departmental schemes, expenditure pipelines, and contractor execution audit
               </p>
             </div>
-
-            {/* 4 QUADRANT CARDS GRID */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* QUADRANT 1: RED */}
-              <div className="bg-rose-50 border-2 border-rose-500 p-4 space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-rose-300 pb-2">
-                  <span className="text-xs font-bold text-rose-900 uppercase flex items-center gap-1.5">
-                    🔴 HIGH NEED + LOW INVESTMENT
-                  </span>
-                  <span className="text-[9px] bg-rose-600 text-white px-2 py-0.5 font-bold">
-                    CRITICAL FUNDING GAP
-                  </span>
-                </div>
-                <p className="text-xs text-rose-900 leading-snug">
-                  Districts/sectors with massive citizen complaint signals (5,000+ requests) but minimal state scheme capital allocated.
-                </p>
-                <div className="bg-white p-3 border border-rose-300 text-xs space-y-1">
-                  <span className="font-bold text-[#171717] block">Vijayawada Outer Rural Healthcare & Kurnool Power Grid</span>
-                  <p className="text-[10px] text-[#171717]/70">14,200 residents isolated from clinics; ₹11 Cr NHM funds sitting idle in treasury.</p>
-                </div>
-              </div>
-
-              {/* QUADRANT 2: YELLOW */}
-              <div className="bg-amber-50 border-2 border-amber-500 p-4 space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-amber-300 pb-2">
-                  <span className="text-xs font-bold text-amber-900 uppercase flex items-center gap-1.5">
-                    🟡 HIGH INVESTMENT + POOR OUTCOMES
-                  </span>
-                  <span className="text-[9px] bg-amber-600 text-white px-2 py-0.5 font-bold">
-                    AUDIT & FIX REQUIRED
-                  </span>
-                </div>
-                <p className="text-xs text-amber-900 leading-snug">
-                  Sectors where millions have been spent, but complaints remain high due to contractor delays, poor quality, or maintenance failure.
-                </p>
-                <div className="bg-white p-3 border border-amber-300 text-xs space-y-1">
-                  <span className="font-bold text-[#171717] block">Guntur Rural Water (JJM) & PMGSY Roads</span>
-                  <p className="text-[10px] text-[#171717]/70">₹39 Cr spent, 25 projects delayed; road complaints up +31% post-construction.</p>
-                </div>
-              </div>
-
-              {/* QUADRANT 3: GREEN */}
-              <div className="bg-emerald-50 border-2 border-emerald-500 p-4 space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-emerald-300 pb-2">
-                  <span className="text-xs font-bold text-emerald-900 uppercase flex items-center gap-1.5">
-                    🟢 HIGH NEED + ADEQUATE INVESTMENT
-                  </span>
-                  <span className="text-[9px] bg-emerald-600 text-white px-2 py-0.5 font-bold">
-                    ON TRACK / MONITOR
-                  </span>
-                </div>
-                <p className="text-xs text-emerald-900 leading-snug">
-                  High citizen demand areas where major state schemes have been properly funded and execution is progressing on schedule.
-                </p>
-                <div className="bg-white p-3 border border-emerald-300 text-xs space-y-1">
-                  <span className="font-bold text-[#171717] block">Vijayawada Urban Drainage (Swachh Bharat)</span>
-                  <p className="text-[10px] text-[#171717]/70">₹13 Cr spent, 30 outfall projects active; desilting work progressing.</p>
-                </div>
-              </div>
-
-              {/* QUADRANT 4: GREY */}
-              <div className="bg-slate-100 border-2 border-slate-400 p-4 space-y-3 shadow-[3px_3px_0px_#171717]">
-                <div className="flex items-center justify-between border-b border-slate-300 pb-2">
-                  <span className="text-xs font-bold text-slate-800 uppercase flex items-center gap-1.5">
-                    ⚪ LOW NEED + LOW INVESTMENT
-                  </span>
-                  <span className="text-[9px] bg-slate-700 text-white px-2 py-0.5 font-bold">
-                    BASELINE MAINTENANCE
-                  </span>
-                </div>
-                <p className="text-xs text-slate-800 leading-snug">
-                  Sectors with minimal citizen complaints and adequate baseline coverage requiring routine operational monitoring.
-                </p>
-                <div className="bg-white p-3 border border-slate-300 text-xs space-y-1">
-                  <span className="font-bold text-[#171717] block">Pedakakani School Infrastructure</span>
-                  <p className="text-[10px] text-[#171717]/70">Facility at 98% utilization with low grievance signals.</p>
-                </div>
-              </div>
-            </div>
           </div>
-        </div>
-      )}
+          {showDetailedData ? (
+            <ChevronUp className="w-5 h-5 text-[#171717]/60" />
+          ) : (
+            <ChevronDown className="w-5 h-5 text-[#171717]/60" />
+          )}
+        </button>
 
-      {/* MODULE 5: Q5 — AI ANOMALY SIGNALS FEED */}
-      {activeQuestionTab === 'ANOMALIES' && (
-        <div className="space-y-6 font-mono">
-          <div className="bg-white border-2 border-[#171717] p-5 space-y-5 shadow-[4px_4px_0px_#171717]">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-[#171717]/15 pb-3">
-              <div>
-                <h2 className="text-lg font-serif font-bold text-[#171717] uppercase flex items-center gap-2">
-                  <ShieldAlert className="w-5 h-5 text-[#D65A3A]" />
-                  5. WHERE ARE THE ANOMALIES & AUDIT SIGNALS? ({filteredAnomalies.length})
-                </h2>
-                <p className="text-xs text-[#171717]/70">
-                  AI flags discrepancies between spending, project status, and citizen grievances to trigger human review.
-                </p>
-              </div>
+        {showDetailedData && (
+          <div className="p-6 border-t border-[#171717]/15 space-y-5">
+            {/* Search filter for detailed table */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <span className="text-xs font-mono font-bold uppercase text-[#171717]/70">
+                Tracked Schemes Table ({detailedFilteredSchemes.length} records)
+              </span>
 
-              <div className="relative">
+              <div className="relative w-full sm:w-64">
                 <Search className="w-3.5 h-3.5 text-[#171717]/50 absolute left-2.5 top-2.5" />
                 <input
                   type="text"
-                  placeholder="Filter anomaly signals..."
-                  value={anomalySearchQuery}
-                  onChange={(e) => setAnomalySearchQuery(e.target.value)}
-                  className="pl-8 pr-3 py-1.5 bg-[#F7F5EF] border border-[#171717] text-xs font-bold placeholder-[#171717]/50 focus:outline-none focus:border-[#D65A3A]"
+                  placeholder="Filter scheme or department..."
+                  value={detailSearchQuery}
+                  onChange={(e) => setDetailSearchQuery(e.target.value)}
+                  className="w-full pl-8 pr-3 py-1.5 bg-[#F7F5EF] border border-[#171717]/25 text-xs font-mono font-medium focus:outline-none focus:border-[#D65A3A]"
                 />
               </div>
             </div>
 
-            {/* ANOMALY CARDS FEED */}
-            <div className="space-y-4">
-              {filteredAnomalies.map((anomaly) => (
-                <div 
-                  key={anomaly.id}
-                  className="bg-[#F7F5EF] border-2 border-[#171717] p-4 space-y-3 shadow-[3px_3px_0px_#171717] hover:border-[#D65A3A] transition-colors"
-                >
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-[#171717]/15 pb-2">
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-0.5 text-[9px] font-bold border ${
-                        anomaly.severity === 'CRITICAL' 
-                          ? 'bg-rose-600 text-white border-rose-700'
-                          : 'bg-amber-500 text-white border-amber-600'
-                      }`}>
-                        {anomaly.severity} SIGNAL
-                      </span>
-                      <span className="text-[10px] font-bold text-[#D65A3A] uppercase">
-                        {anomaly.schemeName}
-                      </span>
-                    </div>
-
-                    <span className="text-[10px] bg-white border border-[#171717] px-2 py-0.5 font-bold">
-                      📍 {anomaly.districtName}
-                    </span>
-                  </div>
-
-                  <h3 className="text-sm font-bold text-[#171717] leading-snug">
-                    {anomaly.title}
-                  </h3>
-
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-xs bg-white p-2 border border-[#171717]/20">
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Allocated</span>
-                      <span className="font-bold">{formatCr(anomaly.allocatedInr)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Spent</span>
-                      <span className="font-bold text-emerald-800">{formatCr(anomaly.spentInr)}</span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Projects</span>
-                      <span className="font-bold">{anomaly.completedCount} Done / <span className="text-amber-800">{anomaly.delayedCount} Stalled</span></span>
-                    </div>
-                    <div>
-                      <span className="text-[9px] text-[#171717]/60 block uppercase">Complaints</span>
-                      <span className="font-bold text-rose-800">🗣️ {anomaly.citizenComplaintsCount.toLocaleString()}</span>
-                    </div>
-                  </div>
-
-                  <p className="text-xs text-[#171717] italic bg-amber-50 p-2.5 border border-amber-300">
-                    "{anomaly.outcomeTrend}"
-                  </p>
-
-                  <div className="p-2.5 bg-[#171717] text-[#F7F5EF] text-xs font-bold flex items-center justify-between gap-2">
-                    <span className="text-amber-300 flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5" />
-                      {anomaly.aiInvestigationNote}
-                    </span>
-
-                    <button
-                      onClick={() => setSelectedAnomalyModal(anomaly)}
-                      className="px-2.5 py-1 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-[10px] font-bold uppercase transition-all whitespace-nowrap cursor-pointer"
-                    >
-                      Audit Details & Action
-                    </button>
-                  </div>
-                </div>
-              ))}
+            {/* Full schemes table */}
+            <div className="overflow-x-auto border border-[#171717]/15">
+              <table className="w-full text-left text-xs font-mono border-collapse">
+                <thead className="bg-[#171717] text-white">
+                  <tr>
+                    <th className="p-3 font-bold uppercase">Scheme / Department</th>
+                    <th className="p-3 font-bold uppercase text-right">Allocated</th>
+                    <th className="p-3 font-bold uppercase text-right">Expended</th>
+                    <th className="p-3 font-bold uppercase text-right">Utilization</th>
+                    <th className="p-3 font-bold uppercase text-center">Projects (Done/Delay)</th>
+                    <th className="p-3 font-bold uppercase text-center">Audit Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#171717]/10 bg-white">
+                  {detailedFilteredSchemes.map((scheme) => (
+                    <tr key={scheme.schemeId} className="hover:bg-[#F7F5EF]/80 transition-colors">
+                      <td className="p-3">
+                        <strong className="text-[#171717] block">{scheme.schemeName}</strong>
+                        <span className="text-[10px] text-[#171717]/60 block">{scheme.department}</span>
+                      </td>
+                      <td className="p-3 text-right font-bold text-[#171717]">
+                        {formatCr(scheme.stateAllocationInr)}
+                      </td>
+                      <td className="p-3 text-right text-emerald-800 font-bold">
+                        {formatCr(scheme.spentInr)}
+                      </td>
+                      <td className="p-3 text-right">
+                        <span className={`font-bold ${scheme.utilizationPct > 80 ? 'text-emerald-700' : 'text-amber-800'}`}>
+                          {scheme.utilizationPct}%
+                        </span>
+                      </td>
+                      <td className="p-3 text-center">
+                        <span>{scheme.completedProjects} done / <span className="text-amber-700 font-bold">{scheme.delayedProjects} delayed</span></span>
+                      </td>
+                      <td className="p-3 text-center">
+                        {scheme.primaryAnomaly ? (
+                          <button
+                            onClick={() => {
+                              // Find corresponding anomaly in ALL_INVESTMENT_ANOMALIES
+                              const matched: InvestmentAnomalySignal = ALL_INVESTMENT_ANOMALIES.find(a => a.id === scheme.primaryAnomaly?.id) || {
+                                id: scheme.primaryAnomaly.id,
+                                title: `${scheme.schemeName} Execution Anomaly`,
+                                type: (scheme.primaryAnomaly.type || 'PROJECT_DELAYS_OVERRUNS') as AnomalySignalType,
+                                severity: 'HIGH' as const,
+                                districtId: scheme.primaryAnomaly.targetArea.toLowerCase().replace(/\s+/g, '-'),
+                                districtName: scheme.primaryAnomaly.targetArea,
+                                department: scheme.department,
+                                schemeName: scheme.schemeName,
+                                allocatedInr: scheme.stateAllocationInr,
+                                spentInr: scheme.spentInr,
+                                unspentInr: scheme.remainingInr,
+                                projectsCount: scheme.totalProjects,
+                                delayedCount: scheme.delayedProjects,
+                                completedCount: scheme.completedProjects,
+                                citizenComplaintsCount: scheme.citizenComplaintsCount,
+                                outcomeTrend: scheme.primaryAnomaly.outcomeTrend,
+                                aiInvestigationNote: `Audit required on contract execution for ${scheme.schemeName}.`,
+                                recommendedActionType: 'FIX' as InterventionType
+                              };
+                              setSelectedAnomalyModal(matched);
+                            }}
+                            className="px-2 py-1 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-[10px] font-bold uppercase transition-all whitespace-nowrap cursor-pointer"
+                          >
+                            Audit Details
+                          </button>
+                        ) : (
+                          <span className="text-[10px] text-emerald-700 font-bold">Standard Track</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* 9. DATA SOURCE TRANSPARENCY */}
+      <div id="investment-data-sources" className="p-4 bg-[#F7F5EF] border border-[#171717]/15 text-xs font-mono space-y-1.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[11px] font-bold uppercase text-[#171717]/70">
+            {t('investment.data_sources')}
+          </span>
+          <span className="px-2 py-0.5 bg-slate-200 text-slate-700 text-[10px] font-bold uppercase rounded-xs">
+            {t('investment.illustrative_badge')}
+          </span>
         </div>
-      )}
+        <p className="text-[11px] text-[#171717]/70 leading-relaxed">
+          Sourced from Open Government Data (OGD) Platform India, DARPG Monthly Grievance Reports, and Scheme Baselines (JJM, PMGSY, NHM, SBM). Ground telemetry is synchronized with CivicPulse Citizen Request feeds for public policy simulation and administrative demonstration.
+        </p>
+      </div>
 
       {/* ANOMALY INSPECTION & ACTION MODAL */}
       {selectedAnomalyModal && (
