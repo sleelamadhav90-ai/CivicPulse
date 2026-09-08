@@ -494,7 +494,18 @@ export default function App() {
           {activeTab === 'investment' && (
             <InvestmentIntelligence
               districts={districts}
+              requests={requests}
               onNavigateToEngine={() => setActiveTab('recommendations')}
+              onNavigateToRecommendations={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('recommendations');
+              }}
+              onNavigateToIssues={(districtId, category) => {
+                if (districtId) setPolicyTargetDistrictId(districtId);
+                if (category) setPolicyTargetCategory(category as InfrastructureCategory);
+                setActiveTab('issues');
+              }}
               onNavigateToPolicyLab={(districtId, category) => {
                 setPolicyTargetDistrictId(districtId);
                 setPolicyTargetCategory(category);
