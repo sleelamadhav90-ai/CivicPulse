@@ -168,7 +168,6 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   selectedCountryCode = 'IN',
   onOpenEvidenceModal,
 }) => {
-  const [baseTileMode, setBaseTileMode] = useState<'physical_satellite' | 'vector_voyager'>('physical_satellite');
   const [showMapSources, setShowMapSources] = useState(false);
   const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
 
@@ -276,30 +275,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         </span>
       </div>
 
-      {/* 2. FLOATING MAP TILE STYLE SELECTOR (TOP-RIGHT) */}
-      <div className="absolute top-3 right-3 z-20 bg-[#171717]/85 backdrop-blur-md border border-white/20 p-1 shadow-md flex items-center gap-1 font-mono text-[10px] rounded-lg">
-        <button
-          onClick={() => setBaseTileMode('physical_satellite')}
-          className={`px-3 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded-md ${
-            baseTileMode === 'physical_satellite'
-              ? 'bg-[#D65A3A] text-white shadow-xs'
-              : 'text-white/80 hover:text-white hover:bg-white/10'
-          }`}
-          title="High-Resolution Satellite Imagery with Place Context"
-        >
-          🛰️ SATELLITE
-        </button>
-        <button
-          onClick={() => setBaseTileMode('vector_voyager')}
-          className={`px-3 py-1 font-bold uppercase tracking-wider transition-all cursor-pointer rounded-md ${
-            baseTileMode === 'vector_voyager'
-              ? 'bg-[#D65A3A] text-white shadow-xs'
-              : 'text-white/80 hover:text-white hover:bg-white/10'
-          }`}
-          title="Clean Street & Geographic Map"
-        >
-          🗺️ STREETS
-        </button>
+      {/* 2. SATELLITE BASEMAP BADGE (TOP-RIGHT) */}
+      <div className="absolute top-3 right-3 z-20 bg-[#171717]/85 backdrop-blur-md border border-white/20 px-2.5 py-1 shadow-md flex items-center gap-1.5 font-mono text-[10px] text-white/90 rounded-lg">
+        <span>🛰️</span>
+        <span className="font-bold uppercase tracking-wider">Satellite Hybrid</span>
       </div>
 
       {/* 3. COMPACT FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT) */}
@@ -353,28 +332,18 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         <ZoomControl position="bottomright" />
         <MapController center={mapCenter} zoom={targetZoom} />
         
-        {/* BASE TILE LAYERS: SATELLITE (DEFAULT) OR STREETS */}
-        {baseTileMode === 'physical_satellite' ? (
-          <>
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-              attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-              maxZoom={19}
-            />
-            <TileLayer
-              url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-              attribution='&copy; Esri'
-              maxZoom={19}
-              opacity={0.7}
-            />
-          </>
-        ) : (
-          <TileLayer
-            url="https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}"
-            attribution='Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            maxZoom={19}
-          />
-        )}
+        {/* BASE SATELLITE TILE LAYERS: WORLD IMAGERY & PLACE LABELS */}
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+          attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+          maxZoom={19}
+        />
+        <TileLayer
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+          attribution='&copy; Esri'
+          maxZoom={19}
+          opacity={0.7}
+        />
 
         {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY — NO HUGE OVERLAPPING CIRCLES */}
         {activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon) && (
