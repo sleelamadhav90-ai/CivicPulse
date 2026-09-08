@@ -88,20 +88,36 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
   // Anomaly modal state (preserved from previous version)
   const [selectedAnomalyModal, setSelectedAnomalyModal] = useState<InvestmentAnomalySignal | null>(null);
 
-  // States list: Only actual states/UTs
+  // Available states derived dynamically from the districts dataset
   const availableStates = useMemo(() => {
-    return getAvailableStates('IN', districts);
+    const statesSet = new Set<string>();
+    districts.forEach(d => {
+      if (d.state && d.state.trim().length > 0) {
+        statesSet.add(d.state.trim());
+      }
+    });
+    return Array.from(statesSet).sort((a, b) => a.localeCompare(b));
   }, [districts]);
 
-  // Districts list strictly dependent on selectedState
+  // Districts list dynamically mapped based on selectedState
   const availableDistricts = useMemo(() => {
-    return getDistrictsForState(selectedState, 'IN', districts);
+    let list = districts;
+    if (selectedState !== 'ALL') {
+      list = districts.filter(d => d.state && d.state.toLowerCase() === selectedState.toLowerCase());
+    }
+    return list
+      .map(d => ({
+        id: d.id,
+        name: d.name,
+        state: d.state || 'India'
+      }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [selectedState, districts]);
 
-  // Reset district selection if state changes and district no longer valid
+  // Reset district selection if state changes and selected district is not in the new state's district list
   useEffect(() => {
     if (selectedDistrictId !== 'ALL') {
-      const exists = availableDistricts.some(d => d.id === selectedDistrictId);
+      const exists = availableDistricts.some(d => d.id.toLowerCase() === selectedDistrictId.toLowerCase());
       if (!exists) {
         setSelectedDistrictId('ALL');
       }
@@ -261,21 +277,45 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
           alignmentVerdict: anchor.alignmentVerdict,
           hasData: true
         });
-      } else if (d.planned_investment && d.planned_investment > 0) {
+      } else {
+        // Dynamically compute sector needs from district metrics
+        const waterGap = 100 - (d.water_access ?? 65);
+        const healthGap = 100 - (d.health_access ?? 65);
+        const roadGap = 100 - (d.road_quality ?? 65);
+        const eduGap = 100 - (d.education_access ?? 65);
+
+        let topSector: InfrastructureCategory = 'Roads';
+        if (waterGap >= healthGap && waterGap >= roadGap && waterGap >= eduGap) {
+          topSector = 'Water';
+        } else if (healthGap >= roadGap && healthGap >= eduGap) {
+          topSector = 'Healthcare';
+        } else if (eduGap >= roadGap) {
+          topSector = 'Education';
+        } else {
+          topSector = 'Roads';
+        }
+
+        const investment = d.planned_investment && d.planned_investment > 0 ? d.planned_investment : 50000000;
+        const maxGap = Math.max(waterGap, healthGap, roadGap, eduGap);
+        const demandCount = Math.round(d.population ? d.population * 0.00035 : 750);
+        const isGap = maxGap > 45 || (d.poverty_index && d.poverty_index > 0.5);
+
         map.set(d.id, {
           id: d.id,
           name: d.name,
           state: d.state || 'India',
           lat: d.lat || 16.5,
           lon: d.lon || 80.5,
-          investmentInr: d.planned_investment,
-          activeProjectsCount: Math.max(5, Math.round(d.planned_investment / 1500000)),
-          topSector: 'Roads',
-          topSectorKey: 'Roads',
-          demandCount: Math.round(d.population ? d.population * 0.0003 : 600),
-          deficitLabel: `Road quality index at ${Math.round((d.road_quality || 0.5) * 100)}%`,
-          alignmentStatus: 'ALIGNED',
-          alignmentVerdict: 'Capital deployment is proportionate to localized grievance volume.',
+          investmentInr: investment,
+          activeProjectsCount: Math.max(6, Math.round(investment / 1800000)),
+          topSector: topSector,
+          topSectorKey: topSector,
+          demandCount: demandCount,
+          deficitLabel: `${topSector} access deficit (${maxGap}% gap)`,
+          alignmentStatus: isGap ? 'INVESTMENT_GAP' : 'ALIGNED',
+          alignmentVerdict: isGap 
+            ? `Critical ${topSector} infrastructure deficit identified; capital deployment needs acceleration.`
+            : 'Capital expenditure tracks municipal priority and maintenance schedules.',
           hasData: true
         });
       }
@@ -290,11 +330,17 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
       if (selectedState !== 'ALL' && item.state.toLowerCase() !== selectedState.toLowerCase()) {
         return false;
       }
-      if (selectedDistrictId !== 'ALL' && item.id !== selectedDistrictId) {
+      if (selectedDistrictId !== 'ALL' && item.id.toLowerCase() !== selectedDistrictId.toLowerCase()) {
         return false;
       }
-      if (selectedSector !== 'ALL' && item.topSector.toLowerCase() !== selectedSector.toLowerCase()) {
-        return false;
+      if (selectedSector !== 'ALL') {
+        const cat = selectedSector.toLowerCase();
+        const itemCat = item.topSector.toLowerCase();
+        const itemKey = item.topSectorKey.toLowerCase();
+        const match = itemCat === cat || itemKey === cat ||
+          (cat === 'healthcare' && (itemCat === 'health' || itemKey === 'health')) ||
+          (cat === 'health' && (itemCat === 'healthcare' || itemKey === 'healthcare'));
+        if (!match) return false;
       }
       return true;
     });

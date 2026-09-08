@@ -211,6 +211,19 @@ export const STATE_DISTRICT_MAP: Record<string, { name: string; id?: string; def
  * Returns strictly valid States and UTs for the selected country
  */
 export function getAvailableStates(countryCode: CountryCode | string = 'IN', districtsCatalog: District[] = DISTRICTS_REGISTRY): string[] {
+  // If districtsCatalog is provided and has items, extract states directly from available data
+  if (districtsCatalog && districtsCatalog.length > 0) {
+    const statesSet = new Set<string>();
+    districtsCatalog.forEach(d => {
+      if (d.state && d.state.trim().length > 0) {
+        statesSet.add(d.state.trim());
+      }
+    });
+    if (statesSet.size > 0) {
+      return Array.from(statesSet).sort((a, b) => a.localeCompare(b));
+    }
+  }
+
   if (countryCode === 'IN') {
     // Return all Indian states and UTs in alphabetical order
     return INDIA_STATES_AND_UTS.map(s => s.name).sort();
@@ -233,25 +246,44 @@ export function getDistrictsForState(
   countryCode: CountryCode | string = 'IN',
   districtsCatalog: District[] = DISTRICTS_REGISTRY
 ): { name: string; id: string; state: string }[] {
+  const catalog = (districtsCatalog && districtsCatalog.length > 0)
+    ? districtsCatalog
+    : (countryCode === 'IN' ? DISTRICTS_REGISTRY : (COUNTRY_DISTRICTS_REGISTRY[countryCode as CountryCode] || []));
+
   if (!stateName || stateName === 'ALL' || stateName === 'All States' || stateName === 'All') {
-    // If no specific state selected, return all known registered districts for this country
-    const list = countryCode === 'IN' ? DISTRICTS_REGISTRY : (COUNTRY_DISTRICTS_REGISTRY[countryCode as CountryCode] || districtsCatalog);
-    return list.map(d => ({
+    // Return all registered districts for this catalog
+    return catalog.map(d => ({
       name: d.name,
       id: d.id,
-      state: d.state
+      state: d.state || 'India'
     })).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // If India and state exists in state-district map
+  // Normalize state name for flexible matching
+  const normalizedState = stateName.toLowerCase().trim();
+
+  // 1. Direct catalog filtering (ensures 100% data coherence with loaded application state)
+  const matched = catalog.filter(d => {
+    if (!d.state) return false;
+    const s = d.state.toLowerCase().trim();
+    return s === normalizedState || s.startsWith(normalizedState) || normalizedState.startsWith(s);
+  });
+
+  if (matched.length > 0) {
+    return matched.map(d => ({
+      name: d.name,
+      id: d.id,
+      state: d.state || stateName
+    })).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  // 2. Secondary lookup via STATE_DISTRICT_MAP for India
   if (countryCode === 'IN' && STATE_DISTRICT_MAP[stateName]) {
     const list = STATE_DISTRICT_MAP[stateName];
     return list.map(item => {
-      // Look up if there's a matching district object in registry
-      const reg = DISTRICTS_REGISTRY.find(d => 
-        (item.id && d.id === item.id) || 
-        d.name.toLowerCase() === item.name.toLowerCase() ||
-        (d.state.toLowerCase() === stateName.toLowerCase() && d.name.toLowerCase().includes(item.name.toLowerCase()))
+      const reg = catalog.find(d => 
+        (item.id && d.id.toLowerCase() === item.id.toLowerCase()) || 
+        d.name.toLowerCase() === item.name.toLowerCase()
       );
       return {
         name: item.name,
@@ -261,14 +293,7 @@ export function getDistrictsForState(
     }).sort((a, b) => a.name.localeCompare(b.name));
   }
 
-  // Fallback / other countries: query registry by state
-  const list = countryCode === 'IN' ? DISTRICTS_REGISTRY : (COUNTRY_DISTRICTS_REGISTRY[countryCode as CountryCode] || districtsCatalog);
-  const matched = list.filter(d => d.state && d.state.toLowerCase() === stateName.toLowerCase());
-  return matched.map(d => ({
-    name: d.name,
-    id: d.id,
-    state: d.state
-  })).sort((a, b) => a.name.localeCompare(b.name));
+  return [];
 }
 
 /**
