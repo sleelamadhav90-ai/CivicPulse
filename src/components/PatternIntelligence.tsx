@@ -194,13 +194,46 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
     <div className="space-y-8 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
       
       {/* 1. Page Header */}
-      <div className="space-y-1.5 border-b border-[#171717]/10 pb-5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
-          {t('patterns.title')}
-        </h1>
-        <p className="text-xs sm:text-sm text-[#57534E] max-w-3xl leading-relaxed break-words">
-          {t('patterns.subtitle')}
-        </p>
+      <div className="space-y-4 border-b border-[#171717]/10 pb-5">
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+              {t('patterns.page_label') || 'AI Patterns'}
+            </span>
+            <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+              Step 2 · Understand
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
+                {t('patterns.question_title') || 'What patterns are we seeing?'}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-3xl leading-relaxed break-words">
+                {t('patterns.subtitle')}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0 self-start sm:self-auto">
+              <button
+                onClick={onNavigateToMap}
+                className="px-3 py-2 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer text-[#171717]"
+              >
+                <span>Inspect on Map</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Narrative Context Card */}
+        <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm text-xs text-[#34322D] leading-relaxed">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block mb-1">
+            Why This Matters · Cross-Domain Intelligence
+          </span>
+          AI is used here strictly as an analytical lens, not as ungrounded generation. By correlating live citizen grievance clusters with authentic public infrastructure databases (PMGSY, JJM, NHM), CivicPulse surfaces cross-silo issues—such as deteriorating arterial roads causing delayed emergency medical transit—before they become systemic crises.
+        </div>
       </div>
 
       {/* 2. Compact Search & Sector Controls */}

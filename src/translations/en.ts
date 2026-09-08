@@ -32,9 +32,12 @@ export const en = {
   'nav.reset': 'Reset',
 
   // Section Headers
+  'section.listen': 'LISTEN',
   'section.understand': 'UNDERSTAND',
-  'section.explore': 'EXPLORE',
+  'section.measure_need': 'MEASURE NEED',
+  'section.check_investment': 'CHECK INVESTMENT',
   'section.decide': 'DECIDE',
+  'section.explore': 'EXPLORE',
 
   // Common Actions
   'action.submit': 'Submit',
@@ -178,7 +181,9 @@ export const en = {
   'overview.drawer_action_sanction': 'Recommended Sanction Plan',
 
   // Hotspot Map Page
-  'map.title': 'Infrastructure hotspot map',
+  'map.title': 'Civic Map',
+  'map.question_title': 'Where is the need concentrated?',
+  'map.page_label': 'Civic Map',
   'map.subtitle': 'Interactive national geospatial layer combining verified baseline datasets with live citizen demand telemetry.',
   'map.search_placeholder': 'Search by district name, state, or hotspot keyword...',
   'map.layers': 'Layers',
@@ -195,6 +200,8 @@ export const en = {
 
   // Citizen Signals Page
   'signals.title': 'Citizen signals',
+  'signals.question_title': 'What are citizens asking for?',
+  'signals.page_label': 'Citizen Signals',
   'signals.subtitle': "Understand what people are reporting, where and how frequently across India's administrative hierarchy.",
   'signals.search_placeholder': 'Search reports, summary keywords, or tracking ID...',
   'signals.showing_count': 'Showing {count} citizen signals',
@@ -216,6 +223,8 @@ export const en = {
 
   // Community Issues Page
   'issues.title': 'Community issues',
+  'issues.question_title': 'What problems are emerging?',
+  'issues.page_label': 'Community Issues',
   'issues.subtitle': 'Aggregated problem clusters synthesized across neighborhood grievance submissions and public telemetry.',
   'issues.flow_requests': 'Citizen Reports',
   'issues.flow_raw_notes': 'Submitted Reports',
@@ -241,6 +250,8 @@ export const en = {
 
   // AI Patterns Page
   'patterns.title': 'AI patterns',
+  'patterns.question_title': 'What patterns are we seeing?',
+  'patterns.page_label': 'AI Patterns',
   'patterns.subtitle': 'Cross-domain correlations and early signals detected across public datasets.',
   'patterns.search_placeholder': 'Search patterns, keywords, or districts...',
   'patterns.grounding_evidence': 'Grounding Evidence & Data Sources',
@@ -249,6 +260,8 @@ export const en = {
 
   // Recommendations Page
   'recommendations.title': 'Recommendations',
+  'recommendations.question_title': 'What should be prioritized?',
+  'recommendations.page_label': 'Recommendations',
   'recommendations.subtitle': 'Deterministic priority interventions computed from citizen demand, infrastructure baseline gap, and vulnerability weighting.',
   'recommendations.search_placeholder': 'Search recommendation titles, districts or schemes...',
   'recommendations.why_recommended': 'Why this is recommended:',
@@ -262,6 +275,8 @@ export const en = {
 
   // Action Queue Page
   'action_queue.title': 'Action queue',
+  'action_queue.question_title': 'What should happen next?',
+  'action_queue.page_label': 'Action Queue',
   'action_queue.subtitle': 'Tracking what administrative officials and engineering divisions are actively executing.',
   'action_queue.view_table': 'Table',
   'action_queue.view_kanban': 'Kanban',
@@ -326,6 +341,8 @@ export const en = {
 
   // Demographics, Infrastructure, Impact & Investment
   'demographics.title': 'Population & Vulnerability',
+  'demographics.question_title': 'Who is most affected?',
+  'demographics.page_label': 'Population & Vulnerability',
   'demographics.subtitle': 'Understand which communities may be most affected by infrastructure gaps.',
   'demographics.metric_pop_covered': 'Population Covered',
   'demographics.metric_vuln_pop': 'Vulnerable Population',
@@ -362,12 +379,18 @@ export const en = {
   'demographics.level_critical': 'Critical',
   'demographics.search_placeholder': 'Search district, state, or town...',
   'demographics.illustrative_badge': 'Illustrative demo dataset based on Census & SECC baseline indicators',
-  'infrastructure.title': 'Infrastructure audit registry',
+  'infrastructure.title': 'Infrastructure',
+  'infrastructure.question_title': 'Where are the infrastructure gaps?',
+  'infrastructure.page_label': 'Infrastructure',
   'infrastructure.subtitle': 'Verified public asset records, baseline water pipelines, road surface conditions, and clinic distribution.',
-  'investment.title': 'Government investment intelligence',
+  'investment.title': 'Government Investment',
+  'investment.question_title': 'Is public investment aligned with need?',
+  'investment.page_label': 'Government Investment',
   'investment.subtitle': 'Tracking capital outlays, Centrally Sponsored Schemes (CSS), and scheme alignment across sanctioned projects.',
-  'impact.title': 'Impact simulator',
-  'impact.subtitle': 'Predict access improvements, beneficiary reaches, and grievance reductions before capital outlay.',
+  'impact.title': 'Impact',
+  'impact.question_title': 'Did it make a difference?',
+  'impact.page_label': 'Impact',
+  'impact.subtitle': 'Measuring real-world outcomes and signal reduction following completed civic interventions.',
 
   // Methodology Modal
   'methodology.title': 'Deterministic Prioritization Scoring Methodology',

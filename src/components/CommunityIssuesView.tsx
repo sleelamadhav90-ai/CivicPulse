@@ -224,17 +224,40 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       
       {/* 1. PAGE HEADER & AGGREGATION EXPLANATION */}
       <div className="space-y-6 border-b border-[#171717]/10 pb-8">
-        <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
-            {t('issues.title')}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-3xl leading-relaxed break-words">
-            {t('issues.subtitle')}
-          </p>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+              {t('issues.page_label') || 'Community Issues'}
+            </span>
+            <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+              Step 2 · Understand
+            </span>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
+                {t('issues.question_title') || 'What problems are emerging?'}
+              </h1>
+              <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-3xl leading-relaxed break-words">
+                {t('issues.subtitle')}
+              </p>
+            </div>
+
+            {onNavigateToRecommendations && (
+              <button
+                onClick={onNavigateToRecommendations}
+                className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 shrink-0 cursor-pointer shadow-xs self-start sm:self-auto"
+              >
+                <span>{t('issues.view_recommendation')}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        {/* Simple visual flow: 2,841 requests -> 327 community issues -> 42 priority hotspots */}
-        <div className="bg-white border border-[#171717]/15 p-5 rounded-sm shadow-xs">
+        {/* Narrative Flow: Citizen Reports -> Problem Clusters -> Priority Hotspots */}
+        <div className="bg-white border border-[#171717]/15 p-5 rounded-sm shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
             {/* Step 1 */}
             <div className="flex-1">
@@ -242,10 +265,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 {requests.length.toLocaleString()}
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_requests')}
+                {t('issues.flow_requests') || 'Citizen Reports'}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_raw_notes')}
+                {t('issues.flow_raw_notes') || 'Submitted Reports'}
               </span>
             </div>
 
@@ -260,10 +283,10 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 327
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_issues')}
+                {t('issues.flow_issues') || 'Community Issues'}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_clustered')}
+                {t('issues.flow_clustered') || 'Identified Issue Clusters'}
               </span>
             </div>
 
@@ -278,12 +301,18 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                 42
               </span>
               <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_hotspots')}
+                {t('issues.flow_hotspots') || 'Priority Hotspots'}
               </span>
               <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_audits')}
+                {t('issues.flow_audits') || 'Analysis Checks'}
               </span>
             </div>
+          </div>
+
+          <div className="border-t border-[#171717]/10 pt-3 flex items-center justify-between text-xs text-[#57534E]">
+            <span>
+              <strong className="text-[#171717]">Why this matters:</strong> Isolated complaints can be noise. When multiple citizens from adjacent villages report the same broken water feeder or road crater, CivicPulse clusters them into an actionable community issue.
+            </span>
           </div>
         </div>
       </div>

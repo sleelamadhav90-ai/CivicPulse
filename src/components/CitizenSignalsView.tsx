@@ -171,34 +171,60 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            {t('signals.title')}
-          </h1>
-          <p className="text-sm text-[#57534E] mt-1">
-            {t('signals.subtitle')}
-          </p>
+      {/* Page Header (Question-driven with supporting label) */}
+      <div className="space-y-2 border-b border-[#171717]/10 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+            {t('signals.page_label') || 'Citizen Signals'}
+          </span>
+          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+            Step 1 · Listen
+          </span>
         </div>
+        
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+              {t('signals.question_title') || 'What are citizens asking for?'}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-3xl leading-relaxed">
+              {t('signals.subtitle')}
+            </p>
+          </div>
 
-        {onNavigateToSubmit && (
-          <button
-            onClick={onNavigateToSubmit}
-            className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 shrink-0 cursor-pointer shadow-xs"
-          >
-            <PlusCircle className="w-3.5 h-3.5" />
-            <span>{t('signals.submit_new')}</span>
-          </button>
-        )}
+          <div className="flex items-center gap-2 shrink-0">
+            {onNavigateToIssues && (
+              <button
+                onClick={onNavigateToIssues}
+                className="px-3 py-2 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer text-[#171717]"
+              >
+                <span>View Community Issues</span>
+                <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+              </button>
+            )}
+            {onNavigateToSubmit && (
+              <button
+                onClick={onNavigateToSubmit}
+                className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-2 shrink-0 cursor-pointer shadow-xs"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>{t('signals.submit_new')}</span>
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Baseline Distinction Banner */}
+      {/* "So What?" Context Banner */}
       <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-600 shrink-0" />
-          <p className="text-[#34322D] leading-relaxed">
-            <strong className="text-[#171717]">Data Architecture Note:</strong> Official government grievance statistics (DARPG/data.gov.in) provide the macro baseline. Verified citizen signals submitted directly via CivicPulse provide live micro-level localized demand signals.
+        <div className="space-y-0.5">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+              Why This Matters
+            </span>
+          </div>
+          <p className="text-[#34322D] leading-relaxed text-xs">
+            Citizen reports are the frontline sensor of public delivery. These signals reveal where infrastructure is failing or falling behind community needs before official audits notice.
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
@@ -206,7 +232,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             Live User: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER' || r.id.startsWith('CP-202')).length}
           </span>
           <span className="px-2 py-0.5 rounded bg-stone-200 text-stone-700 border border-stone-300">
-            Demo Signals: {requests.filter(r => r.source_origin !== 'CIVICPULSE_USER' && !r.id.startsWith('CP-202')).length}
+            Total Telemetry: {requests.length}
           </span>
         </div>
       </div>

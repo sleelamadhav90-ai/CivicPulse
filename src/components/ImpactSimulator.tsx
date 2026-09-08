@@ -252,42 +252,66 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
   return (
     <div className="space-y-6 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
-      {/* 1. PAGE HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+      {/* 1. PAGE HEADER (Question-driven with supporting label) */}
+      <header className="space-y-2 border-b border-[#171717]/10 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
             Impact
-          </h1>
-          <p className="text-sm text-[#57534E] mt-1">
-            See what changed after civic interventions.
-          </p>
+          </span>
+          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+            Step 5 · Decide
+          </span>
         </div>
 
-        {/* Primary View Switcher: [Completed works] [What-if simulator] */}
-        <div className="flex items-center bg-[#FAF8F5] border border-[#171717]/20 p-1 rounded-xs text-xs font-mono shrink-0">
-          <button
-            onClick={() => setActiveTab('completed')}
-            className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
-              activeTab === 'completed'
-                ? 'bg-[#171717] text-white shadow-xs'
-                : 'text-[#57534E] hover:text-[#171717]'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Completed works ({completedWorksList.length})</span>
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+              What happened after action?
+            </h1>
+            <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-2xl leading-relaxed">
+              Closing the civic loop: measured telemetry before and after completed interventions, and predictive forecasting for proposed capital allocations.
+            </p>
+          </div>
 
-          <button
-            onClick={() => setActiveTab('simulator')}
-            className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
-              activeTab === 'simulator'
-                ? 'bg-[#171717] text-white shadow-xs'
-                : 'text-[#57534E] hover:text-[#171717]'
-            }`}
-          >
-            <Sliders className="w-3.5 h-3.5 text-[#D65A3A]" />
-            <span>What-if simulator</span>
-          </button>
+          {/* Primary View Switcher: [Completed works] [What-if simulator] */}
+          <div className="flex items-center bg-[#FAF8F5] border border-[#171717]/20 p-1 rounded-xs text-xs font-mono shrink-0 self-start sm:self-auto">
+            <button
+              onClick={() => setActiveTab('completed')}
+              className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
+                activeTab === 'completed'
+                  ? 'bg-[#171717] text-white shadow-xs'
+                  : 'text-[#57534E] hover:text-[#171717]'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Completed works ({completedWorksList.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('simulator')}
+              className={`px-3.5 py-1.5 font-bold transition-all cursor-pointer rounded-xs flex items-center gap-1.5 ${
+                activeTab === 'simulator'
+                  ? 'bg-[#171717] text-white shadow-xs'
+                  : 'text-[#57534E] hover:text-[#171717]'
+              }`}
+            >
+              <Sliders className="w-3.5 h-3.5 text-[#D65A3A]" />
+              <span>What-if simulator</span>
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* Narrative Context Banner */}
+      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+            Why Telemetry Verification Matters
+          </span>
+          <p className="text-[#34322D] leading-relaxed">
+            <strong className="text-[#171717]">CLOSING THE CIVIC FEEDBACK LOOP.</strong>{' '}
+            Capital sanction without verification risks repetitive infrastructure failure. Comparing grievance telemetry before and after delivery proves whether the sanctioned solution actually eliminated citizen hardship.
+          </p>
         </div>
       </div>
 

@@ -60,23 +60,34 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const { t } = useLanguage();
 
-  // Navigation structure adhering strictly to the recommended taxonomy:
-  // Overview -> UNDERSTAND -> EXPLORE -> DECIDE -> Settings
+  // Navigation structure adhering strictly to the requested narrative taxonomy:
+  // LISTEN -> UNDERSTAND -> MEASURE NEED -> CHECK INVESTMENT -> DECIDE
   const navSections = [
+    {
+      titleKey: 'section.listen',
+      items: [
+        { id: 'signals' as NavTab, labelKey: 'nav.signals', icon: Radio, count: requestsCount },
+        { id: 'submit' as NavTab, labelKey: 'nav.my_requests', icon: PlusCircle },
+      ]
+    },
     {
       titleKey: 'section.understand',
       items: [
-        { id: 'signals' as NavTab, labelKey: 'nav.signals', icon: Radio, count: requestsCount },
         { id: 'issues' as NavTab, labelKey: 'nav.issues', icon: Layers },
         { id: 'patterns' as NavTab, labelKey: 'nav.patterns', icon: Cpu },
       ]
     },
     {
-      titleKey: 'section.explore',
+      titleKey: 'section.measure_need',
       items: [
         { id: 'map' as NavTab, labelKey: 'nav.map', icon: MapPin },
         { id: 'infrastructure' as NavTab, labelKey: 'nav.infrastructure', icon: Building2 },
         { id: 'demographics' as NavTab, labelKey: 'nav.demographics', icon: Users },
+      ]
+    },
+    {
+      titleKey: 'section.check_investment',
+      items: [
         { id: 'investment' as NavTab, labelKey: 'nav.investment', icon: DollarSign },
       ]
     },

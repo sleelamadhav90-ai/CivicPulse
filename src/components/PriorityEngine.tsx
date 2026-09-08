@@ -92,14 +92,53 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
       
-      {/* 1. Header (Executive Decision Memo style) */}
-      <div className="space-y-1.5 border-b border-[#171717]/10 pb-5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
-          {t('recommendations.title')}
-        </h1>
-        <p className="text-xs sm:text-sm text-[#57534E] max-w-3xl leading-relaxed break-words">
-          {t('recommendations.subtitle')}
-        </p>
+      {/* 1. Header (Question-driven with supporting label) */}
+      <header className="space-y-2 border-b border-[#171717]/10 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+            {t('recommendations.page_label') || 'Recommendations'}
+          </span>
+          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+            Step 5 · Decide
+          </span>
+        </div>
+
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
+              {t('recommendations.question_title') || 'What should be prioritized?'}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#57534E] max-w-3xl leading-relaxed break-words mt-1">
+              {t('recommendations.subtitle')}
+            </p>
+          </div>
+
+          {onNavigateToProjects && (
+            <button
+              onClick={onNavigateToProjects}
+              className="px-3.5 py-2 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 shrink-0 cursor-pointer text-[#171717] self-start sm:self-auto"
+            >
+              <span>View Action Queue</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+            </button>
+          )}
+        </div>
+      </header>
+
+      {/* Decision Integrity Context Banner */}
+      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+            Deterministic Decision Formula
+          </span>
+          <p className="text-[#34322D] leading-relaxed">
+            <strong className="text-[#171717]">PRIORITY SCORE = DEMAND TELEMETRY + INFRASTRUCTURE GAP + VULNERABILITY WEIGHT.</strong>{' '}
+            Rankings are computed deterministically from verified data. Machine learning generates the executive memo and justification, ensuring auditability and democratic accountability.
+          </p>
+        </div>
+        <span className="text-[11px] font-mono px-2.5 py-1 bg-white border border-[#171717]/15 rounded-xs shrink-0 text-[#171717] font-semibold">
+          {filteredProjects.length} Ranked Interventions
+        </span>
       </div>
 
       {/* 2. Controls & Filter Pills */}

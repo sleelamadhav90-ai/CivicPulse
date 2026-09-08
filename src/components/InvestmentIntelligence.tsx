@@ -530,17 +530,17 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
       {/* 1. HEADER & HIGH-LEVEL FILTERS */}
       <div id="investment-header-section" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 md:p-8 space-y-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[#171717]/10 pb-6">
-          <div className="space-y-1.5 max-w-3xl">
+          <div className="space-y-2 max-w-3xl">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-[#D65A3A] text-white text-[11px] font-mono font-bold tracking-wider uppercase rounded-xs">
-                {t('investment.page_title')}
+              <span className="px-2.5 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+                {t('investment.page_label') || 'Government Investment'}
               </span>
               <span className="text-xs font-mono text-[#171717]/60 uppercase tracking-wider">
-                Public Policy & Capital Intelligence
+                Step 4 · Check Investment
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#171717] tracking-tight">
-              {t('investment.page_title')}
+              {t('investment.question_title') || 'Is investment aligned with need?'}
             </h1>
             <p className="text-sm sm:text-base text-[#171717]/80 leading-relaxed">
               {t('investment.page_subtitle')}
@@ -552,14 +552,30 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               <button
                 id="btn-navigate-priority-engine"
                 onClick={onNavigateToEngine}
-                className="w-full sm:w-auto px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-xs font-mono font-bold uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-xs font-mono font-bold uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer rounded-xs"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>{t('investment.explore')} Priority Engine</span>
+                <span>Prioritize Interventions</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           )}
+        </div>
+
+        {/* Narrative Context Banner */}
+        <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+          <div className="space-y-0.5">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+              Why Investment Audits Matter
+            </span>
+            <p className="text-[#34322D] leading-relaxed">
+              <strong className="text-[#171717]">HIGH NEED + LOW INVESTMENT = FUNDING DEFICIT.</strong>{' '}
+              High Need + High Incomplete Investment = Execution Bottleneck. Comparing expenditure records with ground reality ensures that civic leaders can direct capital where it resolves verified community distress.
+            </p>
+          </div>
+          <span className="text-[11px] font-mono px-2.5 py-1 bg-white border border-[#171717]/15 rounded-xs shrink-0 text-[#171717] font-semibold">
+            {totalProjects} Tracked Projects
+          </span>
         </div>
 
         {/* GEOGRAPHIC & SECTOR FILTERS */}

@@ -32,9 +32,12 @@ export const hi = {
   'nav.reset': 'रीसेट',
 
   // Section Headers
-  'section.understand': 'समझें',
+  'section.listen': 'सुनें (LISTEN)',
+  'section.understand': 'समझें (UNDERSTAND)',
+  'section.measure_need': 'आवश्यकता मापें (MEASURE NEED)',
+  'section.check_investment': 'निवेश जांचें (CHECK INVESTMENT)',
+  'section.decide': 'निर्णय लें (DECIDE)',
   'section.explore': 'अन्वेषण करें',
-  'section.decide': 'निर्णय लें',
 
   // Common Actions
   'action.submit': 'जमा करें',
@@ -178,7 +181,9 @@ export const hi = {
   'overview.drawer_action_sanction': 'अनुशंसित स्वीकृति योजना',
 
   // Hotspot Map Page
-  'map.title': 'बुनियादी ढांचा हॉटस्पॉट मानचित्र',
+  'map.title': 'सिविक मैप',
+  'map.question_title': 'आवश्यकता कहां केंद्रित है?',
+  'map.page_label': 'सिविक मैप',
   'map.subtitle': 'सत्यापित आधार डेटासेट और लाइव नागरिक मांग टेलीमेट्री का संवादात्मक राष्ट्रीय भू-स्थानिक मानचित्र।',
   'map.search_placeholder': 'जिले का नाम, राज्य या समस्या कीवर्ड द्वारा खोजें...',
   'map.layers': 'परतें (लेयर्स)',
@@ -195,6 +200,8 @@ export const hi = {
 
   // Citizen Signals Page
   'signals.title': 'नागरिक संकेत',
+  'signals.question_title': 'नागरिक क्या मांग रहे हैं?',
+  'signals.page_label': 'नागरिक संकेत',
   'signals.subtitle': 'भारत के प्रशासनिक पदानुक्रम में लोग क्या रिपोर्ट कर रहे हैं, कहां और कितनी बार, यह समझें।',
   'signals.search_placeholder': 'रिपोर्ट, कीवर्ड या ट्रैकिंग आईडी खोजें...',
   'signals.showing_count': '{count} नागरिक संकेत दिखाए जा रहे हैं',
@@ -216,6 +223,8 @@ export const hi = {
 
   // Community Issues Page
   'issues.title': 'सामुदायिक मुद्दे',
+  'issues.question_title': 'कौन सी समस्याएं उभर रही हैं?',
+  'issues.page_label': 'सामुदायिक मुद्दे',
   'issues.subtitle': 'पड़ोस की शिकायतों और सार्वजनिक टेलीमेट्री से संश्लेषित सामूहिक समस्या समूह।',
   'issues.flow_requests': 'नागरिक रिपोर्ट',
   'issues.flow_raw_notes': 'दर्ज की गई रिपोर्ट',
@@ -241,6 +250,8 @@ export const hi = {
 
   // AI Patterns Page
   'patterns.title': 'एआई पैटर्न',
+  'patterns.question_title': 'हम क्या पैटर्न देख रहे हैं?',
+  'patterns.page_label': 'एआई पैटर्न',
   'patterns.subtitle': 'सार्वजनिक डेटासेट में पहचाने गए अंतःविषय सहसंबंध और प्रारंभिक संकेत।',
   'patterns.search_placeholder': 'पैटर्न, कीवर्ड या जिले खोजें...',
   'patterns.grounding_evidence': 'आधार साक्ष्य और डेटा स्रोत',
@@ -249,6 +260,8 @@ export const hi = {
 
   // Recommendations Page
   'recommendations.title': 'सिफारिशें',
+  'recommendations.question_title': 'किसे प्राथमिकता दी जानी चाहिए?',
+  'recommendations.page_label': 'सिफारिशें',
   'recommendations.subtitle': 'नागरिक मांग, बुनियादी ढांचे की कमी और संवेदनशीलता भार से गणना किए गए सटीक प्राथमिकता हस्तक्षेप।',
   'recommendations.search_placeholder': 'परियोजना शीर्षक, जिले या योजनाएं खोजें...',
   'recommendations.why_recommended': 'इसकी सिफारिश क्यों की गई है:',
@@ -262,6 +275,8 @@ export const hi = {
 
   // Action Queue Page
   'action_queue.title': 'कार्रवाई कतार',
+  'action_queue.question_title': 'क्या कार्रवाइयां चल रही हैं?',
+  'action_queue.page_label': 'कार्रवाई कतार',
   'action_queue.subtitle': 'अधिकारी और इंजीनियरिंग प्रभाग वर्तमान में क्या क्रियान्वित कर रहे हैं, इसकी ट्रैकिंग।',
   'action_queue.view_table': 'तालिका (टेबल)',
   'action_queue.view_kanban': 'कानबान (बोर्ड)',
@@ -326,6 +341,8 @@ export const hi = {
 
   // Demographics, Infrastructure, Impact & Investment
   'demographics.title': 'जनसंख्या और संवेदनशीलता',
+  'demographics.question_title': 'कौन सबसे अधिक प्रभावित है?',
+  'demographics.page_label': 'जनसांख्यिकी और संवेदनशीलता',
   'demographics.subtitle': 'समझें कि बुनियादी ढांचे की कमियों से कौन से समुदाय सबसे अधिक प्रभावित हो सकते हैं।',
   'demographics.metric_pop_covered': 'कवर की गई जनसंख्या',
   'demographics.metric_vuln_pop': 'संवेदनशील जनसंख्या',
@@ -363,10 +380,16 @@ export const hi = {
   'demographics.search_placeholder': 'जिला, राज्य या शहर खोजें...',
   'demographics.illustrative_badge': 'जनगणना और एसईसीसी संकेतकों पर आधारित सांकेतिक डेमो डेटासेट',
   'infrastructure.title': 'बुनियादी ढांचा ऑडिट रजिस्ट्री',
+  'infrastructure.question_title': 'बुनियादी ढांचे में क्या कमियां हैं?',
+  'infrastructure.page_label': 'बुनियादी ढांचा',
   'infrastructure.subtitle': 'सत्यापित सार्वजनिक संपत्ति रिकॉर्ड, पेयजल पाइपलाइन, सड़क स्थिति और स्वास्थ्य केंद्र वितरण।',
   'investment.title': 'सरकारी निवेश बुद्धिमत्ता',
+  'investment.question_title': 'क्या निवेश आवश्यकता के अनुरूप है?',
+  'investment.page_label': 'सरकारी निवेश',
   'investment.subtitle': 'पूंजीगत व्यय, केंद्र प्रायोजित योजनाओं (CSS) और स्वीकृत परियोजनाओं का आवंटन।',
   'impact.title': 'प्रभाव सिमुलेटर',
+  'impact.question_title': 'कार्रवाई के बाद क्या हुआ?',
+  'impact.page_label': 'प्रभाव',
   'impact.subtitle': 'पूंजी परिव्यय से पहले पहुंच में सुधार, लाभार्थियों की संख्या और शिकायतों में कमी का पूर्वानुमान लगाएं।',
 
   // Methodology Modal

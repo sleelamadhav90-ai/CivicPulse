@@ -152,42 +152,75 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   return (
     <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
-      {/* 1. Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-[#171717]/10 pb-5">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-            {t('action_queue.title')}
-          </h1>
-          <p className="text-sm text-[#57534E] mt-1">
-            {t('action_queue.subtitle')}
-          </p>
+      {/* 1. Page Header (Question-driven with supporting label) */}
+      <header className="space-y-2 border-b border-[#171717]/10 pb-5">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+            {t('action_queue.page_label') || 'Action Queue'}
+          </span>
+          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+            Step 5 · Decide
+          </span>
         </div>
 
-        {/* View Toggle (Table vs Kanban) */}
-        <div className="flex items-center space-x-1 bg-white border border-[#171717]/15 p-1 rounded-xs">
-          <button
-            onClick={() => setViewMode('table')}
-            className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              viewMode === 'table'
-                ? 'bg-[#171717] text-white font-semibold'
-                : 'text-[#57534E] hover:text-[#171717]'
-            }`}
-          >
-            <TableIcon className="w-3.5 h-3.5" />
-            <span>{t('view.table') || 'Table'}</span>
-          </button>
-          <button
-            onClick={() => setViewMode('kanban')}
-            className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
-              viewMode === 'kanban'
-                ? 'bg-[#171717] text-white font-semibold'
-                : 'text-[#57534E] hover:text-[#171717]'
-            }`}
-          >
-            <KanbanIcon className="w-3.5 h-3.5" />
-            <span>{t('view.kanban') || 'Kanban'}</span>
-          </button>
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717]">
+              {t('action_queue.question_title') || 'What actions are underway?'}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-2xl leading-relaxed">
+              {t('action_queue.subtitle')}
+            </p>
+          </div>
+
+          {/* View Toggle (Table vs Kanban) */}
+          <div className="flex items-center space-x-1 bg-white border border-[#171717]/15 p-1 rounded-xs shrink-0 self-start sm:self-auto">
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+                viewMode === 'table'
+                  ? 'bg-[#171717] text-white font-semibold'
+                  : 'text-[#57534E] hover:text-[#171717]'
+              }`}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>{t('view.table') || 'Table'}</span>
+            </button>
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+                viewMode === 'kanban'
+                  ? 'bg-[#171717] text-white font-semibold'
+                  : 'text-[#57534E] hover:text-[#171717]'
+              }`}
+            >
+              <KanbanIcon className="w-3.5 h-3.5" />
+              <span>{t('view.kanban') || 'Kanban'}</span>
+            </button>
+          </div>
         </div>
+      </header>
+
+      {/* Accountability Context Banner */}
+      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+            Execution Lifecycle & Democratic Accountability
+          </span>
+          <p className="text-[#34322D] leading-relaxed">
+            <strong className="text-[#171717]">FROM SANCTION TO DELIVERY.</strong>{' '}
+            Capital recommendations sanctioned by leadership transition across 5 rigorous execution milestones. Completed projects immediately synchronize with the Impact Simulator to record measurable civic relief.
+          </p>
+        </div>
+        {onNavigateToImpact && (
+          <button
+            onClick={() => onNavigateToImpact(activeProjects[0]?.districtId || 'guntur', (activeProjects[0]?.category as InfrastructureCategory) || 'Water')}
+            className="px-3 py-1.5 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 shrink-0 cursor-pointer text-[#171717]"
+          >
+            <span>Simulate Impact</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+          </button>
+        )}
       </div>
 
       {/* 2. Controls & Sector filters */}

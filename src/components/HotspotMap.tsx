@@ -298,9 +298,14 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         
         {/* Left: District Inspector Label & Cascading Geographic Dropdowns */}
         <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-0.5">
-          <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
-            {t('map.inspect_hotspot')}
-          </span>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <span className="px-1.5 py-0.5 bg-white text-[#D65A3A] border border-[#D65A3A]/30 text-[9px] font-mono font-bold tracking-wider uppercase rounded-xs">
+              {t('map.page_label') || 'Civic Map'}
+            </span>
+            <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
+              {t('map.question_title') || 'Where is the need concentrated?'}
+            </span>
+          </div>
 
           <span className="text-stone-300 hidden sm:inline">•</span>
 

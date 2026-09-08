@@ -255,21 +255,54 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
   return (
     <div id="demographics-page" className="max-w-7xl mx-auto space-y-6 pb-16 font-sans text-[#171717]">
       
-      {/* 1. PAGE HEADER (Compact, calm, editorial) */}
-      <header id="demographics-header" className="border-b border-[#171717]/10 pb-4 pt-1 flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-2xl md:text-3xl font-bold tracking-tight text-[#171717]">
-            {t('demographics.title')}
-          </h1>
-          <p className="text-sm text-[#171717]/70 mt-1 max-w-2xl">
-            {t('demographics.subtitle')}
-          </p>
+      {/* 1. PAGE HEADER (Question-driven with supporting label) */}
+      <header id="demographics-header" className="border-b border-[#171717]/10 pb-4 pt-1 space-y-2">
+        <div className="flex items-center gap-2">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+            {t('demographics.page_label') || 'Population & Vulnerability'}
+          </span>
+          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+            Step 3 · Measure Need
+          </span>
         </div>
-        <div className="flex items-center gap-2 text-xs text-[#171717]/60 font-mono self-start sm:self-auto">
-          <ShieldCheck className="w-4 h-4 text-emerald-700" />
-          <span>Census & SECC Baseline</span>
+
+        <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-3">
+          <div>
+            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-[#171717]">
+              {t('demographics.question_title') || 'Who is most affected?'}
+            </h1>
+            <p className="text-xs sm:text-sm text-[#171717]/70 mt-1 max-w-2xl leading-relaxed">
+              {t('demographics.subtitle')}
+            </p>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-[#171717]/60 font-mono self-start sm:self-auto">
+            <ShieldCheck className="w-4 h-4 text-emerald-700" />
+            <span>Census & SECC Baseline</span>
+          </div>
         </div>
       </header>
+
+      {/* Connection Formula Context Banner */}
+      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-3 sm:p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+        <div className="space-y-0.5">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+            Why Vulnerability Matters in Capital Sanction
+          </span>
+          <p className="text-[#34322D] leading-relaxed">
+            <strong className="font-mono text-[#171717]">VULNERABILITY WEIGHT + CITIZEN DEMAND + INFRASTRUCTURE GAP = PRIORITY NEED.</strong>{' '}
+            Vulnerability factors ensure infrastructure capital reaches marginalized, low-resilience communities rather than only areas with high reporting volume.
+          </p>
+        </div>
+        {onNavigateToRecommendations && (
+          <button
+            onClick={() => onNavigateToRecommendations(selectedDistrict?.id)}
+            className="px-3 py-1.5 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 shrink-0 cursor-pointer text-[#171717]"
+          >
+            <span>View Recommendations</span>
+            <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+          </button>
+        )}
+      </div>
 
       {/* 2. THREE SIMPLE SUMMARY METRICS ONLY (Horizontal, restrained, non-dashboard style) */}
       <section id="demographics-summary-metrics" className="bg-[#fcfbf9] border border-[#171717]/10 rounded-lg p-4 sm:p-5">
