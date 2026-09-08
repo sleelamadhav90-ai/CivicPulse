@@ -203,7 +203,7 @@ export const en = {
   'signals.question_title': 'What are citizens asking for?',
   'signals.page_label': 'Citizen Signals',
   'signals.subtitle': "Understand what people are reporting, where and how frequently across India's administrative hierarchy.",
-  'signals.search_placeholder': 'Search reports, summary keywords, or tracking ID...',
+  'signals.search_placeholder': 'Search reports, issues, locations, or tracking ID...',
   'signals.showing_count': 'Showing {count} citizen signals',
   'signals.click_row_hint': 'Click any row to inspect full telemetry',
   'signals.col_issue': 'Issue',
@@ -646,5 +646,31 @@ export const en = {
   'evidence.audio_recording': 'Audio Recording',
   'evidence.supervisor': 'Supervisor',
   'evidence.department': 'Department',
-  'evidence.confidence': 'Confidence'
+  'evidence.confidence': 'Confidence',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'Report a Civic Issue',
+  'report.subtitle': 'Tell us what is happening in your community. You can describe it naturally — no complicated government form required.',
+  'report.eyebrow': 'Official Citizen Grievance Intake',
+  'report.write_issue': 'Write an Issue',
+  'report.speak_issue': 'Speak an Issue',
+  'report.step_1': '1. Describe Issue',
+  'report.step_2': '2. AI Diagnostic Review',
+  'report.step_3': '3. Permanent Lodgement',
+  'report.step_describe': 'Describe Issue',
+  'report.step_ai_review': 'AI Review',
+  'report.step_submit': 'Submit Report',
+  'report.step_active': 'In progress',
+  'report.step_done': 'Completed',
+  'report.step_upcoming': 'Next stage',
+  'report.step_final': 'Final step',
+  'report.review_title': 'Review & Verify AI Interpretation',
+  'report.review_desc': 'Never submit without verifying. Correct any field below before final lodgement.',
+  'report.success_title': 'Request Successfully Lodged',
+  'report.success_desc': 'Your request has received a unique tracking credential and entered the municipal intelligence pipeline.',
+
+  // Filter enhancements
+  'filter.refine_signals': 'Refine signals',
+  'filter.city_locality': 'City / Locality',
+  'data_source.all_sources': 'All Data Sources'
 };

@@ -620,82 +620,175 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       
       {/* 1. TOP HEADER & WORKFLOW TABS */}
       <div className="bg-white border-2 border-[#171717] p-6 shadow-[4px_4px_0px_#171717] space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#171717]/15 pb-4">
-          <div>
-            <div className="flex items-center space-x-2 text-xs font-mono font-bold text-[#D65A3A] uppercase tracking-wider mb-1">
-              <ShieldCheck className="w-4 h-4 text-[#D65A3A]" />
-              <span>OFFICIAL CITIZEN GRIEVANCE INTAKE · CIVICPULSE DPI</span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-[#171717]/15 pb-4">
+          <div className="max-w-xl">
+            <div className="flex items-center space-x-2 text-[11px] font-mono text-[#78716C] uppercase tracking-wider mb-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#D65A3A]" />
+              <span>{t('report.eyebrow') || 'Official Citizen Grievance Intake · CivicPulse DPI'}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717]">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#171717]">
               {stage === 'review' 
-                ? 'Review & Verify AI Interpretation' 
+                ? (t('report.review_title') || 'Review & Verify AI Interpretation')
                 : stage === 'success' 
-                ? 'Request Successfully Lodged' 
-                : 'Report a Civic Issue'}
+                ? (t('report.success_title') || 'Request Successfully Lodged')
+                : (t('report.title') || 'Report a Civic Issue')}
             </h1>
-            <p className="text-xs sm:text-sm text-[#171717]/80 mt-1">
+            <p className="text-xs sm:text-sm text-[#57534E] mt-1.5 leading-relaxed">
               {stage === 'review'
-                ? 'Never submit without verifying. Correct any field below before final lodgement.'
+                ? (t('report.review_desc') || 'Never submit without verifying. Correct any field below before final lodgement.')
                 : stage === 'success'
-                ? 'Your request has received a unique tracking credential and entered the municipal intelligence pipeline.'
-                : 'Tell us what is happening in your community. You can describe it naturally — no complicated government form required.'}
+                ? (t('report.success_desc') || 'Your request has received a unique tracking credential and entered the municipal intelligence pipeline.')
+                : (t('report.subtitle') || 'Tell us what is happening in your community. You can describe it naturally — no complicated government form required.')}
             </p>
           </div>
 
-          {/* Mode Switcher Tabs (Only visible in Input stage) */}
+          {/* Mode Switcher: Segmented Control (Only visible in Input stage) */}
           {stage === 'input' && (
-            <div className="flex items-center gap-1 bg-[#F7F5EF] p-1 border-2 border-[#171717] shrink-0 self-start sm:self-center">
+            <div 
+              role="radiogroup" 
+              aria-label="Submission Mode"
+              className="inline-flex items-center bg-[#FAF8F5] p-1 border border-[#171717]/30 rounded-xs shrink-0 self-start sm:self-center gap-1"
+            >
               <button
+                type="button"
+                role="radio"
+                aria-checked={activeMode === 'write'}
                 onClick={() => setActiveMode('write')}
-                className={`px-3.5 py-2 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs transition-colors flex items-center gap-1.5 rounded-xs cursor-pointer ${
                   activeMode === 'write'
-                    ? 'bg-[#171717] text-white shadow-[2px_2px_0px_#D65A3A]'
-                    : 'text-[#171717]/70 hover:text-[#171717]'
+                    ? 'bg-[#171717] text-white shadow-2xs font-semibold'
+                    : 'text-[#57534E] hover:text-[#171717] font-medium'
                 }`}
               >
-                <Edit3 className="w-3.5 h-3.5 text-amber-200" />
-                <span>✎ Write an Issue</span>
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>{t('report.write_issue') || t('action.write_issue') || 'Write an Issue'}</span>
               </button>
 
               <button
+                type="button"
+                role="radio"
+                aria-checked={activeMode === 'voice'}
                 onClick={() => setActiveMode('voice')}
-                className={`px-3.5 py-2 text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
+                className={`px-3.5 py-1.5 text-xs transition-colors flex items-center gap-1.5 rounded-xs cursor-pointer ${
                   activeMode === 'voice'
-                    ? 'bg-[#D65A3A] text-white shadow-[2px_2px_0px_#171717]'
-                    : 'text-[#171717]/70 hover:text-[#171717]'
+                    ? 'bg-[#171717] text-white shadow-2xs font-semibold'
+                    : 'text-[#57534E] hover:text-[#171717] font-medium'
                 }`}
               >
-                <Mic className="w-3.5 h-3.5 text-amber-200" />
-                <span>🎙 Speak an Issue</span>
+                <Mic className="w-3.5 h-3.5" />
+                <span>{t('report.speak_issue') || t('action.speak_issue') || 'Speak an Issue'}</span>
               </button>
             </div>
           )}
         </div>
 
-        {/* Workflow Breadcrumb Indicator */}
-        <div className="grid grid-cols-3 gap-2 text-center text-xs font-mono font-bold pt-1">
-          <div className={`p-2 border transition-all ${
-            stage === 'input' 
-              ? 'bg-[#171717] text-white border-[#171717] shadow-[2px_2px_0px_#D65A3A]' 
-              : 'bg-[#F7F5EF] text-[#285943] border-[#285943]/40'
-          }`}>
-            1. Describe Issue {stage !== 'input' && '✓'}
-          </div>
-          <div className={`p-2 border transition-all ${
-            stage === 'processing' || stage === 'review'
-              ? 'bg-[#D65A3A] text-white border-[#171717] shadow-[2px_2px_0px_#171717]' 
-              : stage === 'success'
-              ? 'bg-[#F7F5EF] text-[#285943] border-[#285943]/40'
-              : 'bg-white text-slate-400 border-slate-200'
-          }`}>
-            2. AI Diagnostic Review {stage === 'success' && '✓'}
-          </div>
-          <div className={`p-2 border transition-all ${
-            stage === 'success'
-              ? 'bg-[#285943] text-white border-[#171717] shadow-[2px_2px_0px_#171717]'
-              : 'bg-white text-slate-400 border-slate-200'
-          }`}>
-            3. Permanent Lodgement
+        {/* Workflow Progress Stepper (Process / Status Indicator, NOT clickable buttons) */}
+        <div className="pt-2" aria-label="Workflow Steps">
+          <div className="flex items-center justify-between gap-2 sm:gap-4 max-w-2xl mx-auto py-1">
+            
+            {/* Step 1: Describe Issue */}
+            <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono transition-colors ${
+                  stage === 'input'
+                    ? 'bg-[#171717] text-white font-bold ring-2 ring-[#D65A3A] ring-offset-2 ring-offset-white'
+                    : 'bg-[#285943] text-white font-bold'
+                }`}
+              >
+                {stage === 'input' ? '1' : '✓'}
+              </span>
+              <div className="flex flex-col">
+                <span
+                  className={`text-xs ${
+                    stage === 'input'
+                      ? 'font-semibold text-[#171717]'
+                      : 'font-medium text-[#285943]'
+                  }`}
+                >
+                  {t('report.step_1') || '1. Describe Issue'}
+                </span>
+                <span className="text-[10px] text-[#78716C] hidden sm:block">
+                  {stage === 'input' ? (t('report.step_active') || 'In progress') : (t('report.step_done') || 'Completed')}
+                </span>
+              </div>
+            </div>
+
+            {/* Connecting Bar 1 -> 2 */}
+            <div
+              className={`h-[1px] flex-1 min-w-[16px] sm:min-w-[32px] transition-colors ${
+                stage !== 'input' ? 'bg-[#285943]' : 'bg-[#171717]/15'
+              }`}
+            />
+
+            {/* Step 2: AI Diagnostic Review */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono transition-colors ${
+                  stage === 'processing' || stage === 'review'
+                    ? 'bg-[#171717] text-white font-bold ring-2 ring-[#D65A3A] ring-offset-2 ring-offset-white'
+                    : stage === 'success'
+                    ? 'bg-[#285943] text-white font-bold'
+                    : 'bg-[#FAF8F5] text-[#78716C] border border-[#171717]/20 font-medium'
+                }`}
+              >
+                {stage === 'success' ? '✓' : '2'}
+              </span>
+              <div className="flex flex-col">
+                <span
+                  className={`text-xs ${
+                    stage === 'processing' || stage === 'review'
+                      ? 'font-semibold text-[#171717]'
+                      : stage === 'success'
+                      ? 'font-medium text-[#285943]'
+                      : 'font-normal text-[#78716C]'
+                  }`}
+                >
+                  {t('report.step_2') || '2. AI Diagnostic Review'}
+                </span>
+                <span className="text-[10px] text-[#78716C] hidden sm:block">
+                  {stage === 'processing' || stage === 'review'
+                    ? (t('report.step_active') || 'In progress')
+                    : stage === 'success'
+                    ? (t('report.step_done') || 'Completed')
+                    : (t('report.step_upcoming') || 'Next stage')}
+                </span>
+              </div>
+            </div>
+
+            {/* Connecting Bar 2 -> 3 */}
+            <div
+              className={`h-[1px] flex-1 min-w-[16px] sm:min-w-[32px] transition-colors ${
+                stage === 'success' ? 'bg-[#285943]' : 'bg-[#171717]/15'
+              }`}
+            />
+
+            {/* Step 3: Permanent Lodgement */}
+            <div className="flex items-center gap-2.5 shrink-0">
+              <span
+                className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-mono transition-colors ${
+                  stage === 'success'
+                    ? 'bg-[#285943] text-white font-bold ring-2 ring-[#285943] ring-offset-2 ring-offset-white'
+                    : 'bg-[#FAF8F5] text-[#78716C] border border-[#171717]/20 font-medium'
+                }`}
+              >
+                {stage === 'success' ? '✓' : '3'}
+              </span>
+              <div className="flex flex-col">
+                <span
+                  className={`text-xs ${
+                    stage === 'success'
+                      ? 'font-semibold text-[#285943]'
+                      : 'font-normal text-[#78716C]'
+                  }`}
+                >
+                  {t('report.step_3') || '3. Permanent Lodgement'}
+                </span>
+                <span className="text-[10px] text-[#78716C] hidden sm:block">
+                  {stage === 'success' ? (t('report.step_done') || 'Lodged') : (t('report.step_final') || 'Final step')}
+                </span>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>

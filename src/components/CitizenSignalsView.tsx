@@ -11,7 +11,8 @@ import {
   ArrowRight,
   PlusCircle,
   Filter,
-  RotateCcw
+  RotateCcw,
+  ChevronDown
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory } from '../types';
 import { 
@@ -238,158 +239,243 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
       </div>
 
       {/* Top Controls: Search and Cascading Filters */}
-      <div className="bg-white border border-[#171717]/15 p-4 rounded-sm shadow-xs space-y-3">
-        <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
-          {/* Search bar */}
-          <div className="relative flex-1">
-            <Search className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder={t('signals.search_placeholder')}
-              className="w-full pl-9 pr-3 py-1.5 text-xs bg-[#FAF8F5] border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
-            />
-          </div>
-
-          {/* Quick Clear */}
-          {hasActiveFilters && (
+      <div className="bg-white border border-[#171717]/15 p-4 sm:p-5 rounded-sm shadow-xs space-y-4">
+        
+        {/* 1. Primary Search Bar */}
+        <div className="relative">
+          <Search className="w-4 h-4 text-[#78716C] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            id="citizen-signals-search"
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t('signals.search_placeholder') || 'Search reports, issues, locations, or tracking ID...'}
+            className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-[#FAF8F5] border border-[#171717]/25 rounded-xs focus:outline-hidden focus:border-[#D65A3A] focus:bg-white text-[#171717] placeholder-[#78716C] transition-colors"
+          />
+          {searchQuery && (
             <button
-              onClick={handleResetFilters}
-              className="text-xs text-[#D65A3A] hover:underline cursor-pointer px-2 py-1 shrink-0 flex items-center gap-1 font-mono"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#78716C] hover:text-[#171717] p-1 cursor-pointer transition-colors"
+              aria-label="Clear search"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>{t('signals.reset_filters')}</span>
+              <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
-        {/* Filter Dropdowns row - Strict Cascading Hierarchy */}
-        <div className="grid grid-cols-2 sm:grid-cols-7 gap-2 pt-2 border-t border-[#171717]/10 text-xs font-sans">
-          
-          {/* 1. STATE / UT */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('geo.state')}
-            </label>
-            <select
-              value={selectedState}
-              onChange={(e) => handleStateChange(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
-            >
-              <option value="ALL">{t('filter.all_states')}</option>
-              {availableStates.map(st => (
-                <option key={st} value={st}>{st}</option>
-              ))}
-            </select>
+        {/* 2. Refinement Filters (Secondary) */}
+        <div className="pt-3 border-t border-[#171717]/10 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5 text-xs text-[#57534E]">
+              <Filter className="w-3.5 h-3.5 text-[#78716C]" />
+              <span className="font-medium text-[#171717]">{t('filter.refine_signals') || 'Refine signals'}</span>
+              {hasActiveFilters && (
+                <span className="text-[11px] font-mono text-[#D65A3A] ml-1">
+                  ({[
+                    selectedState !== 'ALL' ? 1 : 0,
+                    selectedDistrict !== 'ALL' ? 1 : 0,
+                    selectedLocality !== 'ALL' ? 1 : 0,
+                    selectedCategory !== 'ALL' ? 1 : 0,
+                    selectedSourceOrigin !== 'ALL' ? 1 : 0,
+                    selectedLanguageFilter !== 'ALL' ? 1 : 0,
+                    selectedTimePeriod !== 'ALL' ? 1 : 0,
+                  ].reduce((a, b) => a + b, 0)} active)
+                </span>
+              )}
+            </div>
+
+            {hasActiveFilters && (
+              <button
+                onClick={handleResetFilters}
+                className="text-xs text-[#D65A3A] hover:underline cursor-pointer flex items-center gap-1 font-medium transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                <span>{t('signals.reset_filters')}</span>
+              </button>
+            )}
           </div>
 
-          {/* 2. DISTRICT */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('geo.district')}
-            </label>
-            <select
-              value={selectedDistrict}
-              onChange={(e) => handleDistrictChange(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
-            >
-              <option value="ALL">
-                {selectedState !== 'ALL' ? `${t('filter.all')} ${selectedState} ${t('geo.district')}` : t('filter.all_districts')}
-              </option>
-              {availableDistricts.map(d => (
-                <option key={d.name} value={d.name}>{d.name}</option>
-              ))}
-            </select>
-          </div>
+          {/* Responsive Filter Grid: 3 columns on large screens */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-5 gap-y-3.5 text-xs">
+            
+            {/* 1. State */}
+            <div>
+              <label htmlFor="filter-state" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('geo.state') || 'State'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-state"
+                  value={selectedState}
+                  onChange={(e) => handleStateChange(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedState !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">{t('filter.all_states')}</option>
+                  {availableStates.map(st => (
+                    <option key={st} value={st}>{st}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-          {/* 3. CITY / TOWN / LOCALITY */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('geo.city_town')}
-            </label>
-            <select
-              value={selectedLocality}
-              onChange={(e) => setSelectedLocality(e.target.value)}
-              disabled={selectedDistrict === 'ALL'}
-              className={`w-full px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium ${
-                selectedDistrict === 'ALL' 
-                  ? 'bg-stone-100 text-stone-400 cursor-not-allowed' 
-                  : 'bg-[#FAF8F5] text-[#171717]'
-              }`}
-            >
-              <option value="ALL">
-                {selectedDistrict !== 'ALL' ? `${t('filter.all')} ${selectedDistrict} ${t('geo.locality')}` : t('geo.select_district_first')}
-              </option>
-              {availableLocalities.map(loc => (
-                <option key={loc} value={loc}>{loc}</option>
-              ))}
-            </select>
-          </div>
+            {/* 2. District */}
+            <div>
+              <label htmlFor="filter-district" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('geo.district') || 'District'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-district"
+                  value={selectedDistrict}
+                  onChange={(e) => handleDistrictChange(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedDistrict !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">
+                    {selectedState !== 'ALL' ? `${t('filter.all')} ${selectedState} ${t('geo.district')}` : t('filter.all_districts')}
+                  </option>
+                  {availableDistricts.map(d => (
+                    <option key={d.name} value={d.name}>{d.name}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-          {/* 4. CATEGORY */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('filter.category')}
-            </label>
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium"
-            >
-              <option value="ALL">{t('filter.all_categories')}</option>
-              {categories.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
-            </select>
-          </div>
+            {/* 3. City / Locality */}
+            <div>
+              <label htmlFor="filter-locality" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('filter.city_locality') || t('geo.city_town') || 'City / Locality'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-locality"
+                  value={selectedLocality}
+                  onChange={(e) => setSelectedLocality(e.target.value)}
+                  disabled={selectedDistrict === 'ALL'}
+                  className={`w-full px-3 py-2 text-xs border rounded-xs transition-colors appearance-none pr-8 ${
+                    selectedDistrict === 'ALL' 
+                      ? 'bg-[#F5F2EB] text-[#78716C] border-[#171717]/10 cursor-not-allowed' 
+                      : selectedLocality !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden cursor-pointer'
+                      : 'bg-[#FAF8F5] text-[#171717] border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden cursor-pointer'
+                  }`}
+                >
+                  <option value="ALL">
+                    {selectedDistrict !== 'ALL' ? `${t('filter.all')} ${selectedDistrict} ${t('geo.locality')}` : t('geo.select_district_first')}
+                  </option>
+                  {availableLocalities.map(loc => (
+                    <option key={loc} value={loc}>{loc}</option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-          {/* 5. DATA SOURCE ORIGIN */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('data_source.title')}
-            </label>
-            <select
-              value={selectedSourceOrigin}
-              onChange={(e) => setSelectedSourceOrigin(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] font-medium font-mono"
-            >
-              <option value="ALL">{t('filter.all')} {t('data_source.title')}</option>
-              <option value="CIVICPULSE_USER">🟢 {t('data_source.civicpulse_signals')}</option>
-              <option value="SYNTHETIC_DEMO">⚪ {t('data_source.synthetic_demo')}</option>
-            </select>
-          </div>
+            {/* 4. Category */}
+            <div>
+              <label htmlFor="filter-category" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('filter.category') || 'Category'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-category"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedCategory !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">{t('filter.all_categories')}</option>
+                  {categories.map(c => <option key={c} value={c}>{tCategory(c)}</option>)}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-          {/* 6. LANGUAGE */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('filter.language')}
-            </label>
-            <select
-              value={selectedLanguageFilter}
-              onChange={(e) => setSelectedLanguageFilter(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
-            >
-              <option value="ALL">{t('filter.all_languages')}</option>
-              {uniqueLanguages.map(l => <option key={l} value={l}>{l}</option>)}
-            </select>
-          </div>
+            {/* 5. Data Source */}
+            <div>
+              <label htmlFor="filter-source" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('data_source.title') || 'Data Source'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-source"
+                  value={selectedSourceOrigin}
+                  onChange={(e) => setSelectedSourceOrigin(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedSourceOrigin !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">{t('data_source.all_sources') || `${t('filter.all')} ${t('data_source.title')}`}</option>
+                  <option value="CIVICPULSE_USER">🟢 {t('data_source.civicpulse_signals')}</option>
+                  <option value="SYNTHETIC_DEMO">⚪ {t('data_source.synthetic_demo')}</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
-          {/* 7. TIME PERIOD */}
-          <div>
-            <label className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block mb-0.5">
-              {t('filter.time_period')}
-            </label>
-            <select
-              value={selectedTimePeriod}
-              onChange={(e) => setSelectedTimePeriod(e.target.value)}
-              className="w-full bg-[#FAF8F5] text-[#171717] px-2 py-1.5 text-xs border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717]"
-            >
-              <option value="ALL">{t('filter.all_time')}</option>
-              <option value="7">{t('filter.past_7_days')}</option>
-              <option value="30">{t('filter.past_30_days')}</option>
-              <option value="90">{t('filter.past_90_days')}</option>
-            </select>
-          </div>
+            {/* 6. Language */}
+            <div>
+              <label htmlFor="filter-language" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('filter.language') || 'Language'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-language"
+                  value={selectedLanguageFilter}
+                  onChange={(e) => setSelectedLanguageFilter(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedLanguageFilter !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">{t('filter.all_languages')}</option>
+                  {uniqueLanguages.map(l => <option key={l} value={l}>{l}</option>)}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
 
+            {/* 7. Time Period */}
+            <div>
+              <label htmlFor="filter-time" className="text-xs font-medium text-[#57534E] block mb-1">
+                {t('filter.time_period') || 'Time period'}
+              </label>
+              <div className="relative">
+                <select
+                  id="filter-time"
+                  value={selectedTimePeriod}
+                  onChange={(e) => setSelectedTimePeriod(e.target.value)}
+                  className={`w-full bg-[#FAF8F5] text-[#171717] px-3 py-2 text-xs border rounded-xs transition-colors cursor-pointer appearance-none pr-8 ${
+                    selectedTimePeriod !== 'ALL'
+                      ? 'border-[#D65A3A]/70 bg-white font-medium focus:border-[#D65A3A] focus:outline-hidden'
+                      : 'border-[#171717]/20 hover:border-[#171717]/40 focus:border-[#D65A3A] focus:outline-hidden'
+                  }`}
+                >
+                  <option value="ALL">{t('filter.all_time')}</option>
+                  <option value="7">{t('filter.past_7_days')}</option>
+                  <option value="30">{t('filter.past_30_days')}</option>
+                  <option value="90">{t('filter.past_90_days')}</option>
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-[#78716C] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+          </div>
         </div>
       </div>
 

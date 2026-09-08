@@ -196,7 +196,7 @@ export const te = {
   // Citizen Signals Page
   'signals.title': 'పౌరుల సంకేతాలు',
   'signals.subtitle': 'భారతదేశ పరిపాలనా విభాగాలలో ప్రజలు ఏమి నివేదిస్తున్నారు, ఎక్కడ మరియు ఎంత తరచుగా నివేదిస్తున్నారో అర్థం చేసుకోండి.',
-  'signals.search_placeholder': 'నివేదికలు, కీవర్డ్‌లు లేదా ట్రాకింగ్ ఐడీ ద్వారా శోధించండి...',
+  'signals.search_placeholder': 'నివేదికలు, సమస్యలు, ప్రాంతాలు లేదా ట్రాకింగ్ ఐడీని శోధించండి...',
   'signals.showing_count': '{count} పౌర సంకేతాలు చూపబడుతున్నాయి',
   'signals.click_row_hint': 'పూర్తి వివరాల కోసం ఏదైనా వరుసపై క్లిక్ చేయండి',
   'signals.col_issue': 'సమస్య',
@@ -623,5 +623,31 @@ export const te = {
   'evidence.audio_recording': 'ఆడియో రికార్డింగ్',
   'evidence.supervisor': 'పర్యవేక్షకుడు',
   'evidence.department': 'శాఖ',
-  'evidence.confidence': 'విశ్వసనీయత'
+  'evidence.confidence': 'విశ్వసనీయత',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'పౌర సమస్యను నివేదించండి',
+  'report.subtitle': 'మీ ప్రాంతంలో ఏమి జరుగుతుందో చెప్పండి. మీరు సహజంగా వివరించవచ్చు — సంక్లిష్టమైన ప్రభుత్వ ఫారాలు అవసరం లేదు.',
+  'report.eyebrow': 'అధికారిక పౌర ఫిర్యాదుల కేంద్రం',
+  'report.write_issue': 'సమస్యను రాయండి',
+  'report.speak_issue': 'సమస్యను మాట్లాడండి',
+  'report.step_1': '1. సమస్య వివరణ',
+  'report.step_2': '2. AI సమీక్ష',
+  'report.step_3': '3. నివేదిక సమర్పణ',
+  'report.step_describe': 'సమస్య వివరణ',
+  'report.step_ai_review': 'AI సమీక్ష',
+  'report.step_submit': 'నివేదిక సమర్పణ',
+  'report.step_active': 'పురోగతిలో ఉంది',
+  'report.step_done': 'పూర్తయింది',
+  'report.step_upcoming': 'తదుపరి దశ',
+  'report.step_final': 'చివరి దశ',
+  'report.review_title': 'AI వివరణను ధృవీకరించండి',
+  'report.review_desc': 'సమర్పించే ముందు వివరాలను సరిచూసుకోండి.',
+  'report.success_title': 'విజ్ఞప్తి విజయవంతంగా నమోదైంది',
+  'report.success_desc': 'మీ విజ్ఞప్తికి ట్రాకింగ్ ఐడీ కేటాయించబడింది.',
+
+  // Filter enhancements
+  'filter.refine_signals': 'ఫిల్టర్ల ద్వారా శుద్ధి చేయండి',
+  'filter.city_locality': 'నగరం / ప్రాంతం',
+  'data_source.all_sources': 'అన్ని డేటా వనరులు'
 };

@@ -203,7 +203,7 @@ export const hi = {
   'signals.question_title': 'नागरिक क्या मांग रहे हैं?',
   'signals.page_label': 'नागरिक संकेत',
   'signals.subtitle': 'भारत के प्रशासनिक पदानुक्रम में लोग क्या रिपोर्ट कर रहे हैं, कहां और कितनी बार, यह समझें।',
-  'signals.search_placeholder': 'रिपोर्ट, कीवर्ड या ट्रैकिंग आईडी खोजें...',
+  'signals.search_placeholder': 'रिपोर्ट, समस्याएं, स्थान या ट्रैकिंग आईडी खोजें...',
   'signals.showing_count': '{count} नागरिक संकेत दिखाए जा रहे हैं',
   'signals.click_row_hint': 'पूरी टेलीमेट्री देखने के लिए किसी भी पंक्ति पर क्लिक करें',
   'signals.col_issue': 'मुद्दा',
@@ -646,5 +646,31 @@ export const hi = {
   'evidence.audio_recording': 'ऑडियो रिकॉर्डिंग',
   'evidence.supervisor': 'पर्यवेक्षक',
   'evidence.department': 'विभाग',
-  'evidence.confidence': 'विश्वास स्तर'
+  'evidence.confidence': 'विश्वास स्तर',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'नागरिक समस्या की रिपोर्ट करें',
+  'report.subtitle': 'हमें बताएं कि आपके समुदाय में क्या हो रहा है। आप इसे सहज रूप से बता सकते हैं — किसी जटिल सरकारी फॉर्म की आवश्यकता नहीं है।',
+  'report.eyebrow': 'आधिकारिक नागरिक शिकायत इनटेक',
+  'report.write_issue': 'मुद्दा लिखें',
+  'report.speak_issue': 'मुद्दा बोलें',
+  'report.step_1': '1. समस्या का विवरण',
+  'report.step_2': '2. AI समीक्षा',
+  'report.step_3': '3. रिपोर्ट जमा करें',
+  'report.step_describe': 'समस्या का विवरण',
+  'report.step_ai_review': 'AI समीक्षा',
+  'report.step_submit': 'रिपोर्ट जमा करें',
+  'report.step_active': 'प्रगति पर',
+  'report.step_done': 'पूर्ण',
+  'report.step_upcoming': 'अगला चरण',
+  'report.step_final': 'अंतिम चरण',
+  'report.review_title': 'AI समीक्षा की पुष्टि करें',
+  'report.review_desc': 'अंतिम रूप से जमा करने से पहले नीचे दिए गए विवरणों की जांच करें।',
+  'report.success_title': 'अनुरोध सफलतापूर्वक दर्ज किया गया',
+  'report.success_desc': 'आपके अनुरोध को एक विशिष्ट ट्रैकिंग पहचान प्राप्त हो गई है।',
+
+  // Filter enhancements
+  'filter.refine_signals': 'फ़िल्टर करें',
+  'filter.city_locality': 'शहर / इलाका',
+  'data_source.all_sources': 'सभी डेटा स्रोत'
 };

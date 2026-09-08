@@ -196,7 +196,7 @@ export const ta = {
   // Citizen Signals Page
   'signals.title': 'குடிமக்கள் சமிக்ஞைகள்',
   'signals.subtitle': 'நாட்டின் பல்வேறு பகுதிகளில் மக்கள் எதைப் புகாரளிக்கிறார்கள் என்பதை அறிந்து கொள்ளுங்கள்.',
-  'signals.search_placeholder': 'அறிக்கைகள் அல்லது கண்காணிப்பு ஐடி மூலம் தேடுங்கள்...',
+  'signals.search_placeholder': 'அறிக்கைகள், பிரச்சினைகள், இடங்கள் அல்லது கண்காணிப்பு ஐடி மூலம் தேடுங்கள்...',
   'signals.showing_count': '{count} குடிமக்கள் சமிக்ஞைகள் காட்டப்படுகின்றன',
   'signals.click_row_hint': 'முழு விவரங்களுக்கு எந்த வரிசையையும் கிளிக் செய்யவும்',
   'signals.col_issue': 'பிரச்சினை',
@@ -623,5 +623,31 @@ export const ta = {
   'evidence.audio_recording': 'ஆடியோ பதிவு',
   'evidence.supervisor': 'மேற்பார்வையாளர்',
   'evidence.department': 'துறை',
-  'evidence.confidence': 'நம்பிக்கை'
+  'evidence.confidence': 'நம்பிக்கை',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'குடிமக்கள் பிரச்சினையைப் புகாரளிக்கவும்',
+  'report.subtitle': 'உங்கள் பகுதியில் என்ன நடக்கிறது என்பதைத் தெரிவியுங்கள். எளிய முறையில் விவரிக்கலாம் — சிக்கலான படிவங்கள் தேவையில்லை.',
+  'report.eyebrow': 'அதிகாரப்பூர்வ குடிமக்கள் குறைதீர்ப்பு மையம்',
+  'report.write_issue': 'பிரச்சினையை எழுதவும்',
+  'report.speak_issue': 'பிரச்சினையைப் பேசவும்',
+  'report.step_1': '1. பிரச்சினையை விவரிக்கவும்',
+  'report.step_2': '2. AI ஆய்வு',
+  'report.step_3': '3. அறிக்கை சமர்ப்பித்தல்',
+  'report.step_describe': 'பிரச்சினையை விவரிக்கவும்',
+  'report.step_ai_review': 'AI ஆய்வு',
+  'report.step_submit': 'அறிக்கை சமர்ப்பித்தல்',
+  'report.step_active': 'செயலில்',
+  'report.step_done': 'முடிந்தது',
+  'report.step_upcoming': 'அடுத்த நிலை',
+  'report.step_final': 'இறுதி நிலை',
+  'report.review_title': 'AI மதிப்பாய்வைச் சரிபார்க்கவும்',
+  'report.review_desc': 'சமர்ப்பிப்பதற்கு முன் சரிபார்க்கவும்.',
+  'report.success_title': 'கோரிக்கை வெற்றிகரமாகப் பதிவு செய்யப்பட்டது',
+  'report.success_desc': 'உங்கள் கோரிக்கைக்கு கண்காணிப்பு ஐடி வழங்கப்பட்டுள்ளது.',
+
+  // Filter enhancements
+  'filter.refine_signals': 'வடிகட்டவும்',
+  'filter.city_locality': 'நகரம் / பகுதி',
+  'data_source.all_sources': 'அனைத்து தரவு மூலங்கள்'
 };
