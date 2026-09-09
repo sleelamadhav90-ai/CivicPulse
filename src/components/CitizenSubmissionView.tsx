@@ -488,10 +488,11 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   const handleConfirmAndSubmit = async () => {
     if (!aiResult) return;
 
-    // Generate unique tracking ID: CP-2026-004821
+    // Generate unique tracking ID: CP-2026-XXXXXXXX (timestamp + random entropy)
     const currentYear = new Date().getFullYear();
-    const randomSerial = Math.floor(1000 + Math.random() * 9000).toString().padStart(6, '0');
-    const trackingId = `CP-${currentYear}-${randomSerial}`;
+    const timeSuffix = Date.now().toString().slice(-4);
+    const randomEntropy = Math.floor(1000 + Math.random() * 9000).toString();
+    const trackingId = `CP-${currentYear}-${timeSuffix}${randomEntropy}`;
 
     // Determine precise source_type
     let sourceType: 'voice' | 'text' | 'photo' | 'voice+photo' | 'text+photo' = 'text';

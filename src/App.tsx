@@ -55,7 +55,20 @@ export default function App() {
       const saved = localStorage.getItem('civicpulse_custom_requests');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const seen = new Set<string>();
+          return parsed.map((item: CitizenRequest) => {
+            // Migrate colliding demo seed ID if present in user's browser localStorage
+            if (item && item.id === 'CP-2026-004821') {
+              return { ...item, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
+            }
+            return item;
+          }).filter((item: CitizenRequest) => {
+            if (!item || !item.id || seen.has(item.id)) return false;
+            seen.add(item.id);
+            return true;
+          });
+        }
       }
     } catch {}
     return [];
@@ -69,7 +82,15 @@ export default function App() {
         if (data.success && Array.isArray(data.requests) && data.requests.length > 0) {
           setCustomRequests(prev => {
             const existingIds = new Set(prev.map(r => r.id));
-            const newOnes = data.requests.filter((r: CitizenRequest) => !existingIds.has(r.id));
+            const newOnes = data.requests
+              .map((r: CitizenRequest) => {
+                if (r && r.id === 'CP-2026-004821') {
+                  return { ...r, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
+                }
+                return r;
+              })
+              .filter((r: CitizenRequest) => r && r.id && !existingIds.has(r.id));
+
             if (newOnes.length > 0) {
               const merged = [...newOnes, ...prev];
               try {
@@ -93,7 +114,34 @@ export default function App() {
   
   const requests = useMemo(() => {
     const defaultCountryRequests = getRequestsForCountry(selectedCountryCode);
-    return [...customRequests, ...defaultCountryRequests];
+    const defaultIds = new Set(defaultCountryRequests.map(d => d.id));
+    const seenIds = new Set<string>();
+    const sanitized: CitizenRequest[] = [];
+
+    // 1. Process custom requests, ensuring no collision with default seed IDs or duplicate entries
+    for (const cr of customRequests) {
+      if (!cr || !cr.id) continue;
+      let uniqueId = cr.id;
+      if (defaultIds.has(uniqueId) || seenIds.has(uniqueId)) {
+        let counter = 1;
+        while (defaultIds.has(`${cr.id}-USER-${counter}`) || seenIds.has(`${cr.id}-USER-${counter}`)) {
+          counter++;
+        }
+        uniqueId = `${cr.id}-USER-${counter}`;
+      }
+      seenIds.add(uniqueId);
+      sanitized.push(uniqueId === cr.id ? cr : { ...cr, id: uniqueId, request_id: uniqueId });
+    }
+
+    // 2. Add default country seed requests
+    for (const dr of defaultCountryRequests) {
+      if (!seenIds.has(dr.id)) {
+        seenIds.add(dr.id);
+        sanitized.push(dr);
+      }
+    }
+
+    return sanitized;
   }, [selectedCountryCode, customRequests]);
 
   const [governmentProjects, setGovernmentProjects] = useState<GovernmentProject[]>(() => {
@@ -168,7 +216,7 @@ export default function App() {
 
   // Handle Add New Ingested Request
   const handleAddRequest = (newReq: CitizenRequest) => {
-    setCustomRequests((prev) => [newReq, ...prev]);
+    setCustomRequests((prev) => [newReq, ...prev.filter(r => r.id !== newReq.id)]);
   };
 
   // Update Government Project Status

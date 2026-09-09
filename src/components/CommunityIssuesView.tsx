@@ -496,8 +496,8 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
               <div className="space-y-1.5 text-xs">
                 <span className="font-semibold text-[#171717] block">{t('issues.recent_signals')} ({activeIssueModal.sampleRequests.length}):</span>
                 <div className="space-y-1 max-h-36 overflow-y-auto">
-                  {activeIssueModal.sampleRequests.map(sr => (
-                    <div key={sr.id} className="p-2.5 bg-white border border-[#171717]/10 rounded-xs text-[11px] text-[#57534E]">
+                  {activeIssueModal.sampleRequests.map((sr, sIdx) => (
+                    <div key={`${sr.id}-${sIdx}`} className="p-2.5 bg-white border border-[#171717]/10 rounded-xs text-[11px] text-[#57534E]">
                       <div className="flex justify-between font-mono text-[10px] text-[#78716C] mb-0.5">
                         <span>{sr.id}</span>
                         <span>{sr.location}</span>

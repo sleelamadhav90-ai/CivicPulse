@@ -540,7 +540,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                   </td>
                 </tr>
               ) : (
-                filteredRequests.map((req) => {
+                filteredRequests.map((req, idx) => {
                   const isVoice = req.source_type?.includes('voice') || req.audio_url;
                   const isCitizenSignal = req.source_origin === 'CIVICPULSE_USER';
                   const dateFormatted = req.timestamp 
@@ -549,7 +549,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
                   return (
                     <tr
-                      key={req.id}
+                      key={`${req.id}-${idx}`}
                       onClick={() => setSelectedRequest(req)}
                       className="hover:bg-[#FAF8F5] cursor-pointer transition-colors group"
                     >

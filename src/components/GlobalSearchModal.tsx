@@ -587,9 +587,9 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
               </div>
 
               <div className="space-y-2">
-                {searchResults.citizenReports.map((report) => (
+                {searchResults.citizenReports.map((report, idx) => (
                   <div
-                    key={report.id}
+                    key={`${report.id}-${idx}`}
                     onClick={() => handleResultClick(report)}
                     className="p-3 bg-white border border-[#171717]/15 hover:border-[#171717] hover:shadow-2xs transition-all cursor-pointer rounded-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2"
                   >

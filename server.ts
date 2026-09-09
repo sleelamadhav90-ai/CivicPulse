@@ -38,7 +38,21 @@ function loadPersistedRequests(): Array<any> {
     if (fs.existsSync(REQUESTS_STORE_FILE)) {
       const raw = fs.readFileSync(REQUESTS_STORE_FILE, 'utf-8');
       const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        // Sanitize IDs so they never collide with canonical demo seed IDs like CP-2026-004821
+        let modified = false;
+        const cleaned = parsed.map(item => {
+          if (item && item.id === 'CP-2026-004821') {
+            modified = true;
+            return { ...item, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
+          }
+          return item;
+        });
+        if (modified) {
+          savePersistedRequests(cleaned);
+        }
+        return cleaned;
+      }
     }
   } catch (err) {
     console.warn('Error reading persisted requests:', err);
