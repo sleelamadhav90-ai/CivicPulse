@@ -52,9 +52,14 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
   const currentDistrict = districts.find((d) => d.id === selectedDistrictId) || districts[0];
 
   // Count requests for this district + category
-  const activeRequests = requests.filter(
-    (r) => r.location.toLowerCase() === currentDistrict.name.toLowerCase() && r.category === selectedCategory
-  );
+  const activeRequests = requests.filter((r) => {
+    if (r.category !== selectedCategory) return false;
+    const rLoc = (r.location || '').toLowerCase();
+    const rDist = (r.district || '').toLowerCase();
+    const distName = currentDistrict.name.toLowerCase();
+    const distId = currentDistrict.id.toLowerCase();
+    return rDist === distName || rDist === distId || rLoc.includes(distName) || distName.includes(rLoc);
+  });
   const demandCount = Math.max(1, activeRequests.length);
 
   const currentAccess = getCategoryAccess(currentDistrict, selectedCategory);

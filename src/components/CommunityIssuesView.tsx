@@ -118,37 +118,76 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
   onNavigateToRecommendations,
 }) => {
   const { t, tCategory, tStatus, tCommunityIssue, tSignalSummary } = useLanguage();
-  const [issuesList, setIssuesList] = useState<CommunityIssue[]>(INITIAL_COMMUNITY_ISSUES);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('ALL');
   const [activeIssueModal, setActiveIssueModal] = useState<CommunityIssue | null>(null);
 
-  // Ingest custom citizen requests dynamically into issues list
-  useEffect(() => {
-    const custom = requests.filter(r => r.id.startsWith('CP-2026-'));
-    if (custom.length > 0) {
-      setIssuesList(prev => {
-        const updated = [...prev];
-        custom.forEach(req => {
-          const matchIdx = updated.findIndex(iss => 
-            iss.category === req.category && 
-            iss.location.toLowerCase().includes(req.location.toLowerCase().split(',')[0].trim())
-          );
-          if (matchIdx >= 0) {
-            const cur = updated[matchIdx];
-            const already = cur.sampleRequests?.some(sr => sr.id === req.id);
-            if (!already) {
-              updated[matchIdx] = {
-                ...cur,
-                requestCount: cur.requestCount + 1,
-                sampleRequests: [req, ...(cur.sampleRequests || [])],
-              };
-            }
+  // Compute issues dynamically by merging baseline issues with live citizen requests
+  const issuesList = useMemo(() => {
+    const baseMap = new Map<string, CommunityIssue>();
+    INITIAL_COMMUNITY_ISSUES.forEach(issue => {
+      baseMap.set(issue.id, { ...issue, sampleRequests: [] });
+    });
+
+    const custom = requests.filter(r => r.id.startsWith('CP-2026-') || r.source_origin === 'CIVICPULSE_USER');
+    
+    custom.forEach(req => {
+      const reqLoc = (req.location || '').toLowerCase();
+      const reqDist = (req.district || '').toLowerCase();
+      const reqCat = req.category;
+
+      let matchedIssue: CommunityIssue | undefined;
+      for (const issue of baseMap.values()) {
+        const issLoc = issue.location.toLowerCase();
+        const issDist = (issue.districtId || '').toLowerCase();
+        const catMatch = issue.category.toLowerCase() === reqCat.toLowerCase();
+        const locMatch = 
+          issLoc.includes(reqLoc) || 
+          reqLoc.includes(issLoc.split(',')[0].trim()) ||
+          (reqDist && (issDist.includes(reqDist) || issLoc.includes(reqDist) || reqDist.includes(issDist)));
+
+        if (catMatch && locMatch) {
+          matchedIssue = issue;
+          break;
+        }
+      }
+
+      if (matchedIssue) {
+        matchedIssue.requestCount += 1;
+        if (!matchedIssue.sampleRequests) matchedIssue.sampleRequests = [];
+        if (!matchedIssue.sampleRequests.some(s => s.id === req.id)) {
+          matchedIssue.sampleRequests.unshift(req);
+        }
+      } else {
+        const newIssueId = `ISSUE-${reqCat.substring(0,3).toUpperCase()}-${req.district || req.location || 'NEW'}`.replace(/\s+/g, '-');
+        if (baseMap.has(newIssueId)) {
+          const cur = baseMap.get(newIssueId)!;
+          cur.requestCount += 1;
+          if (!cur.sampleRequests) cur.sampleRequests = [];
+          if (!cur.sampleRequests.some(s => s.id === req.id)) {
+            cur.sampleRequests.unshift(req);
           }
-        });
-        return updated;
-      });
-    }
+        } else {
+          baseMap.set(newIssueId, {
+            id: newIssueId,
+            rank: `${baseMap.size + 1}`.padStart(2, '0'),
+            title: `${reqCat} supply disruption & infrastructure deficit`,
+            category: reqCat,
+            location: `${req.district || req.location}, ${req.state || 'India'}`,
+            districtId: (req.district || req.location).toLowerCase().replace(/\s+/g, '-'),
+            requestCount: 1,
+            trend: '+100% (new cluster)',
+            severity: req.severity >= 8 ? 'Critical' : 'High',
+            affectedCommunities: 1,
+            infrastructureName: `${reqCat} Grid & Distribution Ward`,
+            relatedScheme: reqCat === 'Water' ? 'Jal Jeevan Mission (JJM)' : reqCat === 'Roads' ? 'PMGSY' : 'Public Infrastructure Scheme',
+            sampleRequests: [req],
+          });
+        }
+      }
+    });
+
+    return Array.from(baseMap.values());
   }, [requests]);
 
   const localizedIssues = useMemo(() => {

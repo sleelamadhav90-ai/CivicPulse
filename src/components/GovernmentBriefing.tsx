@@ -39,10 +39,15 @@ export const GovernmentBriefing: React.FC<GovernmentBriefingProps> = ({
     }> = [];
 
     districts.forEach((district) => {
+      const distNameLower = district.name.toLowerCase();
+      const distIdLower = district.id.toLowerCase();
       categories.forEach((cat) => {
-        const matchedReqs = requests.filter(
-          (r) => r.location.toLowerCase() === district.name.toLowerCase() && r.category === cat
-        );
+        const matchedReqs = requests.filter((r) => {
+          if (r.category !== cat) return false;
+          const rLoc = (r.location || '').toLowerCase();
+          const rDist = (r.district || '').toLowerCase();
+          return rDist === distNameLower || rDist === distIdLower || rLoc.includes(distNameLower) || distNameLower.includes(rLoc);
+        });
         const breakdown = calculatePriorityScore(district, cat, 8, matchedReqs.length);
         const score = breakdown.total_score;
 

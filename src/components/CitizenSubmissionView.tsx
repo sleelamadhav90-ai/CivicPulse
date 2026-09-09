@@ -510,10 +510,13 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 
     const finalLocation = isEditingAiResult ? editedLocation : aiResult.location;
+    const finalLocLower = (finalLocation || '').toLowerCase();
     const matchedDist = districts.find(d => 
-      finalLocation.toLowerCase().includes(d.name.toLowerCase()) || 
-      (d.state && finalLocation.toLowerCase().includes(d.state.toLowerCase()))
-    ) || districts[0];
+      (d.name && finalLocLower.includes(d.name.toLowerCase())) || 
+      (d.id && finalLocLower.includes(d.id.toLowerCase())) ||
+      (d.name && d.name.toLowerCase().includes(finalLocLower)) ||
+      (d.state && finalLocLower.includes(d.state.toLowerCase()))
+    ) || districts.find(d => d.name.toLowerCase() === 'guntur') || districts[0];
 
     const newRequest: CitizenRequest = {
       id: trackingId,
@@ -528,7 +531,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       issue_title: `${isEditingAiResult ? editedCategory : aiResult.category} — ${aiResult.subcategory}`,
       location: finalLocation,
       state: matchedDist ? matchedDist.state : 'Andhra Pradesh',
-      district: matchedDist ? matchedDist.name : 'Vijayawada',
+      district: matchedDist ? matchedDist.name : finalLocation,
       city_or_town: finalLocation,
       locality: finalLocation,
       latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,

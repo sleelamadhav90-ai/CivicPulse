@@ -188,9 +188,20 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
   }> = [];
 
   districts.forEach((district) => {
-    const distRequests = requests.filter(
-      (r) => r.location.toLowerCase() === district.name.toLowerCase() || r.location.toLowerCase() === district.id.toLowerCase()
-    );
+    const distNameLower = district.name.toLowerCase();
+    const distIdLower = district.id.toLowerCase();
+
+    const distRequests = requests.filter((r) => {
+      const rLoc = (r.location || '').toLowerCase();
+      const rDist = (r.district || '').toLowerCase();
+      return (
+        rDist === distNameLower ||
+        rDist === distIdLower ||
+        rLoc.includes(distNameLower) ||
+        distNameLower.includes(rLoc) ||
+        rLoc.includes(distIdLower)
+      );
+    });
 
     categories.forEach((cat) => {
       const catRequests = distRequests.filter((r) => r.category === cat);

@@ -81,7 +81,9 @@ export const Overview: React.FC<OverviewProps> = ({
       const tier = getPriorityTier(breakdown.total_score);
 
       const matchedRequests = requests.filter(
-        r => r.location.toLowerCase().includes(district.name.toLowerCase()) || 
+        r => (r.district && r.district.toLowerCase() === district.name.toLowerCase()) ||
+             r.location.toLowerCase().includes(district.name.toLowerCase()) || 
+             district.name.toLowerCase().includes(r.location.toLowerCase()) ||
              r.location.toLowerCase().includes(district.state.toLowerCase())
       );
 

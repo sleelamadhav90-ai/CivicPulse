@@ -128,7 +128,7 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.6-flash';
 
     const promptText = `
 You are the AI Civic Infrastructure Diagnostic Engine for CivicPulse (India Digital Public Infrastructure).
@@ -215,10 +215,10 @@ Strict Rules:
     // Default or fallback normalization
     if (!parsedData.original_text) parsedData.original_text = text || 'Spoken voice recording';
     if (!parsedData.translated_text) parsedData.translated_text = parsedData.issue_summary || text || 'Citizen reported public infrastructure issue.';
-    if (userLocation && (!parsedData.location || parsedData.location.toLowerCase() === 'not specified')) {
+    if (userLocation && (!parsedData.location || parsedData.location.toLowerCase() === 'not specified' || parsedData.location.toLowerCase().includes('needs confirmation'))) {
       parsedData.location = userLocation;
     } else if (!parsedData.location) {
-      parsedData.location = 'Vijayawada Rural';
+      parsedData.location = 'Location not specified';
     }
 
     if (userCategory && !parsedData.category) {
@@ -283,7 +283,18 @@ Strict Rules:
     const isTamil = /[\u0B80-\u0BFF]/.test(req.body.text || '');
 
     const detectedLang = isTelugu ? 'Telugu' : isHindi ? 'Hindi' : isTamil ? 'Tamil' : 'English';
-    const fallbackLocation = req.body.userLocation || 'Vijayawada Rural';
+    
+    // Detect explicit location mentions from text or use user provided location
+    let fallbackLocation = req.body.userLocation || '';
+    if (!fallbackLocation) {
+      if (textInput.includes('guntur')) fallbackLocation = 'Guntur';
+      else if (textInput.includes('vijayawada')) fallbackLocation = 'Vijayawada';
+      else if (textInput.includes('patna')) fallbackLocation = 'Patna';
+      else if (textInput.includes('nashik')) fallbackLocation = 'Nashik';
+      else if (textInput.includes('gaya')) fallbackLocation = 'Gaya';
+      else if (textInput.includes('solapur')) fallbackLocation = 'Solapur';
+      else fallbackLocation = 'Location not specified';
+    }
 
     const duration = textInput.includes('week') ? 'Approximately 2 weeks' : textInput.includes('month') ? 'Over 1 month' : textInput.includes('day') ? 'Several days' : 'Approximately 2 weeks';
 
@@ -337,7 +348,7 @@ app.post('/api/conversational-followup', async (req: Request, res: Response) => 
     const prefLang = LANGUAGE_NAMES[languagePreference || language] || languagePreference || language || 'English';
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.6-flash';
 
     const prompt = `
 You are CivicPulse Assistant, an empathetic AI for municipal citizen reporting.
@@ -479,7 +490,7 @@ app.post('/api/generate-policy-brief', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.6-flash';
 
     const prompt = `
 You are the Senior Chief Public Policy & Infrastructure Advisor for the National Development Planning Board (BRICS Digital Public Infrastructure Taskforce).
