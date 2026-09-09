@@ -215,10 +215,10 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       else if (cat === 'Drainage') deficitPct = Math.max(10, Math.min(95, Math.round((100 - district.water_access) * 1.1)));
       else if (cat === 'Electricity') deficitPct = Math.max(10, Math.min(95, Math.round((100 - district.road_quality) * 0.9 + 15)));
 
-      // Estimate dynamic demand signals if requests are few
-      const demandSignals = reqCount > 0 ? reqCount * 12 : Math.round(district.population * 0.0012 * (0.8 + district.poverty_index));
+      // Calculate demand signals based on real request count or baseline demographic density
+      const demandSignals = reqCount > 0 ? reqCount : Math.max(1, Math.round(district.population * 0.00015 * (0.8 + district.poverty_index)));
 
-      const breakdown = calculatePriorityScore(district, cat, 8, Math.max(1, reqCount > 0 ? reqCount : Math.round(demandSignals / 15)));
+      const breakdown = calculatePriorityScore(district, cat, 8, Math.max(1, reqCount > 0 ? reqCount : demandSignals));
       const priorityScore = breakdown.total_score;
 
       let title = '';

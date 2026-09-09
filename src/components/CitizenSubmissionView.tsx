@@ -425,16 +425,16 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
           translated_text: parsed.translated_text || parsed.issue_summary || textToProcess,
           category: (parsed.category as InfrastructureCategory) || 'Water',
           category_display: parsed.category_display || `${parsed.category || 'Water'} Infrastructure`,
-          subcategory: parsed.subcategory || `${parsed.category || 'Water'} Outage`,
-          issue_summary: parsed.issue_summary || parsed.translated_text || 'Drinking water supply has been inadequate in the reported area for approximately two weeks.',
+          subcategory: parsed.subcategory || `${parsed.category || 'Water'} Service Issue`,
+          issue_summary: parsed.issue_summary || parsed.translated_text || textToProcess,
           location: parsed.location || locationName,
-          severity: parsed.severity || 'High',
-          severity_number: parsed.severity_number || 8,
-          urgency: parsed.urgency || 'HIGH',
-          duration: parsed.duration || 'Approximately 2 weeks',
+          severity: parsed.severity || 'Medium',
+          severity_number: parsed.severity_number || 5,
+          urgency: parsed.urgency || 'MEDIUM',
+          duration: parsed.duration || 'Not specified',
           affected_area: parsed.affected_area || `${locationName} locality grid`,
-          affected_population_if_available: parsed.affected_population_if_available || 'Local village households (~4,500 residents)',
-          recommended_action: parsed.recommended_action || 'Inspect supply pipeline and dispatch emergency potable water tankers.'
+          affected_population_if_available: parsed.affected_population_if_available || 'Not specified',
+          recommended_action: parsed.recommended_action || 'Inspect reported site and verify local service delivery.'
         };
 
         setAiResult(result);
@@ -448,7 +448,6 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       }
     } catch (err) {
       console.warn('Using deterministic AI extraction fallback:', err);
-      // High quality fallback matching user example
       const isWater = textToProcess.toLowerCase().includes('water') || textToProcess.includes('నీరు') || textToProcess.includes('पानी');
       const isRoad = textToProcess.toLowerCase().includes('road') || textToProcess.includes('గడ్డ') || textToProcess.includes('सड़क');
 
@@ -456,25 +455,21 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       const fallbackResult: AIUnderstandingResult = {
         language: selectedLanguage,
         original_text: textToProcess,
-        translated_text: isWater 
-          ? 'Drinking water supply has been inadequate in the reported area for approximately two weeks.' 
-          : 'Road surface is damaged with major potholes causing safety hazard.',
+        translated_text: textToProcess,
         category: cat,
         category_display: cat === 'Water' ? 'Water & Sanitation' : 'Roads & Transport',
         subcategory: isWater ? 'Drinking water supply disruption' : 'Pothole corridor hazard',
-        issue_summary: isWater 
-          ? 'Drinking water supply has been inadequate in the reported area for approximately two weeks.' 
-          : 'Severe road deterioration reported causing commute disruptions.',
+        issue_summary: textToProcess,
         location: locationName,
-        severity: 'High',
-        severity_number: 8,
-        urgency: 'HIGH',
-        duration: 'Approximately 2 weeks',
+        severity: 'Medium',
+        severity_number: 5,
+        urgency: 'MEDIUM',
+        duration: 'Not specified',
         affected_area: `${locationName} local grid`,
-        affected_population_if_available: 'Local residents & commuters (~4,500 residents)',
+        affected_population_if_available: 'Not specified',
         recommended_action: isWater 
-          ? 'Dispatch emergency water tankers and inspect main pipeline.' 
-          : 'Fill potholes and schedule asphalt resurfacing.'
+          ? 'Inspect water supply network and audit distribution schedule.' 
+          : 'Inspect transit corridor and schedule surface repair.'
       };
 
       setAiResult(fallbackResult);

@@ -112,6 +112,29 @@ const LANGUAGE_NAMES: Record<string, string> = {
   or: 'Odia',
 };
 
+async function callGeminiWithRetry(fn: () => Promise<any>, maxRetries = 2, delayMs = 400): Promise<any> {
+  let lastErr: any = null;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastErr = err;
+      const isRetryable =
+        err?.status === 503 ||
+        err?.status === 429 ||
+        err?.message?.includes('503') ||
+        err?.message?.includes('demand') ||
+        err?.message?.includes('UNAVAILABLE');
+      if (attempt < maxRetries && isRetryable) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastErr;
+}
+
 // Endpoint: Process Citizen Feedback (Multimodal: Audio / Text)
 app.post('/api/process-feedback', async (req: Request, res: Response) => {
   try {
@@ -144,7 +167,8 @@ Strict Rules:
 1. Do NOT invent information that is not present in the citizen's complaint.
 2. If location cannot be confidently determined from the text or hint, indicate that it needs confirmation.
 3. If input is in Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, etc., detect the exact language, transcribe if audio, and provide a clear, accurate translation.
-4. Extract:
+4. If duration or affected population are NOT mentioned by the citizen, output "Not specified" — never fabricate numbers or timeframes.
+5. Extract:
    - language: Natural language name (e.g. Telugu, Hindi, Tamil, Kannada, English)
    - original_text: The user's exact words (or transcription if audio)
    - translated_text: Clear English translation
@@ -156,10 +180,10 @@ Strict Rules:
    - severity: "High", "Critical", "Medium", or "Low"
    - severity_number: Integer rating from 1 to 10
    - urgency: "HIGH", "CRITICAL", "MEDIUM", or "LOW"
-   - duration: If mentioned in complaint (e.g., "Approximately 2 weeks", "3 days", "Not specified")
-   - affected_area: The physical facility or area (e.g., "Village drinking water pipeline network", "Main road near school corridor")
-   - affected_population_if_available: If mentioned or inferred from context (e.g., "Local village households (~4,500 residents)", "Commuters & schoolchildren")
-   - recommended_action: Practical municipal action (e.g., "Inspect supply valve and deploy emergency potable water tankers.")
+   - duration: If mentioned in complaint (e.g., "3 days", "Not specified")
+   - affected_area: The physical facility or area (e.g., "Local drinking water supply network", "Main road corridor")
+   - affected_population_if_available: If mentioned by citizen, otherwise "Not specified"
+   - recommended_action: Practical municipal diagnostic action
 `;
 
     const parts: Array<any> = [{ text: promptText }];
@@ -175,34 +199,36 @@ Strict Rules:
       });
     }
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: { parts },
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            language: { type: Type.STRING },
-            original_text: { type: Type.STRING },
-            translated_text: { type: Type.STRING },
-            category: { type: Type.STRING },
-            category_display: { type: Type.STRING },
-            subcategory: { type: Type.STRING },
-            issue_summary: { type: Type.STRING },
-            location: { type: Type.STRING },
-            severity: { type: Type.STRING },
-            severity_number: { type: Type.INTEGER },
-            urgency: { type: Type.STRING },
-            duration: { type: Type.STRING },
-            affected_area: { type: Type.STRING },
-            affected_population_if_available: { type: Type.STRING },
-            recommended_action: { type: Type.STRING },
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: { parts },
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              language: { type: Type.STRING },
+              original_text: { type: Type.STRING },
+              translated_text: { type: Type.STRING },
+              category: { type: Type.STRING },
+              category_display: { type: Type.STRING },
+              subcategory: { type: Type.STRING },
+              issue_summary: { type: Type.STRING },
+              location: { type: Type.STRING },
+              severity: { type: Type.STRING },
+              severity_number: { type: Type.INTEGER },
+              urgency: { type: Type.STRING },
+              duration: { type: Type.STRING },
+              affected_area: { type: Type.STRING },
+              affected_population_if_available: { type: Type.STRING },
+              recommended_action: { type: Type.STRING },
+            },
+            required: ['language', 'category', 'subcategory', 'issue_summary', 'location', 'severity', 'severity_number', 'urgency'],
           },
-          required: ['language', 'category', 'subcategory', 'issue_summary', 'location', 'severity', 'severity_number', 'urgency'],
         },
-      },
-    });
+      })
+    );
 
     const rawJson = response.text || '{}';
     let parsedData: any = {};
@@ -254,7 +280,13 @@ Strict Rules:
     }
 
     if (!parsedData.severity_number) {
-      parsedData.severity_number = parsedData.severity === 'Critical' ? 9 : parsedData.severity === 'High' ? 8 : parsedData.severity === 'Low' ? 4 : 6;
+      parsedData.severity_number = parsedData.severity === 'Critical' ? 9 : parsedData.severity === 'High' ? 8 : parsedData.severity === 'Low' ? 3 : 5;
+    }
+    if (!parsedData.duration) {
+      parsedData.duration = 'Not specified';
+    }
+    if (!parsedData.affected_population_if_available) {
+      parsedData.affected_population_if_available = 'Not specified';
     }
     if (!parsedData.summary_en) {
       parsedData.summary_en = parsedData.issue_summary || parsedData.translated_text || 'Civic infrastructure request logged.';
@@ -267,8 +299,9 @@ Strict Rules:
       data: parsedData,
     });
   } catch (error: any) {
-    console.warn('Gemini API unavailable or errored, using high-fidelity fallback diagnostic:', error?.message);
+    console.warn('Gemini API unavailable or errored, using truthful deterministic diagnostic fallback:', error?.message);
     const textInput = (req.body.text || '').toLowerCase();
+    const rawText = req.body.text || 'Spoken civic issue report recorded via voice interface.';
     const isWater = textInput.includes('water') || textInput.includes('నీరు') || textInput.includes('पानी') || textInput.includes('pipeline') || textInput.includes('tank');
     const isRoads = textInput.includes('road') || textInput.includes('pothole') || textInput.includes('రోడ్డు') || textInput.includes('सड़क') || textInput.includes('traffic');
     const isHealth = textInput.includes('health') || textInput.includes('hospital') || textInput.includes('doctor') || textInput.includes('ఆసుపత్రి') || textInput.includes('दवा');
@@ -296,16 +329,18 @@ Strict Rules:
       else fallbackLocation = 'Location not specified';
     }
 
-    const duration = textInput.includes('week') ? 'Approximately 2 weeks' : textInput.includes('month') ? 'Over 1 month' : textInput.includes('day') ? 'Several days' : 'Approximately 2 weeks';
+    const duration = textInput.includes('2 week') || textInput.includes('two week') 
+      ? 'Approximately 2 weeks' 
+      : textInput.includes('month') 
+      ? 'Over 1 month' 
+      : textInput.includes('day') 
+      ? 'Several days' 
+      : 'Not specified';
 
     const fallbackData = {
       language: detectedLang,
-      original_text: req.body.text || 'Spoken civic issue report recorded via voice interface.',
-      translated_text: isWater 
-        ? 'Drinking water supply has been inadequate in the reported area for approximately two weeks.' 
-        : isRoads 
-        ? 'Major craters and road damage severely impacting commute and transport corridor.'
-        : `Civic infrastructure deficiency in ${fallbackCat} requiring official intervention.`,
+      original_text: rawText,
+      translated_text: rawText,
       category: fallbackCat,
       category_display: fallbackDisplay,
       subcategory: isWater 
@@ -313,24 +348,18 @@ Strict Rules:
         : isRoads 
         ? 'Road resurfacing and pothole hazard'
         : `${fallbackCat} service disruption`,
-      issue_summary: isWater 
-        ? 'Drinking water supply has been inadequate in the reported area for approximately two weeks.'
-        : isRoads 
-        ? 'Major potholes and road deterioration reported along the primary transit corridor.'
-        : `Citizen reported infrastructure disruption in ${fallbackDisplay}.`,
-      summary_en: isWater 
-        ? 'Drinking water supply has been inadequate in the reported area for approximately two weeks.'
-        : `Urgent ${fallbackCat} disruption reported in ${fallbackLocation}.`,
+      issue_summary: rawText,
+      summary_en: rawText,
       location: fallbackLocation,
-      severity: 'High',
-      severity_number: 8,
-      urgency: 'HIGH',
+      severity: 'Medium',
+      severity_number: 5,
+      urgency: 'MEDIUM',
       duration,
-      affected_area: `${fallbackLocation} community grid`,
-      affected_population_if_available: 'Local residents and daily commuters (~3,500 residents)',
+      affected_area: `${fallbackLocation} local grid`,
+      affected_population_if_available: 'Not specified',
       recommended_action: isWater 
-        ? 'Inspect supply pipeline valves and deploy emergency tanker distribution.'
-        : 'Dispatch rapid response engineering team for immediate inspection and repair.'
+        ? 'Inspect supply pipeline valves and audit distribution schedules.'
+        : 'Dispatch rapid response municipal team for inspection.'
     };
 
     res.json({
@@ -371,49 +400,51 @@ User Message: """${userMessage}"""
 Previous Chat History: ${JSON.stringify(history)}
 `;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        responseMimeType: 'application/json',
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            replyMessage: {
-              type: Type.STRING,
-              description: 'AI response to the citizen in their native language',
-            },
-            detectedLanguage: {
-              type: Type.STRING,
-              description: 'Language detected, e.g. Telugu, Hindi, English, Tamil, Kannada',
-            },
-            extractedEntity: {
-              type: Type.OBJECT,
-              properties: {
-                category: { type: Type.STRING },
-                subcategory: { type: Type.STRING },
-                location: { type: Type.STRING },
-                duration: { type: Type.STRING },
-                urgency: { type: Type.STRING },
-                affectedGroup: { type: Type.STRING },
-                problemSummary: { type: Type.STRING },
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              replyMessage: {
+                type: Type.STRING,
+                description: 'AI response to the citizen in their native language',
+              },
+              detectedLanguage: {
+                type: Type.STRING,
+                description: 'Language detected, e.g. Telugu, Hindi, English, Tamil, Kannada',
+              },
+              extractedEntity: {
+                type: Type.OBJECT,
+                properties: {
+                  category: { type: Type.STRING },
+                  subcategory: { type: Type.STRING },
+                  location: { type: Type.STRING },
+                  duration: { type: Type.STRING },
+                  urgency: { type: Type.STRING },
+                  affectedGroup: { type: Type.STRING },
+                  problemSummary: { type: Type.STRING },
+                },
+              },
+              isComplete: {
+                type: Type.BOOLEAN,
+                description: 'True if Category, Location, and Issue details are complete',
+              },
+              followupQuestion: { type: Type.STRING },
+              quickOptions: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: 'Interactive quick option buttons if follow-up is needed',
               },
             },
-            isComplete: {
-              type: Type.BOOLEAN,
-              description: 'True if Category, Location, and Issue details are complete',
-            },
-            followupQuestion: { type: Type.STRING },
-            quickOptions: {
-              type: Type.ARRAY,
-              items: { type: Type.STRING },
-              description: 'Interactive quick option buttons if follow-up is needed',
-            },
+            required: ['replyMessage', 'detectedLanguage', 'extractedEntity', 'isComplete'],
           },
-          required: ['replyMessage', 'detectedLanguage', 'extractedEntity', 'isComplete'],
         },
-      },
-    });
+      })
+    );
 
     const raw = response.text || '{}';
     let data = {};
@@ -517,13 +548,15 @@ Please structure your brief with the following clear markdown sections:
 Keep the tone formal, highly authoritative, concise, and actionable for ministers and planning commissioners. Do not use generic fluff.
 `;
 
-    const response = await ai.models.generateContent({
-      model,
-      contents: prompt,
-      config: {
-        temperature: 0.3,
-      },
-    });
+    const response = await callGeminiWithRetry(() =>
+      ai.models.generateContent({
+        model,
+        contents: prompt,
+        config: {
+          temperature: 0.3,
+        },
+      })
+    );
 
     const briefText = response.text || 'Policy brief generated successfully.';
     policyBriefCache.set(cacheKey, briefText);
