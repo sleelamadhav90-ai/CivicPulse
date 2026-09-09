@@ -354,7 +354,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           <div className="mt-1.5 pt-1.5 border-t border-white/10 text-[9px] font-mono text-stone-300 space-y-0.5">
             <div className="text-white font-bold">Sources:</div>
             <div>• Esri Satellite GIS</div>
-            <div>• Ingested Telemetry</div>
+            <div>• Ingested Citizen Signals</div>
           </div>
         )}
       </div>

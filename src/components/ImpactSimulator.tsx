@@ -271,7 +271,7 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
               {t('impact.question_title') || 'Did it make a difference?'}
             </h1>
             <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-2xl leading-relaxed">
-              Closing the civic loop: measured telemetry before and after completed interventions, and predictive forecasting for proposed capital allocations.
+              Closing the civic loop: measured citizen feedback before and after completed interventions, and predictive forecasting for proposed capital allocations.
             </p>
           </div>
 
@@ -308,11 +308,11 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
       <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-0.5">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
-            Why Telemetry Verification Matters
+            Why Post-Delivery Verification Matters
           </span>
           <p className="text-[#34322D] leading-relaxed">
             <strong className="text-[#171717]">CLOSING THE CIVIC FEEDBACK LOOP.</strong>{' '}
-            Capital sanction without verification risks repetitive infrastructure failure. Comparing grievance telemetry before and after delivery proves whether the sanctioned solution actually eliminated citizen hardship.
+            Capital sanction without verification risks repetitive infrastructure failure. Comparing citizen grievance signals before and after delivery proves whether the sanctioned solution actually eliminated citizen hardship.
           </p>
         </div>
       </div>
@@ -341,7 +341,7 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
               <CheckCircle2 className="w-8 h-8 text-stone-400 mx-auto" />
               <p className="text-sm font-semibold text-[#171717]">No completed interventions yet.</p>
               <p className="text-xs text-[#57534E] max-w-md mx-auto">
-                Completed actions from the Action Queue will appear here with measured Before → After telemetry metrics.
+                Completed actions from the Action Queue will appear here with measured Before → After feedback metrics.
               </p>
             </div>
           ) : (

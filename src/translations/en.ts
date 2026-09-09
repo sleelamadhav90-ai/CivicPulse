@@ -4,7 +4,7 @@ export const en = {
   'brand.tagline': 'Public digital infrastructure',
   'brand.subtitle': 'Multilingual Citizen Voice → Deterministic Gap Prioritization → Policy Action',
   'brand.dpi_engine': 'DPI Engine',
-  'brand.live_telemetry': 'Live Telemetry',
+  'brand.live_telemetry': 'Citizen Demand Signals',
   'brand.india_stack': 'India DPI Stack',
   'brand.jurisdiction': 'India',
   'brand.select_language': 'Select Regional Language',
@@ -94,9 +94,9 @@ export const en = {
   'status.moderate': 'Moderate',
   'status.low': 'Low',
   'status.active': 'Active',
-  'status.verified_official': 'Active · Verified Official',
+  'status.verified_official': 'Active · Public Data Snapshot',
   'status.published_open_data': 'Active · Published Open Data',
-  'status.baseline_data': 'Active · Baseline Official Data',
+  'status.baseline_data': 'Active · Baseline Benchmark Data',
 
   // Hierarchy & Filters
   'filter.state_ut': 'State / UT',
@@ -175,7 +175,7 @@ export const en = {
   'overview.rank': 'Rank',
   'overview.signals_count': '{count} signals',
   'overview.view_all_recommendations': 'View all recommendations',
-  'overview.inspect_drawer_title': 'District Telemetry & Intervention Scope',
+  'overview.inspect_drawer_title': 'District Profile & Intervention Scope',
   'overview.inspect_score': 'Deficit Priority Score',
   'overview.drawer_citizen_signals': 'Citizen Demand Signals',
   'overview.drawer_population': 'Population Beneficiaries',
@@ -274,7 +274,7 @@ export const en = {
   'recommendations.point_trend': 'Predicted trend:',
   'recommendations.modal_brief': 'Executive Decision Brief',
   'recommendations.modal_justification': 'Analytical Justification & Evidence Basis:',
-  'recommendations.modal_cross_domain': 'Cross-Domain Telemetry Grounding:',
+  'recommendations.modal_cross_domain': 'Cross-Domain Evidence Grounding:',
 
   // Action Queue Page
   'action_queue.title': 'Action queue',
@@ -432,7 +432,7 @@ export const en = {
   'button.cancel': 'Close',
   'button.sanction_add': 'Sanction & Add to Action Queue',
   'modal.census_registry': 'Census & National Geospatial Data Registry',
-  'modal.telemetry_audits': 'Public works telemetry and Jal Jeevan Mission physical audits',
+  'modal.telemetry_audits': 'Public works field reports and Jal Jeevan Mission open data audits',
   'modal.verified_complaints': 'citizen grievance submissions',
   'patterns.citizen_reports_analyzed': 'citizen reports analyzed',
   'patterns.view_actions': 'View Aligned Projects',
@@ -455,9 +455,9 @@ export const en = {
 
   // Data Provenance and Human-Facing Labels
   'data_source.title': 'Data Source',
-  'data_source.government_baseline': 'Government Baseline',
-  'data_source.civicpulse_signals': 'CivicPulse Signals',
-  'data_source.synthetic_demo': 'Illustrative Demo Data',
+  'data_source.government_baseline': 'Public Data Snapshot',
+  'data_source.civicpulse_signals': 'Citizen Signals',
+  'data_source.synthetic_demo': 'CivicPulse Demo Signals',
   'metric.citizen_signals': 'Citizen Signals',
   'metric.people_affected': 'People Affected',
   'metric.infrastructure_gap': 'Infrastructure Gap',
@@ -476,10 +476,10 @@ export const en = {
   'map.synthesize_project': 'View recommendation',
   'map.inspect_hotspot': 'Inspect Hotspot',
   'map.hide_details': 'Hide details',
-  'map.view_details_telemetry': 'View details & telemetry',
+  'map.view_details_telemetry': 'View details & evidence',
   'map.open_evidence_dossier': 'Open Field Evidence Dossier',
   'map.close_dossier': 'Close Dossier',
-  'map.field_evidence_title': 'Field Telemetry Evidence',
+  'map.field_evidence_title': 'Field Evidence & Verified Complaints',
   'map.priority_index': 'Priority Index',
   'map.sector': 'Sector',
   'map.signals_unit': 'signals',
@@ -531,7 +531,7 @@ export const en = {
   'score.urgency_pillar': '4. Urgency & Safety Hazard (15% Weight)',
   'score.urgency_formula_note': 'Extracted by Gemini from natural language hazard reports (Scale 1–10).',
   'score.capex_pillar': '5. Government Priority & Capex Gap (10% Weight)',
-  'score.capex_formula_note': 'Planned Capex Allocation: ₹{capex} Cr.',
+  'score.capex_formula_note': 'Government Priority Proxy: 95 pts (district has active planned public capex > ₹0) vs 45 pts (no planned capex recorded). Planned Capex Pipeline (Estimate): ₹{capex} Cr.',
   'score.deterministic_note': 'Deterministic Transparency: AI models (Gemini) are utilized exclusively for transcription, translation, and structured semantic parsing. The composite Priority Index is computed deterministically, ensuring uncompromised auditability.',
   'score.close_btn': 'Close Audit Dossier',
 
@@ -643,9 +643,9 @@ export const en = {
   'search.human_first_desc': 'Search naturally using conversational language. No database codes or request IDs required.',
 
   // Evidence Dossier
-  'evidence.grounding_audit': 'Grounding Telemetry & Citizen Voice Audit',
+  'evidence.grounding_audit': 'Grounding Evidence & Citizen Voice Audit',
   'evidence.corroborating_data': 'Corroborating Public Dataset:',
-  'evidence.citizen_samples': 'Citizen Voice Telemetry Samples:',
+  'evidence.citizen_samples': 'Citizen Voice Signal Samples:',
   'evidence.audio_recording': 'Audio Recording',
   'evidence.supervisor': 'Supervisor',
   'evidence.department': 'Department',
@@ -654,7 +654,7 @@ export const en = {
   // Report a Civic Issue & Intake Stepper
   'report.title': 'Report a Civic Issue',
   'report.subtitle': 'Tell us what is happening in your community. You can describe it naturally — no complicated government form required.',
-  'report.eyebrow': 'Official Citizen Grievance Intake',
+  'report.eyebrow': 'Citizen Grievance Intake · CivicPulse DPI',
   'report.write_issue': 'Write an Issue',
   'report.speak_issue': 'Speak an Issue',
   'report.step_1': '1. Describe Issue',

@@ -161,6 +161,28 @@ export interface DemographicProfile {
   }[];
   equityAssessment: string; // e.g. "Disproportionately impacts 18 rural villages where 74% of households lack private vehicle access."
   piiProtectionNote?: string;
+  provenanceLabel?: string; // e.g. "Illustrative Equity Profile"
+  isIllustrativeBaseline?: boolean;
+}
+
+export type ProvenanceDisplayLabel =
+  | 'Public Data Snapshot'
+  | 'CivicPulse Prototype Baseline'
+  | 'Illustrative Demo Data'
+  | 'CivicPulse Demo Signal'
+  | 'Citizen Signal'
+  | 'AI-Extracted Citizen Signal'
+  | 'Deterministic Calculation';
+
+export interface DataProvenance {
+  sourceType: 'PUBLIC_OPEN_DATA' | 'CIVICPULSE_BASELINE' | 'SYNTHETIC_DEMO' | 'CITIZEN_SUBMISSION' | 'AI_EXTRACTION' | 'DETERMINISTIC_ENGINE';
+  sourceName: string;
+  sourceYear: number | string;
+  isSyntheticDemo: boolean;
+  isLive: boolean;
+  displayLabel: ProvenanceDisplayLabel;
+  datasetOrScheme?: string;
+  notes?: string;
 }
 
 export interface AIAnalysisResult {

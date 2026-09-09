@@ -26,7 +26,7 @@ export const INITIAL_CITIZEN_REQUESTS: CitizenRequest[] = [
     severity: 8,
     urgency: 'HIGH',
     source_type: 'text',
-    source_origin: 'CIVICPULSE_USER',
+    source_origin: 'SYNTHETIC_DEMO',
     status: 'Prioritized',
     affected_population: 14500,
     infrastructure_gap: 72,

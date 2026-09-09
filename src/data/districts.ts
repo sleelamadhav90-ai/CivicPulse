@@ -30,11 +30,12 @@ export const DISTRICTS_REGISTRY: District[] = [
     lon: 80.4365,
     population: 4887000,
     poverty_index: 0.58,
-    water_access: 38,
+    // Baseline sector access (%) used by the 5-pillar scoring engine
+    water_access: 38, // Municipal Piped Water Supply Coverage Baseline (38% access -> 62% deficit gap)
     health_access: 58,
     road_quality: 52,
     education_access: 65,
-    planned_investment: 65000000, // ₹6.5 Cr
+    planned_investment: 65000000, // District Capex Pipeline Estimate: ₹6.5 Cr
     existing_facilities: {
       phc_clinics: 14,
       water_plants: 3,

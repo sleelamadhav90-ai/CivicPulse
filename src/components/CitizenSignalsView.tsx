@@ -114,9 +114,9 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
     if (selectedSourceOrigin !== 'ALL') {
       if (selectedSourceOrigin === 'CIVICPULSE_USER') {
-        list = list.filter(r => r.source_origin === 'CIVICPULSE_USER' || r.id.startsWith('CP-202'));
+        list = list.filter(r => r.source_origin === 'CIVICPULSE_USER');
       } else if (selectedSourceOrigin === 'SYNTHETIC_DEMO') {
-        list = list.filter(r => r.source_origin !== 'CIVICPULSE_USER' && !r.id.startsWith('CP-202'));
+        list = list.filter(r => r.source_origin !== 'CIVICPULSE_USER');
       }
     }
 
@@ -229,11 +229,14 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-300">
-            Live User: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER' || r.id.startsWith('CP-202')).length}
+          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300">
+            Citizen Signals: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER').length}
           </span>
-          <span className="px-2 py-0.5 rounded bg-stone-200 text-stone-700 border border-stone-300">
-            Total Telemetry: {requests.length}
+          <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-300">
+            Demo Signals: {requests.filter(r => r.source_origin !== 'CIVICPULSE_USER').length}
+          </span>
+          <span className="px-2 py-0.5 rounded bg-white text-stone-900 border border-stone-300 font-bold">
+            Total Analysed: {requests.length}
           </span>
         </div>
       </div>
@@ -539,7 +542,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               ) : (
                 filteredRequests.map((req) => {
                   const isVoice = req.source_type?.includes('voice') || req.audio_url;
-                  const isLiveUser = req.source_origin === 'CIVICPULSE_USER' || req.id.startsWith('CP-202');
+                  const isCitizenSignal = req.source_origin === 'CIVICPULSE_USER';
                   const dateFormatted = req.timestamp 
                     ? new Date(req.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '2 Sep 2026';
@@ -577,13 +580,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
                       {/* Origin */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        {isLiveUser ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-100 text-emerald-800 border border-emerald-300">
-                            Live User
+                        {isCitizenSignal ? (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-800 border border-emerald-300">
+                            Citizen Signal
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-stone-100 text-stone-600 border border-stone-200">
-                            Demo Data
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-300">
+                            CivicPulse Demo Signal
                           </span>
                         )}
                       </td>
@@ -728,13 +731,13 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                   Data Provenance & Alignment
                 </span>
                 <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-medium ${
-                  selectedRequest.source_origin === 'CIVICPULSE_USER' || selectedRequest.id.startsWith('CP-202')
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
-                    : 'bg-stone-200 text-stone-700 border border-stone-300'
+                  selectedRequest.source_origin === 'CIVICPULSE_USER'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-300'
+                    : 'bg-stone-100 text-stone-700 border border-stone-300'
                 }`}>
-                  {selectedRequest.source_origin === 'CIVICPULSE_USER' || selectedRequest.id.startsWith('CP-202')
-                    ? t('data_source.civicpulse_signals')
-                    : t('data_source.synthetic_demo')}
+                  {selectedRequest.source_origin === 'CIVICPULSE_USER'
+                    ? 'Citizen Signal'
+                    : 'CivicPulse Demo Signal'}
                 </span>
               </div>
               <p className="text-[11px] text-[#57534E] leading-relaxed">

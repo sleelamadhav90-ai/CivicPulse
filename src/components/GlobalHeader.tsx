@@ -212,7 +212,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                   <div className="text-[#D65A3A] font-bold"><strong className="font-serif text-sm">8</strong> Active AI Prototype Languages</div>
                 </div>
                 <p className="text-[11px] text-slate-700">
-                  CivicPulse enables 8 regional languages (English, Hindi, Telugu, Tamil, Kannada, Marathi, Bengali, Odia) with global translation switching across all views and telemetry.
+                  CivicPulse enables 8 regional languages (English, Hindi, Telugu, Tamil, Kannada, Marathi, Bengali, Odia) with global translation switching across all views.
                 </p>
               </div>
 

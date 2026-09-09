@@ -74,9 +74,9 @@ export const GlobalWorldMapCanvas: React.FC<GlobalWorldMapCanvasProps> = ({
         {/* Global Banner Overlay */}
         <div className="relative z-10 flex items-center justify-between border-b border-[#171717]/10 pb-3 font-mono text-xs">
           <div className="flex items-center space-x-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#285943] animate-pulse"></span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[#285943]"></span>
             <span className="font-bold text-[#171717] uppercase tracking-wider">
-              REAL-TIME GLOBAL CIVIC TELEMETRY
+              GLOBAL CIVIC PILOT JURISDICTIONS · DPI ENGINE
             </span>
           </div>
           <div className="text-[#171717]/70 hidden sm:block">

@@ -19,6 +19,7 @@ import { District, CitizenRequest, InfrastructureCategory } from '../types';
 import { getAvailableStates, getDistrictsForState } from '../utils/geography';
 import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { useLanguage } from '../context/LanguageContext';
+import { getDistrictDataDepth } from '../utils/provenance';
 import {
   INDIA_MAP_CENTER,
   INDIA_MAP_MAX_BOUNDS,
@@ -681,9 +682,19 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
               <div className="border-b border-[#171717]/10 pb-4 space-y-2">
                 <div className="flex items-start justify-between gap-2">
                   <div>
-                    <h2 className="font-serif text-xl font-bold text-[#171717]">
-                      {selectedDistrict.name}
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className="font-serif text-xl font-bold text-[#171717]">
+                        {selectedDistrict.name}
+                      </h2>
+                      {(() => {
+                        const depthInfo = getDistrictDataDepth(selectedDistrict.id || selectedDistrict.name);
+                        return (
+                          <span className={`inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded border ${depthInfo.badgeClass}`}>
+                            {depthInfo.badgeLabel}
+                          </span>
+                        );
+                      })()}
+                    </div>
                     <p className="text-xs text-[#171717]/60 flex items-center gap-1 mt-0.5">
                       <MapPin className="w-3 h-3 text-[#171717]/40" />
                       <span>{selectedDistrict.state}</span>
@@ -703,7 +714,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
                 <div className="grid grid-cols-2 gap-3 pt-2">
                   <div className="bg-white border border-[#171717]/10 rounded p-2.5">
                     <span className="text-[10px] uppercase font-semibold text-[#171717]/50 block">
-                      Population
+                      Population (Projection Baseline)
                     </span>
                     <span className="font-serif text-lg font-bold text-[#171717]">
                       {selectedDistrict.population.toLocaleString()}
@@ -1168,7 +1179,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
               <div className="flex items-center gap-2 text-[#171717]/50">
                 <span>GODL License</span>
                 <span>•</span>
-                <span className="text-emerald-700 font-medium">Strictly Anonymized Aggregate Telemetry</span>
+                <span className="text-emerald-700 font-medium">Strictly Anonymized Aggregate Baseline Data</span>
               </div>
             </div>
 

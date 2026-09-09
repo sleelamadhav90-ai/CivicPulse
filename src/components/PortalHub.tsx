@@ -64,9 +64,9 @@ export const PORTAL_MODULES: PortalModule[] = [
     badge: 'Hub Home',
     badgeColor: 'bg-[#171717] text-white',
     tagline: 'Relational Civic Intelligence & DPI Closed-Loop Dashboard',
-    description: 'Central executive portal presenting real-time telemetry, 4-step DPI loop, high-demand district rankings, and top AI project recommendations.',
+    description: 'Central executive portal presenting citizen demand signals, 4-step DPI loop, high-demand district rankings, and top AI project recommendations.',
     userPersonas: ['Executive Officials', 'Ministers', 'General Public'],
-    keyFeatures: ['Relational Graph Flow', 'Top AI Recommendations', '4-Step DPI Loop', 'Live Telemetry']
+    keyFeatures: ['Relational Graph Flow', 'Top AI Recommendations', '4-Step DPI Loop', 'Citizen Demand Signals']
   },
   {
     id: 'map',

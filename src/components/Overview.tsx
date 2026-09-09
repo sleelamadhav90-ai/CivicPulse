@@ -158,7 +158,7 @@ export const Overview: React.FC<OverviewProps> = ({
       signalCount: 294,
       trend: '+29% this month',
       severity: 'Moderate',
-      publicFinding: 'CEA feeder telemetry records 6.4 daily agricultural feeder trips during paddy transplantation.',
+      publicFinding: 'CEA feeder monitoring records 6.4 daily agricultural feeder trips during paddy transplantation.',
       recommendedAction: 'Replace overloaded 63 kVA transformers with 100 kVA units under RDSS scheme.',
     },
   ], []);

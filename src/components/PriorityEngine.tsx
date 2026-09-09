@@ -132,7 +132,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             Deterministic Decision Formula
           </span>
           <p className="text-[#34322D] leading-relaxed">
-            <strong className="text-[#171717]">PRIORITY SCORE = DEMAND TELEMETRY + INFRASTRUCTURE GAP + VULNERABILITY WEIGHT.</strong>{' '}
+            <strong className="text-[#171717]">PRIORITY SCORE = CITIZEN DEMAND + INFRASTRUCTURE GAP + VULNERABILITY WEIGHT.</strong>{' '}
             Rankings are computed deterministically from verified data. Machine learning generates the executive memo and justification, ensuring auditability and democratic accountability.
           </p>
         </div>

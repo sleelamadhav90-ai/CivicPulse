@@ -134,6 +134,22 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
               <p className="text-xs text-slate-500 mt-1 font-mono">
                 {t('score.gap_formula_note', { access: breakdown.current_access, gap: breakdown.gap_percentage })}
               </p>
+              {breakdown.publicContextSummary && (
+                <div className="mt-2 p-2 bg-sky-50 border border-sky-200 rounded-lg text-[11px] text-sky-900 leading-relaxed">
+                  <div className="flex items-center gap-1.5 font-semibold text-sky-950 mb-0.5">
+                    <span className="px-1.5 py-0.2 bg-sky-100 border border-sky-300 rounded text-[9px] uppercase font-mono">
+                      Public Data Snapshot
+                    </span>
+                    <span>Corroborating Open Data Benchmark</span>
+                  </div>
+                  <div>{breakdown.publicContextSummary}</div>
+                  {breakdown.publicDataSource && (
+                    <div className="text-[10px] text-sky-700 font-mono mt-0.5">
+                      Source: {breakdown.publicDataSource}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* 3. Population Impact & Density */}

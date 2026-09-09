@@ -56,7 +56,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   {t('brand.dpi_engine')}
                 </span>
                 <span className="hidden sm:inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
                   {t('brand.live_telemetry')}
                 </span>
               </div>
