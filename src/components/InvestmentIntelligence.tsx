@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap, GeoJSON, Circle, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
   DollarSign, 
@@ -46,8 +46,8 @@ interface InvestmentIntelligenceProps {
 function MapFocusController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center && center[0] && center[1]) {
-      map.flyTo(center, zoom, { duration: 0.9 });
+    if (center && typeof center[0] === 'number' && typeof center[1] === 'number' && !isNaN(center[0]) && !isNaN(center[1])) {
+      map.flyTo(center, zoom, { duration: 1.1, easeLinearity: 0.25 });
     }
   }, [center, zoom, map]);
   return null;
@@ -80,6 +80,25 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
   const [selectedState, setSelectedState] = useState<string>('ALL');
   const [selectedDistrictId, setSelectedDistrictId] = useState<string>('ALL');
   const [selectedSector, setSelectedSector] = useState<string>('ALL');
+
+  // India Official Boundary (GeoJSON) state for Zero-Cost GIS basemap
+  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch('/india_states_simplified.geojson')
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load boundary');
+        return res.json();
+      })
+      .then(data => {
+        if (isMounted) setGeoJsonData(data);
+      })
+      .catch(err => {
+        console.warn('GeoJSON boundary load fallback:', err);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   // Progressive Disclosure toggle for Detailed Data
   const [showDetailedData, setShowDetailedData] = useState<boolean>(false);
@@ -358,16 +377,37 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
     return districtInvestments.find(d => d.id === selectedDistrictId) || null;
   }, [selectedDistrictId, filteredDistrictInvestments, districtInvestments]);
 
-  // Map center calculation
-  const mapCenter = useMemo<[number, number]>(() => {
+  // Map center and zoom calculations for Zero-Cost India GIS
+  const mapCenterAndZoom = useMemo<{ center: [number, number]; zoom: number }>(() => {
     if (selectedDistrictData && selectedDistrictData.lat && selectedDistrictData.lon) {
-      return [selectedDistrictData.lat, selectedDistrictData.lon];
+      return { center: [selectedDistrictData.lat, selectedDistrictData.lon], zoom: 8 };
     }
-    if (filteredDistrictInvestments.length > 0) {
-      return [filteredDistrictInvestments[0].lat, filteredDistrictInvestments[0].lon];
+    if (selectedState !== 'ALL') {
+      const stateDistricts = filteredDistrictInvestments.filter(d => d.state.toLowerCase() === selectedState.toLowerCase());
+      if (stateDistricts.length > 0) {
+        const avgLat = stateDistricts.reduce((sum, d) => sum + d.lat, 0) / stateDistricts.length;
+        const avgLon = stateDistricts.reduce((sum, d) => sum + d.lon, 0) / stateDistricts.length;
+        return { center: [avgLat, avgLon], zoom: 7 };
+      }
     }
-    return [16.3067, 80.4365]; // Andhra Pradesh / Guntur centroid
-  }, [selectedDistrictData, filteredDistrictInvestments]);
+    return { center: [20.5937, 78.9629], zoom: 5 }; // National view of India
+  }, [selectedDistrictData, selectedState, filteredDistrictInvestments]);
+
+  // Styling for Official India State Boundaries overlay
+  const stateStyle = useMemo(() => {
+    return (feature: any) => {
+      const stateName = feature?.properties?.NAME_1 || feature?.properties?.st_nm || '';
+      const isStateActive = selectedState !== 'ALL' && stateName.toLowerCase().includes(selectedState.toLowerCase());
+      return {
+        color: isStateActive ? '#D65A3A' : '#ffffff',
+        weight: isStateActive ? 2 : 0.8,
+        opacity: isStateActive ? 0.9 : 0.45,
+        fillColor: isStateActive ? '#D65A3A' : '#000000',
+        fillOpacity: isStateActive ? 0.12 : 0.02,
+        dashArray: isStateActive ? '' : '2, 3'
+      };
+    };
+  }, [selectedState]);
 
   // Sector breakdown calculations for "What is it being spent on?"
   const sectorBreakdown = useMemo(() => {
@@ -778,28 +818,116 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Map Column (7 cols on lg) */}
-          <div className="lg:col-span-7 bg-[#F7F5EF] border border-[#171717]/20 p-2 relative h-[380px] sm:h-[440px] flex flex-col">
-            <div className="absolute top-4 left-4 z-10 bg-white/90 backdrop-blur-xs px-2.5 py-1 text-[10px] font-mono font-bold uppercase border border-[#171717]/20 shadow-xs">
-              📍 Capital Distribution Map (Circle Size = Investment)
+          <div className="lg:col-span-7 bg-[#121417] border border-[#171717]/20 relative h-[420px] sm:h-[480px] flex flex-col overflow-hidden shadow-inner">
+            
+            {/* Top-Left Geographic Breadcrumb */}
+            <div className="absolute top-3 left-3 z-10 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-3 py-1.5 shadow-md flex items-center gap-2 font-mono text-[10px] text-white">
+              <span className="text-xs">🇮🇳</span>
+              <span className="font-bold tracking-wider uppercase">INDIA</span>
+              <span className="text-white/40">/</span>
+              <span className="font-semibold text-[#D65A3A] uppercase">
+                {selectedState !== 'ALL' ? selectedState : 'NATIONAL GIS'}
+              </span>
+              {selectedDistrictData && (
+                <>
+                  <span className="text-white/40">/</span>
+                  <span className="font-bold text-white uppercase">{selectedDistrictData.name}</span>
+                </>
+              )}
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1"></span>
+              <span className="text-white/60">
+                {filteredDistrictInvestments.length} Tracked
+              </span>
+            </div>
+
+            {/* Top-Right Zero-Cost Satellite Badge */}
+            <div className="absolute top-3 right-3 z-10 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-2.5 py-1 shadow-md flex items-center gap-1.5 font-mono text-[10px] text-white/90">
+              <span>🛰️</span>
+              <span className="font-bold uppercase tracking-wider">Zero-Cost Satellite · India Boundaries</span>
+            </div>
+
+            {/* Bottom-Left Compact Legend */}
+            <div className="absolute bottom-3 left-3 z-10 bg-[#171717]/90 text-white border border-white/15 px-3 py-2 shadow-lg backdrop-blur-md font-sans text-xs space-y-1.5 min-w-[150px]">
+              <div className="flex items-center justify-between text-[10px] font-mono font-bold text-stone-300 uppercase tracking-wider border-b border-white/10 pb-1">
+                <span>Investment Alignment</span>
+              </div>
+              <div className="space-y-1 text-[11px] font-mono text-stone-200">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] border border-white/80 shrink-0"></span>
+                  <span>Critical Need Gap</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#f59e0b] border border-white/80 shrink-0"></span>
+                  <span>Active Allocation</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] border border-white/80 shrink-0"></span>
+                  <span>Aligned Capital</span>
+                </div>
+              </div>
+              <div className="pt-1 border-t border-white/10 text-[9px] font-mono text-stone-400">
+                Circle Size = Tracked Budget (₹ Cr)
+              </div>
             </div>
 
             <MapContainer
-              center={mapCenter}
-              zoom={7}
-              scrollWheelZoom={false}
+              center={mapCenterAndZoom.center}
+              zoom={mapCenterAndZoom.zoom}
+              scrollWheelZoom={true}
+              zoomControl={false}
               className="w-full h-full z-0"
-              style={{ background: '#f5f5f4' }}
+              style={{ background: '#121417' }}
             >
+              <ZoomControl position="bottomright" />
+              
+              {/* Zero-Cost ESRI World Imagery Base Tiles */}
               <TileLayer
-                attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution='Tiles &copy; Esri &mdash; World Imagery GIS'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={18}
               />
-              <MapFocusController center={mapCenter} zoom={7} />
+              <TileLayer
+                attribution='&copy; Esri'
+                url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                maxZoom={18}
+                opacity={0.45}
+              />
+
+              <MapFocusController center={mapCenterAndZoom.center} zoom={mapCenterAndZoom.zoom} />
+
+              {/* India Official State Boundary Overlay (GeoJSON) */}
+              {geoJsonData && (
+                <GeoJSON
+                  key={`geojson-${selectedState}`}
+                  data={geoJsonData}
+                  style={stateStyle}
+                />
+              )}
+
+              {/* Focus Ring on Selected District */}
+              {selectedDistrictData && (
+                <Circle
+                  center={[selectedDistrictData.lat, selectedDistrictData.lon]}
+                  radius={12000}
+                  pathOptions={{
+                    color: '#D65A3A',
+                    weight: 2,
+                    opacity: 0.85,
+                    fillColor: '#D65A3A',
+                    fillOpacity: 0.15,
+                    dashArray: '3, 4'
+                  }}
+                  interactive={false}
+                />
+              )}
 
               {filteredDistrictInvestments.map(item => {
                 const isSelected = selectedDistrictData?.id === item.id;
-                // Radius proportional to investment: 12px min to 28px max
-                const radius = Math.max(12, Math.min(28, Math.round(item.investmentInr / 25000000)));
+                // Radius proportional to investment: 10px min to 26px max
+                const radius = Math.max(10, Math.min(26, Math.round(item.investmentInr / 25000000)));
+                const markerColor = item.alignmentStatus === 'INVESTMENT_GAP' 
+                  ? '#ef4444' 
+                  : (item.alignmentStatus === 'HIGH_INVESTMENT_LOW_DEMAND' ? '#3b82f6' : '#10b981');
 
                 return (
                   <CircleMarker
@@ -807,9 +935,9 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
                     center={[item.lat, item.lon]}
                     radius={radius}
                     pathOptions={{
-                      color: isSelected ? '#171717' : '#D65A3A',
-                      fillColor: isSelected ? '#D65A3A' : '#b45309',
-                      fillOpacity: isSelected ? 0.9 : 0.65,
+                      color: isSelected ? '#ffffff' : '#171717',
+                      fillColor: markerColor,
+                      fillOpacity: isSelected ? 0.95 : 0.75,
                       weight: isSelected ? 3 : 1.5
                     }}
                     eventHandlers={{
@@ -820,10 +948,17 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
                   >
                     <Tooltip direction="top" offset={[0, -10]} opacity={0.95}>
                       <div className="text-xs font-mono p-1">
-                        <strong className="block text-[#171717]">{item.name}</strong>
-                        <span className="text-[#D65A3A] font-bold">{formatCr(item.investmentInr)}</span>
-                        <span className="block text-[#171717]/70 text-[10px]">
-                          {item.activeProjectsCount} projects · {item.topSector}
+                        <strong className="block text-[#171717]">{item.name} ({item.state})</strong>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[#D65A3A] font-bold">{formatCr(item.investmentInr)}</span>
+                          <span className={`text-[10px] font-bold px-1 py-0.5 rounded ${
+                            item.alignmentStatus === 'INVESTMENT_GAP' ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {item.alignmentStatus === 'INVESTMENT_GAP' ? 'High Need Gap' : 'Aligned'}
+                          </span>
+                        </div>
+                        <span className="block text-[#171717]/70 text-[10px] mt-0.5">
+                          {item.activeProjectsCount} projects · Top Sector: {item.topSector}
                         </span>
                       </div>
                     </Tooltip>
@@ -833,7 +968,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
             </MapContainer>
           </div>
 
-          {/* Ranked List Column (5 cols on lg) */}
+          {/* Ranked List & District Inspector Column (5 cols on lg) */}
           <div className="lg:col-span-5 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -879,7 +1014,9 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
                           <span className="text-sm font-bold text-[#171717] block">
                             {formatCr(item.investmentInr)}
                           </span>
-                          <span className="text-[10px] text-[#D65A3A] font-semibold">
+                          <span className={`text-[10px] font-semibold ${
+                            item.alignmentStatus === 'INVESTMENT_GAP' ? 'text-red-600' : 'text-emerald-700'
+                          }`}>
                             {item.alignmentStatus === 'INVESTMENT_GAP' ? 'High Gap' : 'Aligned'}
                           </span>
                         </div>
@@ -890,9 +1027,46 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               )}
             </div>
 
-            {/* Short explanation beneath */}
-            <div className="p-3 bg-[#F7F5EF] border border-[#171717]/15 text-xs text-[#171717]/80 leading-relaxed">
-              <strong>Geographic Insight:</strong> Public investment is heavily concentrated along the coastal and central corridors (Guntur and Vijayawada receiving &gt;75% of state allocations), while western dryland districts remain dependent on decentralized local allocations.
+            {/* Selected District Inspector & Decision Actions */}
+            {selectedDistrictData && (
+              <div className="p-4 bg-[#F7F5EF] border border-[#171717]/20 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold uppercase text-[#D65A3A] tracking-wider">
+                    📍 Selected: {selectedDistrictData.name} ({selectedDistrictData.state})
+                  </span>
+                  <span className="text-[10px] font-mono px-2 py-0.5 bg-white border border-[#171717]/15">
+                    {selectedDistrictData.activeProjectsCount} Projects
+                  </span>
+                </div>
+                <p className="text-xs text-[#171717]/80 leading-relaxed font-sans">
+                  {selectedDistrictData.alignmentVerdict}
+                </p>
+                <div className="flex items-center gap-2 pt-1 border-t border-[#171717]/10 text-xs font-mono">
+                  {onNavigateToIssues && (
+                    <button
+                      onClick={() => onNavigateToIssues(selectedDistrictData.id, selectedDistrictData.topSectorKey)}
+                      className="px-2.5 py-1.5 bg-white hover:bg-[#171717] hover:text-white border border-[#171717]/20 text-[#171717] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Signals</span>
+                      <ArrowRight className="w-3 h-3" />
+                    </button>
+                  )}
+                  {onNavigateToRecommendations && (
+                    <button
+                      onClick={() => onNavigateToRecommendations(selectedDistrictData.id, selectedDistrictData.topSectorKey)}
+                      className="px-2.5 py-1.5 bg-[#D65A3A] hover:bg-[#c24f32] text-white border border-[#D65A3A] font-semibold transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Policy Brief</span>
+                      <ArrowUpRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Geographic Insight Footer */}
+            <div className="p-3 bg-[#F7F5EF]/60 border border-[#171717]/15 text-xs text-[#171717]/80 leading-relaxed">
+              <strong>Geographic Insight:</strong> Public investment is heavily concentrated along major industrial & urban corridors, while dryland and agrarian districts remain dependent on decentralized local allocations.
             </div>
           </div>
         </div>
