@@ -25,6 +25,7 @@ export const te = {
   'nav.impact': 'ప్రభావం',
   'nav.settings': 'సెట్టింగ్‌లు',
   'nav.report_issue': 'సమస్యను నివేదించండి',
+  'nav.explore': 'అన్వేషించండి',
   'nav.my_requests': 'నా విన్నపాలు',
   'nav.government_dashboard': 'ప్రభుత్వ డ్యాష్‌బోర్డ్',
   'nav.methodology': 'విధాన శాస్త్రం',
@@ -32,9 +33,14 @@ export const te = {
   'nav.reset': 'రీసెట్',
 
   // Section Headers
-  'section.understand': 'అర్థం చేసుకోండి',
+  'section.listen': 'వినండి (LISTEN)',
+  'section.understand': 'అర్థం చేసుకోండి (UNDERSTAND)',
+  'section.measure_need': 'అవసరాన్ని కొలవండి (MEASURE NEED)',
+  'section.align_investment': 'పెట్టుబడులను సరిపోల్చండి (ALIGN INVESTMENT)',
+  'section.check_investment': 'పెట్టుబడులను సరిపోల్చండి (ALIGN INVESTMENT)',
+  'section.decide': 'నిర్ణయించండి (DECIDE)',
+  'section.impact': 'ప్రభావం (IMPACT)',
   'section.explore': 'అన్వేషించండి',
-  'section.decide': 'నిర్ణయించండి',
 
   // Common Actions
   'action.submit': 'సమర్పించండి',

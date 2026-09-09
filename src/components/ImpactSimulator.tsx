@@ -24,6 +24,7 @@ import { District, InfrastructureCategory, GovernmentProject, CitizenRequest } f
 import { COMPLETED_IMPACT_PROJECTS } from '../data/initialRequests';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
 import { getAvailableStates, getDistrictsForState } from '../utils/geography';
+import { useLanguage } from '../context/LanguageContext';
 
 interface ImpactSimulatorProps {
   districts: District[];
@@ -69,6 +70,7 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
   onNavigateToProjects,
   onNavigateToEngine,
 }) => {
+  const { t } = useLanguage();
   // Navigation tabs: strictly [Completed works] and [What-if simulator]
   const [activeTab, setActiveTab] = useState<'completed' | 'simulator'>('completed');
 
@@ -256,17 +258,17 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
       <header className="space-y-2 border-b border-[#171717]/10 pb-5">
         <div className="flex items-center gap-2">
           <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
-            Impact
+            {t('impact.page_label') || 'Impact'}
           </span>
           <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 5 · Decide
+            Step 6 · Impact
           </span>
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-              What happened after action?
+              {t('impact.question_title') || 'Did it make a difference?'}
             </h1>
             <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-2xl leading-relaxed">
               Closing the civic loop: measured telemetry before and after completed interventions, and predictive forecasting for proposed capital allocations.

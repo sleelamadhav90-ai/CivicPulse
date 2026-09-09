@@ -25,6 +25,7 @@ export const en = {
   'nav.impact': 'Impact',
   'nav.settings': 'Settings',
   'nav.report_issue': 'Report an issue',
+  'nav.explore': 'Explore',
   'nav.my_requests': 'My Requests',
   'nav.government_dashboard': 'Government Dashboard',
   'nav.methodology': 'Methodology',
@@ -35,8 +36,10 @@ export const en = {
   'section.listen': 'LISTEN',
   'section.understand': 'UNDERSTAND',
   'section.measure_need': 'MEASURE NEED',
-  'section.check_investment': 'CHECK INVESTMENT',
+  'section.align_investment': 'ALIGN INVESTMENT',
+  'section.check_investment': 'ALIGN INVESTMENT',
   'section.decide': 'DECIDE',
+  'section.impact': 'IMPACT',
   'section.explore': 'EXPLORE',
 
   // Common Actions

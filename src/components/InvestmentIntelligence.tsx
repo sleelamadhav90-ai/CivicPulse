@@ -582,11 +582,11 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
                 {t('investment.page_label') || 'Government Investment'}
               </span>
               <span className="text-xs font-mono text-[#171717]/60 uppercase tracking-wider">
-                Step 4 · Check Investment
+                Step 4 · Align Investment
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#171717] tracking-tight">
-              {t('investment.question_title') || 'Is investment aligned with need?'}
+              {t('investment.question_title') || 'Is public investment aligned with need?'}
             </h1>
             <p className="text-sm sm:text-base text-[#171717]/80 leading-relaxed">
               {t('investment.page_subtitle')}

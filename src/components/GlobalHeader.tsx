@@ -48,7 +48,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
     { id: 'submit', labelKey: 'nav.report_issue' },
-    { id: 'map', labelKey: 'nav.explore_area' },
+    { id: 'map', labelKey: 'nav.explore' },
     { id: 'signals', labelKey: 'nav.my_requests' },
     { id: 'recommendations', labelKey: 'nav.government_dashboard' },
   ];

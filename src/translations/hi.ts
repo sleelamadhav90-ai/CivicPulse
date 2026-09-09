@@ -25,6 +25,7 @@ export const hi = {
   'nav.impact': 'प्रभाव',
   'nav.settings': 'सेटिंग्स',
   'nav.report_issue': 'समस्या दर्ज करें',
+  'nav.explore': 'अन्वेषण करें',
   'nav.my_requests': 'मेरी शिकायतें',
   'nav.government_dashboard': 'सरकारी डैशबोर्ड',
   'nav.methodology': 'कार्यप्रणाली',
@@ -35,8 +36,10 @@ export const hi = {
   'section.listen': 'सुनें (LISTEN)',
   'section.understand': 'समझें (UNDERSTAND)',
   'section.measure_need': 'आवश्यकता मापें (MEASURE NEED)',
-  'section.check_investment': 'निवेश जांचें (CHECK INVESTMENT)',
+  'section.align_investment': 'निवेश संरेखण (ALIGN INVESTMENT)',
+  'section.check_investment': 'निवेश संरेखण (ALIGN INVESTMENT)',
   'section.decide': 'निर्णय लें (DECIDE)',
+  'section.impact': 'प्रभाव (IMPACT)',
   'section.explore': 'अन्वेषण करें',
 
   // Common Actions
