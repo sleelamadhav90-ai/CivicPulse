@@ -217,8 +217,11 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
 
       // Calculate demand signals based on real request count or baseline demographic density
       const demandSignals = reqCount > 0 ? reqCount : Math.max(1, Math.round(district.population * 0.00015 * (0.8 + district.poverty_index)));
+      const avgSeverity = catRequests.length > 0
+        ? Math.round(catRequests.reduce((acc, r) => acc + (r.severity || 5), 0) / catRequests.length)
+        : 6;
 
-      const breakdown = calculatePriorityScore(district, cat, 8, Math.max(1, reqCount > 0 ? reqCount : demandSignals));
+      const breakdown = calculatePriorityScore(district, cat, avgSeverity, Math.max(1, demandSignals));
       const priorityScore = breakdown.total_score;
 
       let title = '';

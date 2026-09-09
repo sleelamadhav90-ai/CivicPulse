@@ -419,6 +419,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       const data = await res.json();
       if (data.success && data.data) {
         const parsed = data.data;
+        const severityNum = typeof parsed.severity_number === 'number' ? parsed.severity_number : (parsed.severity === 'Critical' ? 9 : parsed.severity === 'High' ? 8 : parsed.severity === 'Low' ? 3 : 5);
+        const severityLabel = parsed.severity || (severityNum >= 9 ? 'Critical' : severityNum >= 7 ? 'High' : severityNum <= 3 ? 'Low' : 'Medium');
+
         const result: AIUnderstandingResult = {
           language: parsed.language || selectedLanguage,
           original_text: textToProcess,
@@ -428,9 +431,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
           subcategory: parsed.subcategory || `${parsed.category || 'Water'} Service Issue`,
           issue_summary: parsed.issue_summary || parsed.translated_text || textToProcess,
           location: parsed.location || locationName,
-          severity: parsed.severity || 'Medium',
-          severity_number: parsed.severity_number || 5,
-          urgency: parsed.urgency || 'MEDIUM',
+          severity: severityLabel,
+          severity_number: severityNum,
+          urgency: parsed.urgency || (severityNum >= 9 ? 'CRITICAL' : severityNum >= 7 ? 'HIGH' : severityNum <= 3 ? 'LOW' : 'MEDIUM'),
           duration: parsed.duration || 'Not specified',
           affected_area: parsed.affected_area || `${locationName} locality grid`,
           affected_population_if_available: parsed.affected_population_if_available || 'Not specified',
@@ -531,7 +534,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       locality: finalLocation,
       latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,
       longitude: matchedDist ? matchedDist.lon + (Math.random() - 0.5) * 0.04 : 80.6480,
-      severity: isEditingAiResult ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : 5) : aiResult.severity_number,
+      severity: isEditingAiResult 
+        ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5) 
+        : (aiResult.severity_number ?? 5),
       severity_label: isEditingAiResult ? editedSeverity : aiResult.severity,
       priority_tier: (isEditingAiResult ? editedSeverity : aiResult.severity) as any,
       summary: isEditingAiResult ? editedSummary : aiResult.issue_summary,
