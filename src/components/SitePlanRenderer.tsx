@@ -333,6 +333,9 @@ export const SitePlanRenderer: React.FC<SitePlanRendererProps> = ({ category, se
                 <MapContainer 
                   center={[safeLat, safeLon]} 
                   zoom={16} 
+                  minZoom={10}
+                  maxZoom={19}
+                  worldCopyJump={false}
                   zoomControl={false}
                   scrollWheelZoom={false}
                   dragging={false}
@@ -343,6 +346,7 @@ export const SitePlanRenderer: React.FC<SitePlanRendererProps> = ({ category, se
                   <TileLayer
                     url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
                     maxZoom={19}
+                    noWrap={true}
                   />
                 </MapContainer>
               </div>

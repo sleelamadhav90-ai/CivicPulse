@@ -32,6 +32,18 @@ import { STATE_INVESTMENT_OVERVIEW, MAJOR_GOVERNMENT_SCHEMES, ALL_INVESTMENT_ANO
 import { INITIAL_GOVERNMENT_PROJECTS } from '../data/initialProjects';
 import { getAvailableStates, getDistrictsForState } from '../utils/geography';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  INDIA_MAP_CENTER,
+  INDIA_MAP_MAX_BOUNDS,
+  INDIA_MAP_MIN_ZOOM,
+  INDIA_MAP_MAX_ZOOM,
+  SATELLITE_TILE_URL,
+  SATELLITE_TILE_ATTRIBUTION,
+  REFERENCE_PLACES_TILE_URL,
+  REFERENCE_PLACES_ATTRIBUTION,
+  INDIA_STATES_GEOJSON_PATH,
+  getIndiaStateBoundaryStyle
+} from '../utils/mapStandards';
 
 interface InvestmentIntelligenceProps {
   districts: District[];
@@ -873,6 +885,11 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
             <MapContainer
               center={mapCenterAndZoom.center}
               zoom={mapCenterAndZoom.zoom}
+              minZoom={INDIA_MAP_MIN_ZOOM}
+              maxZoom={INDIA_MAP_MAX_ZOOM}
+              maxBounds={INDIA_MAP_MAX_BOUNDS}
+              maxBoundsViscosity={1.0}
+              worldCopyJump={false}
               scrollWheelZoom={true}
               zoomControl={false}
               className="w-full h-full z-0"
@@ -882,15 +899,19 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               
               {/* Zero-Cost ESRI World Imagery Base Tiles */}
               <TileLayer
-                attribution='Tiles &copy; Esri &mdash; World Imagery GIS'
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+                attribution={SATELLITE_TILE_ATTRIBUTION}
+                url={SATELLITE_TILE_URL}
                 maxZoom={18}
+                noWrap={true}
+                bounds={INDIA_MAP_MAX_BOUNDS}
               />
               <TileLayer
-                attribution='&copy; Esri'
-                url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+                attribution={REFERENCE_PLACES_ATTRIBUTION}
+                url={REFERENCE_PLACES_TILE_URL}
                 maxZoom={18}
                 opacity={0.45}
+                noWrap={true}
+                bounds={INDIA_MAP_MAX_BOUNDS}
               />
 
               <MapFocusController center={mapCenterAndZoom.center} zoom={mapCenterAndZoom.zoom} />

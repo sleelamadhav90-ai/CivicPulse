@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, Marker, Circle, Tooltip, Popup, useMap, ZoomControl, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Tooltip, Popup, useMap, ZoomControl, Polyline, GeoJSON } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
@@ -8,6 +8,19 @@ import {
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
 import { GLOBAL_COUNTRIES } from '../data/globalConfig';
+import { 
+  INDIA_MAP_CENTER, 
+  INDIA_MAP_MAX_BOUNDS, 
+  INDIA_MAP_DEFAULT_ZOOM,
+  INDIA_MAP_MIN_ZOOM, 
+  INDIA_MAP_MAX_ZOOM,
+  SATELLITE_TILE_URL,
+  SATELLITE_TILE_ATTRIBUTION,
+  REFERENCE_PLACES_TILE_URL,
+  REFERENCE_PLACES_ATTRIBUTION,
+  INDIA_STATES_GEOJSON_PATH,
+  getIndiaStateBoundaryStyle
+} from '../utils/mapStandards';
 
 export interface EvaluatedDistrict {
   district: District;
@@ -169,7 +182,27 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onOpenEvidenceModal,
 }) => {
   const [showMapSources, setShowMapSources] = useState(false);
+  const [geoJsonData, setGeoJsonData] = useState<any>(null);
   const countryConfig = GLOBAL_COUNTRIES[selectedCountryCode] || GLOBAL_COUNTRIES['IN'];
+
+  // Zero-Cost Official India State Boundaries Layer
+  useEffect(() => {
+    let isMounted = true;
+    fetch(INDIA_STATES_GEOJSON_PATH)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to load boundary');
+        return res.json();
+      })
+      .then((data) => {
+        if (isMounted) setGeoJsonData(data);
+      })
+      .catch((err) => {
+        console.warn('GeoJSON boundary load fallback:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   // Filter evaluations to only those with valid numeric coordinates
   const validEvaluations = useMemo(() => {
@@ -199,17 +232,21 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       return [activeEvaluation.district.lat, activeEvaluation.district.lon];
     }
     const firstEval = displayedEvaluations[0];
-    if (firstEval) {
+    if (firstEval && isValidCoord(firstEval.district.lat, firstEval.district.lon)) {
       return [firstEval.district.lat, firstEval.district.lon];
     }
     if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
       return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
     }
-    return [20.5937, 78.9629];
+    return INDIA_MAP_CENTER;
   }, [activeEvaluation, displayedEvaluations, countryConfig]);
 
-  const defaultZoom = countryConfig?.coordinates?.zoom || 5;
+  const defaultZoom = countryConfig?.coordinates?.zoom || INDIA_MAP_DEFAULT_ZOOM;
   const targetZoom = activeDistrictId ? 8 : defaultZoom;
+
+  const stateStyle = useMemo(() => {
+    return getIndiaStateBoundaryStyle(activeEvaluation?.district?.state);
+  }, [activeEvaluation?.district?.state]);
 
   // Clean, institutional CivicPulse circular marker creation
   const createAtlasIcon = (category: string, isSelected: boolean, type: string = 'demand', score: number = 50) => {
@@ -325,6 +362,11 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       <MapContainer 
         center={mapCenter} 
         zoom={targetZoom} 
+        minZoom={INDIA_MAP_MIN_ZOOM}
+        maxZoom={INDIA_MAP_MAX_ZOOM}
+        maxBounds={INDIA_MAP_MAX_BOUNDS}
+        maxBoundsViscosity={1.0}
+        worldCopyJump={false}
         scrollWheelZoom={true}
         style={{ width: '100%', height: '100%', background: '#121417' }}
         zoomControl={false}
@@ -334,16 +376,29 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         
         {/* BASE SATELLITE TILE LAYERS: WORLD IMAGERY & PLACE LABELS */}
         <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
-          attribution='Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+          url={SATELLITE_TILE_URL}
+          attribution={SATELLITE_TILE_ATTRIBUTION}
           maxZoom={19}
+          noWrap={true}
+          bounds={INDIA_MAP_MAX_BOUNDS}
         />
         <TileLayer
-          url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
-          attribution='&copy; Esri'
+          url={REFERENCE_PLACES_TILE_URL}
+          attribution={REFERENCE_PLACES_ATTRIBUTION}
           maxZoom={19}
-          opacity={0.7}
+          opacity={0.5}
+          noWrap={true}
+          bounds={INDIA_MAP_MAX_BOUNDS}
         />
+
+        {/* OFFICIAL INDIA STATE BOUNDARIES OVERLAY */}
+        {geoJsonData && (
+          <GeoJSON
+            key={`geojson-ind-${activeEvaluation?.district?.state || 'ALL'}`}
+            data={geoJsonData}
+            style={stateStyle}
+          />
+        )}
 
         {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY — NO HUGE OVERLAPPING CIRCLES */}
         {activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon) && (

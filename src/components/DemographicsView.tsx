@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Tooltip, useMap, GeoJSON, Circle, ZoomControl } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
   Search, 
@@ -19,6 +19,18 @@ import { District, CitizenRequest, InfrastructureCategory } from '../types';
 import { getAvailableStates, getDistrictsForState } from '../utils/geography';
 import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { useLanguage } from '../context/LanguageContext';
+import {
+  INDIA_MAP_CENTER,
+  INDIA_MAP_MAX_BOUNDS,
+  INDIA_MAP_MIN_ZOOM,
+  INDIA_MAP_MAX_ZOOM,
+  SATELLITE_TILE_URL,
+  SATELLITE_TILE_ATTRIBUTION,
+  REFERENCE_PLACES_TILE_URL,
+  REFERENCE_PLACES_ATTRIBUTION,
+  INDIA_STATES_GEOJSON_PATH,
+  getIndiaStateBoundaryStyle
+} from '../utils/mapStandards';
 
 interface DemographicsViewProps {
   districts: District[];
@@ -69,6 +81,25 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
   const [highRiskOnly, setHighRiskOnly] = useState<boolean>(false);
   const [showMoreFilters, setShowMoreFilters] = useState<boolean>(false);
   const [showAdvancedDetails, setShowAdvancedDetails] = useState<boolean>(false);
+
+  // India Official Boundary (GeoJSON) state for Zero-Cost GIS basemap
+  const [geoJsonData, setGeoJsonData] = useState<any>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    fetch(INDIA_STATES_GEOJSON_PATH)
+      .then(res => {
+        if (!res.ok) throw new Error('Failed to load boundary');
+        return res.json();
+      })
+      .then(data => {
+        if (isMounted) setGeoJsonData(data);
+      })
+      .catch(err => {
+        console.warn('GeoJSON boundary load fallback in DemographicsView:', err);
+      });
+    return () => { isMounted = false; };
+  }, []);
 
   // Available states from real geography helper
   const availableStates = useMemo(() => {
@@ -476,25 +507,96 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
           </div>
 
           {/* Leaflet Map Canvas */}
-          <div className="w-full h-[460px] md:h-[560px] relative z-0">
+          <div className="w-full h-[460px] md:h-[560px] relative z-0 bg-[#121417]">
+            {/* Top-Left Geographic Breadcrumb */}
+            <div className="absolute top-3 left-3 z-1000 bg-[#171717]/85 border border-white/20 px-3 py-1.5 shadow-md backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] text-white rounded-lg">
+              <span className="text-xs">🇮🇳</span>
+              <span className="font-bold tracking-wider uppercase">INDIA</span>
+              <span className="text-white/40">/</span>
+              <span className="font-semibold text-[#D65A3A] uppercase">
+                {selectedState !== 'All States' ? selectedState : (selectedDistrict?.state || 'NATIONAL GIS')}
+              </span>
+              {selectedDistrict && (
+                <>
+                  <span className="text-white/40">/</span>
+                  <span className="font-bold text-white uppercase">{selectedDistrict.name}</span>
+                </>
+              )}
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1"></span>
+              <span className="text-[10px] text-gray-300 font-sans">
+                {filteredDistricts.length} Active Hotspots
+              </span>
+            </div>
+
+            {/* Top-Right Zero-Cost Satellite Badge */}
+            <div className="absolute top-3 right-3 z-1000 bg-[#171717]/85 backdrop-blur-md border border-white/20 px-2.5 py-1 shadow-md flex items-center gap-1.5 font-mono text-[10px] text-white/90 rounded-lg">
+              <span>🛰️</span>
+              <span className="font-bold uppercase tracking-wider">Satellite Hybrid</span>
+            </div>
+
             <MapContainer
               center={mapCenter}
               zoom={selectedDistrict ? 7 : 5}
+              minZoom={INDIA_MAP_MIN_ZOOM}
+              maxZoom={INDIA_MAP_MAX_ZOOM}
+              maxBounds={INDIA_MAP_MAX_BOUNDS}
+              maxBoundsViscosity={1.0}
+              worldCopyJump={false}
               scrollWheelZoom={false}
-              zoomControl={true}
+              zoomControl={false}
               className="w-full h-full"
+              style={{ background: '#121417' }}
             >
-              {/* Clean light cartographic voyager tiles matching CivicPulse warm tones */}
+              <ZoomControl position="bottomright" />
+
+              {/* Zero-Cost ESRI World Imagery Base Tiles */}
               <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>'
-                url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                attribution={SATELLITE_TILE_ATTRIBUTION}
+                url={SATELLITE_TILE_URL}
+                maxZoom={18}
+                noWrap={true}
+                bounds={INDIA_MAP_MAX_BOUNDS}
               />
+              <TileLayer
+                attribution={REFERENCE_PLACES_ATTRIBUTION}
+                url={REFERENCE_PLACES_TILE_URL}
+                maxZoom={18}
+                opacity={0.45}
+                noWrap={true}
+                bounds={INDIA_MAP_MAX_BOUNDS}
+              />
+
+              {/* India Official State Boundary Overlay (GeoJSON) */}
+              {geoJsonData && (
+                <GeoJSON
+                  key={`geojson-demo-${selectedState !== 'All States' ? selectedState : (selectedDistrict?.state || 'ALL')}`}
+                  data={geoJsonData}
+                  style={getIndiaStateBoundaryStyle(selectedState !== 'All States' ? selectedState : selectedDistrict?.state)}
+                />
+              )}
 
               {/* Fly to selected district */}
               {selectedDistrict && (
                 <MapFocusController 
                   center={[selectedDistrict.lat, selectedDistrict.lon]} 
                   zoom={7} 
+                />
+              )}
+
+              {/* Focus Ring on Selected District */}
+              {selectedDistrict && (
+                <Circle
+                  center={[selectedDistrict.lat, selectedDistrict.lon]}
+                  radius={12000}
+                  pathOptions={{
+                    color: '#D65A3A',
+                    weight: 2,
+                    opacity: 0.85,
+                    fillColor: '#D65A3A',
+                    fillOpacity: 0.15,
+                    dashArray: '3, 4'
+                  }}
+                  interactive={false}
                 />
               )}
 
@@ -508,12 +610,12 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
                   <CircleMarker
                     key={district.id}
                     center={[district.lat, district.lon]}
-                    radius={isSelected ? 14 : 9}
+                    radius={isSelected ? 13 : 8}
                     pathOptions={{
-                      color: isSelected ? '#171717' : '#ffffff',
-                      weight: isSelected ? 3.5 : 1.5,
+                      color: isSelected ? '#ffffff' : '#171717',
+                      weight: isSelected ? 2.5 : 1,
                       fillColor: color,
-                      fillOpacity: isSelected ? 0.95 : 0.75,
+                      fillOpacity: isSelected ? 0.95 : 0.8,
                     }}
                     eventHandlers={{
                       click: () => setSelectedDistrictId(district.id),
@@ -540,26 +642,26 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
             {/* Restrained Single-Spectrum Legend in Corner */}
             <div 
               id="map-legend" 
-              className="absolute bottom-3 left-3 z-1000 bg-white/95 backdrop-blur-xs border border-[#171717]/10 rounded p-2.5 shadow-xs text-xs font-sans max-w-[280px]"
+              className="absolute bottom-3 left-3 z-1000 bg-[#171717]/90 text-white backdrop-blur-md border border-white/20 rounded p-2.5 shadow-md text-xs font-sans max-w-[280px]"
             >
-              <div className="text-[10px] font-bold text-[#171717]/70 uppercase tracking-wider mb-1.5">
+              <div className="text-[10px] font-bold text-gray-300 uppercase tracking-wider mb-1.5">
                 {t('demographics.spectrum_title')}
               </div>
-              <div className="flex items-center gap-3 text-[11px] text-[#171717]/80 flex-wrap">
+              <div className="flex items-center gap-3 text-[11px] text-gray-200 flex-wrap">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#94a3b8]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#94a3b8] border border-white/40" />
                   <span>{t('demographics.spectrum_low')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#d97706]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#d97706] border border-white/40" />
                   <span>{t('demographics.spectrum_medium')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#ea580c]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#ea580c] border border-white/40" />
                   <span>{t('demographics.spectrum_high')}</span>
                 </div>
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] border border-white/40" />
                   <span>{t('demographics.spectrum_critical')}</span>
                 </div>
               </div>
