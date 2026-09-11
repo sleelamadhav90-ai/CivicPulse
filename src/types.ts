@@ -166,8 +166,11 @@ export interface DemographicProfile {
 }
 
 export type ProvenanceDisplayLabel =
+  | 'Direct Public Data'
+  | 'Public Benchmark'
   | 'Public Data Snapshot'
   | 'CivicPulse Prototype Baseline'
+  | 'Baseline Interpolated'
   | 'Illustrative Demo Data'
   | 'CivicPulse Demo Signal'
   | 'Citizen Signal'

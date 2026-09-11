@@ -1,5 +1,16 @@
 import { CountryCode, InfrastructureCategory } from '../types';
 
+export type PublicDataScope = 'Rural' | 'Urban' | 'Peri-Urban' | 'District-Wide' | 'State-Level' | 'National' | 'Locality';
+
+export type PublicDataIndicatorSourceType =
+  | 'DIRECT_PUBLIC_DATA'
+  | 'PUBLIC_BENCHMARK'
+  | 'CURATED_PROTOTYPE'
+  | 'MODELED_INTERPOLATED'
+  | 'DETERMINISTIC_CALCULATION'
+  | 'CITIZEN_SIGNAL'
+  | 'AI_EXTRACTED';
+
 export interface PublicDataIndicator {
   id: string;
   state: string;
@@ -13,8 +24,11 @@ export interface PublicDataIndicator {
   datasetName: string;
   geographicLevel: 'National' | 'State' | 'District' | 'Locality';
   isSyntheticDemo?: boolean;
-  confidenceRating: 'Verified Official' | 'Published Open Data' | 'Illustrative Demo Dataset';
+  confidenceRating: 'Published Open Data' | 'Illustrative Demo Dataset';
   contextSummary?: string;
+  sourceUrl?: string;
+  scope?: PublicDataScope;
+  sourceType?: PublicDataIndicatorSourceType;
 }
 
 export interface PublicDataProvider {
@@ -105,6 +119,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Rural Jal Jeevan Mission snapshot (68.4% rural tap coverage) complements the municipal piped water baseline (38% piped coverage in municipal wards).',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/department-drinking-water-and-sanitation',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GNT-WAT-02',
@@ -121,6 +138,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Semi-critical aquifer zone with high fluoride and total dissolved solids in western mandals.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GNT-WAT-03',
@@ -137,6 +156,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Deficit southwest monsoon intensified localized groundwater drawdown in non-canal zones.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GNT-RD-01',
@@ -153,6 +174,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: '14 habitations require major bridge/culvert connectivity during high flood discharges.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-rural-development',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GNT-HC-01',
@@ -169,6 +193,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Below WHO recommended standard of 2.5/10k; 4 sub-centres reported vacancy for >6 months.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-health-and-family-welfare',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GNT-DEM-01',
@@ -185,6 +212,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Vulnerability concentrated in agricultural tenant-farming clusters and peri-urban wards.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -205,6 +234,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'NTR District — Vijayawada Urban Baseline: Heavy siltation in outfalls leading to Krishna river causes backwater surges during flash rains.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
   {
     id: 'IND-VJA-WAT-01',
@@ -221,6 +253,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'NTR District — Vijayawada Urban Baseline: Supply duration averages 3.2 hours daily with pressure variations in elevated hill colonies.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
   {
     id: 'IND-VJA-ELE-01',
@@ -237,6 +272,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'NTR District — Vijayawada Urban Baseline: High commercial load on municipal feeder transformers causing unannounced tripping.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-power',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -257,6 +295,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Arid rain-shadow belt with 47.2% deficit in multi-village piped water schemes.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/department-drinking-water-and-sanitation',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-KRN-WAT-02',
@@ -273,6 +314,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Critical stage; heavy borewell drilling due to low canal irrigation penetration.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-KRN-HC-01',
@@ -289,6 +332,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Remote mandals experience acute transit lag during emergency obstetric patient transfers.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-health-and-family-welfare',
+    scope: 'Rural',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -309,6 +355,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'High roughness index along hospital approach corridors causing 3.2x transit time increase.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-rural-development',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-PAT-DR-01',
@@ -325,6 +374,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Sump house pumping stations face power disruption during monsoon flash surges.',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
   {
     id: 'IND-PAT-HC-01',
@@ -341,6 +392,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Frequent rural feeder power outages threaten temperature-sensitive biologicals.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-health-and-family-welfare',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -361,6 +415,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Transformer coil burnout rates peak during kharif paddy transplantation.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-power',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-GAY-WAT-01',
@@ -377,6 +434,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Hard-rock terrain limits tubewell yield in southern hilly blocks.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/department-drinking-water-and-sanitation',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -397,6 +457,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'High patient load from tribal blocks exceeds available beds and medical staff quotas.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-health-and-family-welfare',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-NSK-WAT-01',
@@ -413,6 +476,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Disparities between irrigated river basin talukas and rainfed eastern talukas.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/department-drinking-water-and-sanitation',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -433,6 +499,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Rotational 3-phase supply causes night irrigation hazards for sugarcane farmers.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-power',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
   {
     id: 'IND-SLP-WAT-01',
@@ -449,6 +518,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Recurring semi-arid drought cycle necessitating seasonal drinking water tanker operations.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -469,6 +540,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Shortage of automated biochemistry reagents in peri-urban public health clinics.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-health-and-family-welfare',
+    scope: 'Peri-Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
   {
     id: 'IND-WGL-WAT-01',
@@ -485,6 +559,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'High grid reliability with localized intra-village distribution valve maintenance gaps.',
+    scope: 'District-Wide',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -505,6 +581,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Key urban storm channels require bottleneck widening before peak monsoon inundation.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -525,6 +604,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Peripheral IT corridor wards remain dependent on private groundwater tankers.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Peri-Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -545,6 +627,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Coastal outfalls require automated tidal gate flippers to prevent sea surges during cyclones.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   },
 
   // ==========================================
@@ -565,6 +650,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'High connectivity with heavy transit wear along peri-urban agricultural market routes.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-rural-development',
+    scope: 'Rural',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -585,6 +673,8 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Overexploited category; severe aquifer depletion requires bulk surface water transfer.',
+    scope: 'District-Wide',
+    sourceType: 'DIRECT_PUBLIC_DATA',
   },
 
   // ==========================================
@@ -605,6 +695,9 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
     contextSummary: 'Lock gate closures during river high tides cause temporary street water stagnation.',
+    sourceUrl: 'https://data.gov.in/ministrydepartment/ministry-housing-and-urban-affairs',
+    scope: 'Urban',
+    sourceType: 'PUBLIC_BENCHMARK',
   }
 ];
 
@@ -667,6 +760,8 @@ export class IndiaDataGovInProvider implements PublicDataProvider {
         isSyntheticDemo: true,
         confidenceRating: 'Illustrative Demo Dataset',
         contextSummary: `Baseline official statistics for ${districtName} indicating public service coverage gaps.`,
+        sourceType: 'MODELED_INTERPOLATED',
+        scope: 'District-Wide',
       }
     ];
   }

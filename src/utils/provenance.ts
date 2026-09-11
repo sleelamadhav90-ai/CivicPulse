@@ -44,16 +44,27 @@ export function getProvenanceForPublicIndicator(indicator: {
   year?: number;
   isSynthetic?: boolean;
   datasetName?: string;
+  sourceType?: 'DIRECT_PUBLIC_DATA' | 'PUBLIC_BENCHMARK' | 'CURATED_PROTOTYPE' | 'MODELED_INTERPOLATED' | 'DETERMINISTIC_CALCULATION' | 'CITIZEN_SIGNAL' | 'AI_EXTRACTED';
 }): DataProvenance {
+  const isSynthetic = Boolean(indicator.isSynthetic);
+  let displayLabel: ProvenanceDisplayLabel = 'Public Data Snapshot';
+  if (isSynthetic) {
+    displayLabel = 'Baseline Interpolated';
+  } else if (indicator.sourceType === 'DIRECT_PUBLIC_DATA') {
+    displayLabel = 'Direct Public Data';
+  } else if (indicator.sourceType === 'PUBLIC_BENCHMARK') {
+    displayLabel = 'Public Benchmark';
+  }
+
   return {
-    sourceType: 'PUBLIC_OPEN_DATA',
+    sourceType: isSynthetic ? 'SYNTHETIC_DEMO' : 'PUBLIC_OPEN_DATA',
     sourceName: indicator.source || 'Open Government Data (data.gov.in)',
     sourceYear: indicator.year || 2024,
-    isSyntheticDemo: Boolean(indicator.isSynthetic),
+    isSyntheticDemo: isSynthetic,
     isLive: false,
-    displayLabel: 'Public Data Snapshot',
+    displayLabel,
     datasetOrScheme: indicator.datasetName,
-    notes: 'Static benchmark snapshot retrieved from open government datasets.',
+    notes: isSynthetic ? 'Interpolated baseline for district benchmark context.' : 'Static benchmark snapshot retrieved from open government datasets.',
   };
 }
 
@@ -84,7 +95,7 @@ export function getProvenanceForScoring(): DataProvenance {
   };
 }
 
-export type DistrictDataDepth = 'Deep Ground Truthing' | 'Open Government Data' | 'Baseline Interpolated';
+export type DistrictDataDepth = 'Deep Local Baseline' | 'Open Government Data' | 'Baseline Interpolated';
 
 export interface DistrictDataDepthInfo {
   tier: DistrictDataDepth;
@@ -110,8 +121,8 @@ export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDept
 
   if (isL1) {
     return {
-      tier: 'Deep Ground Truthing',
-      badgeLabel: 'Level 1 · Deep Ground Truthing',
+      tier: 'Deep Local Baseline',
+      badgeLabel: 'Level 1 · Deep Local Baseline',
       badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-300',
       description: 'Comprehensive cross-domain open data benchmarks & physical infrastructure baselines verified.'
     };
@@ -157,9 +168,13 @@ export function getProvenanceBadgeStyles(label: ProvenanceDisplayLabel): {
     case 'Citizen Signal':
     case 'AI-Extracted Citizen Signal':
       return { bg: 'bg-emerald-50', text: 'text-emerald-800', border: 'border-emerald-300' };
+    case 'Direct Public Data':
     case 'Public Data Snapshot':
       return { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-300' };
+    case 'Public Benchmark':
+      return { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-300' };
     case 'CivicPulse Prototype Baseline':
+    case 'Baseline Interpolated':
       return { bg: 'bg-stone-100', text: 'text-stone-800', border: 'border-stone-300' };
     case 'CivicPulse Demo Signal':
     case 'Illustrative Demo Data':
