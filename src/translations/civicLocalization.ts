@@ -539,7 +539,7 @@ export const CATEGORY_RECOMMENDATIONS: Record<string, {
       or: 'ଜାତୀୟ ସ୍ମାର୍ଟ ଷ୍ଟ୍ରିଟ୍ ଲାଇଟିଂ ମିଶନ'
     },
     analyticalJustification: {
-      en: (d, def) => `Telemetry audits reveal an acute lighting void in ${d} with a ${def}% deficit gap, causing elevated nighttime transit risks.`,
+      en: (d, def) => `Field reports reveal an acute lighting void in ${d} with a ${def}% deficit gap, causing elevated nighttime transit risks.`,
       ta: (d, def) => `${d} பகுதியில் இரவு நேர வெளிச்சத்தில் ${def}% குறைபாடு இருப்பது கண்டறியப்பட்டுள்ளது.`,
       hi: (d, def) => `${d} में रात्रि प्रकाश व्यवस्था में ${def}% की कमी है, जिससे रात में दुर्घटना और सुरक्षा जोखिम बढ़ जाते हैं।`,
       te: (d, def) => `${d} లో రాత్రిపూట వీధి దీపాల కొరత ${def}% గా ఉంది.`,
@@ -805,7 +805,7 @@ export const PATTERN_TRANSLATIONS: Record<string, {
       or: 'ନଗର ନିଗମ ପାଇପଲାଇନ ପହଞ୍ଚି ନଥିବା ଉପନଗରୀୟ ୱାର୍ଡଗୁଡ଼ିକରେ ୬୦ ଦିନରେ ଜଳଯୋଗାଣ ଦାବି ୩୧% ବୃଦ୍ଧି ପାଇଛି।'
     },
     suggestedIntervention: {
-      en: 'Advance pipeline augmentation scheduled for FY27 to current fiscal year; deploy interim telemetry-monitored water kiosks in peripheral clusters.',
+      en: 'Advance pipeline augmentation scheduled for FY27 to current fiscal year; deploy interim monitored water kiosks in peripheral clusters.',
       ta: 'அடுத்த நிதியாண்டுக்கு திட்டமிடப்பட்ட குழாய் விரிவாக்கத்தை நடப்பு நிதியாண்டுக்கு முன்னெடுக்கவும்; புறநகர் பகுதிகளில் இடைக்கால நீர் கியோஸ்க்குகளை நிறுவவும்.',
       hi: 'वित्त वर्ष 2027 के लिए निर्धारित पाइपलाइन विस्तार को वर्तमान वित्तीय वर्ष में शुरू करें; परिधीय क्षेत्रों में स्वचालित वाटर कियोस्क स्थापित करें।',
       te: 'తదుపరి ఆర్థిక సంవత్సరానికి ప్రణాళిక చేసిన పైప్‌లైన్ విస్తరణను ప్రస్తుత ఆర్థిక సంవత్సరానికి ముందస్తు చేయండి; శివారు ప్రాంతాలలో వాటర్ కియోస్క్‌లను ఏర్పాటు చేయండి.',
@@ -1292,7 +1292,7 @@ export const OVERVIEW_PRIORITY_ISSUES_TRANSLATIONS: Record<string, {
       or: '+29% ଏହି ମାସରେ'
     },
     publicFinding: {
-      en: 'CEA feeder telemetry records 6.4 daily agricultural feeder trips during paddy transplantation.',
+      en: 'CEA feeder monitoring records 6.4 daily agricultural feeder trips during paddy transplantation.',
       ta: 'CEA மின் தொடர் தரவுகள் நெல் நடவின் போது தினமும் 6.4 முறை மின்வெட்டு ஏற்படுவதாக பதிவு செய்கின்றன.',
       hi: 'सीईए फीडर डेटा धान रोपाई के दौरान रोजाना 6.4 फीडर ट्रिप दर्ज करता है।',
       te: 'CEA ఫీడర్ టెలిమెట్రీ వరి నాట్ల సమయంలో రోజుకు 6.4 ఫీడర్ ట్రిప్పులను నమోదు చేస్తుంది.',

@@ -352,7 +352,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               <span className="font-semibold text-[#171717] block">{t('recommendations.modal_cross_domain')}</span>
               <div className="p-3 bg-white border border-[#171717]/15 rounded-xs space-y-1 text-[#57534E]">
                 <p>• {t('modal.census_registry') || 'Census & National Geospatial Data Registry'}</p>
-                <p>• {t('modal.telemetry_audits') || 'Public works telemetry and Jal Jeevan Mission physical audits'}</p>
+                <p>• {t('modal.telemetry_audits') || 'Public works field reports and Jal Jeevan Mission physical audits'}</p>
                 <p>• {evidenceProject.demandCount} {t('modal.verified_complaints') || 'verified local citizen grievance submissions'}</p>
               </div>
             </div>

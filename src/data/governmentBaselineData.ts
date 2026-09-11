@@ -397,7 +397,7 @@ export const DISTRICT_INFRASTRUCTURE_BENCHMARKS: DistrictInfrastructureBenchmark
     benchmarkTarget: 1.0,
     deficitGapPct: 58.0,
     openSourceAgency: 'Ministry of Power (RDSS / CEA)',
-    sourceDatasetTitle: 'Rural Feeder Reliability & SAIFI Telemetry Digest (data.gov.in)',
+    sourceDatasetTitle: 'Rural Feeder Reliability & SAIFI Field Digest (data.gov.in)',
     reportingYear: 2024,
     contextNote: 'Transformer burnouts during paddy irrigation seasons disrupt agricultural productivity.',
   },

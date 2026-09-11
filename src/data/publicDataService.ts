@@ -9,7 +9,7 @@ export interface PublicDataIndicator {
   value: number | string;
   unit: string;
   year: number;
-  source: 'data.gov.in' | 'IMD' | 'WHO' | 'PMGSY' | 'JJM' | 'MoHFW' | 'Census 2021/SECC' | 'ISRO/Bhuvan' | 'PFMS' | 'UDISE+';
+  source: 'data.gov.in' | 'IMD' | 'WHO' | 'PMGSY' | 'JJM' | 'MoHFW' | 'Census 2011/SECC' | 'ISRO/Bhuvan' | 'PFMS' | 'UDISE+';
   datasetName: string;
   geographicLevel: 'National' | 'State' | 'District' | 'Locality';
   isSyntheticDemo?: boolean;
@@ -204,7 +204,7 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
-    contextSummary: 'Heavy siltation in outfalls leading to Krishna river causes backwater surges during flash rains.',
+    contextSummary: 'NTR District — Vijayawada Urban Baseline: Heavy siltation in outfalls leading to Krishna river causes backwater surges during flash rains.',
   },
   {
     id: 'IND-VJA-WAT-01',
@@ -220,7 +220,7 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
-    contextSummary: 'Supply duration averages 3.2 hours daily with pressure variations in elevated hill colonies.',
+    contextSummary: 'NTR District — Vijayawada Urban Baseline: Supply duration averages 3.2 hours daily with pressure variations in elevated hill colonies.',
   },
   {
     id: 'IND-VJA-ELE-01',
@@ -232,11 +232,11 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     unit: '% thermal capacity during summer peak',
     year: 2025,
     source: 'data.gov.in',
-    datasetName: 'Revamped Distribution Sector Scheme (RDSS) Feeder Telemetry',
+    datasetName: 'Revamped Distribution Sector Scheme (RDSS) Feeder Monitoring',
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
-    contextSummary: 'High commercial load on municipal feeder transformers causing unannounced tripping.',
+    contextSummary: 'NTR District — Vijayawada Urban Baseline: High commercial load on municipal feeder transformers causing unannounced tripping.',
   },
 
   // ==========================================
@@ -252,7 +252,7 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     unit: '% of rural households',
     year: 2025,
     source: 'data.gov.in',
-    datasetName: 'Jal Jeevan Mission (JJM) Rural Household Telemetry',
+    datasetName: 'Jal Jeevan Mission (JJM) Rural Household Field Reports',
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
@@ -392,7 +392,7 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     unit: '% of sanctioned bed capacity',
     year: 2025,
     source: 'MoHFW',
-    datasetName: 'National Health Mission Facility Telemetry',
+    datasetName: 'National Health Mission Facility Monitoring',
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',
@@ -480,7 +480,7 @@ export const INDIA_PUBLIC_INDICATORS_REGISTRY: PublicDataIndicator[] = [
     unit: '% continuity of intake grid',
     year: 2025,
     source: 'data.gov.in',
-    datasetName: 'Mission Bhagiratha Telemetry & SCADA Network',
+    datasetName: 'Mission Bhagiratha Sensor & SCADA Network',
     geographicLevel: 'District',
     isSyntheticDemo: false,
     confidenceRating: 'Published Open Data',

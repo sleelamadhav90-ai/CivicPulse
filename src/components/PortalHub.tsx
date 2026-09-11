@@ -237,7 +237,7 @@ export const PORTAL_MODULES: PortalModule[] = [
     tagline: 'National Grievance Feed Integration Technical Specs',
     description: 'Technical connector specifications for linking national platforms like India CPGRAMS, Brazil Fala.BR, Kenya e-Citizen, and Indonesia LAPOR!.',
     userPersonas: ['System Integrators', 'DevOps Engineers', 'Data Architects'],
-    keyFeatures: ['CPGRAMS Connector API', 'Universal Data Contract', 'JSON Payload Spec', 'Adapter Status Telemetry']
+    keyFeatures: ['CPGRAMS Connector API', 'Universal Data Contract', 'JSON Payload Spec', 'Adapter Status Feed']
   },
   {
     id: 'blocks',

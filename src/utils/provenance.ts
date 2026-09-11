@@ -1,4 +1,5 @@
 import { CitizenRequest, DataProvenance, ProvenanceDisplayLabel, District } from '../types';
+import { getPublicDataForDistrict } from '../data/publicDataService';
 
 /**
  * Data Provenance System for CivicPulse
@@ -83,7 +84,7 @@ export function getProvenanceForScoring(): DataProvenance {
   };
 }
 
-export type DistrictDataDepth = 'Complete Baseline' | 'Standard Baseline' | 'Basic Demographics Only';
+export type DistrictDataDepth = 'Deep Ground Truthing' | 'Open Government Data' | 'Baseline Interpolated';
 
 export interface DistrictDataDepthInfo {
   tier: DistrictDataDepth;
@@ -105,22 +106,34 @@ const COMPLETE_BASELINE_DISTRICTS = [
 
 export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDepthInfo {
   const normalized = districtIdOrName.toLowerCase().replace(/[^a-z]/g, '');
-  const isComplete = COMPLETE_BASELINE_DISTRICTS.some(d => normalized.includes(d));
+  const isL1 = COMPLETE_BASELINE_DISTRICTS.some(d => normalized.includes(d));
 
-  if (isComplete) {
+  if (isL1) {
     return {
-      tier: 'Complete Baseline',
-      badgeLabel: 'Complete Baseline (Primary Audit District)',
+      tier: 'Deep Ground Truthing',
+      badgeLabel: 'Level 1 · Deep Ground Truthing',
       badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-300',
-      description: 'Comprehensive cross-domain open data benchmarks & physical infrastructure telemetry verified.'
+      description: 'Comprehensive cross-domain open data benchmarks & physical infrastructure baselines verified.'
+    };
+  }
+
+  const indicators = getPublicDataForDistrict(districtIdOrName);
+  const hasGenuine = indicators.some(i => !i.isSyntheticDemo);
+
+  if (hasGenuine) {
+    return {
+      tier: 'Open Government Data',
+      badgeLabel: 'Level 2 · Open Government Data',
+      badgeClass: 'bg-sky-50 text-sky-800 border border-sky-300',
+      description: 'Verified open government data indicators (data.gov.in / ministerial snapshots).'
     };
   }
 
   return {
-    tier: 'Standard Baseline',
-    badgeLabel: 'Standard Baseline (National Registry)',
+    tier: 'Baseline Interpolated',
+    badgeLabel: 'Level 3 · Baseline Interpolated',
     badgeClass: 'bg-stone-100 text-stone-700 border border-stone-300',
-    description: 'Standard district demographic indicators and sector access baseline.'
+    description: 'Standard interpolated demographic and sectoral baseline benchmark.'
   };
 }
 

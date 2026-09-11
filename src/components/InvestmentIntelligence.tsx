@@ -1552,7 +1552,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
           </span>
         </div>
         <p className="text-[11px] text-[#171717]/70 leading-relaxed">
-          Sourced from Open Government Data (OGD) Platform India, DARPG Monthly Grievance Reports, and Scheme Baselines (JJM, PMGSY, NHM, SBM). Ground telemetry is synchronized with CivicPulse Citizen Request feeds for public policy simulation and administrative demonstration.
+          Sourced from Open Government Data (OGD) Platform India, DARPG Monthly Grievance Reports, and Scheme Baselines (JJM, PMGSY, NHM, SBM). Ground baselines are synchronized with CivicPulse Citizen Request feeds for public policy simulation and administrative demonstration.
         </p>
       </div>
 

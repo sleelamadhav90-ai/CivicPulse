@@ -41,7 +41,7 @@ export const GLOBAL_COUNTRIES: Record<CountryCode, CountryConfig> = {
     connectors: [
       {
         id: 'in-conn-1',
-        name: 'India Census 2021 Demographics',
+        name: 'India Census 2011 + MoHFW Demographics',
         category: 'demographics',
         status: 'Connected',
         provider: 'Ministry of Home Affairs (MHA)',

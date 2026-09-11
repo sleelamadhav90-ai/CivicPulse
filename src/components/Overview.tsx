@@ -467,7 +467,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 </div>
               </div>
 
-              {/* 2. Essential Evidence & Open Public Telemetry */}
+              {/* 2. Essential Evidence & Open Public Data */}
               {activeDrawerIssue.publicFinding && (
                 <div className="bg-white p-4 border border-[#171717]/15 rounded-xs space-y-1.5">
                   <div className="flex items-center space-x-1 text-[10px] font-mono font-bold text-[#57534E] uppercase">

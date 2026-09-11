@@ -242,7 +242,7 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
           investmentCr: Number((cp.investment_inr / 10000000).toFixed(1)),
           department: cp.category === 'Water' ? 'Rural Water Supply & Sanitation' : cp.category === 'Health' ? 'Health & Family Welfare' : 'Public Works Department',
           officer: 'Executive Nodal Officer',
-          description: 'Closed-loop infrastructure intervention with multi-month telemetry verification and citizen grievance resolution.',
+          description: 'Closed-loop infrastructure intervention with multi-month benchmark verification and citizen grievance resolution.',
           isFromActionQueue: false,
         });
       }

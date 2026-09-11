@@ -644,8 +644,8 @@ With a calculated National Priority Score of **${priorityScore}/100**, this regi
 
 **3. Actionable Intervention Plan**:
 - **Phase 1 (Days 1–15)**: Immediate deployment of rapid-response auxiliary supply grids and emergency mobile maintenance units.
-- **Phase 2 (Days 16–60)**: Construction of high-capacity decentralized filtration plants and automated sensor monitoring telemetry.
-- **Phase 3 (Days 61–120)**: Integration with the state Digital Public Goods dashboard for continuous sensor telemetry and citizen feedback validation.
+- **Phase 2 (Days 16–60)**: Construction of high-capacity decentralized filtration plants and automated sensor monitoring.
+- **Phase 3 (Days 61–120)**: Integration with the state Digital Public Goods dashboard for continuous monitoring benchmarks and citizen feedback validation.
 
 **4. Targeted Impact**:
 Projected to benefit over **${Number(population).toLocaleString()} residents**, elevating baseline access to **85%+** and reducing the regional Infrastructure Gap score by over **55 points**.`;

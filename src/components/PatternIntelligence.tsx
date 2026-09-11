@@ -55,7 +55,7 @@ export const CORE_PATTERNS: AnalyticalPattern[] = [
     description: 'Citizen requests for water supply have increased by 31% over 60 days in rapidly growing peri-urban wards where municipal pipelines have not yet reached new housing developments.',
     evidence: {
       dataSources: [
-        'Jal Jeevan Mission coverage telemetry',
+        'Jal Jeevan Mission coverage benchmarks',
         'Census 2011 + urban expansion satellite layer',
         'Municipal drinking water tanker tracking registry'
       ],
@@ -72,7 +72,7 @@ export const CORE_PATTERNS: AnalyticalPattern[] = [
       { name: 'Nashik', state: 'Maharashtra', districtId: 'dist-04', specificMetric: '420 signals (+19% MoM)' },
       { name: 'Patna', state: 'Bihar', districtId: 'dist-01', specificMetric: '310 signals (+15% MoM)' },
     ],
-    suggestedIntervention: 'Advance pipeline augmentation scheduled for FY27 to current fiscal year; deploy interim telemetry-monitored water kiosks in peripheral clusters.',
+    suggestedIntervention: 'Advance pipeline augmentation scheduled for FY27 to current fiscal year; deploy interim monitored water kiosks in peripheral clusters.',
     urgency: 'Critical',
     timeline: 'Immediate (Next 30 Days)'
   },
@@ -112,7 +112,7 @@ export const CORE_PATTERNS: AnalyticalPattern[] = [
     description: 'Recurring power outages in agricultural pump feeders spike reliably during peak kharif irrigation cycles due to unmaintained oil cooling in distribution transformers.',
     evidence: {
       dataSources: [
-        'DISCOM feeder telemetry feeds',
+        'DISCOM feeder monitoring benchmarks',
         'Central Electricity Authority substation records',
         'Citizen IVR outage logs'
       ],

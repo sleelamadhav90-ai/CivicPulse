@@ -149,7 +149,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="flex items-center justify-between p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
               <div>
                 <span className="text-[#171717] font-bold block">Jal Jeevan Mission (JJM) / CGWB</span>
-                <span className="text-[10px] text-[#78716C]">Rural Household Tap Telemetry & Aquifer Depletion</span>
+                <span className="text-[10px] text-[#78716C]">Rural Household Tap Coverage & Aquifer Depletion</span>
               </div>
               <span className="text-[#285943] text-[11px] font-semibold">{t('status.published_open_data')}</span>
             </div>

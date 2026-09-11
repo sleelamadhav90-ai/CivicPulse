@@ -96,7 +96,7 @@ const RELATIONSHIP_SCENARIOS: RelationshipScenario[] = [
         title: 'Vulnerable Population',
         subtitle: 'Census Demography Layer',
         metric: '184,200 Citizens',
-        dataSource: 'Census 2021 + Municipal Ward Data',
+        dataSource: 'Census 2011 + MoHFW Projections',
         category: 'data',
         color: '#171717',
         description: 'High-density transit corridor servicing 184,200 daily commuters and emergency vehicles.',
