@@ -115,6 +115,19 @@ const COMPLETE_BASELINE_DISTRICTS = [
   'chittoor'
 ];
 
+const LEVEL_2_OGD_DISTRICTS = [
+  'warangal',
+  'hyderabad',
+  'nashik',
+  'patna',
+  'gaya',
+  'jaipur',
+  'bengaluru',
+  'chennai',
+  'kolkata',
+  'lucknow'
+];
+
 export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDepthInfo {
   const normalized = districtIdOrName.toLowerCase().replace(/[^a-z]/g, '');
   const isL1 = COMPLETE_BASELINE_DISTRICTS.some(d => normalized.includes(d));
@@ -128,10 +141,9 @@ export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDept
     };
   }
 
-  const indicators = getPublicDataForDistrict(districtIdOrName);
-  const hasGenuine = indicators.some(i => !i.isSyntheticDemo);
+  const isL2 = LEVEL_2_OGD_DISTRICTS.some(d => normalized.includes(d));
 
-  if (hasGenuine) {
+  if (isL2) {
     return {
       tier: 'Open Government Data',
       badgeLabel: 'Level 2 · Open Government Data',
