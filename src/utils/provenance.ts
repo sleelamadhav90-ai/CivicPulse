@@ -54,17 +54,27 @@ export function getProvenanceForPublicIndicator(indicator: {
     displayLabel = 'Direct Public Data';
   } else if (indicator.sourceType === 'PUBLIC_BENCHMARK') {
     displayLabel = 'Public Benchmark';
+  } else if (indicator.sourceType === 'CURATED_PROTOTYPE') {
+    displayLabel = 'CivicPulse Prototype Baseline';
   }
 
+  const isPrototypeOrSynthetic = isSynthetic || indicator.sourceType === 'CURATED_PROTOTYPE';
+
   return {
-    sourceType: isSynthetic ? 'SYNTHETIC_DEMO' : 'PUBLIC_OPEN_DATA',
+    sourceType: isPrototypeOrSynthetic ? 'CIVICPULSE_BASELINE' : 'PUBLIC_OPEN_DATA',
     sourceName: indicator.source || 'Open Government Data (data.gov.in)',
     sourceYear: indicator.year || 2024,
-    isSyntheticDemo: isSynthetic,
+    isSyntheticDemo: isPrototypeOrSynthetic,
     isLive: false,
     displayLabel,
     datasetOrScheme: indicator.datasetName,
-    notes: isSynthetic ? 'Interpolated baseline for district benchmark context.' : 'Static benchmark snapshot retrieved from open government datasets.',
+    notes: indicator.sourceType === 'CURATED_PROTOTYPE'
+      ? 'Curated prototype baseline for contextual demonstration and algorithm evaluation.'
+      : isSynthetic
+      ? 'Interpolated baseline for district benchmark context.'
+      : indicator.sourceType === 'PUBLIC_BENCHMARK'
+      ? 'Public sector reference benchmark retrieved from published open data portals and ministry reports.'
+      : 'Direct open government dataset record traceable to published official annexure tables.',
   };
 }
 
