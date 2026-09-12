@@ -12,10 +12,15 @@ import {
   Users, 
   AlertCircle,
   TrendingUp,
-  BookmarkCheck
+  BookmarkCheck,
+  ShieldCheck,
+  Coins,
+  Layers,
+  Info
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, RecommendedProject, InterventionType } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
+import { buildEvidenceBundle } from '../utils/evidenceBundleService';
 import { useLanguage } from '../context/LanguageContext';
 
 interface PriorityEngineProps {
@@ -348,14 +353,208 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               </p>
             </div>
 
-            <div className="space-y-1.5 text-xs">
-              <span className="font-semibold text-[#171717] block">{t('recommendations.modal_cross_domain')}</span>
-              <div className="p-3 bg-white border border-[#171717]/15 rounded-xs space-y-1 text-[#57534E]">
-                <p>• {t('modal.census_registry') || 'Census & National Geospatial Data Registry'}</p>
-                <p>• {t('modal.telemetry_audits') || 'Public works field reports and Jal Jeevan Mission physical audits'}</p>
-                <p>• {evidenceProject.demandCount} {t('modal.verified_complaints') || 'verified local citizen grievance submissions'}</p>
-              </div>
-            </div>
+            {/* Unified Evidence Bundle Dossier */}
+            {(() => {
+              const bundle = evidenceProject.evidenceBundle || buildEvidenceBundle(evidenceProject.districtId, evidenceProject.category, requests);
+              return (
+                <div className="space-y-3.5 text-xs">
+                  <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
+                    <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                      <Database className="w-3.5 h-3.5 text-[#D65A3A]" />
+                      <span>{t('recommendations.modal_cross_domain') || 'Unified Evidence Dossier'}</span>
+                    </span>
+                    <span className="font-mono text-[10px] px-2 py-0.5 bg-stone-100 text-stone-700 rounded-xs border border-stone-200">
+                      Completeness: {bundle.summary.evidenceCompleteness}
+                    </span>
+                  </div>
+
+                  {/* 1. Citizen Demand Signals */}
+                  <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                        <Users className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Citizen Demand Evidence</span>
+                      </span>
+                      <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-xs border ${bundle.citizenDemand.provenance.isSyntheticDemo ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
+                        {bundle.citizenDemand.provenance.displayLabel}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px]">
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Total Signals</span>
+                        <span className="font-bold text-[#171717]">{bundle.citizenDemand.totalSignals.toLocaleString()}</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">User Verified</span>
+                        <span className="font-bold text-blue-700">{bundle.citizenDemand.userSubmittedSignals.toLocaleString()}</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Demo Seeded</span>
+                        <span className="font-bold text-amber-700">{bundle.citizenDemand.demoSignals.toLocaleString()}</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Avg Severity</span>
+                        <span className="font-bold text-rose-700">{bundle.citizenDemand.averageSeverity || '6.0'} / 10</span>
+                      </div>
+                    </div>
+                    {bundle.citizenDemand.localityCoverage.length > 0 && (
+                      <p className="text-[11px] text-[#57534E]">
+                        <span className="font-semibold">Localities:</span> {bundle.citizenDemand.localityCoverage.slice(0, 4).join(', ')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 2. Infrastructure Evidence */}
+                  <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                        <Layers className="w-3.5 h-3.5 text-rose-600" />
+                        <span>Infrastructure Baseline & Deficit Gap</span>
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-stone-100 text-stone-700 border-stone-200">
+                        {bundle.infrastructure.baselineAccess?.scope || 'District'} Baseline
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Current Access</span>
+                        <span className="font-bold text-[#171717]">{bundle.infrastructure.baselineAccess?.value}%</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Deficit Gap</span>
+                        <span className="font-bold text-rose-700">{bundle.infrastructure.deficit?.value}%</span>
+                      </div>
+                      {bundle.infrastructure.benchmarkComparisons.length > 0 && (
+                        <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs col-span-2 sm:col-span-1">
+                          <span className="text-[9px] text-[#78716C] block">{bundle.infrastructure.benchmarkComparisons[0].scope} Benchmark</span>
+                          <span className="font-bold text-emerald-700">{bundle.infrastructure.benchmarkComparisons[0].value}% FHTC</span>
+                        </div>
+                      )}
+                    </div>
+                    {bundle.infrastructure.benchmarkComparisons.length > 0 && (
+                      <p className="text-[10px] text-[#78716C] italic">
+                        * Note: Municipal access baseline ({bundle.infrastructure.baselineAccess?.value}%) and rural Jal Jeevan Mission benchmark ({bundle.infrastructure.benchmarkComparisons[0].value}%) measure separate jurisdictions and are not averaged.
+                      </p>
+                    )}
+                  </div>
+
+                  {/* 3. Vulnerability Evidence */}
+                  <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                        <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
+                        <span>Population & Social Vulnerability</span>
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-purple-50 text-purple-800 border-purple-200">
+                        Census & NITI Aayog
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">District Population</span>
+                        <span className="font-bold text-[#171717]">{(bundle.vulnerability.population.value / 1000000).toFixed(2)}M</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Poverty Index</span>
+                        <span className="font-bold text-amber-700">{bundle.vulnerability.povertyIndex.value}</span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Vulnerability Score</span>
+                        <span className="font-bold text-[#D65A3A]">{bundle.vulnerability.vulnerabilityScore.value} / 100</span>
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-[#78716C]">
+                      {bundle.vulnerability.affectedPopulation.explicitlyReportedCount 
+                        ? `Explicit citizen-reported affected population: ${bundle.vulnerability.affectedPopulation.explicitlyReportedCount.toLocaleString()} residents.` 
+                        : 'No extrapolated affected population. System strictly avoids multiplying population by deficit percentage.'}
+                    </p>
+                  </div>
+
+                  {/* 4. Government Grievance Context (Isolated Benchmark) */}
+                  {bundle.governmentGrievance.hasGrievanceData && (
+                    <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 text-teal-600" />
+                          <span>Government Grievance Context (Isolated Benchmark)</span>
+                        </span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-teal-50 text-teal-800 border-teal-200">
+                          {bundle.governmentGrievance.geographyLevel || 'National'} Digest
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
+                        <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                          <span className="text-[9px] text-[#78716C] block">Department / Scope</span>
+                          <span className="font-bold text-[#171717] truncate block" title={bundle.governmentGrievance.relevantDepartment || ''}>
+                            {bundle.governmentGrievance.relevantDepartment ? bundle.governmentGrievance.relevantDepartment.split('(')[0].trim() : 'DARPG State Baseline'}
+                          </span>
+                        </div>
+                        <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                          <span className="text-[9px] text-[#78716C] block">Received Volume</span>
+                          <span className="font-bold text-[#171717]">{bundle.governmentGrievance.received?.toLocaleString() || 'N/A'}</span>
+                        </div>
+                        <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                          <span className="text-[9px] text-[#78716C] block">Disposal Rate</span>
+                          <span className="font-bold text-emerald-700">{bundle.governmentGrievance.disposalRate ? `${bundle.governmentGrievance.disposalRate}%` : 'N/A'}</span>
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-teal-700 italic">
+                        * Safeguard: {bundle.governmentGrievance.isolationRule}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* 5. Investment & Existing Projects */}
+                  <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
+                        <Coins className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Public Investment & Existing Works</span>
+                      </span>
+                      <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-stone-100 text-stone-700 border-stone-200">
+                        PFMS & Works Register
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">State Scheme Headroom</span>
+                        <span className="font-bold text-[#171717]">
+                          {bundle.investment.stateSchemeAllocation ? `₹${(bundle.investment.stateSchemeAllocation.stateAllocationInr / 10000000).toFixed(0)} Cr` : 'N/A'}
+                        </span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">District CapEx Pipeline</span>
+                        <span className="font-bold text-blue-700">
+                          {bundle.investment.districtPlannedCapex ? `₹${(bundle.investment.districtPlannedCapex.valueInr / 10000000).toFixed(1)} Cr` : '₹0.0 Cr'}
+                        </span>
+                      </div>
+                      <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
+                        <span className="text-[9px] text-[#78716C] block">Existing Active Works</span>
+                        <span className="font-bold text-[#171717]">
+                          {bundle.existingProjects.matchingProjects.length} project(s)
+                        </span>
+                      </div>
+                    </div>
+                    {bundle.existingProjects.matchingProjects.length > 0 && (
+                      <p className="text-[11px] text-[#57534E]">
+                        <span className="font-semibold">Sanctioned Pipeline:</span> {bundle.existingProjects.matchingProjects.map(p => p.title).join(', ')}
+                      </p>
+                    )}
+                    <p className="text-[10px] text-[#78716C] italic">
+                      * State-level scheme headroom represents broader fiscal availability and is not earmarked exclusively for this district.
+                    </p>
+                  </div>
+
+                  {/* 6. Lineage Trail */}
+                  <div className="p-2.5 bg-white border border-[#171717]/15 rounded-xs space-y-1">
+                    <span className="text-[10px] font-mono text-[#78716C] block uppercase tracking-wider">Lineage Audit Trail</span>
+                    <p className="text-[10px] font-mono text-[#57534E] leading-normal break-words">
+                      {bundle.metadata.lineageTrail}
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
 
             <div className="flex items-center justify-between pt-4 border-t border-[#171717]/10">
               <button

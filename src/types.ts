@@ -427,6 +427,8 @@ export interface RecommendedProject {
   }>;
   // Investment & Government Plan Data Audit ("What has been planned & spent?")
   investmentAudit?: InvestmentAuditSummary;
+  // Step 2C-5B: Unified Evidence Bundle
+  evidenceBundle?: EvidenceBundle;
 }
 
 export interface PolicyBrief {
@@ -568,4 +570,278 @@ export interface InvestmentAuditSummary {
   investmentGapRationale: string;
   quadrant: InvestmentQuadrantType;
 }
+
+/**
+ * ============================================================================
+ * UNIFIED EVIDENCE BUNDLE ARCHITECTURE (Step 2C-5B)
+ * ============================================================================
+ * An evidence/lineage layer that structures raw data sources into a validated,
+ * traceable evidence bundle for consumption by the 5-pillar priority engine
+ * and policy recommendation briefings.
+ * 
+ * Pipeline:
+ * RAW DATA SOURCES → VALIDATED EVIDENCE BUNDLE → 5-PILLAR PRIORITY ENGINE → RECOMMENDATION
+ */
+
+/** 1. Citizen Demand Evidence */
+export interface CitizenDemandEvidence {
+  userSubmittedSignals: number; // based ONLY on source_origin === 'CIVICPULSE_USER'
+  demoSignals: number;          // based ONLY on source_origin === 'SYNTHETIC_DEMO'
+  totalSignals: number;         // explicitly defined analytical count (userSubmittedSignals + demoSignals)
+  signalMode: 'COMBINED_ANALYTICAL' | 'USER_ONLY' | 'DEMO_ONLY';
+  averageSeverity: number;
+  urgencyBreakdown: {
+    critical: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  inputModeBreakdown: {
+    voice: number;
+    text: number;
+    photo: number;
+  };
+  matchedRequestIds: string[];
+  localityCoverage: string[];
+  sampleDescriptions: string[];
+  provenance: DataProvenance;
+  limitations: string[];
+}
+
+/** 2. Government Grievance Evidence (Contextual Benchmark Only - Isolated from Citizen Demand) */
+export interface GovernmentGrievanceEvidence {
+  hasGrievanceData: boolean;
+  nationalContext: {
+    departmentName: string;
+    category: InfrastructureCategory | string;
+    received: number;
+    disposed: number;
+    pending: number;
+    disposalRatePct: number;
+    avgResolutionDays: number;
+    geographyLevel: 'National';
+    period: string;
+    sourceDatasetTitle: string;
+    sourceOrganization: string;
+    sourceUrl: string;
+    provenance: DataProvenance;
+  } | null;
+  stateContext: {
+    stateName: string;
+    totalReceived: number;
+    totalDisposed: number;
+    totalPending: number;
+    disposalRatePct: number;
+    primaryCategoryReported: string;
+    geographyLevel: 'State';
+    period: string;
+    sourceName: string;
+    provenance: DataProvenance;
+  } | null;
+  relevantDepartment: string | null;
+  received: number | null;
+  disposed: number | null;
+  pending: number | null;
+  disposalRate: number | null;
+  averageResolutionDays: number | null;
+  sourceRecords: GovernmentGrievanceRecord[];
+  geographyLevel: 'National' | 'State' | 'District' | null;
+  period: string | null;
+  provenance: DataProvenance | null;
+  limitations: string[];
+  isolationRule: string; // Enforces that government grievance baselines are NEVER added to citizen demand signals
+}
+
+/** 3. Infrastructure Evidence */
+export interface InfrastructureEvidence {
+  baselineAccess: {
+    value: number; // e.g. 38% municipal water access in Guntur
+    unit: string;  // "%"
+    scope: 'Urban' | 'Municipal' | 'District-Wide' | string;
+    indicatorName: string;
+    source: string;
+    datasetTitle?: string;
+    provenance: DataProvenance;
+  } | null;
+  deficit: {
+    value: number; // e.g. 62% deficit gap (100 - access)
+    unit: string;  // "%"
+    isDeterministicCalculation: boolean;
+    calculationFormula: string;
+    provenance: DataProvenance;
+  } | null;
+  relevantPublicIndicators: Array<{
+    id: string;
+    datasetName: string;
+    indicator: string;
+    value: number | string;
+    unit: string;
+    scope: string;
+    year: number;
+    source: string;
+    sourceType: string;
+    confidenceRating?: string;
+    contextSummary?: string;
+    sourceUrl?: string;
+    provenance: DataProvenance;
+  }>;
+  benchmarkComparisons: Array<{
+    districtId: string;
+    districtName: string;
+    indicator: string;
+    value: number;
+    unit: string;
+    benchmarkTarget: number;
+    deficitGapPct: number;
+    agency: string;
+    datasetTitle: string;
+    year: number;
+    contextNote: string;
+    scope: string; // e.g. "Rural" for Jal Jeevan Mission
+    provenance: DataProvenance;
+  }>;
+  geography: string;
+  scope: string;
+  provenance: DataProvenance;
+  limitations: string[];
+}
+
+/** 4. Vulnerability Evidence */
+export interface VulnerabilityEvidence {
+  population: {
+    value: number; // e.g. 4,887,000 for Guntur
+    geographyLevel: 'District';
+    year: number;
+    source: string;
+    provenance: DataProvenance;
+  };
+  povertyIndex: {
+    value: number; // e.g. 0.58
+    scale: '0 to 1';
+    indicator: string;
+    source: string;
+    provenance: DataProvenance;
+  };
+  vulnerabilityScore: {
+    value: number; // deterministic composite score 0-100
+    scale: '0 to 100';
+    isDeterministicCalculation: boolean;
+    provenance: DataProvenance;
+  };
+  relevantPublicIndicators: Array<{
+    id: string;
+    indicator: string;
+    value: number | string;
+    unit: string;
+    provenance: DataProvenance;
+  }>;
+  affectedPopulation: {
+    explicitlyReportedCount: number | null; // ONLY when explicitly supplied by a citizen submission or authoritative project
+    isInventedOrExtrapolated: false;
+    provenanceNotes: string;
+  };
+  geographyLevel: 'District';
+  limitations: string[];
+}
+
+/** 5. Investment Evidence */
+export interface InvestmentEvidence {
+  stateSchemeAllocation: {
+    schemeId: string;
+    schemeName: string;
+    department: string;
+    stateAllocationInr: number;
+    spentInr: number;
+    unspentBalanceInr: number;
+    utilizationRatePct: number;
+    period: string;
+    source: string;
+    provenance: DataProvenance;
+  } | null;
+  stateExpenditure: number | null;
+  unspentBalance: number | null;
+  utilizationRate: number | null;
+  districtPlannedCapex: {
+    valueInr: number;
+    source: string;
+    provenance: DataProvenance;
+  } | null;
+  existingProjectInvestment: {
+    totalBudgetInr: number;
+    projectCount: number;
+    provenance: DataProvenance;
+  } | null;
+  investmentType: string;
+  source: string | null;
+  provenance: DataProvenance | null;
+  geographyLevel: 'State' | 'District';
+  period: string | null;
+  semanticDistinctionNotes: string[];
+  limitations: string[];
+}
+
+/** 6. Existing Project Evidence */
+export interface ExistingProjectEvidence {
+  matchingProjects: Array<{
+    id: string;
+    title: string;
+    status: string;
+    category: InfrastructureCategory;
+    district: string;
+    budgetInr: number;
+    progressPct: number;
+    department?: string;
+    officerInCharge?: string;
+    startDate?: string;
+    targetDate?: string;
+    provenance: DataProvenance;
+  }>;
+  projectIds: string[];
+  totalBudgetInr: number;
+  averageProgressPct: number;
+  overlapAssessment: {
+    addressesNeed: 'Partial' | 'None' | 'Under Review';
+    notes: string;
+  };
+  provenance: DataProvenance;
+  limitations: string[];
+}
+
+/** 7. Evidence Completeness Summary */
+export interface EvidenceCompletenessSummary {
+  demandPresent: boolean;
+  infrastructureGapPresent: boolean;
+  vulnerabilityPresent: boolean;
+  investmentContextPresent: boolean;
+  existingProjectPresent: boolean;
+  evidenceCompleteness: 'High' | 'Moderate' | 'Limited' | 'Minimal';
+}
+
+/** 8. The Unified Evidence Bundle */
+export interface EvidenceBundle {
+  district: {
+    id: string;
+    name: string;
+    state: string;
+    lat: number;
+    lon: number;
+    population: number;
+    dataReadiness: string; // e.g. "Level 1"
+    zone?: string;
+  };
+  category: InfrastructureCategory;
+  citizenDemand: CitizenDemandEvidence;
+  governmentGrievance: GovernmentGrievanceEvidence;
+  infrastructure: InfrastructureEvidence;
+  vulnerability: VulnerabilityEvidence;
+  investment: InvestmentEvidence;
+  existingProjects: ExistingProjectEvidence;
+  summary: EvidenceCompletenessSummary;
+  metadata: {
+    generatedAt: string;
+    bundleVersion: string;
+    lineageTrail: string;
+  };
+}
+
 

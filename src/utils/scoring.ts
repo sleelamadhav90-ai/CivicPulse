@@ -1,7 +1,9 @@
-import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile, InfrastructureAudit } from '../types';
+import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile, InfrastructureAudit, EvidenceBundle } from '../types';
 import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
 import { getInvestmentAuditByCategory } from '../data/investmentData';
 import { getPublicDataForDistrict, getPublicContextSummary } from '../data/publicDataService';
+import { buildEvidenceBundle } from './evidenceBundleService';
+import { DISTRICTS_REGISTRY } from '../data/districts';
 
 export const SCORING_WEIGHTS = {
   citizenDemand: 0.30,
@@ -107,6 +109,47 @@ export function calculatePriorityScore(
     publicDataSource: publicContext.primarySourceBadge,
     isSyntheticDemo: publicContext.isSynthetic,
   };
+}
+
+/**
+ * Calculates deterministic Priority Score directly consuming a validated EvidenceBundle (Step 2C-5B).
+ * Guarantees 100% mathematical identity with calculatePriorityScore.
+ */
+export function calculatePriorityScoreFromBundle(
+  bundle: EvidenceBundle,
+  overrideSeverity?: number,
+  overrideDemandCount?: number
+): ScoreBreakdown {
+  const districtObj = DISTRICTS_REGISTRY.find(
+    d => d.id.toLowerCase() === bundle.district.id.toLowerCase() || d.name.toLowerCase() === bundle.district.name.toLowerCase()
+  ) || {
+    id: bundle.district.id,
+    name: bundle.district.name,
+    state: bundle.district.state,
+    lat: bundle.district.lat,
+    lon: bundle.district.lon,
+    population: bundle.district.population,
+    poverty_index: bundle.vulnerability.povertyIndex.value,
+    water_access: bundle.infrastructure.baselineAccess?.value || 50,
+    health_access: 50,
+    road_quality: 50,
+    education_access: 50,
+    planned_investment: bundle.investment.districtPlannedCapex?.valueInr || 0,
+    existing_facilities: { phc_clinics: 0, water_plants: 0, schools: 0, paved_roads_km: 0 },
+    zone: bundle.district.zone || 'Central'
+  };
+
+  const effectiveSeverity = overrideSeverity !== undefined 
+    ? overrideSeverity 
+    : (bundle.citizenDemand.averageSeverity || 6);
+
+  const effectiveDemandCount = overrideDemandCount !== undefined 
+    ? overrideDemandCount 
+    : Math.max(1, bundle.citizenDemand.totalSignals);
+
+  const overrideAccess = bundle.infrastructure.baselineAccess?.value;
+
+  return calculatePriorityScore(districtObj, bundle.category, effectiveSeverity, effectiveDemandCount, overrideAccess);
 }
 
 export function getPriorityTier(score: number): {
@@ -622,6 +665,8 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
         isSynthetic: ind.isSyntheticDemo,
       })),
       investmentAudit: getInvestmentAuditByCategory(item.category),
+      // Step 2C-5B: Unified Evidence Bundle
+      evidenceBundle: buildEvidenceBundle(item.districtId, item.category, requests),
     };
   });
 }
