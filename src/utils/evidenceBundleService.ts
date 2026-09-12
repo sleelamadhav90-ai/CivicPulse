@@ -29,6 +29,7 @@ import {
   getDistrictDataDepth 
 } from './provenance';
 import { getCategoryAccess } from './scoring';
+import { matchesDistrict } from './districtMatcher';
 
 /**
  * Builds a unified, validated EvidenceBundle for a given district and category.
@@ -40,48 +41,42 @@ import { getCategoryAccess } from './scoring';
  * - Explicit nulls for missing values rather than fake zeroes or estimates
  */
 export function buildEvidenceBundle(
-  districtIdOrName: string,
+  districtIdOrName: string | District,
   category: InfrastructureCategory,
   requests: CitizenRequest[] = []
 ): EvidenceBundle {
-  const norm = districtIdOrName.trim().toLowerCase();
-  
   // 1. Resolve District
-  const district: District = DISTRICTS_REGISTRY.find(
-    d => d.id.toLowerCase() === norm || d.name.toLowerCase() === norm
-  ) || getDistrictByName(districtIdOrName) || {
-    id: norm,
-    name: districtIdOrName,
-    state: 'National',
-    lat: 20.5937,
-    lon: 78.9629,
-    population: 1000000,
-    poverty_index: 0.4,
-    water_access: 50,
-    health_access: 50,
-    road_quality: 50,
-    education_access: 50,
-    planned_investment: 0,
-    existing_facilities: { phc_clinics: 0, water_plants: 0, schools: 0, paved_roads_km: 0 },
-    zone: 'Central'
-  };
+  let district: District;
+  if (typeof districtIdOrName === 'object' && districtIdOrName !== null) {
+    district = districtIdOrName;
+  } else {
+    const norm = String(districtIdOrName).trim().toLowerCase();
+    district = DISTRICTS_REGISTRY.find(
+      d => d.id.toLowerCase() === norm || d.name.toLowerCase() === norm
+    ) || getDistrictByName(String(districtIdOrName)) || {
+      id: norm,
+      name: String(districtIdOrName),
+      state: 'National',
+      lat: 20.5937,
+      lon: 78.9629,
+      population: 1000000,
+      poverty_index: 0.4,
+      water_access: 50,
+      health_access: 50,
+      road_quality: 50,
+      education_access: 50,
+      planned_investment: 0,
+      existing_facilities: { phc_clinics: 0, water_plants: 0, schools: 0, paved_roads_km: 0 },
+      zone: 'Central'
+    };
+  }
 
   const distNameLower = district.name.toLowerCase();
   const distIdLower = district.id.toLowerCase();
   const depthInfo = getDistrictDataDepth(district.id || district.name);
 
-  // 2. Filter Citizen Requests for this District & Category
-  const distRequests = requests.filter(r => {
-    const rLoc = (r.location || '').toLowerCase();
-    const rDist = (r.district || '').toLowerCase();
-    return (
-      rDist === distNameLower ||
-      rDist === distIdLower ||
-      rLoc.includes(distNameLower) ||
-      distNameLower.includes(rLoc) ||
-      rLoc.includes(distIdLower)
-    );
-  });
+  // 2. Filter Citizen Requests for this District & Category (Precise word-bounded matching)
+  const distRequests = requests.filter(r => matchesDistrict(r, district));
   const catRequests = distRequests.filter(r => r.category === category);
 
   // 3. Citizen Demand Evidence (Strict User vs Demo Separation)

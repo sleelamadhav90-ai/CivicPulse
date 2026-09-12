@@ -4,6 +4,7 @@ import { getInvestmentAuditByCategory } from '../data/investmentData';
 import { getPublicDataForDistrict, getPublicContextSummary } from '../data/publicDataService';
 import { buildEvidenceBundle } from './evidenceBundleService';
 import { DISTRICTS_REGISTRY } from '../data/districts';
+import { matchesDistrict } from './districtMatcher';
 
 export const SCORING_WEIGHTS = {
   citizenDemand: 0.30,
@@ -228,23 +229,11 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
     beneficiaries: number;
     timelineMonths: number;
     keyBulletPoints: string[];
+    breakdown: ScoreBreakdown;
   }> = [];
 
   districts.forEach((district) => {
-    const distNameLower = district.name.toLowerCase();
-    const distIdLower = district.id.toLowerCase();
-
-    const distRequests = requests.filter((r) => {
-      const rLoc = (r.location || '').toLowerCase();
-      const rDist = (r.district || '').toLowerCase();
-      return (
-        rDist === distNameLower ||
-        rDist === distIdLower ||
-        rLoc.includes(distNameLower) ||
-        distNameLower.includes(rLoc) ||
-        rLoc.includes(distIdLower)
-      );
-    });
+    const distRequests = requests.filter((r) => matchesDistrict(r, district));
 
     categories.forEach((cat) => {
       const catRequests = distRequests.filter((r) => r.category === cat);
@@ -335,6 +324,7 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
         budgetInr,
         beneficiaries,
         timelineMonths,
+        breakdown,
         keyBulletPoints: [
           `${demandSignals.toLocaleString()} citizen demand signals`,
           `+ ${affectedAreas} villages/wards severely affected`,
@@ -370,9 +360,9 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
 
     const citizenDemandFactor: PriorityFactorDetail = {
       factorName: 'Citizen Demand',
-      score: Math.min(100, Math.round(22 * Math.log1p(item.citizenRequestsCount))),
+      score: item.breakdown.demand_score,
       weight: SCORING_WEIGHTS.citizenDemand,
-      weightedScore: Number((Math.min(100, Math.round(22 * Math.log1p(item.citizenRequestsCount))) * SCORING_WEIGHTS.citizenDemand).toFixed(1)),
+      weightedScore: Number((item.breakdown.demand_score * SCORING_WEIGHTS.citizenDemand).toFixed(1)),
       bulletText: `${item.citizenRequestsCount.toLocaleString()} citizen requests`,
       metricValue: `${item.citizenRequestsCount.toLocaleString()} signals`,
       description: `Aggregated voice, SMS, and digital citizen reports from ${item.districtName}.`,
@@ -381,9 +371,9 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
 
     const infrastructureGapFactor: PriorityFactorDetail = {
       factorName: 'Infrastructure Gap',
-      score: item.deficitPct,
+      score: item.breakdown.gap_score,
       weight: SCORING_WEIGHTS.infrastructureGap,
-      weightedScore: Number((item.deficitPct * SCORING_WEIGHTS.infrastructureGap).toFixed(1)),
+      weightedScore: Number((item.breakdown.gap_score * SCORING_WEIGHTS.infrastructureGap).toFixed(1)),
       bulletText: `Infrastructure deficit (${item.deficitPct}% deficit gap)`,
       metricValue: `${item.deficitPct}% Deficit`,
       description: `Baseline municipal audit showing critical capacity shortfall in ${item.category}.`,
@@ -392,9 +382,9 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
 
     const populationImpactFactor: PriorityFactorDetail = {
       factorName: 'Population Impact',
-      score: 88,
+      score: item.breakdown.vuln_score,
       weight: SCORING_WEIGHTS.populationImpact,
-      weightedScore: Number((88 * SCORING_WEIGHTS.populationImpact).toFixed(1)),
+      weightedScore: Number((item.breakdown.vuln_score * SCORING_WEIGHTS.populationImpact).toFixed(1)),
       bulletText: `Target population (${(item.beneficiaries / 1000).toFixed(0)}k beneficiaries)`,
       metricValue: `${(item.beneficiaries / 1000).toFixed(0)}k people`,
       description: item.densityDesc,
@@ -403,22 +393,22 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
 
     const urgencyFactor: PriorityFactorDetail = {
       factorName: 'Urgency',
-      score: 92,
+      score: item.breakdown.sev_score,
       weight: SCORING_WEIGHTS.urgency,
-      weightedScore: Number((92 * SCORING_WEIGHTS.urgency).toFixed(1)),
+      weightedScore: Number((item.breakdown.sev_score * SCORING_WEIGHTS.urgency).toFixed(1)),
       bulletText: item.keyHazard.split(',')[0] || 'Urgent environmental hazard',
-      metricValue: 'Critical (9.2/10)',
+      metricValue: `Severity (${(item.breakdown.sev_score / 10).toFixed(1)}/10)`,
       description: item.keyHazard,
       badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
     };
 
     const governmentPriorityFactor: PriorityFactorDetail = {
       factorName: 'Government Priority',
-      score: 85,
+      score: item.breakdown.align_score,
       weight: SCORING_WEIGHTS.governmentPriority,
-      weightedScore: Number((85 * SCORING_WEIGHTS.governmentPriority).toFixed(1)),
+      weightedScore: Number((item.breakdown.align_score * SCORING_WEIGHTS.governmentPriority).toFixed(1)),
       bulletText: `Municipal infrastructure priority alignment`,
-      metricValue: `High Alignment`,
+      metricValue: item.breakdown.align_score > 50 ? 'High Alignment' : 'Unaligned / CapEx Gap',
       description: item.capexGap,
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     };
