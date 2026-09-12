@@ -169,16 +169,19 @@ export type ProvenanceDisplayLabel =
   | 'Direct Public Data'
   | 'Public Benchmark'
   | 'Public Data Snapshot'
+  | 'Government Grievance Baseline'
+  | 'Public Grievance Statistics'
   | 'CivicPulse Prototype Baseline'
   | 'Baseline Interpolated'
   | 'Illustrative Demo Data'
   | 'CivicPulse Demo Signal'
+  | 'Illustrative Demo Signal'
   | 'Citizen Signal'
   | 'AI-Extracted Citizen Signal'
   | 'Deterministic Calculation';
 
 export interface DataProvenance {
-  sourceType: 'PUBLIC_OPEN_DATA' | 'CIVICPULSE_BASELINE' | 'SYNTHETIC_DEMO' | 'CITIZEN_SUBMISSION' | 'AI_EXTRACTION' | 'DETERMINISTIC_ENGINE';
+  sourceType: 'PUBLIC_OPEN_DATA' | 'CIVICPULSE_BASELINE' | 'SYNTHETIC_DEMO' | 'CITIZEN_SUBMISSION' | 'AI_EXTRACTION' | 'DETERMINISTIC_ENGINE' | 'DIRECT_PUBLIC_DATA' | 'PUBLIC_BENCHMARK' | 'CURATED_PROTOTYPE' | 'MODELED_INTERPOLATED';
   sourceName: string;
   sourceYear: number | string;
   isSyntheticDemo: boolean;
@@ -228,6 +231,38 @@ export interface GovernmentGrievanceAggregate {
   avg_resolution_days: number;
   reporting_period: string;
   source_origin: 'GOVERNMENT_BASELINE';
+}
+
+/**
+ * Universal Government Grievance Data Contract (Step 2C-4)
+ * Standardized data contract for ingesting published government grievance statistics
+ * (DARPG, State Grievance Portals, Urban Local Bodies, Ministerial Bulletins).
+ * Preserves strict architectural distinction from citizen-submitted signals.
+ */
+export interface GovernmentGrievanceRecord {
+  id: string;
+  dataset: string;
+  sourceType: 'DIRECT_PUBLIC_DATA' | 'PUBLIC_BENCHMARK' | 'CURATED_PROTOTYPE' | 'MODELED_INTERPOLATED';
+  sourceName: string;
+  sourceUrl: string | null;
+  sourceYear: number;
+  geography: string;
+  geographyLevel: 'National' | 'State' | 'District' | 'Department' | 'Municipality';
+  category: InfrastructureCategory | 'Public Services' | 'Revenue' | 'General';
+  subcategory: string | null;
+  grievanceCount: number;
+  period: string;
+  statusMeasure?: {
+    received?: number;
+    disposed?: number;
+    pending?: number;
+    disposalRatePct?: number;
+    avgResolutionDays?: number;
+  } | null;
+  isSyntheticDemo: boolean;
+  isLive: boolean; // Always false for published aggregate snapshots; true only if authorized live feed is connected
+  displayLabel: 'Government Grievance Baseline' | 'Public Grievance Statistics' | 'Public Benchmark' | 'CivicPulse Prototype Baseline';
+  notes?: string;
 }
 
 export interface CitizenRequest {

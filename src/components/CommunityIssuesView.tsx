@@ -129,7 +129,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       baseMap.set(issue.id, { ...issue, sampleRequests: [] });
     });
 
-    const custom = requests.filter(r => r.id.startsWith('CP-2026-') || r.source_origin === 'CIVICPULSE_USER');
+    const custom = requests.filter(r => r.source_origin === 'CIVICPULSE_USER');
     
     custom.forEach(req => {
       const reqLoc = (req.location || '').toLowerCase();

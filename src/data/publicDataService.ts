@@ -1663,8 +1663,12 @@ export {
   getStateGrievanceBaseline,
   getDistrictInfrastructureBenchmark,
   getNationalGrievanceOverview,
+  GOVERNMENT_GRIEVANCE_RECORDS,
+  getAllGovernmentGrievanceRecords,
+  getGovernmentGrievanceRecordsByGeography,
 } from './governmentBaselineData';
 export type { StateGrievanceBaseline, DistrictInfrastructureBenchmark } from './governmentBaselineData';
+export type { GovernmentGrievanceRecord } from '../types';
 export function getPublicDataForDistrict(
   districtNameOrId: string, 
   category?: string, 

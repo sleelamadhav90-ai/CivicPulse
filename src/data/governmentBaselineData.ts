@@ -1,4 +1,4 @@
-import { GovernmentDatasetMetadata, GovernmentGrievanceAggregate, InfrastructureCategory } from '../types';
+import { GovernmentDatasetMetadata, GovernmentGrievanceAggregate, GovernmentGrievanceRecord, InfrastructureCategory } from '../types';
 
 /**
  * Official Open Government Data (data.gov.in) Metadata Layer
@@ -452,3 +452,76 @@ export function getNationalGrievanceOverview() {
     legal_framing: 'Government baseline statistics provide macro context; live citizen signals submitted through CivicPulse add real-time micro-level resolution.'
   };
 }
+
+/**
+ * Universal Government Grievance Records
+ * Conforms to the Step 2C-4 Universal Grievance Data Contract.
+ * Standardizes published central line ministry and state-level grievance aggregates.
+ */
+export const GOVERNMENT_GRIEVANCE_RECORDS: GovernmentGrievanceRecord[] = [
+  // Departmental National Baselines (DARPG Annual Digest / data.gov.in)
+  ...DEPARTMENT_GRIEVANCE_BASELINES.map((dept): GovernmentGrievanceRecord => ({
+    id: `ggr-${dept.id}`,
+    dataset: dept.source_metadata.dataset_title,
+    sourceType: 'PUBLIC_BENCHMARK',
+    sourceName: dept.source_metadata.source_organization,
+    sourceUrl: dept.source_metadata.source_url,
+    sourceYear: 2024,
+    geography: 'National',
+    geographyLevel: 'Department',
+    category: dept.category,
+    subcategory: null,
+    grievanceCount: dept.received_count,
+    period: dept.reporting_period,
+    statusMeasure: {
+      received: dept.received_count,
+      disposed: dept.disposed_count,
+      pending: dept.pending_count,
+      disposalRatePct: dept.disposal_rate_pct,
+      avgResolutionDays: dept.avg_resolution_days,
+    },
+    isSyntheticDemo: false,
+    isLive: false,
+    displayLabel: 'Government Grievance Baseline',
+    notes: 'Published aggregate statistics under GODL. Does not contain private citizen grievance records or live CPGRAMS feeds.',
+  })),
+
+  // State-Level Baselines (DARPG State Digests)
+  ...Object.entries(STATE_GRIEVANCE_BASELINES).map(([stateName, s]): GovernmentGrievanceRecord => ({
+    id: `ggr-state-${stateName.toLowerCase().replace(/[^a-z]/g, '')}`,
+    dataset: 'State-wise Public Grievance Disposal Digest (DARPG/OGD)',
+    sourceType: 'PUBLIC_BENCHMARK',
+    sourceName: 'Department of Administrative Reforms and Public Grievances (DARPG)',
+    sourceUrl: 'https://data.gov.in/resource/department-wise-public-grievance-receipts-and-disposals',
+    sourceYear: 2024,
+    geography: s.state,
+    geographyLevel: 'State',
+    category: s.primary_category_reported as any,
+    subcategory: null,
+    grievanceCount: s.total_received,
+    period: '2024-2025',
+    statusMeasure: {
+      received: s.total_received,
+      disposed: s.total_disposed,
+      pending: s.total_pending,
+      disposalRatePct: s.disposal_rate_pct,
+      avgResolutionDays: null as any,
+    },
+    isSyntheticDemo: false,
+    isLive: false,
+    displayLabel: 'Government Grievance Baseline',
+    notes: 'Official state-level annual aggregate statistics published under GODL.',
+  })),
+];
+
+export function getAllGovernmentGrievanceRecords(): GovernmentGrievanceRecord[] {
+  return GOVERNMENT_GRIEVANCE_RECORDS;
+}
+
+export function getGovernmentGrievanceRecordsByGeography(geography: string): GovernmentGrievanceRecord[] {
+  const norm = geography.toLowerCase();
+  return GOVERNMENT_GRIEVANCE_RECORDS.filter(r => 
+    r.geography.toLowerCase().includes(norm) || norm.includes(r.geography.toLowerCase())
+  );
+}
+

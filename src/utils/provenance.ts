@@ -93,6 +93,32 @@ export function getProvenanceForDistrictBaseline(
   };
 }
 
+export function getProvenanceForGrievanceData(record: {
+  sourceName?: string;
+  sourceYear?: number;
+  sourceType?: 'DIRECT_PUBLIC_DATA' | 'PUBLIC_BENCHMARK' | 'CURATED_PROTOTYPE' | 'MODELED_INTERPOLATED';
+  datasetTitle?: string;
+  isSyntheticDemo?: boolean;
+}): DataProvenance {
+  const isSynthetic = Boolean(record.isSyntheticDemo || record.sourceType === 'CURATED_PROTOTYPE');
+  const displayLabel: ProvenanceDisplayLabel = isSynthetic
+    ? 'CivicPulse Prototype Baseline'
+    : record.sourceType === 'DIRECT_PUBLIC_DATA'
+    ? 'Direct Public Data'
+    : 'Government Grievance Baseline';
+
+  return {
+    sourceType: isSynthetic ? 'CIVICPULSE_BASELINE' : 'PUBLIC_OPEN_DATA',
+    sourceName: record.sourceName || 'DARPG / Open Government Data (data.gov.in)',
+    sourceYear: record.sourceYear || 2024,
+    isSyntheticDemo: isSynthetic,
+    isLive: false,
+    displayLabel,
+    datasetOrScheme: record.datasetTitle || 'Monthly Department-wise Public Grievance Receipts, Disposal and Pendency',
+    notes: 'Published aggregate government grievance statistics under GODL. Does not contain private citizen grievance records or live CPGRAMS feeds.',
+  };
+}
+
 export function getProvenanceForScoring(): DataProvenance {
   return {
     sourceType: 'DETERMINISTIC_ENGINE',
@@ -193,12 +219,16 @@ export function getProvenanceBadgeStyles(label: ProvenanceDisplayLabel): {
     case 'Direct Public Data':
     case 'Public Data Snapshot':
       return { bg: 'bg-sky-50', text: 'text-sky-800', border: 'border-sky-300' };
+    case 'Government Grievance Baseline':
+    case 'Public Grievance Statistics':
+      return { bg: 'bg-teal-50', text: 'text-teal-800', border: 'border-teal-300' };
     case 'Public Benchmark':
       return { bg: 'bg-blue-50', text: 'text-blue-800', border: 'border-blue-300' };
     case 'CivicPulse Prototype Baseline':
     case 'Baseline Interpolated':
       return { bg: 'bg-stone-100', text: 'text-stone-800', border: 'border-stone-300' };
     case 'CivicPulse Demo Signal':
+    case 'Illustrative Demo Signal':
     case 'Illustrative Demo Data':
       return { bg: 'bg-amber-50', text: 'text-amber-800', border: 'border-amber-300' };
     case 'Deterministic Calculation':

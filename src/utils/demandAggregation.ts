@@ -1,4 +1,5 @@
 import { District, CitizenRequest, InfrastructureCategory } from '../types';
+import { DEPARTMENT_GRIEVANCE_BASELINES, STATE_GRIEVANCE_BASELINES } from '../data/governmentBaselineData';
 
 export interface IssueDistribution {
   category: string;
@@ -19,6 +20,9 @@ export interface CityDemandHotspot {
   totalCitizenRequests: number;
   categoryRequests: number;
   highPriorityCount: number;
+  userRequestsCount?: number;
+  demoRequestsCount?: number;
+  baselineDemandVolume?: number;
   primaryCategory: string;
   primaryDot: '🔴' | '🟠' | '🟡' | '🟢';
   primaryDotColor: string;
@@ -631,6 +635,9 @@ export function getCityDemandHotspot(
     totalCitizenRequests: totalRequests,
     categoryRequests,
     highPriorityCount: totalHighPriority,
+    userRequestsCount: matchedLive.filter(r => r.source_origin === 'CIVICPULSE_USER').length,
+    demoRequestsCount: matchedLive.filter(r => r.source_origin !== 'CIVICPULSE_USER').length,
+    baselineDemandVolume: baseline.baseRequests,
     primaryCategory: targetCategoryName || primaryIssue.category,
     primaryDot,
     primaryDotColor: primaryIssue.dotColor,
@@ -645,3 +652,71 @@ export function getCityDemandHotspot(
     representativeQuote,
   };
 }
+
+/**
+ * Universal Demand Breakdown Interface (Step 2C-4)
+ * Explicitly distinguishes four independent demand layers:
+ * A. CivicPulse actual citizen submissions
+ * B. CivicPulse illustrative demo/seed signals
+ * C. Government-published grievance baseline (DARPG / OGD aggregate statistics)
+ * D. Combined analytical demand context
+ */
+export interface DemandBreakdown {
+  userSubmittedDemand: number;
+  seedDemoDemand: number;
+  governmentGrievanceBaseline: number;
+  totalCitizenSignals: number;
+  combinedAnalyticalDemand: number;
+  methodologyNote: string;
+}
+
+/**
+ * Calculates separated demand breakdown across citizen, demo, and government baseline layers.
+ * Guarantees zero double-counting between macro-level government statistical digests
+ * and micro-level citizen signals.
+ */
+export function calculateDemandBreakdown(
+  requests: CitizenRequest[],
+  districtOrStateId?: string,
+  category?: InfrastructureCategory
+): DemandBreakdown {
+  let filteredRequests = requests;
+  if (districtOrStateId) {
+    const norm = districtOrStateId.toLowerCase();
+    filteredRequests = filteredRequests.filter(r => 
+      (r.district && r.district.toLowerCase().includes(norm)) ||
+      (r.state && r.state.toLowerCase().includes(norm)) ||
+      (r.location && r.location.toLowerCase().includes(norm))
+    );
+  }
+  if (category) {
+    filteredRequests = filteredRequests.filter(r => r.category === category);
+  }
+
+  const userSubmittedDemand = filteredRequests.filter(r => r.source_origin === 'CIVICPULSE_USER').length;
+  const seedDemoDemand = filteredRequests.filter(r => r.source_origin !== 'CIVICPULSE_USER').length;
+  const totalCitizenSignals = userSubmittedDemand + seedDemoDemand;
+
+  let govGrievanceCount = 0;
+  if (category) {
+    const dept = DEPARTMENT_GRIEVANCE_BASELINES.find(d => d.category === category);
+    govGrievanceCount = dept ? dept.received_count : 0;
+  } else if (districtOrStateId) {
+    const stateBaseline = Object.values(STATE_GRIEVANCE_BASELINES).find(s => 
+      s.state.toLowerCase().includes(districtOrStateId.toLowerCase())
+    );
+    govGrievanceCount = stateBaseline ? stateBaseline.total_received : 0;
+  } else {
+    govGrievanceCount = DEPARTMENT_GRIEVANCE_BASELINES.reduce((sum, d) => sum + d.received_count, 0);
+  }
+
+  return {
+    userSubmittedDemand,
+    seedDemoDemand,
+    governmentGrievanceBaseline: govGrievanceCount,
+    totalCitizenSignals,
+    combinedAnalyticalDemand: totalCitizenSignals + govGrievanceCount,
+    methodologyNote: 'Government grievance baselines (macro statistics) and CivicPulse citizen submissions (micro signals) are maintained as separate data streams to eliminate double-counting.',
+  };
+}
+
