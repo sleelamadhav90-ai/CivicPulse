@@ -477,6 +477,9 @@ export interface GovernmentProject {
   keyReasoning: string[];
   aiSummary: string;
   sourceRecommendationId?: string;
+  actionId?: string;
+  impactStatus?: ImpactEvidenceStatus;
+  impactEvidence?: ImpactEvidenceBundle;
   history: ProjectHistoryEntry[];
 }
 
@@ -842,6 +845,81 @@ export interface EvidenceBundle {
     bundleVersion: string;
     lineageTrail: string;
   };
+}
+
+/**
+ * ============================================================================
+ * IMPACT EVIDENCE FOUNDATION (Step 2D-2)
+ * ============================================================================
+ * Deterministic, provenance-aware structure representing the verified impact chain:
+ * Recommendation → Action → Project / Intervention → Baseline → Intervention → Outcome → Impact
+ */
+
+export type ImpactEvidenceStatus =
+  | 'PLANNED'
+  | 'IN_PROGRESS'
+  | 'COMPLETED'
+  | 'MEASURED'
+  | 'HYPOTHETICAL';
+
+export type ImpactEvidenceNature =
+  | 'MEASURED_OUTCOME'
+  | 'PUBLIC_BENCHMARK'
+  | 'CIVICPULSE_BASELINE'
+  | 'DETERMINISTIC_CALCULATION'
+  | 'HYPOTHETICAL_SCENARIO'
+  | 'SYNTHETIC_DEMO';
+
+export interface ImpactEvidenceMetric {
+  metricName: string;
+  metricKey: string;
+  geography: string | { districtId: string; districtName: string; state: string };
+  category: InfrastructureCategory;
+  baselineValue: number | null;
+  baselinePeriod?: string;
+  intervention: string;
+  postInterventionValue?: number | null;
+  outcomePeriod?: string;
+  unit: string;
+  provenance: DataProvenance;
+  source: string;
+  sourceUrl?: string;
+  isMeasured: boolean;
+  isHypothetical: boolean;
+  nature: ImpactEvidenceNature;
+  notes?: string;
+}
+
+export interface ImpactEvidenceBundle {
+  id: string;
+  projectId?: string;
+  actionId?: string;
+  recommendationId?: string;
+  districtId: string;
+  districtName: string;
+  state: string;
+  category: InfrastructureCategory;
+  intervention: string;
+  status: ImpactEvidenceStatus;
+  nature: ImpactEvidenceNature;
+  metrics: ImpactEvidenceMetric[];
+  summary: {
+    accessBaselinePct?: number | null;
+    accessPostPct?: number | null;
+    accessDeltaPct?: number | null;
+    demandBaselineSignals?: number | null;
+    demandPostSignals?: number | null;
+    demandReductionPct?: number | null;
+    priorityScoreBaseline?: number | null;
+    priorityScorePost?: number | null;
+    priorityScoreDelta?: number | null;
+    populationBenefited?: number | null;
+    estimatedCostInr?: number;
+    actualSpentInr?: number | null;
+  };
+  provenance: DataProvenance;
+  lastUpdated: string;
+  lineageTrail?: string;
 }
 
 
