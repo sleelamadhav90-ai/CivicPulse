@@ -23,7 +23,10 @@ import {
   HumanSearchResultItem, 
   HumanSearchResults, 
   getSearchSuggestions,
-  CATEGORY_DISPLAY_NAMES
+  CATEGORY_DISPLAY_NAMES,
+  fetchServerSearchIntent,
+  fetchSearchSummary,
+  SearchIntent
 } from '../services/humanSearchService';
 import { CitizenRequest, District, GovernmentProject, InfrastructureCategory } from '../types';
 import { CommunityIssue } from './CommunityIssuesView';
@@ -61,12 +64,18 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
   onNavigateToRecommendations,
 }) => {
   const [query, setQuery] = useState(initialQuery);
+  const [serverIntent, setServerIntent] = useState<SearchIntent | null>(null);
+  const [isAiExtracting, setIsAiExtracting] = useState(false);
+  const [aiSummary, setAiSummary] = useState<string | null>(null);
+  const [isAiSummarizing, setIsAiSummarizing] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const { t, tCategory, tStatus, currentLanguageConfig } = useLanguage();
 
   useEffect(() => {
     if (isOpen) {
       setQuery(initialQuery);
+      setServerIntent(null);
+      setAiSummary(null);
       setTimeout(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
@@ -85,14 +94,63 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Asynchronously query server-side Gemini intent extraction (debounced)
+  useEffect(() => {
+    if (!query.trim() || query.trim().length < 3) {
+      setServerIntent(null);
+      setAiSummary(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsAiExtracting(true);
+      try {
+        const result = await fetchServerSearchIntent(query, districts);
+        if (result.isAiExtracted) {
+          setServerIntent(result.intent);
+        }
+      } catch (e) {
+        console.warn('Intent extraction failed:', e);
+      } finally {
+        setIsAiExtracting(false);
+      }
+    }, 350);
+
+    return () => clearTimeout(timer);
+  }, [query, districts]);
+
   // Execute human-first search
   const searchResults: HumanSearchResults = useMemo(() => {
     return searchCivicPulse(
       query, 
       { requests, districts, governmentProjects, communityIssues },
-      { tCategory, tStatus }
+      { tCategory, tStatus, intentOverride: serverIntent || undefined }
     );
-  }, [query, requests, districts, governmentProjects, communityIssues, tCategory, tStatus]);
+  }, [query, requests, districts, governmentProjects, communityIssues, tCategory, tStatus, serverIntent]);
+
+  // Generate grounded AI summary for non-empty search results (debounced)
+  useEffect(() => {
+    if (!query.trim() || searchResults.totalResultsCount === 0 || searchResults.exactMatchNotFoundId) {
+      setAiSummary(null);
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      setIsAiSummarizing(true);
+      try {
+        const summary = await fetchSearchSummary(query, searchResults);
+        if (summary) {
+          setAiSummary(summary);
+        }
+      } catch (e) {
+        console.warn('Summary generation failed:', e);
+      } finally {
+        setIsAiSummarizing(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [query, searchResults]);
 
   if (!isOpen) return null;
 
@@ -107,6 +165,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       case 'EXACT_REQUEST':
       case 'CITIZEN_REPORT':
         onNavigateToSignal(item.id);
+        break;
+      case 'RECOMMENDATION':
+        if (onNavigateToRecommendations) {
+          onNavigateToRecommendations();
+        } else {
+          onNavigateToDistrict(item.rawItem?.districtId);
+        }
         break;
       case 'COMMUNITY_ISSUE':
         onNavigateToIssues();
@@ -125,7 +190,13 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
         }
         break;
       case 'BEST_MATCH':
-        if (item.rawItem?.id?.startsWith('CP-') || item.rawItem?.id?.startsWith('req-')) {
+        if (item.rawItem?.id?.startsWith('rec-') || item.rawItem?.interventionType) {
+          if (onNavigateToRecommendations) {
+            onNavigateToRecommendations();
+          } else {
+            onNavigateToDistrict(item.rawItem?.districtId);
+          }
+        } else if (item.rawItem?.id?.startsWith('CP-') || item.rawItem?.id?.startsWith('req-')) {
           onNavigateToSignal(item.id);
         } else if (item.rawItem?.title && item.rawItem?.category && item.rawItem?.requestCount) {
           onNavigateToIssues();
@@ -401,6 +472,33 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
             </div>
           )}
 
+          {/* AI GROUNDED INTELLIGENCE BRIEF (Gemini Structured Synthesis) */}
+          {(aiSummary || isAiSummarizing) && (
+            <div className="border-2 border-[#171717] bg-[#F7F5EF] p-3.5 sm:p-4 shadow-[3px_3px_0px_#171717] space-y-1.5">
+              <div className="flex items-center justify-between gap-2 border-b border-[#171717]/10 pb-1.5">
+                <div className="flex items-center space-x-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-[#D65A3A]" />
+                  <span className="text-[11px] font-mono font-bold text-[#171717] uppercase tracking-wider">
+                    Grounded Intelligence Brief
+                  </span>
+                </div>
+                <span className="px-1.5 py-0.2 bg-stone-200 text-stone-700 text-[10px] font-mono rounded-xs">
+                  {serverIntent ? 'Gemini Intent' : 'Grounded Synthesis'}
+                </span>
+              </div>
+              {isAiSummarizing && !aiSummary ? (
+                <div className="flex items-center space-x-2 text-xs text-[#57534E] py-1">
+                  <span className="animate-spin w-3 h-3 border-2 border-[#D65A3A] border-t-transparent rounded-full"></span>
+                  <span>Synthesizing grounded brief across records...</span>
+                </div>
+              ) : (
+                <p className="text-xs sm:text-sm text-[#171717] leading-relaxed font-sans">
+                  {aiSummary}
+                </p>
+              )}
+            </div>
+          )}
+
           {/* 2. BEST MATCH RECOMMENDATION (Highlighted Top Card) */}
           {searchResults.bestMatch && !searchResults.exactMatch && (
             <div className="border-2 border-[#285943] bg-emerald-50/50 p-4 sm:p-5 shadow-[4px_4px_0px_#285943] space-y-3">
@@ -463,6 +561,76 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                   <span>{searchResults.bestMatch.actionHint}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* 2B. PRIORITY RECOMMENDATIONS (PriorityEngine) */}
+          {searchResults.recommendations && searchResults.recommendations.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between border-b border-[#171717]/10 pb-1.5">
+                <div className="flex items-center space-x-2">
+                  <TrendingUp className="w-4 h-4 text-[#285943]" />
+                  <h3 className="font-serif font-bold text-sm text-[#171717] uppercase tracking-wider">
+                    Priority Recommendations ({searchResults.recommendations.length})
+                  </h3>
+                </div>
+                {onNavigateToRecommendations && (
+                  <button
+                    onClick={() => {
+                      onClose();
+                      onNavigateToRecommendations();
+                    }}
+                    className="text-xs text-[#285943] hover:underline cursor-pointer flex items-center space-x-1 font-mono"
+                  >
+                    <span>View All Recommendations</span>
+                    <ArrowRight className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {searchResults.recommendations.map((rec) => (
+                  <div
+                    key={rec.id}
+                    onClick={() => handleResultClick(rec)}
+                    className="p-3.5 bg-white border border-[#171717]/15 hover:border-[#171717] hover:shadow-xs transition-all cursor-pointer rounded-xs flex flex-col justify-between space-y-2"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between text-[11px] text-[#57534E] mb-1">
+                        <span className="flex items-center space-x-1 font-medium text-[#171717]">
+                          {getCategoryIcon(rec.category)}
+                          <span>{rec.category}</span>
+                        </span>
+                        {rec.priorityLabel && (
+                          <span className="px-1.5 py-0.2 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xs text-[10px] font-bold">
+                            {rec.priorityLabel}
+                          </span>
+                        )}
+                      </div>
+                      <h4 className="font-serif font-bold text-xs sm:text-sm text-[#171717] line-clamp-2">
+                        {rec.title}
+                      </h4>
+                      {rec.subtitle && (
+                        <p className="text-[11px] text-[#57534E] mt-0.5 line-clamp-1">
+                          {rec.subtitle}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center justify-between text-[11px] text-[#57534E] pt-1 border-t border-[#171717]/5">
+                      <span className="flex items-center space-x-1">
+                        <MapPin className="w-3 h-3 text-stone-400" />
+                        <span className="truncate max-w-[130px]">{rec.location}</span>
+                      </span>
+                      {rec.reportCount && (
+                        <span className="font-bold text-[#285943]">
+                          {rec.reportCount}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}

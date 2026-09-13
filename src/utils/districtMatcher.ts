@@ -20,7 +20,7 @@ function normalizeStrict(str: string): string {
  * word-bounded token or phrase.
  * Prevents substring false-matches like 'Visakhapatnam' -> 'Patna' or 'Bhawanipatna' -> 'Patna'.
  */
-function matchesDistrictToken(text: string, targetName: string, targetId: string): boolean {
+export function matchesDistrictToken(text: string, targetName: string, targetId: string): boolean {
   if (!text) return false;
 
   // Word-boundary pattern for target district name (handles multi-word names like 'South 24 Parganas')

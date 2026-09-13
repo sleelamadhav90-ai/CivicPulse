@@ -1,8 +1,12 @@
-import { CitizenRequest, District, GovernmentProject, InfrastructureAsset, InfrastructureCategory } from '../types';
+import { CitizenRequest, District, GovernmentProject, InfrastructureAsset, InfrastructureCategory, RecommendedProject } from '../types';
 import { CommunityIssue } from '../components/CommunityIssuesView';
 import { DEPARTMENT_GRIEVANCE_BASELINES } from '../data/governmentBaselineData';
 import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
 import { INITIAL_COMMUNITY_ISSUES } from '../components/CommunityIssuesView';
+import { matchesDistrictToken, matchesDistrict } from '../utils/districtMatcher';
+import { getCityDemandHotspot } from '../utils/demandAggregation';
+import { getAIRecommendedProjects } from '../utils/scoring';
+import { DISTRICTS_REGISTRY } from '../data/districts';
 
 // Canonical categories and their human-facing display names
 export const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
@@ -247,38 +251,85 @@ export const TYPO_DICTIONARY: Record<string, string> = {
 };
 
 /**
- * Structured Search Intent extracted deterministically from user's natural language
+ * Structured Search Intent extracted deterministically or via Gemini from user's natural language
  */
-export interface SearchIntent {
-  rawQuery: string;
-  normalizedQuery: string;
-  // Core extracted dimensions:
-  category: InfrastructureCategory | 'ANY';
-  subcategory: string | null;
-  state: string | null;
+export type SearchIntent = {
+  queryType:
+    | 'citizen_reports'
+    | 'community_issues'
+    | 'hotspots'
+    | 'recommendations'
+    | 'locations'
+    | 'request_lookup'
+    | 'general';
+
+  category:
+    | 'Water'
+    | 'Roads'
+    | 'Health'
+    | 'Electricity'
+    | 'Drainage'
+    | 'Sanitation'
+    | 'Education'
+    | 'Other'
+    | 'ANY'
+    | null;
+
   district: string | null;
-  locality: string | null;
-  location: string | 'ANY';
-  issue_terms: string[];
-  priority: 'HIGH' | 'CRITICAL' | 'MODERATE' | 'LOW' | null;
-  severity: number | null;
+  state: string | null;
+
+  priority:
+    | 'HIGH'
+    | 'CRITICAL'
+    | 'MODERATE'
+    | 'LOW'
+    | null;
+
+  minSeverity: number | null;
+  maxSeverity: number | null;
+
+  demandLevel:
+    | 'HIGH'
+    | 'MEDIUM'
+    | 'LOW'
+    | null;
+
+  infrastructureGapLevel:
+    | 'HIGH'
+    | 'MEDIUM'
+    | 'LOW'
+    | null;
+
   status: string | null;
-  time_range: 'LAST_7_DAYS' | 'LAST_30_DAYS' | null;
-  request_id: string | null;
-  // Backward compatibility properties:
-  exactId: string | null;
-  detectedCategories: InfrastructureCategory[];
-  detectedLocations: string[];
-  isUrgent: boolean;
-  isRecent: boolean;
-  isHighScale: boolean;
+
+  requestId: string | null;
+
   keywords: string[];
-  typoCorrection: string | null;
-}
+
+  limit: number;
+
+  // Extended internal properties for heuristic parser & UI compatibility:
+  rawQuery?: string;
+  normalizedQuery?: string;
+  subcategory?: string | null;
+  locality?: string | null;
+  location?: string | 'ANY';
+  issue_terms?: string[];
+  severity?: number | null;
+  time_range?: 'LAST_7_DAYS' | 'LAST_30_DAYS' | null;
+  request_id?: string | null;
+  exactId?: string | null;
+  detectedCategories?: InfrastructureCategory[];
+  detectedLocations?: string[];
+  isUrgent?: boolean;
+  isRecent?: boolean;
+  isHighScale?: boolean;
+  typoCorrection?: string | null;
+};
 
 export interface HumanSearchResultItem {
   id: string;
-  type: 'EXACT_REQUEST' | 'BEST_MATCH' | 'COMMUNITY_ISSUE' | 'PRIORITY_HOTSPOT' | 'CITIZEN_REPORT' | 'ACTION_PROJECT' | 'INFRASTRUCTURE' | 'GOVERNMENT_BASELINE';
+  type: 'EXACT_REQUEST' | 'BEST_MATCH' | 'RECOMMENDATION' | 'COMMUNITY_ISSUE' | 'PRIORITY_HOTSPOT' | 'CITIZEN_REPORT' | 'ACTION_PROJECT' | 'INFRASTRUCTURE' | 'GOVERNMENT_BASELINE';
   title: string;
   subtitle?: string;
   category: string;
@@ -300,6 +351,7 @@ export interface HumanSearchResults {
   exactMatch: HumanSearchResultItem | null;
   exactMatchNotFoundId: string | null;
   bestMatch: HumanSearchResultItem | null;
+  recommendations: HumanSearchResultItem[];
   communityIssues: HumanSearchResultItem[];
   priorityHotspots: HumanSearchResultItem[];
   citizenReports: HumanSearchResultItem[];
@@ -379,28 +431,13 @@ export function parseSearchIntent(query: string, allDistricts: District[] = []):
     }
   }
 
-  // Check districts from registry
+  // Check districts from authoritative registry using centralized word-bounded matcher
   for (const d of allDistricts) {
-    if (normalized.includes(d.name.toLowerCase())) {
+    if (matchesDistrictToken(normalized, d.name, d.id)) {
       district = d.name;
       if (!detectedLocations.includes(d.name)) detectedLocations.push(d.name);
       if (!state && d.state) state = d.state;
-    }
-  }
-
-  // If district wasn't in registry, check common district names
-  if (!district) {
-    const popularDistricts = [
-      'Guntur', 'Vijayawada', 'Krishna', 'Patna', 'Gaya', 'Solapur', 'Nashik',
-      'Jodhpur', 'Jaipur', 'Barmer', 'Bikaner', 'Bhopal', 'Ranchi', 'Lucknow',
-      'Varanasi', 'Kolkata', 'Bhubaneswar', 'Guwahati', 'Anantapur', 'Prakasam', 'Raichur'
-    ];
-    for (const pd of popularDistricts) {
-      if (normalized.includes(pd.toLowerCase())) {
-        district = pd;
-        if (!detectedLocations.includes(pd)) detectedLocations.push(pd);
-        break;
-      }
+      break;
     }
   }
 
@@ -461,19 +498,90 @@ export function parseSearchIntent(query: string, allDistricts: District[] = []):
   ]);
   const keywords = words.filter(w => !stopWords.has(w));
 
+  // Determine queryType
+  let queryType: SearchIntent['queryType'] = 'general';
+  if (request_id) {
+    queryType = 'request_lookup';
+  } else if (
+    normalized.includes('recommend') ||
+    normalized.includes('prioritize') ||
+    normalized.includes('project') ||
+    normalized.includes('investment') ||
+    normalized.includes('brief') ||
+    normalized.includes('action plan')
+  ) {
+    queryType = 'recommendations';
+  } else if (
+    normalized.includes('hotspot') ||
+    normalized.includes('demand') ||
+    normalized.includes('zone') ||
+    normalized.includes('deficit')
+  ) {
+    queryType = 'hotspots';
+  } else if (
+    normalized.includes('report') ||
+    normalized.includes('complaint') ||
+    normalized.includes('signal') ||
+    normalized.includes('voice') ||
+    normalized.includes('citizen')
+  ) {
+    queryType = 'citizen_reports';
+  } else if (
+    normalized.includes('issue') ||
+    normalized.includes('problem') ||
+    normalized.includes('cluster')
+  ) {
+    queryType = 'community_issues';
+  } else if ((district && primaryCategory === 'ANY') || normalized.includes('location') || normalized.includes('district')) {
+    queryType = 'locations';
+  }
+
+  // Demand Level & Infrastructure Gap Level
+  let demandLevel: 'HIGH' | 'MEDIUM' | 'LOW' | null = null;
+  if (normalized.includes('high demand') || normalized.includes('heavy demand') || normalized.includes('acute demand')) {
+    demandLevel = 'HIGH';
+  } else if (normalized.includes('low demand')) {
+    demandLevel = 'LOW';
+  } else if (normalized.includes('medium demand') || normalized.includes('moderate demand')) {
+    demandLevel = 'MEDIUM';
+  }
+
+  let infrastructureGapLevel: 'HIGH' | 'MEDIUM' | 'LOW' | null = null;
+  if (
+    normalized.includes('infrastructure gap') ||
+    normalized.includes('poor infra') ||
+    normalized.includes('poor infrastructure') ||
+    normalized.includes('deficit') ||
+    normalized.includes('poor coverage') ||
+    normalized.includes('lack of coverage')
+  ) {
+    infrastructureGapLevel = 'HIGH';
+  }
+
+  const canonicalCategory = primaryCategory === 'ANY' ? null : (primaryCategory as any);
+
   return {
+    queryType,
+    category: canonicalCategory,
+    district,
+    state,
+    priority,
+    minSeverity: priority === 'HIGH' || priority === 'CRITICAL' ? 8 : (severity || null),
+    maxSeverity: null,
+    demandLevel,
+    infrastructureGapLevel,
+    status,
+    requestId: request_id,
+    keywords,
+    limit: 10,
+    // Extended internal properties for heuristic parser & UI compatibility:
     rawQuery: raw,
     normalizedQuery: normalized,
-    category: primaryCategory,
     subcategory: detectedSubterms.length > 0 ? detectedSubterms[0] : null,
-    state,
-    district,
     locality,
     location: finalLocationStr,
     issue_terms: detectedSubterms.length > 0 ? detectedSubterms : keywords.slice(0, 3),
-    priority,
     severity,
-    status,
     time_range,
     request_id,
     exactId: request_id,
@@ -482,8 +590,48 @@ export function parseSearchIntent(query: string, allDistricts: District[] = []):
     isUrgent,
     isRecent,
     isHighScale,
-    keywords,
     typoCorrection
+  };
+}
+
+export function normalizeSearchIntent(intent: Partial<SearchIntent>): SearchIntent {
+  const reqId = intent.requestId || intent.request_id || null;
+  const rawCat = intent.category || null;
+  const canonicalCat = (rawCat && rawCat !== 'ANY') ? rawCat : null;
+  const loc = intent.location || (intent.district ? intent.district : 'ANY');
+  const catList = Array.isArray(intent.detectedCategories) ? intent.detectedCategories : (canonicalCat && canonicalCat !== 'Other' ? [canonicalCat as InfrastructureCategory] : []);
+  const locList = Array.isArray(intent.detectedLocations) ? intent.detectedLocations : (intent.district ? [intent.district] : []);
+
+  return {
+    queryType: intent.queryType || 'general',
+    category: canonicalCat,
+    district: intent.district || null,
+    state: intent.state || null,
+    priority: intent.priority || null,
+    minSeverity: intent.minSeverity ?? null,
+    maxSeverity: intent.maxSeverity ?? null,
+    demandLevel: intent.demandLevel || null,
+    infrastructureGapLevel: intent.infrastructureGapLevel || null,
+    status: intent.status || null,
+    requestId: reqId,
+    keywords: Array.isArray(intent.keywords) ? intent.keywords.filter(Boolean) : [],
+    limit: intent.limit || 10,
+    rawQuery: intent.rawQuery || '',
+    normalizedQuery: intent.normalizedQuery || '',
+    subcategory: intent.subcategory || null,
+    locality: intent.locality || null,
+    location: loc,
+    issue_terms: Array.isArray(intent.issue_terms) ? intent.issue_terms.filter(Boolean) : (intent.subcategory ? [intent.subcategory] : []),
+    severity: intent.severity ?? intent.minSeverity ?? null,
+    time_range: intent.time_range || null,
+    request_id: reqId,
+    exactId: reqId,
+    detectedCategories: catList,
+    detectedLocations: locList,
+    isUrgent: !!intent.isUrgent || intent.priority === 'CRITICAL' || intent.priority === 'HIGH',
+    isRecent: !!intent.isRecent || intent.time_range === 'LAST_7_DAYS',
+    isHighScale: !!intent.isHighScale,
+    typoCorrection: intent.typoCorrection || null
   };
 }
 
@@ -508,7 +656,7 @@ export function getSearchSuggestions(
     tCategory?: (cat: string) => string;
   } = {}
 ): { suggestions: string[]; type: 'DIRECT_MATCH' | 'POPULAR_OR_RECENT' } {
-  const { requests, districts, governmentProjects } = data;
+  const { requests, districts } = data;
   const communityIssues = data.communityIssues || INITIAL_COMMUNITY_ISSUES;
   const trimmed = query.trim().toLowerCase();
 
@@ -546,7 +694,7 @@ export function getSearchSuggestions(
     };
   }
 
-  const intent = parseSearchIntent(query, districts);
+  const intent = normalizeSearchIntent(parseSearchIntent(query, districts));
   const candidateSuggestions = new Set<string>();
 
   // 2. Exact ID Prefix match
@@ -561,7 +709,7 @@ export function getSearchSuggestions(
   }
 
   // 3. Both Category AND Location present (e.g. "water gunt")
-  if (intent.category !== 'ANY' && intent.location !== 'ANY') {
+  if (intent.category && intent.category !== 'ANY' && intent.location && intent.location !== 'ANY') {
     const locLower = intent.location.toLowerCase();
     const catLower = intent.category.toLowerCase();
 
@@ -584,7 +732,7 @@ export function getSearchSuggestions(
     candidateSuggestions.add(`${dispCat} — ${intent.location}`);
   }
   // 4. Only Category matched (e.g. "water" or "wat" or "roads")
-  else if (intent.category !== 'ANY') {
+  else if (intent.category && intent.category !== 'ANY') {
     const catLower = intent.category.toLowerCase();
     const dispCat = CATEGORY_DISPLAY_NAMES[intent.category] || intent.category;
     candidateSuggestions.add(dispCat);
@@ -606,7 +754,7 @@ export function getSearchSuggestions(
     });
   }
   // 5. Only Location matched (e.g. "gunt" or "guntur" or "vijayawada")
-  else if (intent.location !== 'ANY') {
+  else if (intent.location && intent.location !== 'ANY') {
     candidateSuggestions.add(intent.location);
     candidateSuggestions.add(`${intent.location} District Hotspots`);
 
@@ -677,7 +825,8 @@ function tieBreakCompare(a: HumanSearchResultItem, b: HumanSearchResultItem): nu
   // 2. Exact match type priority
   const typeRank = (t: string) => {
     switch (t) {
-      case 'EXACT_REQUEST': return 5;
+      case 'EXACT_REQUEST': return 6;
+      case 'RECOMMENDATION': return 5;
       case 'COMMUNITY_ISSUE': return 4;
       case 'PRIORITY_HOTSPOT': return 3;
       case 'ACTION_PROJECT': return 2;
@@ -710,10 +859,17 @@ function tieBreakCompare(a: HumanSearchResultItem, b: HumanSearchResultItem): nu
 /**
  * Searches across all CivicPulse datasets with human-first intent ranking
  * Strictly enforces:
- * - Deterministic relevance scoring (+100 ID, +50 locality, +40 district, +35 category, +30 subcategory, +20 issue term, +15 keyword, +10 recent, +5 high priority)
+ * - Deterministic relevance scoring:
+ *   +100 Exact ID
+ *   +40 Exact District (via centralized word-bounded matcher)
+ *   +35 Exact Category
+ *   +25 Issue / Subcategory / Intervention
+ *   +20 Keyword match
+ *   +10 Recent signal
+ *   +5 High priority
+ * - PriorityEngine recommendations integration
+ * - Real DemandHotspot engine aggregation
  * - Grounded in actual records (no hallucinated/invented results)
- * - Exact Request ID verification (Section 10)
- * - Real report counts computed from stored records (Section 17)
  */
 export function searchCivicPulse(
   query: string,
@@ -722,21 +878,25 @@ export function searchCivicPulse(
     districts: District[];
     governmentProjects: GovernmentProject[];
     communityIssues?: CommunityIssue[];
+    recommendations?: RecommendedProject[];
   },
   options: {
     tCategory?: (cat: string) => string;
     tStatus?: (status: string) => string;
+    intentOverride?: SearchIntent;
   } = {}
 ): HumanSearchResults {
   const { requests, districts, governmentProjects } = data;
   const communityIssues = data.communityIssues || INITIAL_COMMUNITY_ISSUES;
-  const intent = parseSearchIntent(query, districts);
+  const allRecommendations = data.recommendations || getAIRecommendedProjects(districts, requests);
+  const intent = normalizeSearchIntent(options.intentOverride || parseSearchIntent(query, districts));
 
   const tCat = options.tCategory || ((c: string) => CATEGORY_DISPLAY_NAMES[c] || c);
   const tStat = options.tStatus || ((s: string) => s);
 
   let exactMatch: HumanSearchResultItem | null = null;
   let exactMatchNotFoundId: string | null = null;
+  const matchingRecommendations: HumanSearchResultItem[] = [];
   const matchingIssues: HumanSearchResultItem[] = [];
   const matchingHotspots: HumanSearchResultItem[] = [];
   const matchingReports: HumanSearchResultItem[] = [];
@@ -746,9 +906,9 @@ export function searchCivicPulse(
 
   // =========================================================================
   // 1. EXACT ID SEARCH (Highest Priority, Section 10)
-  // If user enters an ID like CP-2026-004821:
-  // If exists: show exact request.
-  // If does not exist: show "No CivicPulse request found for CP-2026-004821."
+  // If user enters an ID like CP-2026-004821, ISSUE-WAT-001, rec-guntur-water-1, gov-proj-001:
+  // If exists: show exact record.
+  // If does not exist: show "No CivicPulse record found for ID."
   // =========================================================================
   if (intent.request_id) {
     const qId = intent.request_id.toLowerCase();
@@ -774,16 +934,61 @@ export function searchCivicPulse(
         priorityLabel: `Severity: ${exactReq.severity || 5}/10`,
         dateOrTimeline: exactReq.timestamp ? new Date(exactReq.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
         actionHint: 'Click to open Request Details',
-        score: 1000,
+        score: 100,
         rawItem: exactReq
       };
+    }
+
+    // Search in recommendations
+    if (!exactMatch) {
+      const exactRec = allRecommendations.find(r => r.id.toLowerCase() === qId);
+      if (exactRec) {
+        exactMatch = {
+          id: exactRec.id,
+          type: 'RECOMMENDATION',
+          title: `Recommendation: ${exactRec.title}`,
+          subtitle: `${exactRec.interventionType} · Priority Score: ${exactRec.priorityScore.toFixed(1)}/100 · Budget: ₹${(exactRec.estimatedBudgetInr / 10000000).toFixed(1)} Cr`,
+          category: tCat(exactRec.category),
+          location: `${exactRec.districtName}, ${exactRec.state}`,
+          provenanceLabel: 'CivicPulse Signals',
+          provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+          priorityLabel: `Score ${exactRec.priorityScore.toFixed(1)}`,
+          reportCount: `${exactRec.citizenRequestsCount} verified demand signals`,
+          peopleAffected: `${(exactRec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
+          actionHint: 'Click to inspect Priority Recommendation',
+          score: 100,
+          rawItem: exactRec
+        };
+      }
+    }
+
+    // Search in community issues
+    if (!exactMatch) {
+      const exactIssue = communityIssues.find(i => i.id.toLowerCase() === qId || (i.rank && i.rank.toLowerCase() === qId));
+      if (exactIssue) {
+        exactMatch = {
+          id: exactIssue.id,
+          type: 'COMMUNITY_ISSUE',
+          title: `Community Issue: ${exactIssue.title}`,
+          subtitle: `${exactIssue.infrastructureName} (${exactIssue.relatedScheme})`,
+          category: tCat(exactIssue.category),
+          location: exactIssue.location,
+          provenanceLabel: 'CivicPulse Signals',
+          provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+          priorityLabel: `${exactIssue.severity} Priority`,
+          reportCount: `${exactIssue.requestCount || 0} citizen reports`,
+          peopleAffected: `${exactIssue.affectedCommunities} communities`,
+          actionHint: 'Click to view Community Issue',
+          score: 100,
+          rawItem: exactIssue
+        };
+      }
     }
 
     // Search in government projects
     if (!exactMatch) {
       const exactProj = governmentProjects.find(p => p.id.toLowerCase() === qId);
       if (exactProj) {
-        // Count actual reports in database for this project
         const actualProjCount = requests.filter(r => 
           r.category === exactProj.category && 
           ((r.district && r.district.toLowerCase() === exactProj.district.toLowerCase()) || 
@@ -805,7 +1010,7 @@ export function searchCivicPulse(
           reportCount: dispCount > 0 ? `${dispCount} citizen reports` : 'No citizen reports found',
           peopleAffected: `${(exactProj.population || 0).toLocaleString()} people`,
           actionHint: 'Click to view in Action Queue',
-          score: 1000,
+          score: 100,
           rawItem: exactProj
         };
       }
@@ -818,13 +1023,101 @@ export function searchCivicPulse(
   }
 
   // =========================================================================
-  // 2. COMMUNITY ISSUES SEARCH (Clustered public problems)
-  // Scoring formula:
-  // - Exact locality: +50
-  // - Exact district: +40
-  // - Exact category: +35
-  // - Exact subcategory / issue term: +20
-  // - Keyword in title / scheme: +15
+  // 2. RECOMMENDATIONS & POLICY BRIEFS SEARCH (PriorityEngine)
+  // Calibrated relevance:
+  // - Exact ID: +100
+  // - District match: +40 (centralized matcher)
+  // - Category match: +35
+  // - Subcategory / intervention match: +25
+  // - Keyword match: +20
+  // - Recent signal: +10
+  // - High priority: +5
+  // =========================================================================
+  for (const rec of allRecommendations) {
+    let score = 0;
+    const normTitle = rec.title.toLowerCase();
+    const normCat = rec.category.toLowerCase();
+    const normIntervention = (rec.interventionType || '').toLowerCase();
+    const normAiRec = (rec.aiRecommendation || '').toLowerCase();
+    const normSummary = (rec.summaryReasoning || '').toLowerCase();
+    const normDist = rec.districtName.toLowerCase();
+
+    // Exact ID (+100)
+    if (intent.request_id && rec.id.toLowerCase() === intent.request_id.toLowerCase()) {
+      score += 100;
+    }
+
+    // Centralized District Match (+40)
+    if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, rec.districtName, rec.districtId))) {
+      score += 40;
+    } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, rec.districtName, rec.districtId)) {
+      score += 40;
+    }
+
+    // Category match (+35)
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+      score += 35;
+    } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
+      score += 35;
+    }
+
+    // Subcategory / Intervention match (+25)
+    if (intent.subcategory && (normIntervention.includes(intent.subcategory.toLowerCase()) || normTitle.includes(intent.subcategory.toLowerCase()))) {
+      score += 25;
+    }
+    for (const term of (intent.issue_terms || [])) {
+      if (normTitle.includes(term) || normIntervention.includes(term) || normAiRec.includes(term) || normSummary.includes(term)) {
+        score += 25;
+        break;
+      }
+    }
+
+    // Keyword match (+20)
+    for (const kw of (intent.keywords || [])) {
+      if (normTitle.includes(kw) || normIntervention.includes(kw) || normAiRec.includes(kw) || normSummary.includes(kw)) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Recent signal (+10)
+    if (intent.time_range === 'LAST_7_DAYS' || intent.isRecent) {
+      score += 10;
+    }
+
+    // High priority (+5)
+    if (rec.priorityScore >= 60 || rec.urgencyLabel === 'CRITICAL' || rec.urgencyLabel === 'HIGH') {
+      score += 5;
+    }
+
+    if (score >= 20) {
+      matchingRecommendations.push({
+        id: rec.id,
+        type: 'RECOMMENDATION',
+        title: rec.title,
+        subtitle: `${rec.interventionType} · Score: ${rec.priorityScore.toFixed(1)}/100 · Budget: ₹${(rec.estimatedBudgetInr / 10000000).toFixed(1)} Cr`,
+        category: tCat(rec.category),
+        location: `${rec.districtName}, ${rec.state}`,
+        provenanceLabel: 'CivicPulse Signals',
+        provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        priorityLabel: `${rec.priorityScore.toFixed(1)} Priority`,
+        reportCount: `${rec.citizenRequestsCount} verified demand signals`,
+        peopleAffected: `${(rec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
+        actionHint: 'View Priority Recommendation',
+        score,
+        rawItem: rec,
+      });
+    }
+  }
+
+  // =========================================================================
+  // 3. COMMUNITY ISSUES SEARCH (Clustered public problems)
+  // Calibrated relevance:
+  // - Exact ID: +100
+  // - District match: +40 (centralized matcher)
+  // - Category match: +35
+  // - Issue term / Subcategory: +25
+  // - Keyword match: +20
   // - Recent: +10
   // - High priority: +5
   // =========================================================================
@@ -836,38 +1129,38 @@ export function searchCivicPulse(
     const normScheme = (issue.relatedScheme || '').toLowerCase();
     const normInfra = (issue.infrastructureName || '').toLowerCase();
 
-    // Exact ID
+    // Exact ID (+100)
     if (intent.request_id && (issue.id.toLowerCase() === intent.request_id.toLowerCase() || issue.rank === intent.request_id)) {
       score += 100;
     }
 
-    // Exact category match
-    if (intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+    // Exact category match (+35)
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
-    } else if (intent.detectedCategories.some(c => c.toLowerCase() === normCat)) {
+    } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
       score += 35;
     }
 
-    // Exact locality / district match
-    if (intent.locality && normLoc.includes(intent.locality.toLowerCase())) {
-      score += 50;
-    } else if (intent.district && normLoc.includes(intent.district.toLowerCase())) {
+    // Centralized district / locality match (+40)
+    if (intent.district && (normLoc.includes(intent.district.toLowerCase()) || matchesDistrictToken(issue.location, intent.district, intent.district.toLowerCase()))) {
       score += 40;
-    } else if (intent.location !== 'ANY' && normLoc.includes(intent.location.toLowerCase())) {
+    } else if (intent.location && intent.location !== 'ANY' && normLoc.includes(intent.location.toLowerCase())) {
       score += 40;
     }
 
-    // Issue-term match
-    for (const term of intent.issue_terms) {
+    // Issue-term / subcategory match (+25)
+    for (const term of (intent.issue_terms || [])) {
       if (normTitle.includes(term) || normInfra.includes(term)) {
-        score += 20;
+        score += 25;
+        break;
       }
     }
 
-    // Keyword match
-    for (const kw of intent.keywords) {
-      if (normTitle.includes(kw) || normScheme.includes(kw)) {
-        score += 15;
+    // Keyword match (+20)
+    for (const kw of (intent.keywords || [])) {
+      if (normTitle.includes(kw) || normScheme.includes(kw) || normInfra.includes(kw)) {
+        score += 20;
+        break;
       }
     }
 
@@ -882,7 +1175,6 @@ export function searchCivicPulse(
     }
 
     if (score >= 20) {
-      // Compute REAL citizen report count from actual requests dataset
       const locKey = issue.location.split(',')[0].trim().toLowerCase();
       const realReportsCount = requests.filter(r => 
         r.category.toLowerCase() === normCat && 
@@ -904,92 +1196,117 @@ export function searchCivicPulse(
         peopleAffected: `${issue.affectedCommunities} communities`,
         actionHint: 'View Community Issue',
         score,
-        rawItem: issue
+        rawItem: issue,
       });
     }
   }
 
   // =========================================================================
-  // 3. PRIORITY HOTSPOTS & DISTRICTS SEARCH
+  // 4. PRIORITY HOTSPOTS & DEMAND SEARCH (Actual getCityDemandHotspot engine)
+  // Calibrated relevance:
+  // - Exact ID: +100
+  // - District match: +40 (centralized matcher)
+  // - Category match: +35
+  // - Issue term / subcategory: +25
+  // - Keyword match: +20
+  // - Recent: +10
+  // - High priority: +5
   // =========================================================================
   for (const dist of districts) {
     let score = 0;
     const normName = dist.name.toLowerCase();
     const normState = dist.state.toLowerCase();
 
-    // Exact ID
+    // Exact ID (+100)
     if (intent.request_id && dist.id.toLowerCase() === intent.request_id.toLowerCase()) {
       score += 100;
     }
 
-    // District match (+40)
-    if (intent.district && normName === intent.district.toLowerCase()) {
+    // Centralized District Match (+40)
+    if (intent.district && (normName === intent.district.toLowerCase() || matchesDistrictToken(intent.district, dist.name, dist.id))) {
       score += 40;
-    } else if (intent.location !== 'ANY' && normName.includes(intent.location.toLowerCase())) {
+    } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, dist.name, dist.id)) {
       score += 40;
     }
 
-    // State match (+30)
+    // State match (+20)
     if (intent.state && normState.includes(intent.state.toLowerCase())) {
-      score += 30;
+      score += 20;
     }
 
-    // Category vulnerability match (+35)
-    if (intent.category === 'Water' && dist.water_access < 50) {
-      score += 35;
-    } else if (intent.category === 'Roads' && dist.road_quality < 60) {
-      score += 35;
-    } else if (intent.category === 'Health' && dist.health_access < 60) {
+    // Generate actual Demand Hotspot using the demandAggregation engine
+    const targetCategory: 'All' | InfrastructureCategory = (intent.category && intent.category !== 'ANY' && intent.category !== 'Other') ? (intent.category as InfrastructureCategory) : 'All';
+    const hotspot = getCityDemandHotspot(dist, requests, targetCategory);
+
+    // Category match (+35)
+    if (intent.category && intent.category !== 'ANY' && (hotspot.hasCategorySignal || hotspot.primaryCategory === intent.category)) {
       score += 35;
     }
 
-    // Issue-terms & keywords
-    for (const term of intent.issue_terms) {
-      if (normName.includes(term) || normState.includes(term)) score += 20;
+    // Subcategory / issue term match (+25)
+    for (const term of (intent.issue_terms || [])) {
+      if (normName.includes(term) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(term))) {
+        score += 25;
+        break;
+      }
     }
-    for (const kw of intent.keywords) {
-      if (normName.includes(kw) || normState.includes(kw)) score += 15;
+
+    // Keyword match (+20)
+    for (const kw of (intent.keywords || [])) {
+      if (normName.includes(kw) || normState.includes(kw) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(kw))) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Recent signal (+10)
+    if (intent.time_range === 'LAST_7_DAYS' || intent.isRecent || (hotspot.userRequestsCount && hotspot.userRequestsCount > 0)) {
+      score += 10;
     }
 
     // High priority (+5)
-    const isCritical = dist.poverty_index > 0.5 || dist.water_access < 45 || dist.road_quality < 55;
-    if (isCritical) score += 5;
+    const isCritical = hotspot.urgencyLevel === 'Critical' || hotspot.urgencyLevel === 'High' || dist.poverty_index > 0.5;
+    if (isCritical) {
+      score += 5;
+    }
 
     if (score >= 20) {
-      // Real citizen report count for this district
-      const distReportsCount = requests.filter(r => 
-        (r.district && r.district.toLowerCase() === normName) || 
-        (r.location && r.location.toLowerCase().includes(normName))
-      ).length;
-
       matchingHotspots.push({
         id: dist.id,
         type: 'PRIORITY_HOTSPOT',
         title: `${dist.name} District Hotspot`,
-        subtitle: `State of ${dist.state} · Poverty Index ${(dist.poverty_index * 100).toFixed(0)}%`,
-        category: intent.category !== 'ANY' ? tCat(intent.category) : 'Multi-Sector Hotspot',
+        subtitle: `${hotspot.primaryBadgeLabel} · ${hotspot.urgencyLevel} Urgency (${(dist.poverty_index * 100).toFixed(0)}% Poverty Index)`,
+        category: (intent.category && intent.category !== 'ANY') ? tCat(intent.category) : tCat(hotspot.primaryCategory),
         location: `${dist.name}, ${dist.state}`,
         provenanceLabel: 'CivicPulse Signals',
         provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-        priorityLabel: isCritical ? 'Critical Hotspot' : 'Priority Area',
-        reportCount: distReportsCount > 0 ? `${distReportsCount} citizen reports recorded` : 'No citizen reports recorded',
+        priorityLabel: `${hotspot.urgencyLevel} Hotspot`,
+        reportCount: `${hotspot.totalCitizenRequests.toLocaleString()} demand signals recorded`,
         peopleAffected: `${(dist.population / 1000000).toFixed(1)}M Population`,
         actionHint: 'Inspect District on Hotspot Map',
         score,
-        rawItem: dist
+        rawItem: { ...dist, hotspot },
       });
     }
   }
 
   // =========================================================================
-  // 4. CITIZEN SIGNALS & REPORTS SEARCH (Individual Citizen Submissions)
+  // 5. CITIZEN SIGNALS & REPORTS SEARCH (Individual Citizen Submissions)
+  // Calibrated relevance:
+  // - Exact ID: +100
+  // - District match: +40 (centralized matcher)
+  // - Category match: +35
+  // - Subcategory match: +25
+  // - Issue term: +25
+  // - Keyword match: +20
+  // - Recent: +10
+  // - High priority: +5
   // =========================================================================
   for (const req of requests) {
     let score = 0;
     const normSummary = (req.summary_en || '').toLowerCase();
     const normOriginal = (req.original_text || '').toLowerCase();
     const normLoc = (req.location || '').toLowerCase();
-    const normDist = (req.district || '').toLowerCase();
     const normCat = req.category.toLowerCase();
     const normSub = (req.subcategory || '').toLowerCase();
 
@@ -1001,37 +1318,37 @@ export function searchCivicPulse(
     }
 
     // Exact Category Match (+35)
-    if (intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
-    } else if (intent.detectedCategories.some(c => c.toLowerCase() === normCat)) {
+    } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
       score += 35;
     }
 
-    // Exact Subcategory Match (+30)
+    // Subcategory / Issue Match (+25)
     if (intent.subcategory && normSub.includes(intent.subcategory.toLowerCase())) {
-      score += 30;
+      score += 25;
     }
 
-    // Locality (+50) & District (+40)
-    if (intent.locality && (normLoc.includes(intent.locality.toLowerCase()) || (req.locality && req.locality.toLowerCase().includes(intent.locality.toLowerCase())))) {
-      score += 50;
-    } else if (intent.district && (normDist === intent.district.toLowerCase() || normLoc.includes(intent.district.toLowerCase()))) {
+    // Centralized District Match (+40)
+    if (intent.district && (matchesDistrict(req, { name: intent.district, id: intent.district.toLowerCase() } as any) || matchesDistrictToken(req.location, intent.district, intent.district.toLowerCase()))) {
       score += 40;
-    } else if (intent.location !== 'ANY' && normLoc.includes(intent.location.toLowerCase())) {
+    } else if (intent.location && intent.location !== 'ANY' && (normLoc.includes(intent.location.toLowerCase()) || (req.locality && req.locality.toLowerCase().includes(intent.location.toLowerCase())))) {
       score += 40;
     }
 
-    // Issue-term match (+20 each)
-    for (const term of intent.issue_terms) {
+    // Issue-term match (+25)
+    for (const term of (intent.issue_terms || [])) {
       if (normSummary.includes(term) || normOriginal.includes(term) || normSub.includes(term)) {
-        score += 20;
+        score += 25;
+        break;
       }
     }
 
-    // Description keyword match (+15 each)
-    for (const kw of intent.keywords) {
+    // Description keyword match (+20)
+    for (const kw of (intent.keywords || [])) {
       if (normSummary.includes(kw) || normOriginal.includes(kw)) {
-        score += 15;
+        score += 20;
+        break;
       }
     }
 
@@ -1063,13 +1380,20 @@ export function searchCivicPulse(
         dateOrTimeline: req.timestamp ? new Date(req.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
         actionHint: 'Inspect Citizen Signal',
         score,
-        rawItem: req
+        rawItem: req,
       });
     }
   }
 
   // =========================================================================
-  // 5. ACTION QUEUE & SANCTIONED PUBLIC PROJECTS SEARCH
+  // 6. ACTION QUEUE & SANCTIONED PUBLIC PROJECTS SEARCH
+  // Calibrated relevance:
+  // - Exact ID: +100
+  // - District: +40 (centralized matcher)
+  // - Category: +35
+  // - Issue term / subcategory: +25
+  // - Keyword: +20
+  // - High priority: +5
   // =========================================================================
   for (const proj of governmentProjects) {
     let score = 0;
@@ -1078,36 +1402,43 @@ export function searchCivicPulse(
     const normDist = proj.district.toLowerCase();
     const normCat = proj.category.toLowerCase();
 
-    // Exact ID
+    // Exact ID (+100)
     if (intent.request_id && proj.id.toLowerCase() === intent.request_id.toLowerCase()) {
       score += 100;
     }
 
     // Category (+35)
-    if (intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
     }
 
-    // District (+40)
-    if (intent.district && normDist === intent.district.toLowerCase()) {
+    // District (+40) via Centralized Matcher
+    if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, proj.district, proj.district.toLowerCase()))) {
       score += 40;
-    } else if (intent.location !== 'ANY' && normDist.includes(intent.location.toLowerCase())) {
+    } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, proj.district, proj.district.toLowerCase())) {
       score += 40;
     }
 
-    // Issue terms (+20) & Keywords (+15)
-    for (const term of intent.issue_terms) {
-      if (normTitle.includes(term)) score += 20;
+    // Issue terms (+25)
+    for (const term of (intent.issue_terms || [])) {
+      if (normTitle.includes(term)) {
+        score += 25;
+        break;
+      }
     }
-    for (const kw of intent.keywords) {
-      if (normTitle.includes(kw) || normDesc.includes(kw)) score += 15;
+
+    // Keywords (+20)
+    for (const kw of (intent.keywords || [])) {
+      if (normTitle.includes(kw) || normDesc.includes(kw)) {
+        score += 20;
+        break;
+      }
     }
 
     // High priority (+5)
     if (proj.priorityScore >= 75) score += 5;
 
     if (score >= 20) {
-      // Real report count
       const realProjCount = requests.filter(r => 
         r.category === proj.category && 
         ((r.district && r.district.toLowerCase() === normDist) || (r.location && r.location.toLowerCase().includes(normDist)))
@@ -1129,13 +1460,13 @@ export function searchCivicPulse(
         peopleAffected: `${(proj.population || 0).toLocaleString()} people`,
         actionHint: 'Open in Action Queue',
         score,
-        rawItem: proj
+        rawItem: proj,
       });
     }
   }
 
   // =========================================================================
-  // 6. INFRASTRUCTURE ASSETS SEARCH
+  // 7. INFRASTRUCTURE ASSETS SEARCH
   // =========================================================================
   for (const asset of INFRASTRUCTURE_ASSETS_REGISTRY) {
     let score = 0;
@@ -1144,22 +1475,28 @@ export function searchCivicPulse(
     const normDist = asset.districtName.toLowerCase();
     const normCat = asset.category.toLowerCase();
 
-    if (intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
     }
-    if (intent.district && normDist === intent.district.toLowerCase()) {
+    if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, asset.districtName, asset.districtName.toLowerCase()))) {
       score += 40;
-    } else if (intent.location !== 'ANY' && (normDist.includes(intent.location.toLowerCase()) || normLoc.includes(intent.location.toLowerCase()))) {
+    } else if (intent.location && intent.location !== 'ANY' && (normDist.includes(intent.location.toLowerCase()) || normLoc.includes(intent.location.toLowerCase()))) {
       score += 40;
     }
-    for (const term of intent.issue_terms) {
-      if (normName.includes(term)) score += 20;
+    for (const term of (intent.issue_terms || [])) {
+      if (normName.includes(term)) {
+        score += 25;
+        break;
+      }
     }
-    for (const kw of intent.keywords) {
-      if (normName.includes(kw) || normLoc.includes(kw)) score += 15;
+    for (const kw of (intent.keywords || [])) {
+      if (normName.includes(kw) || normLoc.includes(kw)) {
+        score += 20;
+        break;
+      }
     }
 
-    if (score >= 25) {
+    if (score >= 20) {
       matchingInfrastructure.push({
         id: asset.id,
         type: 'INFRASTRUCTURE',
@@ -1173,13 +1510,13 @@ export function searchCivicPulse(
         peopleAffected: `${(asset.servedPopulation || 0).toLocaleString()} Served`,
         actionHint: 'View Infrastructure Audit',
         score,
-        rawItem: asset
+        rawItem: asset,
       });
     }
   }
 
   // =========================================================================
-  // 7. GOVERNMENT BASELINE GRIEVANCE DATA
+  // 8. GOVERNMENT BASELINE GRIEVANCE DATA
   // =========================================================================
   for (const base of DEPARTMENT_GRIEVANCE_BASELINES) {
     let score = 0;
@@ -1187,11 +1524,14 @@ export function searchCivicPulse(
     const normMin = base.ministry.toLowerCase();
     const normCat = base.category.toLowerCase();
 
-    if (intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
+    if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
     }
-    for (const kw of intent.keywords) {
-      if (normDept.includes(kw) || normMin.includes(kw)) score += 15;
+    for (const kw of (intent.keywords || [])) {
+      if (normDept.includes(kw) || normMin.includes(kw)) {
+        score += 20;
+        break;
+      }
     }
 
     if (score >= 20) {
@@ -1208,12 +1548,13 @@ export function searchCivicPulse(
         reportCount: `${base.received_count.toLocaleString()} Grievances`,
         actionHint: 'Official OGD Reference Data',
         score,
-        rawItem: base
+        rawItem: base,
       });
     }
   }
 
   // Deterministic sorting with stable tie-breaking
+  matchingRecommendations.sort(tieBreakCompare);
   matchingIssues.sort(tieBreakCompare);
   matchingHotspots.sort(tieBreakCompare);
   matchingReports.sort(tieBreakCompare);
@@ -1225,10 +1566,11 @@ export function searchCivicPulse(
   let bestMatch: HumanSearchResultItem | null = null;
   if (!exactMatch) {
     const topCandidates = [
+      ...matchingRecommendations.slice(0, 2),
       ...matchingIssues.slice(0, 2),
       ...matchingHotspots.slice(0, 2),
       ...matchingProjects.slice(0, 1),
-      ...matchingReports.slice(0, 1)
+      ...matchingReports.slice(0, 1),
     ].sort(tieBreakCompare);
 
     if (topCandidates.length > 0 && topCandidates[0].score >= 40) {
@@ -1239,6 +1581,7 @@ export function searchCivicPulse(
   const { suggestions, type: suggestionsType } = getSearchSuggestions(query, data, options);
   const totalResultsCount = 
     (exactMatch ? 1 : 0) +
+    matchingRecommendations.length +
     matchingIssues.length +
     matchingHotspots.length +
     matchingReports.length +
@@ -1251,6 +1594,7 @@ export function searchCivicPulse(
     exactMatch,
     exactMatchNotFoundId,
     bestMatch,
+    recommendations: matchingRecommendations.slice(0, 6),
     communityIssues: matchingIssues.slice(0, 6),
     priorityHotspots: matchingHotspots.slice(0, 4),
     citizenReports: matchingReports.slice(0, 8),
@@ -1259,7 +1603,7 @@ export function searchCivicPulse(
     governmentBaseline: matchingBaseline.slice(0, 2),
     suggestions,
     suggestionsType,
-    totalResultsCount
+    totalResultsCount,
   };
 }
 
@@ -1273,7 +1617,7 @@ export function matchCitizenRequestIntent(
   allDistricts: District[] = []
 ): boolean {
   if (!query || !query.trim()) return true;
-  const intent = parseSearchIntent(query, allDistricts);
+  const intent = normalizeSearchIntent(parseSearchIntent(query, allDistricts));
 
   // Exact ID match
   if (intent.request_id) {
@@ -1289,21 +1633,21 @@ export function matchCitizenRequestIntent(
   const normCat = req.category.toLowerCase();
 
   // If query specifies a category, must match category
-  if (intent.category !== 'ANY') {
+  if (intent.category && intent.category !== 'ANY') {
     if (req.category.toLowerCase() !== intent.category.toLowerCase()) return false;
-  } else if (intent.detectedCategories.length > 0) {
-    const catMatch = intent.detectedCategories.some(c => c.toLowerCase() === normCat);
+  } else if ((intent.detectedCategories || []).length > 0) {
+    const catMatch = intent.detectedCategories.some(c => c && c.toLowerCase() === normCat);
     if (!catMatch) return false;
   }
 
   // If query specifies location, must match location
-  if (intent.location !== 'ANY') {
+  if (intent.location && intent.location !== 'ANY') {
     const lowL = intent.location.toLowerCase();
     const locMatch = normLoc.includes(lowL) || normDist.includes(lowL) || normState.includes(lowL);
     if (!locMatch) return false;
-  } else if (intent.detectedLocations.length > 0) {
+  } else if ((intent.detectedLocations || []).length > 0) {
     const locMatch = intent.detectedLocations.some(l => {
-      const lowL = l.toLowerCase();
+      const lowL = (l || '').toLowerCase();
       return normLoc.includes(lowL) || normDist.includes(lowL) || normState.includes(lowL);
     });
     if (!locMatch) return false;
@@ -1315,7 +1659,7 @@ export function matchCitizenRequestIntent(
   }
 
   // If residual keywords exist, test if any match
-  if (intent.keywords.length > 0) {
+  if ((intent.keywords || []).length > 0) {
     const matchesAnyKw = intent.keywords.some(kw => 
       normSummary.includes(kw) || 
       normOriginal.includes(kw) || 
@@ -1327,3 +1671,625 @@ export function matchCitizenRequestIntent(
 
   return true;
 }
+
+/**
+ * Calls server-side Gemini structured intent extraction API (/api/search/intent)
+ * Falls back safely to client-side parseSearchIntent if offline or server returns error
+ */
+export async function fetchServerSearchIntent(
+  query: string,
+  districts: District[] = []
+): Promise<{ intent: SearchIntent; isAiExtracted: boolean }> {
+  try {
+    const res = await fetch('/api/search/intent', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (data && data.intent) {
+        return {
+          intent: normalizeSearchIntent(data.intent),
+          isAiExtracted: !!data.isAiExtracted,
+        };
+      }
+    }
+  } catch (err) {
+    console.warn('[Search] Server intent extraction failed, falling back to local parser:', err);
+  }
+  return {
+    intent: normalizeSearchIntent(parseSearchIntent(query, districts)),
+    isAiExtracted: false
+  };
+}
+
+/**
+ * ============================================================================
+ * DETERMINISTIC SEARCH FUNCTIONS (Section 5 - 11)
+ * Pure, reliable search functions executing against actual CivicPulse datasets.
+ * ============================================================================
+ */
+
+/**
+ * 1. searchCitizenReports(criteria)
+ * Search actual citizen reports dataset with strict provenance and standardized relevance scoring.
+ */
+export function searchCitizenReports(
+  criteria: Partial<SearchIntent>,
+  requests: CitizenRequest[],
+  districts: District[] = []
+): HumanSearchResultItem[] {
+  const normCat = criteria.category ? criteria.category.toLowerCase() : null;
+  const keywords = (criteria.keywords || []).map(k => k.toLowerCase());
+  const limit = Math.min(Math.max(criteria.limit || 10, 1), 20);
+
+  const results: HumanSearchResultItem[] = [];
+
+  for (const req of requests) {
+    let score = 0;
+    const rCat = req.category.toLowerCase();
+    const rLoc = (req.location || '').toLowerCase();
+    const rText = ((req.summary_en || '') + ' ' + (req.original_text || '')).toLowerCase();
+    const rSub = (req.subcategory || '').toLowerCase();
+
+    // Exact Request ID (+100)
+    if (criteria.requestId && (req.id.toLowerCase() === criteria.requestId.toLowerCase() || (req.request_id && req.request_id.toLowerCase() === criteria.requestId.toLowerCase()))) {
+      score += 100;
+    }
+
+    // Exact District (+40) via Centralized Matcher
+    if (criteria.district) {
+      if (matchesDistrict(req, { id: criteria.district, name: criteria.district })) {
+        score += 40;
+      }
+    }
+
+    // Exact Category (+35)
+    if (normCat && rCat === normCat) {
+      score += 35;
+    }
+
+    // Issue / Subcategory (+25)
+    if (criteria.subcategory && rSub.includes(criteria.subcategory.toLowerCase())) {
+      score += 25;
+    }
+    if (criteria.issue_terms) {
+      for (const term of criteria.issue_terms) {
+        if (rSub.includes(term.toLowerCase()) || rText.includes(term.toLowerCase())) {
+          score += 25;
+          break;
+        }
+      }
+    }
+
+    // Keywords (+20)
+    for (const kw of keywords) {
+      if (rText.includes(kw) || rSub.includes(kw) || rLoc.includes(kw)) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Recent Signal (+10)
+    if (criteria.time_range === 'LAST_7_DAYS' || criteria.isRecent) {
+      score += 10;
+    }
+
+    // High Priority / Severity (+5)
+    if ((req.severity && req.severity >= 8) || req.urgency === 'CRITICAL' || req.urgency === 'HIGH' || criteria.priority === 'HIGH' || criteria.priority === 'CRITICAL') {
+      score += 5;
+    }
+
+    // Filter checks
+    if (criteria.minSeverity && (req.severity || 0) < criteria.minSeverity) {
+      continue;
+    }
+    if (criteria.maxSeverity && (req.severity || 0) > criteria.maxSeverity) {
+      continue;
+    }
+    if (criteria.status && req.status && req.status.toLowerCase() !== criteria.status.toLowerCase()) {
+      continue;
+    }
+
+    if (score >= 20 || (criteria.queryType === 'citizen_reports' && score >= 10)) {
+      const isLive = req.source_origin === 'CIVICPULSE_USER' || req.id.startsWith('CP-202');
+      results.push({
+        id: req.id,
+        type: 'CITIZEN_REPORT',
+        title: `${CATEGORY_DISPLAY_NAMES[req.category] || req.category}: ${req.summary_en || req.original_text}`,
+        subtitle: req.original_text ? `Original note: "${req.original_text}"` : undefined,
+        category: CATEGORY_DISPLAY_NAMES[req.category] || req.category,
+        location: req.location,
+        provenanceLabel: isLive ? 'CivicPulse Signals' : 'Illustrative Demo Data',
+        provenanceBadgeColor: isLive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-stone-200 text-stone-700 border-stone-300',
+        statusBadge: req.status || 'Received',
+        priorityLabel: `Severity: ${req.severity || 5}/10`,
+        dateOrTimeline: req.timestamp ? new Date(req.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
+        actionHint: 'Inspect Citizen Signal',
+        score,
+        rawItem: req,
+      });
+    }
+  }
+
+  return results.sort(tieBreakCompare).slice(0, limit);
+}
+
+/**
+ * 2. searchCommunityIssues(criteria)
+ * Search actual community issues clusters.
+ */
+export function searchCommunityIssues(
+  criteria: Partial<SearchIntent>,
+  issues: CommunityIssue[] = INITIAL_COMMUNITY_ISSUES
+): HumanSearchResultItem[] {
+  const normCat = criteria.category ? criteria.category.toLowerCase() : null;
+  const keywords = (criteria.keywords || []).map(k => k.toLowerCase());
+  const limit = Math.min(Math.max(criteria.limit || 10, 1), 20);
+
+  const results: HumanSearchResultItem[] = [];
+
+  for (const issue of issues) {
+    let score = 0;
+    const iTitle = issue.title.toLowerCase();
+    const iInfra = issue.infrastructureName.toLowerCase();
+    const iLoc = issue.location.toLowerCase();
+    const iCat = issue.category.toLowerCase();
+
+    // Exact ID (+100)
+    if (criteria.requestId && (issue.id.toLowerCase() === criteria.requestId.toLowerCase() || (issue.rank && issue.rank.toLowerCase() === criteria.requestId.toLowerCase()))) {
+      score += 100;
+    }
+
+    // District (+40) via Centralized Matcher
+    if (criteria.district && (iLoc.includes(criteria.district.toLowerCase()) || matchesDistrictToken(iLoc, criteria.district, criteria.district.toLowerCase()))) {
+      score += 40;
+    }
+
+    // Category (+35)
+    if (normCat && (iCat === normCat || iTitle.includes(normCat) || iInfra.includes(normCat))) {
+      score += 35;
+    }
+
+    // Issue / Subcategory terms (+25)
+    if (criteria.issue_terms) {
+      for (const term of criteria.issue_terms) {
+        if (iTitle.includes(term.toLowerCase()) || iInfra.includes(term.toLowerCase())) {
+          score += 25;
+          break;
+        }
+      }
+    }
+
+    // Keywords (+20)
+    for (const kw of keywords) {
+      if (iTitle.includes(kw) || iInfra.includes(kw) || iLoc.includes(kw)) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Priority filter / High priority (+5)
+    if (issue.severity === 'Critical' || issue.severity === 'High' || criteria.priority === 'HIGH' || criteria.priority === 'CRITICAL') {
+      score += 5;
+    }
+
+    if (score >= 20 || (criteria.queryType === 'community_issues' && score >= 10)) {
+      results.push({
+        id: issue.id,
+        type: 'COMMUNITY_ISSUE',
+        title: `Community Issue: ${issue.title}`,
+        subtitle: `${issue.infrastructureName} (${issue.relatedScheme})`,
+        category: CATEGORY_DISPLAY_NAMES[issue.category] || issue.category,
+        location: issue.location,
+        provenanceLabel: 'CivicPulse Signals',
+        provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        priorityLabel: `${issue.severity} Priority`,
+        reportCount: `${issue.requestCount || 0} citizen reports`,
+        peopleAffected: `${issue.affectedCommunities} communities`,
+        actionHint: 'Click to view Community Issue',
+        score,
+        rawItem: issue,
+      });
+    }
+  }
+
+  return results.sort(tieBreakCompare).slice(0, limit);
+}
+
+/**
+ * 3. searchHotspots(criteria)
+ * Uses getCityDemandHotspot(...) from demandAggregation.ts against actual citizen request data.
+ */
+export function searchHotspots(
+  criteria: Partial<SearchIntent>,
+  districts: District[],
+  requests: CitizenRequest[]
+): HumanSearchResultItem[] {
+  const targetCategory: 'All' | InfrastructureCategory = (criteria.category && criteria.category !== 'Other' && criteria.category !== 'ANY') ? (criteria.category as InfrastructureCategory) : 'All';
+  const keywords = (criteria.keywords || []).map(k => k.toLowerCase());
+  const limit = Math.min(Math.max(criteria.limit || 10, 1), 20);
+
+  const results: HumanSearchResultItem[] = [];
+
+  for (const dist of districts) {
+    let score = 0;
+    const normName = dist.name.toLowerCase();
+    const normState = (dist.state || '').toLowerCase();
+
+    // Centralized district match (+40)
+    if (criteria.district) {
+      if (matchesDistrictToken(criteria.district, dist.name, dist.id) || normName === criteria.district.toLowerCase()) {
+        score += 40;
+      } else {
+        continue;
+      }
+    }
+
+    // State match (+20)
+    if (criteria.state && normState.includes(criteria.state.toLowerCase())) {
+      score += 20;
+    }
+
+    // Compute actual hotspot data from demandAggregation
+    const hotspot = getCityDemandHotspot(dist, requests, targetCategory);
+
+    // Category match (+35)
+    if (criteria.category && (hotspot.hasCategorySignal || hotspot.primaryCategory === criteria.category)) {
+      score += 35;
+    }
+
+    // Issue terms (+25)
+    if (criteria.issue_terms) {
+      for (const term of criteria.issue_terms) {
+        if (normName.includes(term.toLowerCase()) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(term.toLowerCase()))) {
+          score += 25;
+          break;
+        }
+      }
+    }
+
+    // Keywords (+20)
+    for (const kw of keywords) {
+      if (normName.includes(kw) || normState.includes(kw) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(kw))) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Demand / Gap filters
+    if (criteria.demandLevel === 'HIGH' && hotspot.totalCitizenRequests < 10 && (hotspot.baselineDemandVolume || 0) < 100) {
+      continue;
+    }
+    if (criteria.infrastructureGapLevel === 'HIGH' && dist.poverty_index < 0.4 && (dist.water_access > 60 && dist.health_access > 60)) {
+      continue;
+    }
+
+    // Recent signal (+10)
+    if (criteria.time_range === 'LAST_7_DAYS' || criteria.isRecent || (hotspot.userRequestsCount && hotspot.userRequestsCount > 0)) {
+      score += 10;
+    }
+
+    // High priority (+5)
+    if (hotspot.highPriorityCount > 0) {
+      score += 5;
+    }
+
+    if (score >= 20 || (criteria.queryType === 'hotspots' && score >= 10)) {
+      results.push({
+        id: dist.id,
+        type: 'PRIORITY_HOTSPOT',
+        title: `${dist.name} Demand Hotspot`,
+        subtitle: `${hotspot.primaryBadgeLabel} · ${dist.state} (${dist.zone} Zone)`,
+        category: hotspot.primaryCategory,
+        location: `${dist.name}, ${dist.state}`,
+        provenanceLabel: 'CivicPulse Signals',
+        provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        priorityLabel: `${hotspot.primaryDot} ${hotspot.primaryBadgeLabel}`,
+        reportCount: `${hotspot.totalCitizenRequests} total verified requests`,
+        peopleAffected: `${(dist.population / 1000000).toFixed(1)}M Population`,
+        actionHint: 'View District Need & Demand Breakdown',
+        score,
+        rawItem: { ...dist, hotspot },
+      });
+    }
+  }
+
+  return results.sort(tieBreakCompare).slice(0, limit);
+}
+
+/**
+ * 4. searchRecommendations(criteria)
+ * Uses getAIRecommendedProjects(districts, requests) from scoring.ts.
+ */
+export function searchRecommendations(
+  criteria: Partial<SearchIntent>,
+  districts: District[],
+  requests: CitizenRequest[],
+  recommendations?: RecommendedProject[]
+): HumanSearchResultItem[] {
+  const allRecs = recommendations || getAIRecommendedProjects(districts, requests);
+  const normCat = criteria.category ? criteria.category.toLowerCase() : null;
+  const keywords = (criteria.keywords || []).map(k => k.toLowerCase());
+  const limit = Math.min(Math.max(criteria.limit || 10, 1), 20);
+
+  const results: HumanSearchResultItem[] = [];
+
+  for (const rec of allRecs) {
+    let score = 0;
+    const rTitle = rec.title.toLowerCase();
+    const rCat = rec.category.toLowerCase();
+    const rIntervention = (rec.interventionType || '').toLowerCase();
+    const rAiRec = (rec.aiRecommendation || '').toLowerCase();
+    const rSummary = (rec.summaryReasoning || '').toLowerCase();
+    const rDist = rec.districtName.toLowerCase();
+
+    // Exact ID (+100)
+    if (criteria.requestId && rec.id.toLowerCase() === criteria.requestId.toLowerCase()) {
+      score += 100;
+    }
+
+    // Centralized District Match (+40)
+    if (criteria.district) {
+      if (rDist === criteria.district.toLowerCase() || matchesDistrictToken(criteria.district, rec.districtName, rec.districtId)) {
+        score += 40;
+      } else {
+        continue;
+      }
+    }
+
+    // Category match (+35)
+    if (normCat && rCat === normCat) {
+      score += 35;
+    }
+
+    // Subcategory / Intervention match (+25)
+    if (criteria.subcategory && (rIntervention.includes(criteria.subcategory.toLowerCase()) || rTitle.includes(criteria.subcategory.toLowerCase()))) {
+      score += 25;
+    }
+    if (criteria.issue_terms) {
+      for (const term of criteria.issue_terms) {
+        if (rTitle.includes(term.toLowerCase()) || rIntervention.includes(term.toLowerCase()) || rAiRec.includes(term.toLowerCase()) || rSummary.includes(term.toLowerCase())) {
+          score += 25;
+          break;
+        }
+      }
+    }
+
+    // Keyword match (+20)
+    for (const kw of keywords) {
+      if (rTitle.includes(kw) || rIntervention.includes(kw) || rAiRec.includes(kw) || rSummary.includes(kw)) {
+        score += 20;
+        break;
+      }
+    }
+
+    // Min Priority Score filter
+    if (criteria.minSeverity && rec.priorityScore < criteria.minSeverity) {
+      continue;
+    }
+
+    // Recent signal (+10)
+    if (criteria.time_range === 'LAST_7_DAYS' || criteria.isRecent) {
+      score += 10;
+    }
+
+    // High priority (+5)
+    if (rec.priorityScore >= 60 || rec.urgencyLabel === 'CRITICAL' || rec.urgencyLabel === 'HIGH') {
+      score += 5;
+    }
+
+    if (score >= 20 || (criteria.queryType === 'recommendations' && score >= 10)) {
+      results.push({
+        id: rec.id,
+        type: 'RECOMMENDATION',
+        title: rec.title,
+        subtitle: `${rec.interventionType} · Score: ${rec.priorityScore.toFixed(1)}/100 · Budget: ₹${(rec.estimatedBudgetInr / 10000000).toFixed(1)} Cr`,
+        category: CATEGORY_DISPLAY_NAMES[rec.category] || rec.category,
+        location: `${rec.districtName}, ${rec.state}`,
+        provenanceLabel: 'CivicPulse Signals',
+        provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        priorityLabel: `${rec.priorityScore.toFixed(1)} Priority`,
+        reportCount: `${rec.citizenRequestsCount} verified demand signals`,
+        peopleAffected: `${(rec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
+        actionHint: 'View Priority Recommendation',
+        score,
+        rawItem: rec,
+      });
+    }
+  }
+
+  return results.sort(tieBreakCompare).slice(0, limit);
+}
+
+/**
+ * 5. searchLocations(criteria)
+ * Search DISTRICTS_REGISTRY using centralized word-bounded matchesDistrictToken.
+ */
+export function searchLocations(
+  criteria: Partial<SearchIntent>,
+  districts: District[] = DISTRICTS_REGISTRY
+): District[] {
+  const query = (criteria.district || (criteria.keywords || []).join(' ') || '').trim();
+  if (!query) return [];
+
+  const matched: District[] = [];
+
+  for (const dist of districts) {
+    if (matchesDistrictToken(query, dist.name, dist.id)) {
+      matched.push(dist);
+    } else if (dist.name.toLowerCase() === query.toLowerCase() || dist.id.toLowerCase() === query.toLowerCase()) {
+      matched.push(dist);
+    }
+  }
+
+  return matched;
+}
+
+/**
+ * 6. getRequestById(requestId)
+ * Exact ID lookup. Returns exact record or null.
+ */
+export function getRequestById(
+  requestId: string,
+  data: {
+    requests: CitizenRequest[];
+    recommendations?: RecommendedProject[];
+    communityIssues?: CommunityIssue[];
+    governmentProjects?: GovernmentProject[];
+  }
+): HumanSearchResultItem | null {
+  if (!requestId) return null;
+  const qId = requestId.trim().toLowerCase();
+
+  // 1. Citizen requests
+  const req = data.requests.find(r =>
+    r.id.toLowerCase() === qId ||
+    (r.request_id && r.request_id.toLowerCase() === qId)
+  );
+  if (req) {
+    const isLive = req.source_origin === 'CIVICPULSE_USER' || req.id.startsWith('CP-202');
+    return {
+      id: req.id,
+      type: 'EXACT_REQUEST',
+      title: `Citizen Request ${req.request_id || req.id}`,
+      subtitle: req.summary_en || req.original_text,
+      category: CATEGORY_DISPLAY_NAMES[req.category] || req.category,
+      location: req.location,
+      provenanceLabel: isLive ? 'CivicPulse Signals' : 'Illustrative Demo Data',
+      provenanceBadgeColor: isLive ? 'bg-emerald-100 text-emerald-800 border-emerald-300' : 'bg-stone-200 text-stone-700 border-stone-300',
+      statusBadge: req.status || 'Received',
+      priorityLabel: `Severity: ${req.severity || 5}/10`,
+      dateOrTimeline: req.timestamp ? new Date(req.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
+      actionHint: 'Click to open Request Details',
+      score: 100,
+      rawItem: req,
+    };
+  }
+
+  // 2. Recommendations
+  const recs = data.recommendations || [];
+  const rec = recs.find(r => r.id.toLowerCase() === qId);
+  if (rec) {
+    return {
+      id: rec.id,
+      type: 'RECOMMENDATION',
+      title: `Recommendation: ${rec.title}`,
+      subtitle: `${rec.interventionType} · Priority Score: ${rec.priorityScore.toFixed(1)}/100 · Budget: ₹${(rec.estimatedBudgetInr / 10000000).toFixed(1)} Cr`,
+      category: CATEGORY_DISPLAY_NAMES[rec.category] || rec.category,
+      location: `${rec.districtName}, ${rec.state}`,
+      provenanceLabel: 'CivicPulse Signals',
+      provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      priorityLabel: `Score ${rec.priorityScore.toFixed(1)}`,
+      reportCount: `${rec.citizenRequestsCount} verified demand signals`,
+      peopleAffected: `${(rec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
+      actionHint: 'Click to inspect Priority Recommendation',
+      score: 100,
+      rawItem: rec,
+    };
+  }
+
+  // 3. Community issues
+  const issues = data.communityIssues || INITIAL_COMMUNITY_ISSUES;
+  const issue = issues.find(i => i.id.toLowerCase() === qId || (i.rank && i.rank.toLowerCase() === qId));
+  if (issue) {
+    return {
+      id: issue.id,
+      type: 'COMMUNITY_ISSUE',
+      title: `Community Issue: ${issue.title}`,
+      subtitle: `${issue.infrastructureName} (${issue.relatedScheme})`,
+      category: CATEGORY_DISPLAY_NAMES[issue.category] || issue.category,
+      location: issue.location,
+      provenanceLabel: 'CivicPulse Signals',
+      provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      priorityLabel: `${issue.severity} Priority`,
+      reportCount: `${issue.requestCount || 0} citizen reports`,
+      peopleAffected: `${issue.affectedCommunities} communities`,
+      actionHint: 'Click to view Community Issue',
+      score: 100,
+      rawItem: issue,
+    };
+  }
+
+  // 4. Government projects
+  const projs = data.governmentProjects || [];
+  const proj = projs.find(p => p.id.toLowerCase() === qId);
+  if (proj) {
+    return {
+      id: proj.id,
+      type: 'ACTION_PROJECT',
+      title: `Public Project ${proj.id}: ${proj.title}`,
+      subtitle: proj.description,
+      category: CATEGORY_DISPLAY_NAMES[proj.category] || proj.category,
+      location: `${proj.district}, ${proj.state || 'India'}`,
+      provenanceLabel: 'CivicPulse Signals',
+      provenanceBadgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+      statusBadge: proj.status,
+      priorityLabel: `Priority Score: ${proj.priorityScore}/100`,
+      reportCount: `${proj.citizenRequestsCount} citizen reports`,
+      peopleAffected: `${(proj.population || 0).toLocaleString()} people`,
+      actionHint: 'Click to view in Action Queue',
+      score: 100,
+      rawItem: proj,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Calls server-side Gemini grounded search summarization API (/api/search/summary)
+ */
+export async function fetchSearchSummary(
+  query: string,
+  results: HumanSearchResults
+): Promise<string | null> {
+  try {
+    const summaryData = {
+      exactMatch: results.exactMatch ? {
+        id: results.exactMatch.id,
+        title: results.exactMatch.title,
+        category: results.exactMatch.category,
+        location: results.exactMatch.location,
+      } : null,
+      recommendations: (results.recommendations || []).slice(0, 3).map(r => ({
+        title: r.title,
+        location: r.location,
+        priority: r.priorityLabel,
+        reportCount: r.reportCount,
+      })),
+      hotspots: results.priorityHotspots.slice(0, 3).map(h => ({
+        title: h.title,
+        location: h.location,
+        priority: h.priorityLabel,
+        reportCount: h.reportCount,
+      })),
+      issues: results.communityIssues.slice(0, 3).map(i => ({
+        title: i.title,
+        location: i.location,
+        priority: i.priorityLabel,
+        reportCount: i.reportCount,
+      })),
+      totalCount: results.totalResultsCount,
+    };
+
+    const res = await fetch('/api/search/summary', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        query,
+        results: summaryData,
+        ...summaryData,
+      }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return data.summary || null;
+    }
+  } catch (err) {
+    console.warn('[Search] Failed to fetch server search summary:', err);
+  }
+  return null;
+}
+
