@@ -623,5 +623,61 @@ export const or = {
   'evidence.audio_recording': 'ଅଡିଓ ରେକର୍ଡିଂ',
   'evidence.supervisor': 'ପର୍ଯ୍ୟବେକ୍ଷକ',
   'evidence.department': 'ବିଭାଗ',
-  'evidence.confidence': 'ବିଶ୍ୱସନୀୟତା'
+  'evidence.confidence': 'ବିଶ୍ୱସନୀୟତା',
+
+  // Navigation & Sections
+  'nav.explore': 'ଅନୁସନ୍ଧାନ କରନ୍ତୁ',
+  'section.listen': 'ଶୁଣନ୍ତୁ (LISTEN)',
+  'section.measure_need': 'ଆବଶ୍ୟକତା ମାପନ୍ତୁ (MEASURE NEED)',
+  'section.align_investment': 'ପୁଞ୍ଜିନିବେଶ ସମନ୍ୱୟ (ALIGN INVESTMENT)',
+  'section.check_investment': 'ପୁଞ୍ଜିନିବେଶ ସମନ୍ୱୟ (ALIGN INVESTMENT)',
+  'section.impact': 'ପ୍ରଭାବ (IMPACT)',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'ଆବଶ୍ୟକତା କେଉଁଠାରେ କେନ୍ଦ୍ରୀଭୂତ?',
+  'map.page_label': 'ସିଭିକ୍ ମାନଚିତ୍ର',
+  'signals.question_title': 'ନାଗରିକମାନେ କଣ ଦାବି କରୁଛନ୍ତି?',
+  'signals.page_label': 'ନାଗରିକ ସଙ୍କେତ',
+  'issues.question_title': 'କେଉଁ ସମସ୍ୟାସବୁ ଦେଖାଦେଉଛି?',
+  'issues.page_label': 'ସାମୁଦାୟିକ ସମସ୍ୟା',
+  'patterns.question_title': 'ଆମେ କେଉଁ ପ୍ୟାଟର୍ଣ୍ଣ ଦେଖୁଛୁ?',
+  'patterns.page_label': 'ଏଆଇ ପ୍ୟାଟର୍ଣ୍ଣ',
+  'recommendations.question_title': 'କାହାକୁ ପ୍ରାଥମିକତା ଦିଆଯିବା ଉଚିତ?',
+  'recommendations.page_label': 'ସୁପାରିଶସମୂହ',
+  'action_queue.question_title': 'ପରବର୍ତ୍ତୀ ପଦକ୍ଷେପ କଣ ହେବା ଉଚିତ?',
+  'action_queue.page_label': 'କାର୍ଯ୍ୟାନ୍ୱୟନ ଧାଡ଼ି',
+  'demographics.question_title': 'କିଏ ସର୍ବାଧିକ ପ୍ରଭାବିତ?',
+  'demographics.page_label': 'ଜନସଂଖ୍ୟା ଓ ସମ୍ବେଦନଶୀଳତା',
+  'infrastructure.question_title': 'ଭିତ୍ତିଭୂମିର ଅଭାବ କେଉଁଠାରେ ରହିଛି?',
+  'infrastructure.page_label': 'ଭିତ୍ତିଭୂମି',
+  'investment.question_title': 'ସରକାରୀ ପୁଞ୍ଜିନିବେଶ ଆବଶ୍ୟକତା ସହ ସମନ୍ୱିତ କି?',
+  'investment.page_label': 'ସରକାରୀ ପୁଞ୍ଜିନିବେଶ',
+  'impact.question_title': 'ଏହା କିଛି ପରିବର୍ତ୍ତନ ଆଣିଲା କି?',
+  'impact.page_label': 'ପ୍ରଭାବ',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'ନାଗରିକ ସମସ୍ୟା ଦାଖଲ କରନ୍ତୁ',
+  'report.subtitle': 'ଆପଣଙ୍କ ସମୁଦାୟରେ କଣ ଘଟୁଛି ଆମକୁ ଜଣାନ୍ତୁ। ଆପଣ ସହଜ ଭାଷାରେ ବର୍ଣ୍ଣନା କରିପାରିବେ — କୌଣସି ଜଟିଳ ସରକାରୀ ଫର୍ମ ଆବଶ୍ୟକ ନାହିଁ।',
+  'report.eyebrow': 'ନାଗରିକ ଅଭିଯୋଗ ଗ୍ରହଣ · ସିଭିକ୍‌ପଲ୍ସ ଡିପିଆଇ',
+  'report.write_issue': 'ସମସ୍ୟା ଲେଖନ୍ତୁ',
+  'report.speak_issue': 'ସମସ୍ୟା କୁହନ୍ତୁ',
+  'report.step_1': '୧. ସମସ୍ୟା ବର୍ଣ୍ଣନା',
+  'report.step_2': '୨. ଏଆଇ ବିଶ୍ଳେଷଣ ଯାଞ୍ଚ',
+  'report.step_3': '୩. ସ୍ଥାୟୀ ଦାଖଲ',
+  'report.step_describe': 'ସମସ୍ୟା ବର୍ଣ୍ଣନା',
+  'report.step_ai_review': 'ଏଆଇ ସମୀକ୍ଷା',
+  'report.step_submit': 'ରିପୋର୍ଟ ଦାଖଲ କରନ୍ତୁ',
+  'report.step_active': 'ଚାଲୁରହିଛି',
+  'report.step_done': 'ସମ୍ପନ୍ନ',
+  'report.step_upcoming': 'ପରବର୍ତ୍ତୀ ପର୍ଯ୍ୟାୟ',
+  'report.step_final': 'ଅନ୍ତିମ ପର୍ଯ୍ୟାୟ',
+  'report.review_title': 'ଏଆଇ ବିଶ୍ଳେଷଣ ଯାଞ୍ଚ ଓ ନିଶ୍ଚିତ କରନ୍ତୁ',
+  'report.review_desc': 'ଯାଞ୍ଚ ନକରି କଦାପି ଦାଖଲ କରନ୍ତୁ ନାହିଁ। ଅନ୍ତିମ ଦାଖଲ ପୂର୍ବରୁ ତଳେ ଥିବା ତଥ୍ୟ ସଂଶୋଧନ କରନ୍ତୁ।',
+  'report.success_title': 'ଆବେଦନ ସଫଳତାର ସହ ଦାଖଲ ହୋଇଛି',
+  'report.success_desc': 'ଆପଣଙ୍କ ଆବେଦନ ଏକ ସ୍ୱତନ୍ତ୍ର ଟ୍ରାକିଂ ପରିଚୟ ପାଇଛି ଏବଂ ପୌର ବ୍ୟବସ୍ଥାରେ ଅନ୍ତର୍ଭୁକ୍ତ ହୋଇଛି।',
+
+  // Filter enhancements
+  'filter.refine_signals': 'ଫିଲ୍ଟର୍ କରନ୍ତୁ',
+  'filter.city_locality': 'ସହର / ଅଞ୍ଚଳ',
+  'data_source.all_sources': 'ସମସ୍ତ ଡାଟା ଉତ୍ସ'
 };

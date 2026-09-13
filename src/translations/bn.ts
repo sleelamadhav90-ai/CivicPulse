@@ -623,5 +623,61 @@ export const bn = {
   'evidence.audio_recording': 'অডিও রেকর্ডিং',
   'evidence.supervisor': 'তত্ত্বাবধায়ক',
   'evidence.department': 'বিভাগ',
-  'evidence.confidence': 'নির্ভরযোগ্যতা'
+  'evidence.confidence': 'নির্ভরযোগ্যতা',
+
+  // Navigation & Sections
+  'nav.explore': 'অন্বেষণ করুন',
+  'section.listen': 'শুনুন (LISTEN)',
+  'section.measure_need': 'প্রয়োজন পরিমাপ করুন (MEASURE NEED)',
+  'section.align_investment': 'বিনিয়োগ সংগতি বিধান (ALIGN INVESTMENT)',
+  'section.check_investment': 'বিনিয়োগ সংগতি বিধান (ALIGN INVESTMENT)',
+  'section.impact': 'প্রভাব (IMPACT)',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'প্রয়োজন কোথায় কেন্দ্রীভূত?',
+  'map.page_label': 'সিভিক মানচিত্র',
+  'signals.question_title': 'নাগরিকরা কি চাইছেন?',
+  'signals.page_label': 'নাগরিক সংকেত',
+  'issues.question_title': 'কি কি সমস্যা উদ্ভূত হচ্ছে?',
+  'issues.page_label': 'কমিউনিটি সমস্যা',
+  'patterns.question_title': 'আমরা কি প্যাটার্ন দেখতে পাচ্ছি?',
+  'patterns.page_label': 'এআই প্যাটার্ন',
+  'recommendations.question_title': 'কাকে অগ্রাধিকার দেওয়া উচিত?',
+  'recommendations.page_label': 'সুপারিশসমূহ',
+  'action_queue.question_title': 'পরবর্তী পদক্ষেপ কি হওয়া উচিত?',
+  'action_queue.page_label': 'কর্ম সারি',
+  'demographics.question_title': 'কারা সবচেয়ে বেশি প্রভাবিত?',
+  'demographics.page_label': 'জনসংখ্যা ও সংবেদনশীলতা',
+  'infrastructure.question_title': 'পরিকাঠামোগত ঘাটতি কোথায় রয়েছে?',
+  'infrastructure.page_label': 'পরিকাঠামো',
+  'investment.question_title': 'সরকারি বিনিয়োগ কি প্রয়োজনের সাথে সামঞ্জস্যপূর্ণ?',
+  'investment.page_label': 'সরকারি বিনিয়োগ',
+  'impact.question_title': 'এটি কি কোনো পরিবর্তন এনেছে?',
+  'impact.page_label': 'প্রভাব',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'নাগরিক সমস্যার অভিযোগ জানান',
+  'report.subtitle': 'আপনার এলাকায় কি ঘটছে তা আমাদের জানান। আপনি সাধারণভাবে বর্ণনা করতে পারেন — কোনো জটিল সরকারি ফর্মের প্রয়োজন নেই।',
+  'report.eyebrow': 'নাগরিক অভিযোগ গ্রহণ · সিভিকপালস ডিপিআই',
+  'report.write_issue': 'সমস্যা লিখুন',
+  'report.speak_issue': 'সমস্যা বলুন',
+  'report.step_1': '১. সমস্যার বিবরণ',
+  'report.step_2': '২. এআই বিশ্লেষণ যাচাই',
+  'report.step_3': '৩. স্থায়ী নিবন্ধন',
+  'report.step_describe': 'সমস্যার বিবরণ',
+  'report.step_ai_review': 'এআই পর্যালোচনা',
+  'report.step_submit': 'প্রতিবেদন জমা দিন',
+  'report.step_active': 'চলমান',
+  'report.step_done': 'সম্পন্ন',
+  'report.step_upcoming': 'পরবর্তী পর্যায়',
+  'report.step_final': 'চূড়ান্ত পর্যায়',
+  'report.review_title': 'এআই বিশ্লেষণ পর্যালোচনা ও যাচাই করুন',
+  'report.review_desc': 'যাচাই না করে জমা দেবেন না। চূড়ান্ত জমা দেওয়ার আগে নিচের বিবরণ সংশোধন করুন।',
+  'report.success_title': 'আবেদন সফলভাবে নিবন্ধিত হয়েছে',
+  'report.success_desc': 'আপনার আবেদন একটি অনন্য ট্র্যাকিং পরিচিতি পেয়েছে এবং পৌর প্রক্রিয়ায় যুক্ত হয়েছে।',
+
+  // Filter enhancements
+  'filter.refine_signals': 'ফিল্টার করুন',
+  'filter.city_locality': 'শহর / এলাকা',
+  'data_source.all_sources': 'সকল ডেটা উৎস'
 };

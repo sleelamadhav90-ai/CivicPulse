@@ -655,5 +655,27 @@ export const te = {
   // Filter enhancements
   'filter.refine_signals': 'ఫిల్టర్ల ద్వారా శుద్ధి చేయండి',
   'filter.city_locality': 'నగరం / ప్రాంతం',
-  'data_source.all_sources': 'అన్ని డేటా వనరులు'
+  'data_source.all_sources': 'అన్ని డేటా వనరులు',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'అవసరం ఎక్కడ కేంద్రీకృతమై ఉంది?',
+  'map.page_label': 'సివిక్ మ్యాప్',
+  'signals.question_title': 'పౌరులు ఏమి కోరుతున్నారు?',
+  'signals.page_label': 'పౌరుల సంకేతాలు',
+  'issues.question_title': 'ఏ సమస్యలు తలెత్తుతున్నాయి?',
+  'issues.page_label': 'సమాజ సమస్యలు',
+  'patterns.question_title': 'మనం ఏ నమూనాలను గమనిస్తున్నాం?',
+  'patterns.page_label': 'ఏఐ నమూనాలు',
+  'recommendations.question_title': 'దేనికి ప్రాధాన్యత ఇవ్వాలి?',
+  'recommendations.page_label': 'సిఫార్సులు',
+  'action_queue.question_title': 'తదుపరి ఏమి జరగాలి?',
+  'action_queue.page_label': 'కార్యాచరణ వరుస',
+  'demographics.question_title': 'ఎవరు ఎక్కువగా ప్రభావితమవుతున్నారు?',
+  'demographics.page_label': 'జనాభా & బలహీనత',
+  'infrastructure.question_title': 'మౌలిక సదుపాయాల లోపాలు ఎక్కడ ఉన్నాయి?',
+  'infrastructure.page_label': 'మౌలిక సదుపాయాలు',
+  'investment.question_title': 'ప్రజా పెట్టుబడి అవసరానికి అనుగుణంగా ఉందా?',
+  'investment.page_label': 'ప్రభుత్వ పెట్టుబడులు',
+  'impact.question_title': 'ఇది ఏదైనా మార్పు తెచ్చిందా?',
+  'impact.page_label': 'ప్రభావం'
 };

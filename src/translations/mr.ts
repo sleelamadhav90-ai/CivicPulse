@@ -623,5 +623,61 @@ export const mr = {
   'evidence.audio_recording': 'ऑडिओ रेकॉर्डिंग',
   'evidence.supervisor': 'पर्यवेक्षक',
   'evidence.department': 'विभाग',
-  'evidence.confidence': 'विश्वासार्हता'
+  'evidence.confidence': 'विश्वासार्हता',
+
+  // Navigation & Sections
+  'nav.explore': 'एक्सप्लोर करा',
+  'section.listen': 'ऐका (LISTEN)',
+  'section.measure_need': 'गरज मोजा (MEASURE NEED)',
+  'section.align_investment': 'गुंतवणूक संरेखन (ALIGN INVESTMENT)',
+  'section.check_investment': 'गुंतवणूक संरेखन (ALIGN INVESTMENT)',
+  'section.impact': 'प्रभाव (IMPACT)',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'गरज कुठे केंद्रित आहे?',
+  'map.page_label': 'सिव्हिक नकाशा',
+  'signals.question_title': 'नागरिक काय मागत आहेत?',
+  'signals.page_label': 'नागरिक संकेत',
+  'issues.question_title': 'कोणत्या समस्या समोर येत आहेत?',
+  'issues.page_label': 'सामुदायिक समस्या',
+  'patterns.question_title': 'आम्हाला कोणते पॅटर्न दिसत आहेत?',
+  'patterns.page_label': 'एआय पॅटर्न',
+  'recommendations.question_title': 'कशाला प्राधान्य दिले पाहिजे?',
+  'recommendations.page_label': 'शिफारसी',
+  'action_queue.question_title': 'पुढे काय कारवाई झाली पाहिजे?',
+  'action_queue.page_label': 'कृती रांग',
+  'demographics.question_title': 'सर्वाधिक प्रभावित कोण आहे?',
+  'demographics.page_label': 'लोकसंख्या आणि संवेदनशीलता',
+  'infrastructure.question_title': 'पायाभूत सुविधांमध्ये कुठे त्रुटी आहेत?',
+  'infrastructure.page_label': 'पायाभूत सुविधा',
+  'investment.question_title': 'सार्वजनिक गुंतवणूक गरजेनुसार संरेखित आहे का?',
+  'investment.page_label': 'सरकारी गुंतवणूक',
+  'impact.question_title': 'याने काही फरक पडला का?',
+  'impact.page_label': 'प्रभाव',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'नागरी समस्येची तक्रार नोंदवा',
+  'report.subtitle': 'तुमच्या परिसरात काय घडत आहे ते आम्हाला सांगा. तुम्ही ते सहजपणे सांगू शकता — कोणत्याही क्लिष्ट सरकारी फॉर्मची आवश्यकता नाही.',
+  'report.eyebrow': 'नागरिक तक्रार निवारण कक्ष · सिव्हिकपल्स डीपीआय',
+  'report.write_issue': 'समस्या लिहा',
+  'report.speak_issue': 'समस्या बोला',
+  'report.step_1': '१. समस्येचे वर्णन',
+  'report.step_2': '२. एआय पुनरावलोकन',
+  'report.step_3': '३. कायमस्वरूपी नोंदणी',
+  'report.step_describe': 'समस्येचे वर्णन',
+  'report.step_ai_review': 'एआय पुनरावलोकन',
+  'report.step_submit': 'अहवाल सादर करा',
+  'report.step_active': 'प्रगतीपथावर',
+  'report.step_done': 'पूर्ण झाले',
+  'report.step_upcoming': 'पुढील टप्पा',
+  'report.step_final': 'अंतिम टप्पा',
+  'report.review_title': 'एआय अर्थ लावल्याची पडताळणी करा',
+  'report.review_desc': 'पडताळणी केल्याशिवाय सादर करू नका. अंतिम नोंदणीपूर्वी खालील तपशील दुरुस्त करा.',
+  'report.success_title': 'विनंती यशस्वीरीत्या नोंदवली गेली',
+  'report.success_desc': 'तुमच्या विनंतीला एक युनिक ट्रॅकिंग आयडी मिळाला असून ती पालिका प्रणालीत समाविष्ट झाली आहे.',
+
+  // Filter enhancements
+  'filter.refine_signals': 'फिल्टर करा',
+  'filter.city_locality': 'शहर / परिसर',
+  'data_source.all_sources': 'सर्व डेटा स्रोत'
 };

@@ -649,5 +649,35 @@ export const ta = {
   // Filter enhancements
   'filter.refine_signals': 'வடிகட்டவும்',
   'filter.city_locality': 'நகரம் / பகுதி',
-  'data_source.all_sources': 'அனைத்து தரவு மூலங்கள்'
+  'data_source.all_sources': 'அனைத்து தரவு மூலங்கள்',
+
+  // Navigation & Sections
+  'nav.explore': 'ஆராயுங்கள்',
+  'section.listen': 'கேளுங்கள் (LISTEN)',
+  'section.measure_need': 'தேவையை அளவிடுங்கள் (MEASURE NEED)',
+  'section.align_investment': 'முதலீட்டை சீரமைக்கவும் (ALIGN INVESTMENT)',
+  'section.check_investment': 'முதலீட்டை சீரமைக்கவும் (ALIGN INVESTMENT)',
+  'section.impact': 'தாக்கம் (IMPACT)',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'தேவை எங்கு குவிந்துள்ளது?',
+  'map.page_label': 'குடிமக்கள் வரைபடம்',
+  'signals.question_title': 'குடிமக்கள் என்ன கேட்கிறார்கள்?',
+  'signals.page_label': 'குடிமக்கள் சமிக்ஞைகள்',
+  'issues.question_title': 'என்ன பிரச்சினைகள் எழுகின்றன?',
+  'issues.page_label': 'சமூகப் பிரச்சினைகள்',
+  'patterns.question_title': 'நாம் என்ன வடிவங்களைக் காண்கிறோம்?',
+  'patterns.page_label': 'ஏஐ வடிவங்கள்',
+  'recommendations.question_title': 'எதற்கு முன்னுரிமை அளிக்க வேண்டும்?',
+  'recommendations.page_label': 'பரிந்துரைகள்',
+  'action_queue.question_title': 'அடுத்து என்ன நடவடிக்கை எடுக்க வேண்டும்?',
+  'action_queue.page_label': 'செயல்பாட்டு வரிசை',
+  'demographics.question_title': 'யார் அதிகம் பாதிக்கப்படுகிறார்கள்?',
+  'demographics.page_label': 'மக்கள் தொகை & பாதிப்பு நிலை',
+  'infrastructure.question_title': 'உள்கட்டமைப்பு இடைவெளிகள் எங்கு உள்ளன?',
+  'infrastructure.page_label': 'உள்கட்டமைப்பு',
+  'investment.question_title': 'பொது முதலீடு தேவையுடன் ஒத்துப்போகிறதா?',
+  'investment.page_label': 'அரசு முதலீடு',
+  'impact.question_title': 'இது என்ன மாற்றத்தை ஏற்படுத்தியது?',
+  'impact.page_label': 'தாக்கம்'
 };

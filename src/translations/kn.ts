@@ -623,5 +623,61 @@ export const kn = {
   'evidence.audio_recording': 'ಆಡಿಯೊ ರೆಕಾರ್ಡಿಂಗ್',
   'evidence.supervisor': 'ಮೇಲ್ವಿಚಾರಕ',
   'evidence.department': 'ಇಲಾಖೆ',
-  'evidence.confidence': 'ವಿಶ್ವಾಸಾರ್ಹತೆ'
+  'evidence.confidence': 'ವಿಶ್ವಾಸಾರ್ಹತೆ',
+
+  // Navigation & Sections
+  'nav.explore': 'ಅನ್ವೇಷಿಸಿ',
+  'section.listen': 'ಕೇಳಿ (LISTEN)',
+  'section.measure_need': 'ಅಗತ್ಯತೆಯನ್ನು ಅಳೆಯಿರಿ (MEASURE NEED)',
+  'section.align_investment': 'ಹೂಡಿಕೆಯನ್ನು ಹೊಂದಿಸಿ (ALIGN INVESTMENT)',
+  'section.check_investment': 'ಹೂಡಿಕೆಯನ್ನು ಹೊಂದಿಸಿ (ALIGN INVESTMENT)',
+  'section.impact': 'ಪರಿಣಾಮ (IMPACT)',
+
+  // View Question Titles & Page Labels
+  'map.question_title': 'ಅಗತ್ಯತೆ ಎಲ್ಲಿ ಕೇಂದ್ರೀಕೃತವಾಗಿದೆ?',
+  'map.page_label': 'ಸಿವಿಕ್ ನಕ್ಷೆ',
+  'signals.question_title': 'ನಾಗರಿಕರು ಏನನ್ನು ಕೇಳುತ್ತಿದ್ದಾರೆ?',
+  'signals.page_label': 'ನಾಗರಿಕ ಸಂಕೇತಗಳು',
+  'issues.question_title': 'ಯಾವ ಸಮಸ್ಯೆಗಳು ಉದ್ಭವಿಸುತ್ತಿವೆ?',
+  'issues.page_label': 'ಸಮುದಾಯ ಸಮಸ್ಯೆಗಳು',
+  'patterns.question_title': 'ನಾವು ಯಾವ ಮಾದರಿಗಳನ್ನು ನೋಡುತ್ತಿದ್ದೇವೆ?',
+  'patterns.page_label': 'ಎಐ ಮಾದರಿಗಳು',
+  'recommendations.question_title': 'ಯಾವುದಕ್ಕೆ ಆದ್ಯತೆ ನೀಡಬೇಕು?',
+  'recommendations.page_label': 'ಶಿಫಾರಸುಗಳು',
+  'action_queue.question_title': 'ಮುಂದೆ ಏನು ಕ್ರಮ ಜರುಗಿಸಬೇಕು?',
+  'action_queue.page_label': 'ಕ್ರಮಗಳ ಸರದಿ',
+  'demographics.question_title': 'ಯಾರು ಹೆಚ್ಚು ಬಾಧಿತರಾಗಿದ್ದಾರೆ?',
+  'demographics.page_label': 'ಜನಸಂಖ್ಯಾಶಾಸ್ತ್ರ ಮತ್ತು ಸೂಕ್ಷ್ಮತೆ',
+  'infrastructure.question_title': 'ಮೂಲಸೌಕರ್ಯದ ಕೊರತೆಗಳು ಎಲ್ಲಿವೆ?',
+  'infrastructure.page_label': 'ಮೂಲಸೌಕರ್ಯ',
+  'investment.question_title': 'ಸಾರ್ವಜನಿಕ ಹೂಡಿಕೆಯು ಅಗತ್ಯಕ್ಕೆ ತಕ್ಕಂತೆ ಹೊಂದಿಕೊಂಡಿದೆಯೇ?',
+  'investment.page_label': 'ಸರ್ಕಾರಿ ಹೂಡಿಕೆ',
+  'impact.question_title': 'ಇದು ಏನಾದರೂ ಬದಲಾವಣೆ ತಂದಿದೆಯೇ?',
+  'impact.page_label': 'ಪರಿಣಾಮ',
+
+  // Report a Civic Issue & Intake Stepper
+  'report.title': 'ನಾಗರಿಕ ಸಮಸ್ಯೆಯನ್ನು ವರದಿ ಮಾಡಿ',
+  'report.subtitle': 'ನಿಮ್ಮ ಸಮುದಾಯದಲ್ಲಿ ಏನಾಗುತ್ತಿದೆ ಎಂಬುದನ್ನು ನಮಗೆ ತಿಳಿಸಿ. ನೀವು ಇದನ್ನು ಸರಳವಾಗಿ ವಿವರಿಸಬಹುದು — ಯಾವುದೇ ಸಂಕೀರ್ಣ ಸರ್ಕಾರಿ ಫಾರ್ಮ್ ಅಗತ್ಯವಿಲ್ಲ.',
+  'report.eyebrow': 'ನಾಗರಿಕ ಕುಂದುಕೊರತೆ ಸಲ್ಲಿಕೆ · ಸಿವಿಕ್‌ಪಲ್ಸ್ ಡಿಪಿಐ',
+  'report.write_issue': 'ಸಮಸ್ಯೆಯನ್ನು ಬರೆಯಿರಿ',
+  'report.speak_issue': 'ಸಮಸ್ಯೆಯನ್ನು ಮಾತನಾಡಿ',
+  'report.step_1': '1. ಸಮಸ್ಯೆಯನ್ನು ವಿವರಿಸಿ',
+  'report.step_2': '2. ಎಐ ವಿಶ್ಲೇಷಣಾ ಪರಿಶೀಲನೆ',
+  'report.step_3': '3. ಖಾಯಂ ಸಲ್ಲಿಕೆ',
+  'report.step_describe': 'ಸಮಸ್ಯೆಯನ್ನು ವಿವರಿಸಿ',
+  'report.step_ai_review': 'ಎಐ ಪರಿಶೀಲನೆ',
+  'report.step_submit': 'ವರದಿಯನ್ನು ಸಲ್ಲಿಸಿ',
+  'report.step_active': 'ಪ್ರಗತಿಯಲ್ಲಿದೆ',
+  'report.step_done': 'ಪೂರ್ಣಗೊಂಡಿದೆ',
+  'report.step_upcoming': 'ಮುಂದಿನ ಹಂತ',
+  'report.step_final': 'ಅಂತಿಮ ಹಂತ',
+  'report.review_title': 'ಎಐ ವಿಶ್ಲೇಷಣೆಯನ್ನು ಪರಿಶೀಲಿಸಿ ದೃಢೀಕರಿಸಿ',
+  'report.review_desc': 'ಪರಿಶೀಲಿಸದೆ ಎಂದಿಗೂ ಸಲ್ಲಿಸಬೇಡಿ. ಅಂತಿಮ ಸಲ್ಲಿಕೆಗೆ ಮುನ್ನ ಕೆಳಗಿನ ವಿವರಗಳನ್ನು ಸರಿಪಡಿಸಿ.',
+  'report.success_title': 'ವಿನಂತಿಯನ್ನು ಯಶಸ್ವಿಯಾಗಿ ಸಲ್ಲಿಸಲಾಗಿದೆ',
+  'report.success_desc': 'ನಿಮ್ಮ ವಿನಂತಿಗೆ ವಿಶಿಷ್ಟ ಟ್ರ್ಯಾಕಿಂಗ್ ಗುರುತನ್ನು ನೀಡಲಾಗಿದೆ ಮತ್ತು ಪುರಸಭೆಯ ಗುಪ್ತಚರ ವ್ಯವಸ್ಥೆಗೆ ಸೇರಿಸಲಾಗಿದೆ.',
+
+  // Filter enhancements
+  'filter.refine_signals': 'ಫಿಲ್ಟರ್ ಮಾಡಿ',
+  'filter.city_locality': 'ನಗರ / ಪ್ರದೇಶ',
+  'data_source.all_sources': 'ಎಲ್ಲಾ ಡೇಟಾ ಮೂಲಗಳು'
 };

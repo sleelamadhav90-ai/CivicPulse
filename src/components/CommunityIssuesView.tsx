@@ -16,6 +16,8 @@ import {
 import { CitizenRequest, InfrastructureCategory, GovernmentProject } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { parseSearchIntent } from '../services/humanSearchService';
+import { DISTRICTS_REGISTRY } from '../data/districts';
+import { matchesDistrict } from '../utils/districtMatcher';
 
 export interface CommunityIssue {
   id: string;
@@ -31,6 +33,41 @@ export interface CommunityIssue {
   infrastructureName: string;
   relatedScheme: string;
   sampleRequests?: CitizenRequest[];
+}
+
+/**
+ * Deterministically resolves the authoritative target district ({ id, name })
+ * for a community issue by inspecting its districtId and location against DISTRICTS_REGISTRY.
+ */
+export function resolveIssueDistrict(issue: CommunityIssue): { id: string; name: string } | null {
+  if (issue.districtId) {
+    const byId = DISTRICTS_REGISTRY.find(d => d.id.toLowerCase() === issue.districtId.toLowerCase());
+    if (byId) return { id: byId.id, name: byId.name };
+  }
+
+  const locationParts = (issue.location || '').split(',').map(p => p.trim());
+  const primaryName = locationParts[0];
+  if (primaryName) {
+    const byName = DISTRICTS_REGISTRY.find(
+      d => d.name.toLowerCase() === primaryName.toLowerCase() ||
+           d.id.toLowerCase() === primaryName.toLowerCase()
+    );
+    if (byName) return { id: byName.id, name: byName.name };
+  }
+
+  const inLoc = DISTRICTS_REGISTRY.find(d =>
+    (issue.location || '').toLowerCase().includes(d.name.toLowerCase())
+  );
+  if (inLoc) return { id: inLoc.id, name: inLoc.name };
+
+  if (primaryName) {
+    return {
+      id: issue.districtId || primaryName.toLowerCase().replace(/\s+/g, '-'),
+      name: primaryName,
+    };
+  }
+
+  return null;
 }
 
 interface CommunityIssuesViewProps {
@@ -60,7 +97,7 @@ export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
     title: 'Arterial hospital access corridor craters & washouts',
     category: 'Roads',
     location: 'Patna, Bihar',
-    districtId: 'dist-01',
+    districtId: 'patna',
     requestCount: 512,
     trend: '+18% this month',
     severity: 'High',
@@ -74,7 +111,7 @@ export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
     title: 'Primary health sub-centre staffing & drug shortages',
     category: 'Health',
     location: 'Nashik, Maharashtra',
-    districtId: 'dist-04',
+    districtId: 'nashik',
     requestCount: 389,
     trend: '+15% this month',
     severity: 'High',
@@ -88,7 +125,7 @@ export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
     title: 'Agricultural power transformer breakdown cycle',
     category: 'Electricity',
     location: 'Gaya, Bihar',
-    districtId: 'dist-01',
+    districtId: 'gaya',
     requestCount: 294,
     trend: '+29% this month',
     severity: 'Moderate',
@@ -102,7 +139,7 @@ export const INITIAL_COMMUNITY_ISSUES: CommunityIssue[] = [
     title: 'Stormwater culvert siltation & open drainage overflow',
     category: 'Drainage',
     location: 'Solapur, Maharashtra',
-    districtId: 'dist-04',
+    districtId: 'solapur',
     requestCount: 218,
     trend: '+11% this month',
     severity: 'Moderate',
@@ -132,21 +169,15 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
     const custom = requests.filter(r => r.source_origin === 'CIVICPULSE_USER');
     
     custom.forEach(req => {
-      const reqLoc = (req.location || '').toLowerCase();
-      const reqDist = (req.district || '').toLowerCase();
       const reqCat = req.category;
 
       let matchedIssue: CommunityIssue | undefined;
       for (const issue of baseMap.values()) {
-        const issLoc = issue.location.toLowerCase();
-        const issDist = (issue.districtId || '').toLowerCase();
         const catMatch = issue.category.toLowerCase() === reqCat.toLowerCase();
-        const locMatch = 
-          issLoc.includes(reqLoc) || 
-          reqLoc.includes(issLoc.split(',')[0].trim()) ||
-          (reqDist && (issDist.includes(reqDist) || issLoc.includes(reqDist) || reqDist.includes(issDist)));
+        if (!catMatch) continue;
 
-        if (catMatch && locMatch) {
+        const targetDistrict = resolveIssueDistrict(issue);
+        if (targetDistrict && matchesDistrict(req, targetDistrict)) {
           matchedIssue = issue;
           break;
         }
