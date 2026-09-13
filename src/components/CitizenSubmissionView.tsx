@@ -125,28 +125,28 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   // Quick Sample Voice / Text Presets
   const sampleCivicPrompts = [
     {
-      title: 'Drinking Water Pipeline Outage (English)',
+      title: 'Drinking water pipeline outage',
       lang: 'English',
       text: 'Our village hasn\'t received proper drinking water for the last two weeks. The main distribution pipeline has low pressure and muddy water is coming out.',
       location: 'Vijayawada Rural',
       category: 'Water' as InfrastructureCategory
     },
     {
-      title: 'తాగునీటి కొరత (Telugu)',
+      title: 'తాగునీటి కొరత',
       lang: 'Telugu',
       text: 'మా గ్రామంలో గత రెండు వారాలుగా సరైన తాగునీరు అందడం లేదు. పైపులైన్ పగిలిపోవడంతో ప్రజలు చాలా ఇబ్బందులు పడుతున్నారు.',
       location: 'Vijayawada Rural',
       category: 'Water' as InfrastructureCategory
     },
     {
-      title: 'सड़क में भारी गड्ढे (Hindi)',
+      title: 'सड़क में भारी गड्ढे',
       lang: 'Hindi',
       text: 'हमारे मुख्य सड़क पर स्कूल के पास बड़े-बड़े गड्ढे हो गए हैं। पिछले हफ्ते दो ऑटो पलट गए और एम्बुलेंस को आने में बहुत देर हो रही है।',
       location: 'Guntur',
       category: 'Roads' as InfrastructureCategory
     },
     {
-      title: 'மருத்துவமனை மருத்துவர் பற்றாக்குறை (Tamil)',
+      title: 'மருத்துவமனை மருத்துவர் பற்றாக்குறை',
       lang: 'Tamil',
       text: 'எங்கள் ஆரம்ப சுகாதார நிலையத்தில் மருத்துவர் மற்றும் அவசர மருந்துகள் இல்லை. நோயாளிகள் 25 கி.மீ தூரம் செல்ல வேண்டியுள்ளது.',
       location: 'Krishna',
@@ -1087,27 +1087,41 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             )}
           </div>
 
-          {/* QUICK SAMPLES SECTION */}
+          {/* TRY A SAMPLE REQUEST SECTION */}
           <div className="border-t border-[#171717]/15 pt-5 space-y-2">
-            <span className="text-[11px] font-mono font-bold text-slate-500 uppercase tracking-wider block">
-              Quick test examples (Click to autofill):
-            </span>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <div>
+              <span className="text-[11px] font-mono font-bold text-[#171717] uppercase tracking-wider block">
+                Try a sample request
+              </span>
+              <p className="text-xs text-slate-500 font-sans mt-0.5">
+                Describe a local problem in your own language.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 pt-1">
               {sampleCivicPrompts.map((sample, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => handleApplySamplePrompt(sample)}
-                  className="p-2.5 text-left bg-[#F7F5EF] hover:bg-orange-50/60 border border-[#171717]/30 hover:border-[#D65A3A] transition-all text-xs cursor-pointer group"
-                >
-                  <div className="flex items-center justify-between font-mono font-bold text-[11px] text-[#171717] mb-1">
-                    <span>{sample.title}</span>
-                    <span className="text-[10px] text-[#D65A3A] uppercase">Fill ↵</span>
-                  </div>
-                  <p className="text-slate-600 line-clamp-1 italic text-[11px]">
-                    "{sample.text}"
-                  </p>
-                </button>
+                <React.Fragment key={idx}>
+                  {idx > 0 && (
+                    <span className="hidden lg:inline text-[#171717]/25 select-none font-light text-xs" aria-hidden="true">
+                      |
+                    </span>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleApplySamplePrompt(sample)}
+                    className="inline-flex items-center gap-1.5 py-1 px-2 text-left hover:bg-orange-50/70 rounded-xs transition-all text-xs cursor-pointer group text-[#171717]"
+                  >
+                    <span className="font-medium group-hover:text-[#D65A3A] transition-colors">
+                      {sample.title}
+                    </span>
+                    <span className="text-[11px] font-mono text-slate-400 group-hover:text-slate-600 transition-colors">
+                      · {sample.lang}
+                    </span>
+                    <span className="text-slate-400 group-hover:text-[#D65A3A] text-xs font-mono transition-transform group-hover:translate-x-0.5 ml-0.5">
+                      →
+                    </span>
+                  </button>
+                </React.Fragment>
               ))}
             </div>
           </div>
