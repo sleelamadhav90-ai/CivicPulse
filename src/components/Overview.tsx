@@ -211,39 +211,122 @@ export const Overview: React.FC<OverviewProps> = ({
         </div>
       </section>
 
-      {/* 2. PRIMARY EXECUTIVE CONCLUSION (The One Key Finding) */}
-      <section className="bg-white border-2 border-[#D65A3A]/40 p-5 sm:p-6 rounded-xs shadow-xs space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-2.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="bg-[#D65A3A] text-white text-[10px] font-mono font-bold px-2.5 py-1 rounded-xs uppercase tracking-wider whitespace-nowrap inline-block">
-              {t('overview.urgent_action_title')}
-            </span>
-            <span className="text-xs font-mono font-semibold text-[#D65A3A] whitespace-nowrap">
-              {t('metric.priority_score')}: 91 / 100 · {t('status.critical')}
-            </span>
-          </div>
-          <span className="text-xs text-[#78716C] font-mono whitespace-nowrap">
-            {conclusion.district}, {conclusion.state}
-          </span>
-        </div>
+      {/* 2. PRIMARY EXECUTIVE CONCLUSION / GOVERNMENT DECISION-SUPPORT PANEL */}
+      <section className="bg-white border border-[#171717]/20 p-5 sm:p-6 rounded-xs shadow-xs space-y-4">
+        {/* Top Metadata Line & Compact Decision Header (Two-Zone Layout) */}
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3.5 border-b border-[#171717]/15">
+          {/* Top Left: Location, Category & Finding Statement */}
+          <div className="space-y-1.5 max-w-2xl">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
+                {conclusion.district} · {conclusion.state}
+              </span>
+              <span className="text-[#171717]/20 select-none">•</span>
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+                {t('overview.urgent_action_title')}
+              </span>
+            </div>
 
-        <div className="space-y-2">
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-serif font-bold tracking-tight text-[#171717] leading-snug break-words">
-            {conclusion.title}
-          </h1>
-          <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed break-words">
-            <strong className="text-[#171717]">{t('overview.why_matters')}:</strong> {conclusion.whyMatters}
-          </p>
-        </div>
+            <div className="space-y-0.5 pt-0.5">
+              <div className="text-xs font-mono font-bold text-[#171717] tracking-wider uppercase">
+                Water Infrastructure
+              </div>
+              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
+                High-priority development need
+              </h1>
+            </div>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-[#171717]/10">
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs font-mono text-[#57534E]">
-            <span className="whitespace-nowrap"><strong>{priorityIssues[0]?.signalCount || totalRequests}</strong> {t('metric.demand_signals')} (+22%)</span>
-            <span className="text-stone-300 hidden sm:inline">•</span>
-            <span className="whitespace-nowrap"><strong>31.6%</strong> {t('metric.service_deficit')} (JJM)</span>
+            <p className="text-xs sm:text-[13px] text-[#57534E] leading-relaxed font-sans pt-0.5 max-w-xl">
+              {conclusion.whyMatters}
+            </p>
           </div>
 
-          <div className="flex items-center space-x-2 shrink-0">
+          {/* Top Right: Compact Priority Decision Marker */}
+          <div className="sm:text-right shrink-0 bg-[#FAF8F5] sm:bg-transparent p-2.5 sm:p-0 rounded-xs sm:rounded-none border sm:border-0 border-[#171717]/10 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1.5">
+            <div className="flex items-baseline gap-1 font-mono">
+              <span className="text-[10px] uppercase tracking-wider text-[#78716C] font-semibold sm:inline-block">
+                Priority
+              </span>
+              <span className="text-2xl sm:text-3xl font-bold text-[#171717] tracking-tight ml-1">
+                91
+              </span>
+              <span className="text-sm text-[#78716C] font-normal">
+                / 100
+              </span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] inline-block"></span>
+              <span>{t('status.critical')}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Compact Evidence Row (Three Columns with Thin Separators) */}
+        <div className="pt-0.5 pb-3 border-b border-[#171717]/15 space-y-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:divide-x md:divide-[#171717]/15">
+            {/* Column 1: Demand */}
+            <div className="space-y-0.5 md:pr-4">
+              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                Demand
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
+                {priorityIssues[0]?.signalCount || totalRequests || 742}
+              </div>
+              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
+                synthetic demonstration signals
+              </p>
+            </div>
+
+            {/* Column 2: Service Gap */}
+            <div className="space-y-0.5 md:px-6">
+              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                Service Gap
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
+                31.6%
+              </div>
+              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
+                service deficit · JJM benchmark
+              </p>
+            </div>
+
+            {/* Column 3: Investment */}
+            <div className="space-y-0.5 md:pl-6">
+              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                Investment
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-bold text-[#285943] tracking-tight">
+                ₹6.50 Cr
+              </div>
+              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
+                planned municipal capital pipeline
+              </p>
+            </div>
+          </div>
+
+          {/* Short Evidence Interpretation */}
+          <div className="pt-2 border-t border-[#171717]/10 flex flex-wrap items-baseline gap-1.5">
+            <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
+              Why this is prioritized:
+            </span>
+            <p className="text-xs text-[#57534E] font-sans">
+              High citizen demand combined with a significant infrastructure gap makes this a high-priority development need.
+            </p>
+          </div>
+        </div>
+
+        {/* Recommended Intervention Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
+          <div className="space-y-0.5 max-w-2xl">
+            <span className="text-[10px] font-mono font-bold text-[#285943] uppercase tracking-wider block">
+              Recommended Intervention
+            </span>
+            <p className="text-xs sm:text-sm font-medium text-[#171717]">
+              Water distribution booster network & direct pipeline trunk stabilization
+            </p>
+          </div>
+
+          <div className="flex items-center shrink-0 pt-1 sm:pt-0">
             <button
               onClick={() => {
                 if (onSelectDistrictForPolicy) {
@@ -251,9 +334,9 @@ export const Overview: React.FC<OverviewProps> = ({
                 }
                 onNavigate('recommendations');
               }}
-              className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors cursor-pointer whitespace-nowrap flex items-center gap-1.5"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-mono font-semibold rounded-xs transition-colors cursor-pointer whitespace-nowrap shadow-xs"
             >
-              <span>{t('action.view_recommendation')}</span>
+              <span>View Evidence Dossier</span>
               <span>→</span>
             </button>
           </div>
