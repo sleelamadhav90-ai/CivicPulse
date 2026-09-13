@@ -327,6 +327,11 @@ export type SearchIntent = {
   typoCorrection?: string | null;
 };
 
+export interface ScoreFactor {
+  label: string;
+  points: number;
+}
+
 export interface HumanSearchResultItem {
   id: string;
   type: 'EXACT_REQUEST' | 'BEST_MATCH' | 'RECOMMENDATION' | 'COMMUNITY_ISSUE' | 'PRIORITY_HOTSPOT' | 'CITIZEN_REPORT' | 'ACTION_PROJECT' | 'INFRASTRUCTURE' | 'GOVERNMENT_BASELINE';
@@ -343,6 +348,9 @@ export interface HumanSearchResultItem {
   statusBadge?: string;
   actionHint: string;
   score: number;
+  scoreBreakdown?: ScoreFactor[];
+  whyExplanation?: string;
+  evidenceBundleId?: string;
   rawItem: any;
 }
 
@@ -935,6 +943,7 @@ export function searchCivicPulse(
         dateOrTimeline: exactReq.timestamp ? new Date(exactReq.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
         actionHint: 'Click to open Request Details',
         score: 100,
+        scoreBreakdown: [{ label: `Exact ID match (${intent.request_id})`, points: 100 }],
         rawItem: exactReq
       };
     }
@@ -957,6 +966,7 @@ export function searchCivicPulse(
           peopleAffected: `${(exactRec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
           actionHint: 'Click to inspect Priority Recommendation',
           score: 100,
+          scoreBreakdown: [{ label: `Exact ID match (${intent.request_id})`, points: 100 }],
           rawItem: exactRec
         };
       }
@@ -980,6 +990,7 @@ export function searchCivicPulse(
           peopleAffected: `${exactIssue.affectedCommunities} communities`,
           actionHint: 'Click to view Community Issue',
           score: 100,
+          scoreBreakdown: [{ label: `Exact ID match (${intent.request_id})`, points: 100 }],
           rawItem: exactIssue
         };
       }
@@ -1011,6 +1022,7 @@ export function searchCivicPulse(
           peopleAffected: `${(exactProj.population || 0).toLocaleString()} people`,
           actionHint: 'Click to view in Action Queue',
           score: 100,
+          scoreBreakdown: [{ label: `Exact ID match (${intent.request_id})`, points: 100 }],
           rawItem: exactProj
         };
       }
@@ -1035,6 +1047,7 @@ export function searchCivicPulse(
   // =========================================================================
   for (const rec of allRecommendations) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normTitle = rec.title.toLowerCase();
     const normCat = rec.category.toLowerCase();
     const normIntervention = (rec.interventionType || '').toLowerCase();
@@ -1045,30 +1058,38 @@ export function searchCivicPulse(
     // Exact ID (+100)
     if (intent.request_id && rec.id.toLowerCase() === intent.request_id.toLowerCase()) {
       score += 100;
+      scoreBreakdown.push({ label: `Exact ID match (${intent.request_id})`, points: 100 });
     }
 
     // Centralized District Match (+40)
     if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, rec.districtName, rec.districtId))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, rec.districtName, rec.districtId)) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
 
     // Category match (+35)
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${rec.category})`, points: 35 });
     }
 
     // Subcategory / Intervention match (+25)
     if (intent.subcategory && (normIntervention.includes(intent.subcategory.toLowerCase()) || normTitle.includes(intent.subcategory.toLowerCase()))) {
       score += 25;
-    }
-    for (const term of (intent.issue_terms || [])) {
-      if (normTitle.includes(term) || normIntervention.includes(term) || normAiRec.includes(term) || normSummary.includes(term)) {
-        score += 25;
-        break;
+      scoreBreakdown.push({ label: `Intervention match (${intent.subcategory})`, points: 25 });
+    } else {
+      for (const term of (intent.issue_terms || [])) {
+        if (normTitle.includes(term) || normIntervention.includes(term) || normAiRec.includes(term) || normSummary.includes(term)) {
+          score += 25;
+          scoreBreakdown.push({ label: `Issue term match (${term})`, points: 25 });
+          break;
+        }
       }
     }
 
@@ -1076,6 +1097,7 @@ export function searchCivicPulse(
     for (const kw of (intent.keywords || [])) {
       if (normTitle.includes(kw) || normIntervention.includes(kw) || normAiRec.includes(kw) || normSummary.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1083,11 +1105,13 @@ export function searchCivicPulse(
     // Recent signal (+10)
     if (intent.time_range === 'LAST_7_DAYS' || intent.isRecent) {
       score += 10;
+      scoreBreakdown.push({ label: 'Recent signal activity', points: 10 });
     }
 
     // High priority (+5)
     if (rec.priorityScore >= 60 || rec.urgencyLabel === 'CRITICAL' || rec.urgencyLabel === 'HIGH') {
       score += 5;
+      scoreBreakdown.push({ label: 'High priority urgency', points: 5 });
     }
 
     if (score >= 20) {
@@ -1105,6 +1129,8 @@ export function searchCivicPulse(
         peopleAffected: `${(rec.targetBeneficiaries / 1000).toFixed(0)}k Beneficiaries`,
         actionHint: 'View Priority Recommendation',
         score,
+        scoreBreakdown,
+        whyExplanation: rec.summaryReasoning || 'High citizen demand + infrastructure gap + vulnerability + existing investment context.',
         rawItem: rec,
       });
     }
@@ -1123,6 +1149,7 @@ export function searchCivicPulse(
   // =========================================================================
   for (const issue of communityIssues) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normTitle = issue.title.toLowerCase();
     const normLoc = issue.location.toLowerCase();
     const normCat = issue.category.toLowerCase();
@@ -1132,26 +1159,32 @@ export function searchCivicPulse(
     // Exact ID (+100)
     if (intent.request_id && (issue.id.toLowerCase() === intent.request_id.toLowerCase() || issue.rank === intent.request_id)) {
       score += 100;
+      scoreBreakdown.push({ label: `Exact ID match (${intent.request_id})`, points: 100 });
     }
 
     // Exact category match (+35)
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${issue.category})`, points: 35 });
     }
 
     // Centralized district / locality match (+40)
     if (intent.district && (normLoc.includes(intent.district.toLowerCase()) || matchesDistrictToken(issue.location, intent.district, intent.district.toLowerCase()))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && normLoc.includes(intent.location.toLowerCase())) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
 
     // Issue-term / subcategory match (+25)
     for (const term of (intent.issue_terms || [])) {
       if (normTitle.includes(term) || normInfra.includes(term)) {
         score += 25;
+        scoreBreakdown.push({ label: `Issue term match (${term})`, points: 25 });
         break;
       }
     }
@@ -1160,6 +1193,7 @@ export function searchCivicPulse(
     for (const kw of (intent.keywords || [])) {
       if (normTitle.includes(kw) || normScheme.includes(kw) || normInfra.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1167,11 +1201,13 @@ export function searchCivicPulse(
     // Recent record (+10)
     if (intent.time_range === 'LAST_7_DAYS' || intent.isRecent) {
       score += 10;
+      scoreBreakdown.push({ label: 'Recent record', points: 10 });
     }
 
     // High priority (+5)
     if (issue.severity === 'Critical' || issue.severity === 'High') {
       score += 5;
+      scoreBreakdown.push({ label: 'High severity', points: 5 });
     }
 
     if (score >= 20) {
@@ -1196,6 +1232,7 @@ export function searchCivicPulse(
         peopleAffected: `${issue.affectedCommunities} communities`,
         actionHint: 'View Community Issue',
         score,
+        scoreBreakdown,
         rawItem: issue,
       });
     }
@@ -1214,24 +1251,29 @@ export function searchCivicPulse(
   // =========================================================================
   for (const dist of districts) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normName = dist.name.toLowerCase();
     const normState = dist.state.toLowerCase();
 
     // Exact ID (+100)
     if (intent.request_id && dist.id.toLowerCase() === intent.request_id.toLowerCase()) {
       score += 100;
+      scoreBreakdown.push({ label: `Exact ID match (${intent.request_id})`, points: 100 });
     }
 
     // Centralized District Match (+40)
     if (intent.district && (normName === intent.district.toLowerCase() || matchesDistrictToken(intent.district, dist.name, dist.id))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, dist.name, dist.id)) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
 
     // State match (+20)
     if (intent.state && normState.includes(intent.state.toLowerCase())) {
       score += 20;
+      scoreBreakdown.push({ label: `State match (${intent.state})`, points: 20 });
     }
 
     // Generate actual Demand Hotspot using the demandAggregation engine
@@ -1241,12 +1283,14 @@ export function searchCivicPulse(
     // Category match (+35)
     if (intent.category && intent.category !== 'ANY' && (hotspot.hasCategorySignal || hotspot.primaryCategory === intent.category)) {
       score += 35;
+      scoreBreakdown.push({ label: `Category demand match (${intent.category})`, points: 35 });
     }
 
     // Subcategory / issue term match (+25)
     for (const term of (intent.issue_terms || [])) {
       if (normName.includes(term) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(term))) {
         score += 25;
+        scoreBreakdown.push({ label: `Issue term match (${term})`, points: 25 });
         break;
       }
     }
@@ -1255,6 +1299,7 @@ export function searchCivicPulse(
     for (const kw of (intent.keywords || [])) {
       if (normName.includes(kw) || normState.includes(kw) || hotspot.topIssues.some(ti => ti.category.toLowerCase().includes(kw))) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1262,12 +1307,14 @@ export function searchCivicPulse(
     // Recent signal (+10)
     if (intent.time_range === 'LAST_7_DAYS' || intent.isRecent || (hotspot.userRequestsCount && hotspot.userRequestsCount > 0)) {
       score += 10;
+      scoreBreakdown.push({ label: 'Recent demand signals', points: 10 });
     }
 
     // High priority (+5)
     const isCritical = hotspot.urgencyLevel === 'Critical' || hotspot.urgencyLevel === 'High' || dist.poverty_index > 0.5;
     if (isCritical) {
       score += 5;
+      scoreBreakdown.push({ label: 'High urgency / vulnerability', points: 5 });
     }
 
     if (score >= 20) {
@@ -1285,6 +1332,7 @@ export function searchCivicPulse(
         peopleAffected: `${(dist.population / 1000000).toFixed(1)}M Population`,
         actionHint: 'Inspect District on Hotspot Map',
         score,
+        scoreBreakdown,
         rawItem: { ...dist, hotspot },
       });
     }
@@ -1304,6 +1352,7 @@ export function searchCivicPulse(
   // =========================================================================
   for (const req of requests) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normSummary = (req.summary_en || '').toLowerCase();
     const normOriginal = (req.original_text || '').toLowerCase();
     const normLoc = (req.location || '').toLowerCase();
@@ -1314,32 +1363,39 @@ export function searchCivicPulse(
     if (intent.request_id) {
       if (req.id.toLowerCase() === intent.request_id.toLowerCase() || (req.request_id && req.request_id.toLowerCase() === intent.request_id.toLowerCase())) {
         score += 100;
+        scoreBreakdown.push({ label: `Exact ID match (${intent.request_id})`, points: 100 });
       }
     }
 
     // Exact Category Match (+35)
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     } else if ((intent.detectedCategories || []).some(c => c && c.toLowerCase() === normCat)) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${req.category})`, points: 35 });
     }
 
     // Subcategory / Issue Match (+25)
     if (intent.subcategory && normSub.includes(intent.subcategory.toLowerCase())) {
       score += 25;
+      scoreBreakdown.push({ label: `Subcategory match (${intent.subcategory})`, points: 25 });
     }
 
     // Centralized District Match (+40)
     if (intent.district && (matchesDistrict(req, { name: intent.district, id: intent.district.toLowerCase() } as any) || matchesDistrictToken(req.location, intent.district, intent.district.toLowerCase()))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && (normLoc.includes(intent.location.toLowerCase()) || (req.locality && req.locality.toLowerCase().includes(intent.location.toLowerCase())))) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
 
     // Issue-term match (+25)
     for (const term of (intent.issue_terms || [])) {
       if (normSummary.includes(term) || normOriginal.includes(term) || normSub.includes(term)) {
         score += 25;
+        scoreBreakdown.push({ label: `Issue term match (${term})`, points: 25 });
         break;
       }
     }
@@ -1348,6 +1404,7 @@ export function searchCivicPulse(
     for (const kw of (intent.keywords || [])) {
       if (normSummary.includes(kw) || normOriginal.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1357,11 +1414,13 @@ export function searchCivicPulse(
     const isWithin7Days = reqTime > 0 && (Date.now() - reqTime) < 7 * 24 * 60 * 60 * 1000;
     if (isWithin7Days || intent.time_range === 'LAST_7_DAYS' || req.id.startsWith('CP-2026-')) {
       score += 10;
+      scoreBreakdown.push({ label: 'Recent signal activity', points: 10 });
     }
 
     // High priority (+5)
     if ((req.severity || 5) >= 8 || req.urgency === 'CRITICAL' || req.urgency === 'HIGH') {
       score += 5;
+      scoreBreakdown.push({ label: 'High urgency / severity', points: 5 });
     }
 
     if (score >= 20) {
@@ -1380,6 +1439,7 @@ export function searchCivicPulse(
         dateOrTimeline: req.timestamp ? new Date(req.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Recently submitted',
         actionHint: 'Inspect Citizen Signal',
         score,
+        scoreBreakdown,
         rawItem: req,
       });
     }
@@ -1397,6 +1457,7 @@ export function searchCivicPulse(
   // =========================================================================
   for (const proj of governmentProjects) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normTitle = proj.title.toLowerCase();
     const normDesc = (proj.description || '').toLowerCase();
     const normDist = proj.district.toLowerCase();
@@ -1405,24 +1466,29 @@ export function searchCivicPulse(
     // Exact ID (+100)
     if (intent.request_id && proj.id.toLowerCase() === intent.request_id.toLowerCase()) {
       score += 100;
+      scoreBreakdown.push({ label: `Exact ID match (${intent.request_id})`, points: 100 });
     }
 
     // Category (+35)
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     }
 
     // District (+40) via Centralized Matcher
     if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, proj.district, proj.district.toLowerCase()))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && matchesDistrictToken(intent.location, proj.district, proj.district.toLowerCase())) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
 
     // Issue terms (+25)
     for (const term of (intent.issue_terms || [])) {
       if (normTitle.includes(term)) {
         score += 25;
+        scoreBreakdown.push({ label: `Issue term match (${term})`, points: 25 });
         break;
       }
     }
@@ -1431,12 +1497,16 @@ export function searchCivicPulse(
     for (const kw of (intent.keywords || [])) {
       if (normTitle.includes(kw) || normDesc.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
 
     // High priority (+5)
-    if (proj.priorityScore >= 75) score += 5;
+    if (proj.priorityScore >= 75) {
+      score += 5;
+      scoreBreakdown.push({ label: 'High priority score', points: 5 });
+    }
 
     if (score >= 20) {
       const realProjCount = requests.filter(r => 
@@ -1460,6 +1530,7 @@ export function searchCivicPulse(
         peopleAffected: `${(proj.population || 0).toLocaleString()} people`,
         actionHint: 'Open in Action Queue',
         score,
+        scoreBreakdown,
         rawItem: proj,
       });
     }
@@ -1470,6 +1541,7 @@ export function searchCivicPulse(
   // =========================================================================
   for (const asset of INFRASTRUCTURE_ASSETS_REGISTRY) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normName = asset.name.toLowerCase();
     const normLoc = asset.location.toLowerCase();
     const normDist = asset.districtName.toLowerCase();
@@ -1477,21 +1549,26 @@ export function searchCivicPulse(
 
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     }
     if (intent.district && (normDist === intent.district.toLowerCase() || matchesDistrictToken(intent.district, asset.districtName, asset.districtName.toLowerCase()))) {
       score += 40;
+      scoreBreakdown.push({ label: `District match (${intent.district})`, points: 40 });
     } else if (intent.location && intent.location !== 'ANY' && (normDist.includes(intent.location.toLowerCase()) || normLoc.includes(intent.location.toLowerCase()))) {
       score += 40;
+      scoreBreakdown.push({ label: `Location match (${intent.location})`, points: 40 });
     }
     for (const term of (intent.issue_terms || [])) {
       if (normName.includes(term)) {
         score += 25;
+        scoreBreakdown.push({ label: `Issue match (${term})`, points: 25 });
         break;
       }
     }
     for (const kw of (intent.keywords || [])) {
       if (normName.includes(kw) || normLoc.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1510,6 +1587,7 @@ export function searchCivicPulse(
         peopleAffected: `${(asset.servedPopulation || 0).toLocaleString()} Served`,
         actionHint: 'View Infrastructure Audit',
         score,
+        scoreBreakdown,
         rawItem: asset,
       });
     }
@@ -1520,16 +1598,19 @@ export function searchCivicPulse(
   // =========================================================================
   for (const base of DEPARTMENT_GRIEVANCE_BASELINES) {
     let score = 0;
+    const scoreBreakdown: ScoreFactor[] = [];
     const normDept = base.department.toLowerCase();
     const normMin = base.ministry.toLowerCase();
     const normCat = base.category.toLowerCase();
 
     if (intent.category && intent.category !== 'ANY' && intent.category.toLowerCase() === normCat) {
       score += 35;
+      scoreBreakdown.push({ label: `Category match (${intent.category})`, points: 35 });
     }
     for (const kw of (intent.keywords || [])) {
       if (normDept.includes(kw) || normMin.includes(kw)) {
         score += 20;
+        scoreBreakdown.push({ label: `Keyword match (${kw})`, points: 20 });
         break;
       }
     }
@@ -1548,6 +1629,7 @@ export function searchCivicPulse(
         reportCount: `${base.received_count.toLocaleString()} Grievances`,
         actionHint: 'Official OGD Reference Data',
         score,
+        scoreBreakdown,
         rawItem: base,
       });
     }
