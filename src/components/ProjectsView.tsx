@@ -1,23 +1,17 @@
 import React, { useState, useMemo } from 'react';
 import { 
   Search, 
-  Plus, 
-  CheckCircle2, 
-  Clock, 
   ArrowRight, 
   X, 
   Building2, 
-  SlidersHorizontal,
   Table as TableIcon,
   Columns as KanbanIcon,
   ShieldCheck,
-  FileCheck,
-  TrendingUp,
   AlertCircle,
-  HelpCircle,
-  Sparkles,
   MapPin,
-  ExternalLink
+  ChevronRight,
+  TrendingUp,
+  FileText
 } from 'lucide-react';
 import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
@@ -58,7 +52,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedProject, setSelectedProject] = useState<GovernmentProject | null>(null);
 
-  // Normalize projects to the 5 requested stages without fake progress
+  // Normalize projects and rank by priority score descending
   const activeProjects = useMemo(() => {
     const rawList = projects.length > 0 ? projects : getAIRecommendedProjects(districts, []).map((rec, idx) => ({
       id: `gov-${rec.id}`,
@@ -72,14 +66,14 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       population: rec.targetBeneficiaries,
       estimatedCostInr: rec.estimatedBudgetInr,
       status: (idx === 0 ? 'Approved' : idx === 1 ? 'In Progress' : 'Recommended') as ProjectLifecycleStatus,
-      progress: idx === 0 ? 10 : idx === 1 ? 55 : 0,
+      progress: idx === 0 ? 15 : idx === 1 ? 55 : 0,
       department: rec.category === 'Water' 
-        ? 'Rural Water Supply & Sanitation' 
+        ? 'Rural Water Supply & Sanitation Department' 
         : rec.category === 'Health' 
-        ? 'Health & Family Welfare' 
+        ? 'Health & Family Welfare Department' 
         : rec.category === 'Roads' 
         ? 'Public Works & Roads Department' 
-        : 'Municipal Administration',
+        : 'Municipal Administration Department',
       officerInCharge: 'Chief Project Director',
       startDate: 'Q1 2026',
       targetDate: 'Q4 2026',
@@ -94,44 +88,59 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
     const localizedList = rawList.map(p => tGovernmentProject(p));
 
-    return localizedList.map((p, idx) => {
-      // Map lifecycle status to genuine progress and stages
+    const processed = localizedList.map((p, idx) => {
       let stage: ActionStage = 'In Progress';
       let realProgress = p.progress ?? 0;
+      let stageLabel = 'Implementation';
 
       if (p.status === 'Completed' || p.progress === 100) {
         stage = 'Completed';
         realProgress = 100;
+        stageLabel = 'Delivered';
       } else if (p.status === 'In Progress') {
         stage = 'In Progress';
         realProgress = p.progress && p.progress > 0 ? p.progress : 45;
+        stageLabel = 'Implementation';
       } else if (p.status === 'Approved') {
         stage = 'Approved';
-        realProgress = p.progress && p.progress > 0 ? p.progress : 10;
+        realProgress = p.progress && p.progress > 0 ? p.progress : 15;
+        stageLabel = 'Procurement';
       } else if (idx % 2 === 0) {
         stage = 'Under Review';
         realProgress = 0;
+        stageLabel = 'Appraisal';
       } else {
         stage = 'Proposed';
         realProgress = 0;
+        stageLabel = 'Planning';
       }
 
-      // Format priority score cleanly (e.g. 61.9)
-      const formattedPriority = typeof p.priorityScore === 'number' 
-        ? (p.priorityScore % 1 === 0 ? p.priorityScore.toFixed(0) : p.priorityScore.toFixed(1))
-        : '61.9';
+      const numScore = typeof p.priorityScore === 'number' ? p.priorityScore : 61.9;
+      const formattedPriority = numScore % 1 === 0 ? numScore.toFixed(0) : numScore.toFixed(1);
+
+      let severityLabel: 'CRITICAL' | 'HIGH' | 'MODERATE' | 'STANDARD' = 'HIGH';
+      if (numScore >= 85) severityLabel = 'CRITICAL';
+      else if (numScore >= 70) severityLabel = 'HIGH';
+      else if (numScore >= 50) severityLabel = 'MODERATE';
+      else severityLabel = 'STANDARD';
 
       return {
         ...p,
+        numPriorityScore: numScore,
         stage,
+        stageLabel,
         progress: realProgress,
         displayPriorityScore: formattedPriority,
+        severityLabel,
         sourceRecommendationId: p.sourceRecommendationId || `rec-${p.districtId || 'guntur'}-${p.category.toLowerCase()}`,
         formattedBudget: p.estimatedCostInr ? `₹${(p.estimatedCostInr / 10000000).toFixed(1)} Cr` : '₹12.0 Cr',
         departmentName: p.department || 'Public Works & Municipal Administration',
         interventionScope: p.description ? p.description.split('.')[0] : 'Municipal infrastructure upgrade and capacity augmentation',
       };
     });
+
+    // Sort descending by priority score for genuine government ranking
+    return processed.sort((a, b) => b.numPriorityScore - a.numPriorityScore);
   }, [projects, districts, tGovernmentProject]);
 
   const filteredProjects = useMemo(() => {
@@ -145,7 +154,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
       if (!intent) return true;
 
-      // Exact ID
       if (intent.exactId && p.id.toLowerCase().includes(intent.exactId.toLowerCase())) {
         return true;
       }
@@ -155,7 +163,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       const normDept = p.departmentName.toLowerCase();
       const normCat = p.category.toLowerCase();
 
-      // Check category intent
       if (intent.detectedCategories.length > 0) {
         const matchesCatIntent = intent.detectedCategories.some(c => c.toLowerCase() === normCat);
         if (matchesCatIntent) {
@@ -166,19 +173,16 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         }
       }
 
-      // Check location intent
       if (intent.detectedLocations.length > 0) {
         if (intent.detectedLocations.some(l => normDist.includes(l.toLowerCase()))) {
           return true;
         }
       }
 
-      // Check direct substring
       if (normTitle.includes(intent.normalizedQuery) || normDist.includes(intent.normalizedQuery) || normDept.includes(intent.normalizedQuery)) {
         return true;
       }
 
-      // Check keywords
       if (intent.keywords.length > 0) {
         return intent.keywords.some(kw => normTitle.includes(kw) || normDist.includes(kw) || normDept.includes(kw) || normCat.includes(kw));
       }
@@ -188,211 +192,200 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   }, [activeProjects, searchQuery, selectedCategory, districts]);
 
   return (
-    <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+    <div className="space-y-6 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
-      {/* 1. Page Header (Question-driven with supporting label) */}
-      <header className="space-y-2 border-b border-[#171717]/10 pb-5">
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
-            {t('action_queue.page_label') || 'Action Queue'}
-          </span>
-          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 5 · Decide
-          </span>
-        </div>
-
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold tracking-tight text-[#171717]">
-              {t('action_queue.question_title') || 'What actions are underway?'}
-            </h1>
-            <p className="text-xs sm:text-sm text-[#57534E] mt-1 max-w-2xl leading-relaxed">
-              {t('action_queue.subtitle')}
-            </p>
+      {/* 1. Page Header (Compact Government-Style Header) */}
+      <header className="space-y-1.5 border-b border-[#171717]/15 pb-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+              Priority Projects
+            </span>
+            <span className="text-[#171717]/20 select-none">•</span>
+            <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider">
+              Government Decision Queue
+            </span>
           </div>
 
-          {/* View Toggle (Table vs Kanban) */}
-          <div className="flex items-center space-x-1 bg-white border border-[#171717]/15 p-1 rounded-xs shrink-0 self-start sm:self-auto">
+          {/* View Toggle */}
+          <div className="flex items-center space-x-1 bg-white border border-[#171717]/15 p-0.5 rounded-xs shrink-0">
             <button
               onClick={() => setViewMode('table')}
-              className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
                 viewMode === 'table'
                   ? 'bg-[#171717] text-white font-semibold'
                   : 'text-[#57534E] hover:text-[#171717]'
               }`}
             >
               <TableIcon className="w-3.5 h-3.5" />
-              <span>{t('view.table') || 'Table'}</span>
+              <span>Register</span>
             </button>
             <button
               onClick={() => setViewMode('kanban')}
-              className={`px-3 py-1 text-xs font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
                 viewMode === 'kanban'
                   ? 'bg-[#171717] text-white font-semibold'
                   : 'text-[#57534E] hover:text-[#171717]'
               }`}
             >
               <KanbanIcon className="w-3.5 h-3.5" />
-              <span>{t('view.kanban') || 'Kanban'}</span>
+              <span>Stages</span>
             </button>
           </div>
         </div>
-      </header>
 
-      {/* Accountability Context Banner */}
-      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-0.5">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
-            Execution Lifecycle & Democratic Accountability
-          </span>
-          <p className="text-[#34322D] leading-relaxed">
-            <strong className="text-[#171717]">FROM SANCTION TO DELIVERY.</strong>{' '}
-            Capital recommendations sanctioned by leadership transition across 5 rigorous execution milestones. Completed projects immediately synchronize with the Impact Simulator to record measurable civic relief.
+          <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#171717]">
+            Development priorities
+          </h1>
+          <p className="text-xs sm:text-[13px] text-[#57534E] max-w-2xl leading-relaxed font-sans">
+            Development interventions ranked by CivicPulse priority analysis and current implementation status.
           </p>
         </div>
-        {onNavigateToImpact && (
-          <button
-            onClick={() => onNavigateToImpact(activeProjects[0]?.districtId || 'guntur', (activeProjects[0]?.category as InfrastructureCategory) || 'Water')}
-            className="px-3 py-1.5 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 shrink-0 cursor-pointer text-[#171717]"
-          >
-            <span>Simulate Impact</span>
-            <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
-          </button>
-        )}
-      </div>
+      </header>
 
-      {/* 2. Controls & Sector filters */}
+      {/* 2. Search & Sector Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
+          <Search className="w-3.5 h-3.5 text-[#78716C] absolute left-3 top-1/2 -translate-y-1/2" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('action_queue.search_placeholder') || 'Search projects, departments or districts...'}
-            className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717]"
+            placeholder="Search projects, departments or districts..."
+            className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717] placeholder:text-[#78716C]"
           />
         </div>
 
-        <div className="flex items-center space-x-1 text-xs">
-          <span className="text-[#78716C] text-[11px] mr-1">{t('filter.sector')}:</span>
+        <div className="flex items-center space-x-1 text-xs overflow-x-auto pb-1 sm:pb-0">
+          <span className="text-[#78716C] text-[10px] font-mono uppercase tracking-wider mr-1 shrink-0">Sector:</span>
           {['All', 'Water', 'Roads', 'Health', 'Electricity'].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs ${
+              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs font-mono whitespace-nowrap ${
                 selectedCategory === cat
-                  ? 'bg-[#171717] text-white font-medium'
-                  : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/30'
+                  ? 'bg-[#171717] text-white font-semibold'
+                  : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/40'
               }`}
             >
-              {cat === 'All' ? t('filter.all') : tCategory(cat)}
+              {cat === 'All' ? 'ALL' : cat.toUpperCase()}
             </button>
           ))}
         </div>
       </div>
 
-      {/* 3. TABLE VIEW */}
+      {/* 3. PRIORITY REGISTER (List/Table Hybrid) */}
       {viewMode === 'table' && (
-        <div className="bg-white border border-[#171717]/15 rounded-sm overflow-hidden shadow-xs">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-[#171717]/10 bg-[#FAF8F5] text-[#78716C] font-mono text-[10px] uppercase tracking-wider">
-                  <th className="py-2.5 px-4 font-semibold">{t('table.project_name') || 'Action & Recommendation'}</th>
-                  <th className="py-2.5 px-3 font-semibold">Priority Score</th>
-                  <th className="py-2.5 px-3 font-semibold">{t('table.district') || 'Location'}</th>
-                  <th className="py-2.5 px-3 font-semibold">{t('table.department') || 'Department & Scope'}</th>
-                  <th className="py-2.5 px-3 font-semibold">Estimated Outlay</th>
-                  <th className="py-2.5 px-4 font-semibold">{t('table.progress') || 'Progress'}</th>
-                  <th className="py-2.5 px-4 font-semibold text-right">{t('table.status')}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#171717]/10">
-                {filteredProjects.map((p) => (
-                  <tr
-                    key={p.id}
-                    onClick={() => setSelectedProject(p)}
-                    className="hover:bg-[#FAF8F5] cursor-pointer transition-colors group"
-                  >
-                    {/* Project name & Recommendation Linkage */}
-                    <td className="py-3 px-4 max-w-xs">
-                      <div className="font-medium text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug">
+        <div className="bg-white border border-[#171717]/15 rounded-xs overflow-hidden shadow-xs">
+          
+          {/* Header Row (Desktop Only) */}
+          <div className="hidden md:grid md:grid-cols-12 gap-3 items-center py-2.5 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
+            <div className="col-span-5">Rank & Project / Location / Department</div>
+            <div className="col-span-2">Priority Score</div>
+            <div className="col-span-2">Estimated Outlay</div>
+            <div className="col-span-2">Progress & Stage</div>
+            <div className="col-span-1 text-right">Status</div>
+          </div>
+
+          {/* Data Rows */}
+          <div className="divide-y divide-[#171717]/10">
+            {filteredProjects.map((p, idx) => {
+              const rankStr = String(idx + 1).padStart(2, '0');
+
+              return (
+                <div
+                  key={p.id}
+                  onClick={() => setSelectedProject(p)}
+                  className="p-4 md:py-3.5 md:px-4 hover:bg-[#FAF8F5] cursor-pointer transition-colors group flex flex-col md:grid md:grid-cols-12 md:gap-3 md:items-center gap-2.5"
+                >
+                  {/* Left: Rank, Project Title, Location, Department (col-span-5) */}
+                  <div className="md:col-span-5 flex items-start gap-3 min-w-0">
+                    <span className="font-mono text-xs font-bold text-[#78716C] group-hover:text-[#D65A3A] transition-colors shrink-0 pt-0.5 select-none">
+                      {rankStr}
+                    </span>
+                    <div className="space-y-0.5 min-w-0 pr-2">
+                      <h3 className="text-xs sm:text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
                         {p.title}
+                      </h3>
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#57534E]">
+                        <span className="font-medium text-[#171717] flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#78716C] shrink-0" />
+                          {p.district} · {p.state}
+                        </span>
+                        <span className="text-[#171717]/20 select-none">•</span>
+                        <span className="text-[#78716C] truncate">{p.departmentName}</span>
                       </div>
-                      <div className="text-[10px] font-mono text-[#78716C] mt-0.5 flex items-center gap-1.5 flex-wrap">
-                        <span className="font-bold text-[#D65A3A]">{tCategory(p.category)}</span>
-                        <span>·</span>
-                        <span className="bg-stone-100 px-1 py-0.2 rounded text-stone-600">Rec: {p.sourceRecommendationId}</span>
-                      </div>
-                    </td>
+                    </div>
+                  </div>
 
-                    {/* Priority Score */}
-                    <td className="py-3 px-3 whitespace-nowrap">
-                      <span className="font-mono font-bold text-xs px-2 py-0.5 rounded border bg-amber-50 text-amber-900 border-amber-300">
-                        {p.displayPriorityScore} / 100
+                  {/* Middle Left: Priority Score & Severity (col-span-2) */}
+                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-1 pt-1 md:pt-0">
+                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Priority:</span>
+                    <div className="flex items-baseline gap-1 font-mono">
+                      <span className="text-sm sm:text-base font-bold text-[#171717] tracking-tight">
+                        {p.displayPriorityScore}
                       </span>
-                    </td>
+                      <span className="text-xs text-[#78716C]">/ 100</span>
+                    </div>
+                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                      p.severityLabel === 'CRITICAL' ? 'text-[#D65A3A]' : p.severityLabel === 'HIGH' ? 'text-amber-700' : 'text-[#78716C]'
+                    }`}>
+                      {p.severityLabel}
+                    </span>
+                  </div>
 
-                    {/* District & State */}
-                    <td className="py-3 px-3 text-[#57534E] whitespace-nowrap">
-                      <div className="font-medium text-[#171717]">{p.district}</div>
-                      <div className="text-[10px] text-[#78716C]">{p.state}</div>
-                    </td>
-
-                    {/* Department & Intervention */}
-                    <td className="py-3 px-3 text-[#57534E] max-w-xs">
-                      <div className="truncate text-xs text-[#171717]">{p.departmentName}</div>
-                      <div className="truncate text-[10px] text-[#78716C]">{p.interventionScope}</div>
-                    </td>
-
-                    {/* Budget */}
-                    <td className="py-3 px-3 font-mono font-medium text-[#171717] whitespace-nowrap">
+                  {/* Middle Right: Estimated Outlay (col-span-2) */}
+                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-0.5">
+                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Estimated Outlay:</span>
+                    <span className="font-mono text-xs sm:text-sm font-semibold text-[#171717]">
                       {p.formattedBudget}
-                    </td>
+                    </span>
+                    <span className="text-[10px] font-mono text-[#78716C] hidden md:inline">Capital Allocation</span>
+                  </div>
 
-                    {/* Progress */}
-                    <td className="py-3 px-4 whitespace-nowrap">
-                      <div className="w-28 space-y-1">
-                        <div className="flex justify-between text-[10px] font-mono text-[#78716C]">
-                          <span>{p.progress}%</span>
-                          {p.progress === 0 && <span className="text-stone-400">Pre-exec</span>}
-                          {p.progress === 100 && <span className="text-emerald-700 font-bold">Delivered</span>}
-                        </div>
-                        <div className="w-full h-1.5 bg-[#E8E6DF] rounded-full overflow-hidden">
-                          <div 
-                            className={`h-full transition-all duration-300 ${p.progress >= 100 ? 'bg-[#285943]' : p.progress > 0 ? 'bg-[#D65A3A]' : 'bg-stone-300'}`}
-                            style={{ width: `${Math.max(4, p.progress)}%` }}
-                          />
-                        </div>
+                  {/* Right Middle: Progress & Stage (col-span-2) */}
+                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-1">
+                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Progress:</span>
+                    <div className="w-full max-w-[140px] space-y-1">
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="font-semibold text-[#171717]">{p.progress}%</span>
+                        <span className="text-[#78716C]">{p.stageLabel}</span>
                       </div>
-                    </td>
+                      <div className="w-full h-1 bg-[#E8E6DF] rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-300 ${p.progress >= 100 ? 'bg-[#285943]' : p.progress > 0 ? 'bg-[#D65A3A]' : 'bg-stone-300'}`}
+                          style={{ width: `${Math.max(4, p.progress)}%` }}
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-                    {/* Status */}
-                    <td className="py-3 px-4 text-right whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[11px] font-medium border ${
-                        p.stage === 'Completed'
-                          ? 'bg-[#285943]/10 text-[#285943] border-[#285943]/20'
-                          : p.stage === 'In Progress'
-                          ? 'bg-blue-50 text-blue-800 border-blue-300'
-                          : p.stage === 'Approved'
-                          ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                          : p.stage === 'Under Review'
-                          ? 'bg-amber-50 text-amber-800 border-amber-300'
-                          : 'bg-[#F7F5EF] text-[#57534E] border-[#171717]/15'
-                      }`}>
-                        {tStatus(p.stage)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                  {/* Far Right: Status Badge & Chevron (col-span-1) */}
+                  <div className="md:col-span-1 flex items-center justify-between md:justify-end gap-2 pt-1 md:pt-0">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-mono font-medium border ${
+                      p.stage === 'Completed'
+                        ? 'bg-[#285943]/10 text-[#285943] border-[#285943]/30'
+                        : p.stage === 'In Progress'
+                        ? 'bg-blue-50 text-blue-800 border-blue-200'
+                        : p.stage === 'Approved'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : p.stage === 'Under Review'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-stone-50 text-[#57534E] border-stone-200'
+                    }`}>
+                      {tStatus(p.stage)}
+                    </span>
+                    <ChevronRight className="w-4 h-4 text-[#78716C]/60 group-hover:text-[#171717] transition-colors shrink-0" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
 
-      {/* 4. KANBAN VIEW */}
+      {/* 4. KANBAN VIEW (Optional stage overview) */}
       {viewMode === 'kanban' && (
         <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
           {ACTION_STAGES.map((stage) => {
@@ -419,7 +412,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         <span className="text-[9px] font-mono text-[#D65A3A] uppercase font-bold">
                           {tCategory(p.category)}
                         </span>
-                        <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 bg-amber-50 text-amber-900 border border-amber-200 rounded">
+                        <span className="text-[9px] font-mono font-bold text-[#171717]">
                           Score: {p.displayPriorityScore}
                         </span>
                       </div>
@@ -430,10 +423,6 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
                       <div className="text-[10px] text-[#57534E] font-mono">
                         {p.district}, {p.state}
-                      </div>
-
-                      <div className="text-[9px] text-[#78716C] font-mono truncate">
-                        Rec: {p.sourceRecommendationId}
                       </div>
 
                       <div className="flex items-center justify-between pt-1 border-t border-[#171717]/10 text-[10px] font-mono">
@@ -451,7 +440,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         </div>
       )}
 
-      {/* 5. PROJECT DETAIL & 8-STEP TRACEABILITY MODAL */}
+      {/* 5. PROJECT DETAIL & EVIDENCE MODAL */}
       {selectedProject && (() => {
         const isCompleted = selectedProject.stage === 'Completed';
         const hasMeasuredOutcome = isCompleted && typeof selectedProject.afterAccess === 'number';
@@ -468,16 +457,17 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
         return (
           <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-150">
-            <div className="bg-white border border-[#171717]/20 rounded-sm w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl space-y-4 p-5 sm:p-6 font-sans">
+            <div className="bg-white border border-[#171717]/20 rounded-xs w-full max-w-2xl max-h-[92vh] overflow-y-auto shadow-2xl space-y-4 p-5 sm:p-6 font-sans">
               
               {/* Modal Header */}
               <div className="flex items-start justify-between border-b border-[#171717]/10 pb-3.5">
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-300">
-                      Action Item · {selectedProject.id}
+                    <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+                      Project Detail
                     </span>
-                    <span className={`text-[10px] font-mono font-medium px-2 py-0.5 rounded border ${natureBadge.badgeClass}`}>
+                    <span className="text-[#171717]/20 select-none">•</span>
+                    <span className={`text-[10px] font-mono font-medium px-1.5 py-0.2 rounded border ${natureBadge.badgeClass}`}>
                       {natureBadge.label}
                     </span>
                   </div>
@@ -502,19 +492,15 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 </button>
               </div>
 
-              {/* Top Quick Status Metric Cards */}
+              {/* Priority Decision & Key Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Estimated Outlay</span>
-                  <span className="text-base font-bold text-[#D65A3A] mt-0.5 block">{selectedProject.formattedBudget}</span>
-                </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                   <span className="text-[10px] text-[#78716C] block uppercase font-bold">Priority Score</span>
                   <span className="text-base font-bold text-[#171717] mt-0.5 block">{selectedProject.displayPriorityScore} / 100</span>
                 </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('table.status')}</span>
-                  <span className="text-base font-bold text-[#171717] mt-0.5 block">{tStatus(selectedProject.stage)}</span>
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Estimated Outlay</span>
+                  <span className="text-base font-bold text-[#285943] mt-0.5 block">{selectedProject.formattedBudget}</span>
                 </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                   <span className="text-[10px] text-[#78716C] block uppercase font-bold">Progress</span>
@@ -522,178 +508,78 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     {selectedProject.progress}%
                   </span>
                 </div>
+                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Status</span>
+                  <span className="text-base font-bold text-[#171717] mt-0.5 block">{tStatus(selectedProject.stage)}</span>
+                </div>
               </div>
 
-              {/* 8-STEP POLICYMAKER EVIDENCE CHAIN CONTAINER */}
+              {/* WHY THIS IS PRIORITIZED & EVIDENCE SUMMARY */}
               <div className="border border-[#171717]/15 rounded-xs p-4 bg-[#FAF8F5] space-y-3.5 font-sans">
                 <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
                   <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#171717] flex items-center gap-1.5">
                     <ShieldCheck className="w-3.5 h-3.5 text-[#D65A3A]" />
-                    Policymaker Evidence & Impact Traceability Chain
+                    Evidence & Prioritization Lineage
                   </span>
                   <span className="text-[10px] font-mono text-stone-500">
-                    Step 1 → Step 8 Verification
+                    Deterministic Scoring
                   </span>
                 </div>
 
                 <div className="space-y-2.5 text-xs">
-                  
-                  {/* 1. What did citizens ask for? */}
+                  {/* Citizen Demand */}
                   <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
                     <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>1. What did citizens ask for?</span>
-                      <span className="text-[#D65A3A] font-bold">{beforeSignals} Citizen Signals Logged</span>
+                      <span>1. Citizen Demand</span>
+                      <span className="text-[#D65A3A] font-bold">{beforeSignals} Synthetic Demo Signals</span>
                     </div>
                     <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      Citizens registered urgent demand in <strong>{selectedProject.district}</strong> regarding {selectedProject.category.toLowerCase()} infrastructure (e.g. salinity deficits, pipeline leakage, supply interruptions) across regional multilingual channels.
+                      Citizens logged demand in <strong>{selectedProject.district}</strong> regarding {selectedProject.category.toLowerCase()} infrastructure across regional voice and text channels.
                     </p>
                   </div>
 
-                  {/* 2. What need was identified? */}
+                  {/* Infrastructure Gap */}
                   <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
                     <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>2. What need was identified?</span>
-                      <span className="text-stone-700">{100 - beforeAccessVal}% Deficit Gap</span>
+                      <span>2. Infrastructure Gap</span>
+                      <span className="text-stone-700 font-bold">{100 - beforeAccessVal}% Deficit Gap</span>
                     </div>
                     <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      District baseline reflects a <strong>{100 - beforeAccessVal}% infrastructure gap</strong> with low access ({beforeAccessVal}%), compounding demographic vulnerability for approx. <strong>{(selectedProject.population || 45000).toLocaleString()} residents</strong>.
+                      District baseline reflects a <strong>{100 - beforeAccessVal}% infrastructure gap</strong> with {beforeAccessVal}% baseline access, affecting approx. <strong>{(selectedProject.population || 45000).toLocaleString()} residents</strong>.
                     </p>
                   </div>
 
-                  {/* 3. Why was it prioritized? */}
+                  {/* Recommended Intervention */}
                   <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
                     <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>3. Why was it prioritized?</span>
-                      <span className="text-amber-800 font-bold bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                        Priority Score: {selectedProject.displayPriorityScore} / 100
-                      </span>
-                    </div>
-                    <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      Ranked under the deterministic 5-pillar mathematical engine (Demand Density 30%, Infrastructure Gap 25%, Demographic Vulnerability 20%, Issue Severity 15%, Investment Deficit 10%).
-                    </p>
-                  </div>
-
-                  {/* 4. What action is recommended? */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>4. What action is recommended?</span>
-                      <span className="text-stone-600 font-mono">Rec: {selectedProject.sourceRecommendationId}</span>
+                      <span>3. Recommended Intervention</span>
+                      <span className="text-[#285943] font-bold font-mono">{selectedProject.formattedBudget} Outlay</span>
                     </div>
                     <p className="text-[#34322D] leading-relaxed text-[11px]">
                       {selectedProject.description || 'Targeted capital infrastructure engineering response sanctioned under municipal priority allocation.'}
                     </p>
                   </div>
-
-                  {/* 5. What project / intervention is involved? */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>5. What project / intervention is involved?</span>
-                      <span className="text-[#171717] font-bold font-mono">{selectedProject.formattedBudget} Outlay</span>
-                    </div>
-                    <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      Executing Agency: <strong>{selectedProject.departmentName}</strong> · Scope: {selectedProject.interventionScope}
-                    </p>
-                  </div>
-
-                  {/* 6. What was the baseline? */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>6. What was the baseline?</span>
-                      <span className="text-stone-600 font-mono">Pre-intervention Metrics</span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[11px] font-mono pt-0.5">
-                      <div className="p-1.5 bg-stone-50 rounded border border-stone-200">
-                        <span className="text-[#78716C] block text-[10px]">Baseline Access:</span>
-                        <span className="font-bold text-[#171717]">{beforeAccessVal}% coverage</span>
-                      </div>
-                      <div className="p-1.5 bg-stone-50 rounded border border-stone-200">
-                        <span className="text-[#78716C] block text-[10px]">Baseline Signals:</span>
-                        <span className="font-bold text-[#171717]">{beforeSignals} monthly signals</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 7. What changed? (Honesty Rule strictly enforced) */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1.5">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>7. What changed?</span>
-                      {isCompleted ? (
-                        <span className="text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
-                          Verified Outcome
-                        </span>
-                      ) : (
-                        <span className="text-stone-500 font-mono">In-flight / Pre-execution</span>
-                      )}
-                    </div>
-
-                    {isCompleted && hasMeasuredOutcome ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[11px] font-mono pt-0.5">
-                        <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded">
-                          <span className="text-[#78716C] block text-[10px]">Signals Delta:</span>
-                          <span className="font-bold text-emerald-800 text-xs">
-                            {beforeSignals} → {afterSignals} ({signalsChangePct}%)
-                          </span>
-                        </div>
-                        <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded">
-                          <span className="text-[#78716C] block text-[10px]">Access Coverage:</span>
-                          <span className="font-bold text-emerald-800 text-xs">
-                            {beforeAccessVal}% → {afterAccessVal}% (+{accessDelta}%)
-                          </span>
-                        </div>
-                        <div className="p-2 bg-emerald-50/70 border border-emerald-200 rounded col-span-2 sm:col-span-1">
-                          <span className="text-[#78716C] block text-[10px]">De-escalation:</span>
-                          <span className="font-bold text-emerald-800 text-xs">
-                            {selectedProject.displayPriorityScore} → {(Number(selectedProject.displayPriorityScore) * 0.38).toFixed(1)}
-                          </span>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="p-3 bg-stone-50 border border-stone-200 rounded-xs text-[#57534E] text-[11px]">
-                        <div className="flex items-center gap-1.5 text-[#171717] font-bold mb-0.5">
-                          <AlertCircle className="w-3.5 h-3.5 text-stone-500" />
-                          <span>Impact measurement not yet available</span>
-                        </div>
-                        <p className="leading-relaxed">
-                          This project is currently in the <strong>{tStatus(selectedProject.stage)}</strong> phase. Measured field telemetry and post-intervention audits will be recorded upon project commissioning.
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 8. Is the change measured or hypothetical? */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>8. Is the change measured or hypothetical?</span>
-                      <span className={`px-2 py-0.5 rounded border text-[10px] font-medium ${natureBadge.badgeClass}`}>
-                        {natureBadge.label}
-                      </span>
-                    </div>
-                    <p className="text-[#57534E] leading-relaxed text-[11px]">
-                      {natureBadge.description}
-                    </p>
-                  </div>
-
                 </div>
               </div>
 
-              {/* Provenance Footer Indicator */}
-              <div className="flex items-center justify-between text-[10px] font-mono text-[#78716C] px-1 bg-stone-50 border border-stone-200 p-2 rounded-xs">
+              {/* Provenance Footer */}
+              <div className="flex items-center justify-between text-[10px] font-mono text-[#78716C] px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-xs">
                 <span>Provenance: Census Demographics & CivicPulse Grievance Baseline</span>
                 <span className="text-emerald-700 font-bold">Deterministic Lineage Verified</span>
               </div>
 
-              {/* Interactive Navigation Actions */}
-              <div className="flex items-center gap-2 pt-1">
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 pt-1">
                 {onNavigateToPolicyLab && (
                   <button
                     onClick={() => {
                       onNavigateToPolicyLab(selectedProject.districtId, selectedProject.category);
                       setSelectedProject(null);
                     }}
-                    className="flex-1 px-3 py-2 bg-white hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 px-3 py-2 bg-[#171717] hover:bg-[#34322D] text-white rounded-xs text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <span>View Policy Lab Evidence Brief</span>
-                    <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
+                    <span>View Evidence Dossier</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {onNavigateToImpact && (
@@ -702,7 +588,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                       onNavigateToImpact(selectedProject.districtId, selectedProject.category);
                       setSelectedProject(null);
                     }}
-                    className="flex-1 px-3 py-2 bg-white hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="flex-1 px-3 py-2 bg-white hover:bg-[#FAF8F5] text-[#171717] border border-[#171717]/20 rounded-xs text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>Open in Impact Simulator</span>
                     <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
@@ -710,9 +596,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 )}
               </div>
 
-              {/* Status Update Controls */}
-              <div className="space-y-2 pt-2 border-t border-[#171717]/10">
-                <span className="text-xs font-semibold text-[#171717] block">{t('action_queue.modal_update_status') || 'Update Administrative Status'}:</span>
+              {/* Administrative Status Updates */}
+              <div className="space-y-1.5 pt-2 border-t border-[#171717]/10">
+                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase block">Update Administrative Status:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {(['Approved', 'In Progress', 'Completed'] as ProjectLifecycleStatus[]).map(st => (
                     <button
@@ -721,22 +607,12 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         onUpdateProjectStatus(selectedProject.id, st);
                         setSelectedProject(null);
                       }}
-                      className="px-2.5 py-1 bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 text-xs font-medium rounded-xs transition-colors cursor-pointer"
+                      className="px-2.5 py-1 bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 text-xs font-mono font-medium rounded-xs transition-colors cursor-pointer"
                     >
                       {t('action.mark_as') || 'Mark as'} {tStatus(st)}
                     </button>
                   ))}
                 </div>
-              </div>
-
-              {/* Close button */}
-              <div className="flex items-center justify-end pt-2 border-t border-[#171717]/10">
-                <button
-                  onClick={() => setSelectedProject(null)}
-                  className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs cursor-pointer"
-                >
-                  {t('common.close')}
-                </button>
               </div>
 
             </div>
@@ -747,3 +623,4 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
     </div>
   );
 };
+
