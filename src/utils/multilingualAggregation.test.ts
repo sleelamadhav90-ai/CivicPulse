@@ -109,7 +109,7 @@ assert(patnaResolved.id === 'patna', `ISSUE-RD-002 must resolve to district 'pat
 // 4. Invariants Verification
 console.log('\n[Test 4] System Invariants Audit');
 
-// A. 52 Districts invariant (5 Level 1, 10 Level 2, 37 Level 3)
+// A. National District Registry invariant (5 Level 1, 10 Level 2, Level 3 Regional Coverage across all 36 States/UTs)
 import { getDistrictDataDepth } from './provenance';
 
 const totalDistricts = DISTRICTS_REGISTRY.length;
@@ -122,10 +122,10 @@ for (const d of DISTRICTS_REGISTRY) {
   else if (depth.badgeLabel.startsWith('Level 2')) l2++;
   else l3++;
 }
-assert(totalDistricts === 52, `Must have exactly 52 districts in registry, found ${totalDistricts}`);
+assert(totalDistricts >= 70, `Must have comprehensive district coverage in registry, found ${totalDistricts}`);
 assert(l1 === 5, `Must have 5 Level 1 districts, found ${l1}`);
 assert(l2 === 10, `Must have 10 Level 2 districts, found ${l2}`);
-assert(l3 === 37, `Must have 37 Level 3 districts, found ${l3}`);
+assert(l3 === totalDistricts - 15, `Must have ${totalDistricts - 15} Level 3 districts, found ${l3}`);
 
 // B. Scoring Weights invariant (30/25/20/15/10)
 assert(SCORING_WEIGHTS.citizenDemand === 0.30, 'Citizen Demand weight must be 0.30');

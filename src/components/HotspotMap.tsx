@@ -6,7 +6,8 @@ import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState, getReportEvidence, Re
 import { 
   getAvailableStates, 
   getDistrictsForState, 
-  getLocalitiesForDistrict 
+  getLocalitiesForDistrict,
+  getCoverageStatistics 
 } from '../utils/geography';
 import { 
   Layers, 
@@ -21,7 +22,8 @@ import {
   RotateCcw,
   Info,
   Building2,
-  Database
+  Database,
+  ShieldAlert
 } from 'lucide-react';
 import { getPublicDataForDistrict } from '../data/publicDataService';
 import { useLanguage } from '../context/LanguageContext';
@@ -281,6 +283,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     const evidence = getReportEvidence(district, category, hotspot);
     setEvidenceModalData({ district, category, hotspot, evidence });
   };
+
+  const coverageStats = useMemo(() => getCoverageStatistics(districts), [districts]);
 
   const hasActiveFilters = 
     selectedState !== 'ALL' || 
@@ -621,6 +625,39 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           )}
         </div>
       </header>
+
+      {/* 1.5 INDIA GEOGRAPHIC COVERAGE SUB-BAR */}
+      <div className="bg-[#1C1917] text-stone-300 text-[11px] font-mono px-3 py-1.5 sm:px-4 z-15 shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-stone-800">
+        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+          <span className="flex items-center gap-1 font-bold text-amber-400 uppercase tracking-wider text-[10px] shrink-0">
+            <MapPin className="w-3 h-3 text-amber-400" />
+            National Coverage:
+          </span>
+          <span className="bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded-xs font-bold border border-amber-800/80 shrink-0">
+            {coverageStats.representedStatesAndUTs} / {coverageStats.totalStatesAndUTs} States & UTs
+          </span>
+          <span className="text-stone-600 hidden sm:inline">•</span>
+          <span className="text-stone-300 shrink-0 hidden sm:inline">
+            <strong className="text-white">{coverageStats.totalDistricts}</strong> Districts
+          </span>
+          <span className="text-stone-600">•</span>
+          <div className="flex items-center gap-1 text-[10px] shrink-0">
+            <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 rounded-xs font-medium">
+              {coverageStats.deepBaselineCount} Deep Baseline
+            </span>
+            <span className="px-1.5 py-0.5 bg-blue-950/80 text-blue-300 border border-blue-800/60 rounded-xs font-medium">
+              {coverageStats.expandedBaselineCount} Expanded
+            </span>
+            <span className="px-1.5 py-0.5 bg-stone-800 text-stone-300 border border-stone-700 rounded-xs font-medium">
+              {coverageStats.regionalCoverageCount} Regional Coverage
+            </span>
+          </div>
+        </div>
+        <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-stone-400 italic">
+          <ShieldAlert className="w-3 h-3 text-amber-400 shrink-0" />
+          <span>Geographic representation across all 36 Indian States & UTs with transparent provenance classification.</span>
+        </div>
+      </div>
 
       {/* 2. HERO MAP WORKSPACE (OCCUPIES FULL VIEWPORT) */}
       <div className="flex-1 w-full h-full relative overflow-hidden">

@@ -1,4 +1,4 @@
-import { CitizenRequest, DataProvenance, ProvenanceDisplayLabel, District } from '../types';
+import { CitizenRequest, DataProvenance, ProvenanceDisplayLabel, District, CoverageTier } from '../types';
 import { getPublicDataForDistrict } from '../data/publicDataService';
 
 /**
@@ -135,6 +135,7 @@ export type DistrictDataDepth = 'Deep Local Baseline' | 'Open Government Data' |
 
 export interface DistrictDataDepthInfo {
   tier: DistrictDataDepth;
+  coverageTier: CoverageTier;
   badgeLabel: string;
   badgeClass: string;
   description: string;
@@ -145,10 +146,7 @@ const COMPLETE_BASELINE_DISTRICTS = [
   'vijayawada',
   'visakhapatnam',
   'kurnool',
-  'nagpur',
-  'nanded',
-  'solapur',
-  'chittoor'
+  'solapur'
 ];
 
 const LEVEL_2_OGD_DISTRICTS = [
@@ -164,24 +162,32 @@ const LEVEL_2_OGD_DISTRICTS = [
   'lucknow'
 ];
 
-export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDepthInfo {
-  const normalized = districtIdOrName.toLowerCase().replace(/[^a-z]/g, '');
-  const isL1 = COMPLETE_BASELINE_DISTRICTS.some(d => normalized.includes(d));
+export function getDistrictCoverageTier(districtIdOrName: string): CoverageTier {
+  const normalized = (districtIdOrName || '').toLowerCase().replace(/[^a-z]/g, '');
+  const isL1 = COMPLETE_BASELINE_DISTRICTS.some(d => normalized === d || normalized.includes(d));
+  if (isL1) return 'deep-baseline';
+  const isL2 = LEVEL_2_OGD_DISTRICTS.some(d => normalized === d || normalized.includes(d));
+  if (isL2) return 'expanded-baseline';
+  return 'regional-coverage';
+}
 
-  if (isL1) {
+export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDepthInfo {
+  const coverageTier = getDistrictCoverageTier(districtIdOrName);
+
+  if (coverageTier === 'deep-baseline') {
     return {
       tier: 'Deep Local Baseline',
+      coverageTier: 'deep-baseline',
       badgeLabel: 'Level 1 · Deep Local Baseline',
       badgeClass: 'bg-emerald-50 text-emerald-800 border border-emerald-300',
       description: 'Comprehensive cross-domain open data benchmarks & physical infrastructure baselines verified.'
     };
   }
 
-  const isL2 = LEVEL_2_OGD_DISTRICTS.some(d => normalized.includes(d));
-
-  if (isL2) {
+  if (coverageTier === 'expanded-baseline') {
     return {
       tier: 'Open Government Data',
+      coverageTier: 'expanded-baseline',
       badgeLabel: 'Level 2 · Open Government Data',
       badgeClass: 'bg-sky-50 text-sky-800 border border-sky-300',
       description: 'Verified open government data indicators (data.gov.in / ministerial snapshots).'
@@ -190,9 +196,10 @@ export function getDistrictDataDepth(districtIdOrName: string): DistrictDataDept
 
   return {
     tier: 'Baseline Interpolated',
-    badgeLabel: 'Level 3 · Baseline Interpolated',
+    coverageTier: 'regional-coverage',
+    badgeLabel: 'Level 3 · Regional Coverage',
     badgeClass: 'bg-stone-100 text-stone-700 border border-stone-300',
-    description: 'Standard interpolated demographic and sectoral baseline benchmark.'
+    description: 'Standard regional demographic and sectoral baseline benchmark.'
   };
 }
 

@@ -6,7 +6,7 @@
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%203.6%2F3.8%20Flash-8e44ad.svg)](https://ai.google.dev/)
-[![Districts](https://img.shields.io/badge/Registry-52%20Districts%20%7C%2018%20States-blue.svg)](#-canonical-data-registry)
+[![Districts](https://img.shields.io/badge/Registry-70%20Districts%20%7C%2036%20States%20%26%20UTs-blue.svg)](#-canonical-data-registry)
 
 ---
 
@@ -133,7 +133,7 @@ The current version of CivicPulse is a fully working, demonstrable prototype equ
 - **Real-Time Prototype Persistence & Signal Aggregation**:
   - In-memory and local file persistence (`civicpulse_citizen_requests.json`) that saves new submissions and updates live demand counters.
 - **Geospatial Demand Hotspot Explorer**:
-  - Vector TopoJSON India map paired with an interactive Leaflet district layer highlighting high-priority demand clusters across 52 registered districts.
+  - Vector TopoJSON India map paired with an interactive Leaflet district layer highlighting high-priority demand clusters across 70 registered districts covering all 36 Indian States & Union Territories.
 - **Government Priority Register / Decision Queue**:
   - Public-sector decision support dashboard displaying ranked development priorities with responsive column grid layout.
 - **AI Executive Policy Brief Generator**:
@@ -153,10 +153,14 @@ CivicPulse currently uses local JSON file storage (`civicpulse_citizen_requests.
 
 ---
 
-## ⚖️ Prototype Honesty & Demonstration Disclaimer
+## ⚖️ Prototype Honesty & Data Tiering Architecture
 
-CivicPulse is a decision-support Digital Public Infrastructure (DPI) prototype. Its current demonstration uses representative, curated, and seeded datasets:
-- **52 Registered Districts**: Representative coverage across 18 Indian States / Union Territories with varying data depth across regions.
+CivicPulse is a decision-support Digital Public Infrastructure (DPI) prototype. To maintain complete transparency regarding data provenance and depth across its expanded national scope:
+- **100% Geographic Representation (36 States & UTs)**: Every state (28) and Union Territory (8) in India is represented in the source-of-truth district registry (`DISTRICTS_REGISTRY`).
+- **3-Tier Data Provenance Classification**:
+  - **Tier 1: Deep Baseline (5 Districts)**: `vijayawada`, `guntur`, `visakhapatnam`, `kurnool`, `solapur` — Complete multi-sector infrastructure metrics, historical capex allocations, and field-validated citizen signal clusters.
+  - **Tier 2: Expanded Baseline (10 Districts)**: `warangal`, `hyderabad`, `nashik`, `patna`, `gaya`, `jaipur`, `bengaluru`, `chennai`, `kolkata`, `lucknow` — Comprehensive baseline public dataset metrics (JJM, PMGSY, NHM) and seeded issue clusters.
+  - **Tier 3: Regional Coverage (55 Districts)**: Representative regional districts covering all remaining Indian States and Union Territories with explicit regional provenance metadata.
 - **100 Multilingual Citizen Signals**: Seeded multilingual reports across 8 Indian languages (Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, Odia, English).
 - **73 Public Open-Data Indicators**: Benchmark infrastructure and demographic metrics compiled from public datasets (Census of India, Jal Jeevan Mission, PMGSY, NHM, data.gov.in).
 - **8 Scheme Alignment Blueprints**: Prototype Centrally Sponsored Scheme budget and project templates (JJM, PMGSY, SBM, NHM, RDSS).
@@ -171,7 +175,7 @@ To deliver an immediate, realistic, and evaluation-ready experience:
 
 > **Notice**: CivicPulse currently combines actual user-submitted prototype requests with curated benchmark data and synthetic demonstration signals. It is not connected to a production government database or live government data infrastructure.
 
-- **Curated Benchmark Data**: Baseline statistics for 52 registered districts derived from public data sources (Census of India, Jal Jeevan Mission, National Health Mission, Pradhan Mantri Gram Sadak Yojana).
+- **Curated Benchmark Data**: Baseline statistics for 70 registered districts across all 36 Indian States & UTs derived from public data sources (Census of India, Jal Jeevan Mission, National Health Mission, Pradhan Mantri Gram Sadak Yojana).
 - **Prototype Persistence**: Live user submissions via the web interface are saved to the prototype store (`civicpulse_citizen_requests.json`).
 - **Synthetic Signals**: Initial baseline request sets are seeded to demonstrate multi-sector hotspot clustering across regions before user submissions occur.
 
@@ -249,7 +253,7 @@ civicpulse/
 │   ├── context/
 │   │   └── LanguageContext.tsx     # Global i18n Provider (8 Languages)
 │   ├── data/
-│   │   ├── districts.ts            # Canonical 52-District Registry Data
+│   │   ├── districts.ts            # Canonical 70-District Registry Data (36 States & UTs)
 │   │   ├── initialRequests.ts      # Prototype Seed Signals
 │   │   ├── initialProjects.ts      # Recommended Government Projects Baseline
 │   │   ├── governmentBaselineData.ts # Benchmark Infrastructure & Demographic Data

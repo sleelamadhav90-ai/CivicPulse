@@ -62,6 +62,8 @@ export interface UniversalCivicSchema {
   status: RequestStatus;
 }
 
+export type CoverageTier = 'deep-baseline' | 'expanded-baseline' | 'regional-coverage';
+
 export interface District {
   id: string;
   name: string;
@@ -82,6 +84,7 @@ export interface District {
     paved_roads_km: number;
   };
   zone: string;
+  coverageTier?: CoverageTier;
 }
 
 export type InfrastructureCategory = 

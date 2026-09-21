@@ -1,6 +1,7 @@
 import { District, CitizenRequest, CountryCode } from '../types';
 import { DISTRICTS_REGISTRY, COUNTRY_DISTRICTS_REGISTRY } from '../data/districts';
 import { matchCitizenRequestIntent } from '../services/humanSearchService';
+import { getDistrictCoverageTier } from './provenance';
 
 export interface StateDistrictHierarchy {
   state: string;
@@ -434,4 +435,82 @@ export function filterCitizenRequests(
 
     return true;
   });
+}
+
+export interface CoverageStatistics {
+  totalDistricts: number;
+  totalStatesAndUTs: number; // 36
+  representedStatesAndUTs: number;
+  missingStatesAndUTs: string[];
+  deepBaselineCount: number; // Tier 1
+  expandedBaselineCount: number; // Tier 2
+  regionalCoverageCount: number; // Tier 3
+  statesCount: number; // count of states represented out of 28
+  utsCount: number; // count of UTs represented out of 8
+  coveragePercentage: number;
+}
+
+/**
+  * Calculates dynamic geographic coverage metrics directly from the source-of-truth registry.
+  */
+export function getCoverageStatistics(districtsCatalog: District[] = DISTRICTS_REGISTRY): CoverageStatistics {
+  const totalDistricts = districtsCatalog.length;
+  const totalStatesAndUTs = INDIA_STATES_AND_UTS.length; // 36
+
+  const normalizeStateName = (str: string) =>
+    (str || '')
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\(ncr\)/g, '')
+      .replace(/[^a-z0-9]/g, '');
+
+  const registeredStateSet = new Set<string>();
+  districtsCatalog.forEach(d => {
+    if (d.state) {
+      registeredStateSet.add(normalizeStateName(d.state));
+    }
+  });
+
+  const missingStatesAndUTs: string[] = [];
+  let statesCount = 0;
+  let utsCount = 0;
+
+  INDIA_STATES_AND_UTS.forEach(s => {
+    const norm = normalizeStateName(s.name);
+    const isPresent = Array.from(registeredStateSet).some(reg => reg.includes(norm) || norm.includes(reg));
+    if (isPresent) {
+      if (s.isUT) utsCount++;
+      else statesCount++;
+    } else {
+      missingStatesAndUTs.push(s.name);
+    }
+  });
+
+  const representedStatesAndUTs = statesCount + utsCount;
+
+  let deepBaselineCount = 0;
+  let expandedBaselineCount = 0;
+  let regionalCoverageCount = 0;
+
+  districtsCatalog.forEach(d => {
+    const tier = getDistrictCoverageTier(d.id || d.name);
+    if (tier === 'deep-baseline') deepBaselineCount++;
+    else if (tier === 'expanded-baseline') expandedBaselineCount++;
+    else regionalCoverageCount++;
+  });
+
+  const coveragePercentage = Math.round((representedStatesAndUTs / totalStatesAndUTs) * 100);
+
+  return {
+    totalDistricts,
+    totalStatesAndUTs,
+    representedStatesAndUTs,
+    missingStatesAndUTs,
+    deepBaselineCount,
+    expandedBaselineCount,
+    regionalCoverageCount,
+    statesCount,
+    utsCount,
+    coveragePercentage,
+  };
 }
