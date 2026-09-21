@@ -93,7 +93,7 @@ $$\text{Recommendation} \longrightarrow \text{Priority Score} \longrightarrow \t
 
 ## 📊 Priority Scoring Model
 
-CivicPulse uses an **explainable deterministic prototype prioritization model** (`src/utils/scoring.ts`) to compute a 0–100 **Priority Score** for any district and infrastructure category. The model is transparent by design and intentionally exposes its parameters and assumptions. This ensures complete auditability, eliminates subjective bias, and decouples AI language processing from fiscal decision logic.
+CivicPulse uses an **explainable deterministic prototype prioritization model** (`src/utils/scoring.ts`) to compute a 0–100 **Priority Score** for any district and infrastructure category. The model is transparent by design and intentionally exposes its parameters and assumptions. This ensures complete auditability, makes modeling assumptions explicit and auditable (without eliminating human or institutional modeling assumptions), and decouples AI language processing from fiscal decision logic.
 
 ### Standardized 5-Pillar Formula
 
@@ -437,14 +437,14 @@ All endpoints return uniform structured JSON responses with `X-Request-Id` and `
 
 ## 🧪 Testing & Verification
 
-CivicPulse includes automated unit tests covering the backend deployability architecture, scoring model, impact engine, and geographical coverage:
+The primary automated test suite (`npm test`) executes 11 verification checks for the backend deployability and scalability architecture (`src/server/tests/scalability.test.ts`):
 
 ```bash
 # Run the 11 Deployability & Scalability Architecture unit tests
 npm test
 ```
 
-### Verified Test Suites:
+### Checks Executed by `npm test`:
 1. **Persistence Abstraction**: Repository lifecycle, record creation, retrieval, deletion, and health telemetry.
 2. **Pagination & Filtering**: Structured slicing (`page`, `limit`, `category`).
 3. **Telemetry & Health Reporting**: System status, uptime, cache metrics, and error rates.

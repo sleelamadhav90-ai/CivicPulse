@@ -869,7 +869,7 @@ const CIVICPULSE_SEARCH_TOOLS = [
       },
       {
         name: 'search_locations',
-        description: 'Search districts and geographic locations in the canonical 52-district registry.',
+        description: 'Search districts and geographic locations in the canonical 70-district registry.',
         parameters: {
           type: Type.OBJECT,
           properties: {
