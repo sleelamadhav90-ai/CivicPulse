@@ -6,7 +6,7 @@
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%203.6%2F3.8%20Flash-8e44ad.svg)](https://ai.google.dev/)
-[![Districts](https://img.shields.io/badge/Registry-52%20Districts%20%7C%2018%20States-red.svg)](#-canonical-data-registry)
+[![Districts](https://img.shields.io/badge/Registry-80%20Districts%20%7C%2018%20States-blue.svg)](#-canonical-data-registry)
 
 ---
 
@@ -45,7 +45,11 @@ CivicPulse serves as a Digital Public Infrastructure (DPI) decision-support plat
 └─────────────────────────┬────────────────────────────────────────────────────────┘
                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
-│ 3. Signal Aggregation & Community Issue Clustering                               │
+│ 3. Signal Validation & Normalization Layer (Deterministic Input Verification)    │
+└─────────────────────────┬────────────────────────────────────────────────────────┘
+                          ▼
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│ 4. Signal Aggregation & Community Issue Clustering                               │
 └─────────────────────────┬────────────────────────────────────────────────────────┘
                           ▼
 ┌──────────────────────────────────────────────────────────────────────────────────┐
@@ -120,7 +124,7 @@ The current version of CivicPulse is a fully working, demonstrable prototype equ
 - **Real-Time Prototype Persistence & Signal Aggregation**:
   - In-memory and local file persistence (`civicpulse_citizen_requests.json`) that saves new submissions and updates live demand counters.
 - **Geospatial Demand Hotspot Explorer**:
-  - Vector TopoJSON India map paired with an interactive Leaflet district layer highlighting high-priority demand clusters across 52 canonical districts.
+  - Vector TopoJSON India map paired with an interactive Leaflet district layer highlighting high-priority demand clusters across 80 registered districts.
 - **Government Priority Register / Decision Queue**:
   - Public-sector decision support dashboard displaying ranked development priorities with responsive column grid layout.
 - **AI Executive Policy Brief Generator**:
@@ -140,13 +144,25 @@ CivicPulse currently uses local JSON file storage (`civicpulse_citizen_requests.
 
 ---
 
+## ⚖️ Prototype Honesty & Demonstration Disclaimer
+
+CivicPulse is a decision-support Digital Public Infrastructure (DPI) prototype. Its current demonstration uses representative, curated, and seeded datasets:
+- **80 Registered Districts**: Representative coverage across 18 Indian States / Union Territories with varying data depth across regions.
+- **100 Multilingual Citizen Signals**: Seeded multilingual reports across 8 Indian languages (Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, Odia, English).
+- **73 Public Open-Data Indicators**: Benchmark infrastructure and demographic metrics compiled from public datasets (Census of India, Jal Jeevan Mission, PMGSY, NHM, data.gov.in).
+- **8 Scheme Alignment Blueprints**: Prototype Centrally Sponsored Scheme budget and project templates (JJM, PMGSY, SBM, NHM, RDSS).
+
+> **Production Note**: Production deployment requires authenticated government portal connectors, strict role-based access controls (RBAC), data governance, privacy controls, and enterprise cloud infrastructure.
+
+---
+
 ## 🌐 Data Sources & Prototype Limitations
 
 To deliver an immediate, realistic, and evaluation-ready experience:
 
 > **Notice**: CivicPulse currently combines actual user-submitted prototype requests with curated benchmark data and synthetic demonstration signals. It is not connected to a production government database or live government data infrastructure.
 
-- **Curated Benchmark Data**: Baseline statistics for 52 representative districts derived from public data sources (Census of India, Jal Jeevan Mission, National Health Mission, Pradhan Mantri Gram Sadak Yojana).
+- **Curated Benchmark Data**: Baseline statistics for 80 registered districts derived from public data sources (Census of India, Jal Jeevan Mission, National Health Mission, Pradhan Mantri Gram Sadak Yojana).
 - **Prototype Persistence**: Live user submissions via the web interface are saved to the prototype store (`civicpulse_citizen_requests.json`).
 - **Synthetic Signals**: Initial baseline request sets are seeded to demonstrate multi-sector hotspot clustering across regions before user submissions occur.
 
@@ -237,6 +253,7 @@ civicpulse/
 │   │   └── index.ts                # Translations for 8 Indian Languages
 │   └── utils/
 │       ├── scoring.ts              # Deterministic 5-Pillar Priority Scoring Engine
+│       ├── signalValidator.ts      # Deterministic Signal Validation & Quality Engine
 │       ├── demandAggregation.ts    # Signal Aggregation & Problem Clustering
 │       ├── evidenceBundleService.ts # Traceable EvidenceBundle Generator
 │       ├── impactEvidence.ts       # Impact Verification Helpers

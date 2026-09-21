@@ -1192,7 +1192,7 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
                 <div className="flex items-center space-x-2">
                   <ShieldCheck className="w-4 h-4 text-sky-700" />
                   <h3 className="font-serif font-bold text-sm text-[#171717] uppercase tracking-wider">
-                    Official Government Baseline Indicators
+                    Public Open Data Baseline Indicators
                   </h3>
                 </div>
               </div>
