@@ -192,7 +192,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   }, [activeProjects, searchQuery, selectedCategory, districts]);
 
   return (
-    <div className="space-y-6 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
+    <div className="space-y-6 font-sans text-[#171717] pb-16 max-w-6xl mx-auto w-full box-border">
       
       {/* 1. Page Header (Compact Government-Style Header) */}
       <header className="space-y-1.5 border-b border-[#171717]/15 pb-4">
@@ -277,15 +277,15 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
       {/* 3. PRIORITY REGISTER (List/Table Hybrid) */}
       {viewMode === 'table' && (
-        <div className="bg-white border border-[#171717]/15 rounded-xs overflow-hidden shadow-xs">
+        <div className="bg-white border border-[#171717]/15 rounded-xs overflow-hidden shadow-xs w-full">
           
-          {/* Header Row (Desktop Only) */}
-          <div className="hidden md:grid md:grid-cols-12 gap-3 items-center py-2.5 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
-            <div className="col-span-5">Rank & Project / Location / Department</div>
-            <div className="col-span-2">Priority Score</div>
-            <div className="col-span-2">Estimated Outlay</div>
-            <div className="col-span-2">Progress & Stage</div>
-            <div className="col-span-1 text-right">Status</div>
+          {/* Header Row (Desktop Only, lg+) */}
+          <div className="hidden lg:grid lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-4 items-center py-2.5 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
+            <div className="min-w-0">Rank & Project / Location / Department</div>
+            <div className="min-w-0">Priority Score</div>
+            <div className="min-w-0">Estimated Outlay</div>
+            <div className="min-w-0">Progress & Stage</div>
+            <div className="min-w-0 text-right">Status</div>
           </div>
 
           {/* Data Rows */}
@@ -297,73 +297,79 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <div
                   key={p.id}
                   onClick={() => setSelectedProject(p)}
-                  className="p-4 md:py-3.5 md:px-4 hover:bg-[#FAF8F5] cursor-pointer transition-colors group flex flex-col md:grid md:grid-cols-12 md:gap-3 md:items-center gap-2.5"
+                  className="p-4 lg:py-3.5 lg:px-4 hover:bg-[#FAF8F5] cursor-pointer transition-colors group border-b border-[#171717]/10 min-h-[72px] grid grid-cols-1 md:grid-cols-12 lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-3 lg:gap-4 items-center"
                 >
-                  {/* Left: Rank, Project Title, Location, Department (col-span-5) */}
-                  <div className="md:col-span-5 flex items-start gap-3 min-w-0">
+                  {/* Column 1: Rank, Project Title, Location, Department (Desktop: 42%, Tablet: 7/12 cols) */}
+                  <div className="flex items-start gap-3 min-w-0 md:col-span-7 lg:col-span-1">
                     <span className="font-mono text-xs font-bold text-[#78716C] group-hover:text-[#D65A3A] transition-colors shrink-0 pt-0.5 select-none">
                       {rankStr}
                     </span>
                     <div className="space-y-0.5 min-w-0 pr-2">
-                      <h3 className="text-xs sm:text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
+                      <h3 className="text-xs sm:text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words line-clamp-2">
                         {p.title}
                       </h3>
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-[#57534E]">
-                        <span className="font-medium text-[#171717] flex items-center gap-1">
+                        <span className="font-medium text-[#171717] flex items-center gap-1 shrink-0">
                           <MapPin className="w-3 h-3 text-[#78716C] shrink-0" />
                           {p.district} · {p.state}
                         </span>
-                        <span className="text-[#171717]/20 select-none">•</span>
-                        <span className="text-[#78716C] truncate">{p.departmentName}</span>
+                        <span className="text-[#171717]/20 select-none hidden sm:inline">•</span>
+                        <span className="text-[#78716C] truncate max-w-full">{p.departmentName}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Middle Left: Priority Score & Severity (col-span-2) */}
-                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-1 pt-1 md:pt-0">
+                  {/* Column 2: Priority Score & Severity (Desktop: 14%, Tablet: 5/12 cols) */}
+                  <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-1 min-w-0 pt-1 md:pt-0 md:col-span-5 lg:col-span-1">
                     <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Priority:</span>
-                    <div className="flex items-baseline gap-1 font-mono">
-                      <span className="text-sm sm:text-base font-bold text-[#171717] tracking-tight">
-                        {p.displayPriorityScore}
-                      </span>
-                      <span className="text-xs text-[#78716C]">/ 100</span>
-                    </div>
-                    <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                      p.severityLabel === 'CRITICAL' ? 'text-[#D65A3A]' : p.severityLabel === 'HIGH' ? 'text-amber-700' : 'text-[#78716C]'
-                    }`}>
-                      {p.severityLabel}
-                    </span>
-                  </div>
-
-                  {/* Middle Right: Estimated Outlay (col-span-2) */}
-                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-0.5">
-                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Estimated Outlay:</span>
-                    <span className="font-mono text-xs sm:text-sm font-semibold text-[#171717]">
-                      {p.formattedBudget}
-                    </span>
-                    <span className="text-[10px] font-mono text-[#78716C] hidden md:inline">Capital Allocation</span>
-                  </div>
-
-                  {/* Right Middle: Progress & Stage (col-span-2) */}
-                  <div className="md:col-span-2 flex md:flex-col items-center md:items-start justify-between md:justify-center gap-1">
-                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Progress:</span>
-                    <div className="w-full max-w-[140px] space-y-1">
-                      <div className="flex items-center justify-between text-[10px] font-mono">
-                        <span className="font-semibold text-[#171717]">{p.progress}%</span>
-                        <span className="text-[#78716C]">{p.stageLabel}</span>
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-baseline gap-1 font-mono">
+                        <span className="text-sm sm:text-base font-bold text-[#171717] tracking-tight">
+                          {p.displayPriorityScore}
+                        </span>
+                        <span className="text-xs text-[#78716C]">/ 100</span>
                       </div>
-                      <div className="w-full h-1 bg-[#E8E6DF] rounded-full overflow-hidden">
+                      <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                        p.severityLabel === 'CRITICAL' ? 'text-[#D65A3A]' : p.severityLabel === 'HIGH' ? 'text-amber-700' : 'text-[#78716C]'
+                      }`}>
+                        {p.severityLabel}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Column 3: Estimated Outlay (Desktop: 14%, Tablet: 4/12 cols) */}
+                  <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-0.5 min-w-0 md:col-span-4 lg:col-span-1">
+                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Outlay:</span>
+                    <div className="flex flex-col">
+                      <span className="font-mono text-xs sm:text-sm font-semibold text-[#171717] whitespace-nowrap">
+                        {p.formattedBudget}
+                      </span>
+                      <span className="text-[10px] font-mono text-[#78716C] hidden lg:inline">Capital Allocation</span>
+                    </div>
+                  </div>
+
+                  {/* Column 4: Progress & Stage (Desktop: 15%, Tablet: 4/12 cols) */}
+                  <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-1 min-w-0 md:col-span-4 lg:col-span-1">
+                    <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Progress:</span>
+                    <div className="w-full space-y-1 min-w-0">
+                      <div className="font-mono text-xs font-bold text-[#171717]">
+                        {p.progress}%
+                      </div>
+                      <div className="w-full h-1.5 bg-[#E8E6DF] rounded-full overflow-hidden">
                         <div 
                           className={`h-full transition-all duration-300 ${p.progress >= 100 ? 'bg-[#285943]' : p.progress > 0 ? 'bg-[#D65A3A]' : 'bg-stone-300'}`}
                           style={{ width: `${Math.max(4, p.progress)}%` }}
                         />
                       </div>
+                      <div className="text-[10px] sm:text-[11px] font-mono text-[#78716C] truncate">
+                        {p.stageLabel}
+                      </div>
                     </div>
                   </div>
 
-                  {/* Far Right: Status Badge & Chevron (col-span-1) */}
-                  <div className="md:col-span-1 flex items-center justify-between md:justify-end gap-2 pt-1 md:pt-0">
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-mono font-medium border ${
+                  {/* Column 5: Status Badge & Chevron (Desktop: 15%, Tablet: 4/12 cols) */}
+                  <div className="flex items-center justify-between gap-2 min-w-0 pt-1 md:pt-0 md:col-span-4 lg:col-span-1">
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded-xs text-[10px] font-mono font-medium border truncate shrink-0 ${
                       p.stage === 'Completed'
                         ? 'bg-[#285943]/10 text-[#285943] border-[#285943]/30'
                         : p.stage === 'In Progress'
@@ -376,7 +382,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     }`}>
                       {tStatus(p.stage)}
                     </span>
-                    <ChevronRight className="w-4 h-4 text-[#78716C]/60 group-hover:text-[#171717] transition-colors shrink-0" />
+                    <ChevronRight className="w-4 h-4 text-[#78716C]/60 group-hover:text-[#171717] transition-colors shrink-0 ml-auto" />
                   </div>
                 </div>
               );
