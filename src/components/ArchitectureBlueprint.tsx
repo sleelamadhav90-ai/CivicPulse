@@ -193,26 +193,51 @@ export const ArchitectureBlueprint: React.FC<ArchitectureBlueprintProps> = ({ on
           </div>
         </div>
 
-        {/* ASCII Architecture Code Block as specified */}
-        <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto">
-          <pre className="leading-relaxed">
-{`                    CIVICPULSE
-                        │
-        ┌───────────────┼───────────────┐
-        ↓               ↓               ↓
-    Citizens          AI Engine      Government
-        │               │               │
-   Voice/Text      Classification    Dashboard
-        │           Prioritization       │
-        ↓               │               ↓
-   Requests ────────────┼────────── Projects
-                        │
-                        ↓
-                 Demand Hotspots
-                        │
-                        ↓
-                   Impact Data`}
+        {/* Full 12-Stage Pipeline Diagram */}
+        <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto space-y-2">
+          <div className="text-[10px] text-blue-400 font-bold uppercase tracking-wider">
+            END-TO-END DECISION-SUPPORT PIPELINE ARCHITECTURE:
+          </div>
+          <pre className="leading-relaxed text-slate-300">
+{`  Citizen Input (Voice / Text / WhatsApp)
+      │
+      ▼
+  AI Extraction (Gemini Multilingual NLP / Structured Entity Parsing)
+      │
+      ▼
+  Signal Normalization & Validation (Bounded Ranges & District Registry Check)
+      │
+      ▼
+  Community Aggregation (Geo-Spatial Clustering by Locality & Category)
+      │
+      ▼
+  Hotspot Detection (Density & Deficit Fusion across State → District → Mandal)
+      │
+      ▼
+  Evidence Layer (Citizen Reports + Census / Open-Data Infrastructure Deficits)
+      │
+      ▼
+  Deterministic Priority Engine (5-Pillar Score: 30% Demand + 25% Gap + 20% Pop + 15% Urgency + 10% Gov)
+      │
+      ▼
+  Scheme / Project Matching (Centrally Sponsored Schemes: JJM, PMGSY, SBM, NHM)
+      │
+      ▼
+  Recommendation Brief (Actionable Engineering Briefs with Data Lineage)
+      │
+      ▼
+  Action Queue (Departmental Lifecycle Tracking: Sanction → Tender → Execution)
+      │
+      ▼
+  Impact Simulation (Simulated Deficit Reduction & Beneficiary Reach)
+      │
+      ▼
+  Feedback Loop (Post-Intervention Signal Reduction Monitoring)`}
           </pre>
+          <div className="pt-2 border-t border-slate-800 text-[10px] text-slate-400 flex items-center justify-between">
+            <span>Supporting Datasets: Census Baselines • Open Data (data.gov.in) • Jal Jeevan Mission Portal • PMGSY Road Registers</span>
+            <span className="text-emerald-400 font-bold">100% Deterministic Prioritization</span>
+          </div>
         </div>
       </div>
 

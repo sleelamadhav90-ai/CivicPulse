@@ -596,10 +596,10 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
             <div className="flex items-center justify-between text-xs font-mono px-1">
               <span className="font-bold text-[#171717] uppercase tracking-wider flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-500 inline-block animate-pulse"></span>
-                Hypothetical Scenario Results: {currentDistrict.name} ({simCategory})
+                SIMULATED IMPACT PROJECTION: {currentDistrict.name} ({simCategory})
               </span>
               <span className="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-300">
-                Projected Reduction: -{simulatedOutcome.effectiveReductionPct}%
+                SIMULATED OUTCOME • Projected Reduction: -{simulatedOutcome.effectiveReductionPct}%
               </span>
             </div>
 

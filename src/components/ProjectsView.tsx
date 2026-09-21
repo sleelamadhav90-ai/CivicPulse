@@ -18,6 +18,8 @@ import { getAIRecommendedProjects } from '../utils/scoring';
 import { useLanguage } from '../context/LanguageContext';
 import { parseSearchIntent } from '../services/humanSearchService';
 import { getImpactNatureBadge, calculatePercentageChange, calculateAbsoluteChange } from '../utils/impactEvidence';
+import { EvidenceExplanationCard } from './EvidenceExplanationCard';
+import { DISTRICTS_REGISTRY } from '../data/districts';
 
 interface ProjectsViewProps {
   districts: District[];
@@ -534,52 +536,16 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               </div>
 
               {/* WHY THIS IS PRIORITIZED & EVIDENCE SUMMARY */}
-              <div className="border border-[#171717]/15 rounded-xs p-4 bg-[#FAF8F5] space-y-3.5 font-sans">
-                <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
-                  <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-[#171717] flex items-center gap-1.5">
-                    <ShieldCheck className="w-3.5 h-3.5 text-[#D65A3A]" />
-                    Evidence & Prioritization Lineage
-                  </span>
-                  <span className="text-[10px] font-mono text-stone-500">
-                    Deterministic Scoring
-                  </span>
-                </div>
-
-                <div className="space-y-2.5 text-xs">
-                  {/* Citizen Demand */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>1. Citizen Demand</span>
-                      <span className="text-[#D65A3A] font-bold">{beforeSignals} Synthetic Demo Signals</span>
-                    </div>
-                    <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      Citizens logged demand in <strong>{selectedProject.district}</strong> regarding {selectedProject.category.toLowerCase()} infrastructure across regional voice and text channels.
-                    </p>
-                  </div>
-
-                  {/* Infrastructure Gap */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>2. Infrastructure Gap</span>
-                      <span className="text-stone-700 font-bold">{100 - beforeAccessVal}% Deficit Gap</span>
-                    </div>
-                    <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      District baseline reflects a <strong>{100 - beforeAccessVal}% infrastructure gap</strong> with {beforeAccessVal}% baseline access, affecting approx. <strong>{(selectedProject.population || 45000).toLocaleString()} residents</strong>.
-                    </p>
-                  </div>
-
-                  {/* Recommended Intervention */}
-                  <div className="bg-white border border-[#171717]/10 p-2.5 rounded-xs space-y-1">
-                    <div className="flex items-center justify-between text-[10px] font-mono font-bold text-[#78716C] uppercase">
-                      <span>3. Recommended Intervention</span>
-                      <span className="text-[#285943] font-bold font-mono">{selectedProject.formattedBudget} Outlay</span>
-                    </div>
-                    <p className="text-[#34322D] leading-relaxed text-[11px]">
-                      {selectedProject.description || 'Targeted capital infrastructure engineering response sanctioned under municipal priority allocation.'}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              {(() => {
+                const matchedDist = districts.find(d => d.id === selectedProject.districtId || d.name.toLowerCase() === selectedProject.district.toLowerCase()) || DISTRICTS_REGISTRY[0];
+                return (
+                  <EvidenceExplanationCard
+                    district={matchedDist}
+                    category={selectedProject.category}
+                    compact={false}
+                  />
+                );
+              })()}
 
               {/* Provenance Footer */}
               <div className="flex items-center justify-between text-[10px] font-mono text-[#78716C] px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-xs">

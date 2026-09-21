@@ -18,6 +18,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { parseSearchIntent } from '../services/humanSearchService';
 import { DISTRICTS_REGISTRY } from '../data/districts';
 import { matchesDistrict } from '../utils/districtMatcher';
+import { EvidenceExplanationCard } from './EvidenceExplanationCard';
+import { IssueIntelligenceModal } from './IssueIntelligenceModal';
 
 export interface CommunityIssue {
   id: string;
@@ -487,96 +489,20 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
         ))}
       </div>
 
-      {/* Detail Modal */}
-      {activeIssueModal && (
-        <div className="fixed inset-0 z-50 bg-[#171717]/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white border border-[#171717]/20 rounded-sm w-full max-w-xl max-h-[90vh] overflow-y-auto shadow-lg space-y-5 p-6 font-sans">
-            
-            <div className="flex items-start justify-between border-b border-[#171717]/10 pb-4">
-              <div>
-                <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider block">
-                  {t('issues.cluster_title')} · {activeIssueModal.id}
-                </span>
-                <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
-                  {activeIssueModal.title}
-                </h2>
-                <span className="text-xs text-[#57534E] mt-0.5 block">
-                  {activeIssueModal.location}
-                </span>
-              </div>
-
-              <button
-                onClick={() => setActiveIssueModal(null)}
-                className="p-1 hover:bg-[#F7F5EF] rounded-xs text-[#78716C] hover:text-[#171717] cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-2 text-xs font-mono">
-              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">{t('metric.demand_signals')}</span>
-                <span className="text-base font-bold text-[#171717]">{activeIssueModal.requestCount}</span>
-              </div>
-              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">{t('table.severity')}</span>
-                <span className="text-base font-bold text-[#D65A3A]">{tStatus(activeIssueModal.severity)}</span>
-              </div>
-              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">{t('issues.monthly_demand')}</span>
-                <span className="text-base font-bold text-emerald-800">{activeIssueModal.trend}</span>
-              </div>
-            </div>
-
-            <div className="space-y-1 text-xs">
-              <span className="font-semibold text-[#171717] block">{t('issues.underlying_asset')}:</span>
-              <p className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs text-[#57534E]">
-                {activeIssueModal.infrastructureName} · Aligned with {activeIssueModal.relatedScheme}
-              </p>
-            </div>
-
-            {activeIssueModal.sampleRequests && activeIssueModal.sampleRequests.length > 0 && (
-              <div className="space-y-1.5 text-xs">
-                <span className="font-semibold text-[#171717] block">{t('issues.recent_signals')} ({activeIssueModal.sampleRequests.length}):</span>
-                <div className="space-y-1 max-h-36 overflow-y-auto">
-                  {activeIssueModal.sampleRequests.map((sr, sIdx) => (
-                    <div key={`${sr.id}-${sIdx}`} className="p-2.5 bg-white border border-[#171717]/10 rounded-xs text-[11px] text-[#57534E]">
-                      <div className="flex justify-between font-mono text-[10px] text-[#78716C] mb-0.5">
-                        <span>{sr.id}</span>
-                        <span>{sr.location}</span>
-                      </div>
-                      <p className="italic">"{tSignalSummary(sr)}"</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="flex items-center justify-between pt-3 border-t border-[#171717]/10">
-              <button
-                onClick={() => setActiveIssueModal(null)}
-                className="px-3 py-1.5 text-xs text-[#57534E] hover:text-[#171717] cursor-pointer"
-              >
-                {t('common.close')}
-              </button>
-
-              {onNavigateToRecommendations && (
-                <button
-                  onClick={() => {
-                    setActiveIssueModal(null);
-                    onNavigateToRecommendations();
-                  }}
-                  className="px-4 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer"
-                >
-                  <span>{t('issues.view_recommendation')}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </button>
-              )}
-            </div>
-
-          </div>
-        </div>
-      )}
+      {/* Unified Issue Intelligence Modal */}
+      {activeIssueModal && (() => {
+        const targetDist = resolveIssueDistrict(activeIssueModal);
+        const distObj = targetDist ? DISTRICTS_REGISTRY.find(d => d.id === targetDist.id || d.name.toLowerCase() === targetDist.name.toLowerCase()) : DISTRICTS_REGISTRY[0];
+        if (!distObj) return null;
+        return (
+          <IssueIntelligenceModal
+            issue={activeIssueModal}
+            district={distObj}
+            requests={requests}
+            onClose={() => setActiveIssueModal(null)}
+          />
+        );
+      })()}
 
     </div>
   );

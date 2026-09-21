@@ -113,6 +113,91 @@ export function calculatePriorityScore(
 }
 
 /**
+ * Computes exact contribution values for each pillar of the 5-pillar mathematical score model.
+ * Traceable formula: Score = (Demand × 30%) + (Gap × 25%) + (Impact × 20%) + (Urgency × 15%) + (Gov × 10%)
+ */
+export function getScoreComponentContributions(breakdown: ScoreBreakdown) {
+  const demandContrib = Number((breakdown.demand_score * SCORING_WEIGHTS.citizenDemand).toFixed(2));
+  const gapContrib = Number((breakdown.gap_score * SCORING_WEIGHTS.infrastructureGap).toFixed(2));
+  const vulnContrib = Number((breakdown.vuln_score * SCORING_WEIGHTS.populationImpact).toFixed(2));
+  const urgencyContrib = Number((breakdown.sev_score * SCORING_WEIGHTS.urgency).toFixed(2));
+  const govContrib = Number((breakdown.align_score * SCORING_WEIGHTS.governmentPriority).toFixed(2));
+  return {
+    demandContrib,
+    gapContrib,
+    vulnContrib,
+    urgencyContrib,
+    govContrib,
+    totalScore: breakdown.total_score,
+  };
+}
+
+/**
+ * Constructs an explicit, traceably grounded Issue Evidence Explanation Object
+ * containing actual signals, public data context, and provenance metadata from the codebase.
+ */
+export function getIssueEvidenceExplanation(
+  district: District,
+  category: InfrastructureCategory,
+  requests: CitizenRequest[],
+  breakdown?: ScoreBreakdown
+) {
+  const effectiveBreakdown = breakdown || calculatePriorityScore(district, category, 6, Math.max(1, requests.length));
+  const contributions = getScoreComponentContributions(effectiveBreakdown);
+  const bundle = buildEvidenceBundle(district, category, requests);
+
+  const matchingSignals = requests.filter(r => matchesDistrict(r, district) && r.category === category);
+  const sampleSignalExcerpts = matchingSignals.slice(0, 3).map(r => r.summary_en || r.translated_text || r.original_text || r.description || `Grievance signal regarding ${category} in ${r.locality || district.name}`);
+
+  return {
+    citizenDemand: {
+      signalsCount: effectiveBreakdown.demand_count,
+      demandScore: effectiveBreakdown.demand_score,
+      weightPct: 30,
+      contribution: contributions.demandContrib,
+      sampleExcerpts: sampleSignalExcerpts,
+      sourceType: matchingSignals.length > 0 ? 'Live User Submitted Signal' : 'Curated Prototype Base Signal',
+    },
+    infrastructureGap: {
+      currentAccessPct: effectiveBreakdown.current_access,
+      deficitPct: effectiveBreakdown.gap_percentage,
+      gapScore: effectiveBreakdown.gap_score,
+      weightPct: 25,
+      contribution: contributions.gapContrib,
+      publicBenchmarkSummary: effectiveBreakdown.publicContextSummary || 'Benchmark survey access index',
+      primaryDataSource: effectiveBreakdown.publicDataSource || 'Census of India / Ministry Open Data',
+    },
+    populationImpact: {
+      districtPopulation: district.population,
+      povertyIndex: district.poverty_index,
+      vulnScore: effectiveBreakdown.vuln_score,
+      weightPct: 20,
+      contribution: contributions.vulnContrib,
+      estimatedBeneficiaries: Math.round(district.population * (effectiveBreakdown.gap_percentage / 100) * 0.4),
+    },
+    urgency: {
+      severityScore: effectiveBreakdown.sev_score,
+      weightPct: 15,
+      contribution: contributions.urgencyContrib,
+      urgencyLabel: effectiveBreakdown.sev_score >= 80 ? 'CRITICAL' : effectiveBreakdown.sev_score >= 60 ? 'HIGH' : 'MODERATE',
+    },
+    governmentPriority: {
+      alignScore: effectiveBreakdown.align_score,
+      weightPct: 10,
+      contribution: contributions.govContrib,
+      capexStatus: district.planned_investment > 0 ? `Active CapEx (₹${(district.planned_investment / 10000000).toFixed(1)} Cr)` : 'Unbudgeted CapEx Gap',
+    },
+    totalScore: effectiveBreakdown.total_score,
+    evidenceBundle: bundle,
+    dataSources: [
+      { name: 'Citizen Ingestion Gateway', label: 'Citizen-Submitted Signal', year: '2026', isSynthetic: matchingSignals.length === 0 },
+      { name: effectiveBreakdown.publicDataSource || 'Open Data Benchmark', label: 'Curated Open Data Benchmark', year: '2024-2025', isSynthetic: effectiveBreakdown.isSyntheticDemo ?? true },
+      { name: 'CivicPulse Deterministic Engine', label: 'Deterministic Score Formula', year: '2026', isSynthetic: false },
+    ],
+  };
+}
+
+/**
  * Calculates deterministic Priority Score directly consuming a validated EvidenceBundle (Step 2C-5B).
  * Guarantees 100% mathematical identity with calculatePriorityScore.
  */
