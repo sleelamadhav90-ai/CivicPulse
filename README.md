@@ -6,13 +6,30 @@
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%203.6%2F3.8%20Flash-8e44ad.svg)](https://ai.google.dev/)
-[![Districts](https://img.shields.io/badge/Registry-52%20Districts%20%7C%2018%20States-red.svg)](#canonical-data-registry)
+[![Districts](https://img.shields.io/badge/Registry-52%20Districts%20%7C%2018%20States-red.svg)](#-canonical-data-registry)
 
 ---
 
 ## 🏛️ Primary Purpose & Product North Star
 
 **CivicPulse** aggregates citizen development requests via voice, text, and messaging apps across diverse linguistic regions of India. The system analyzes large datasets combining citizen feedback with national demographic data, infrastructure indices, and public investment plans, surfacing demand hotspots and recommending high-priority development projects to national policymakers.
+
+---
+
+## 🎯 Problem & Solution
+
+### The Problem
+Regional infrastructure planning across diverse, multilingual nations like India faces significant structural challenges:
+1. **Linguistic & Communication Barriers**: Citizen grievances submitted in regional dialects or unstructured voice formats are frequently lost or mishandled.
+2. **Fragmented Single-Issue Ticketing**: Traditional grievance portals act as static ticketing queues rather than aggregating individual reports into community problem clusters.
+3. **Opaque & Subjective Resource Allocation**: Infrastructure investments often lack transparent, auditable prioritization formulas linking capital outlays directly to localized access deficits and citizen demand.
+
+### The Solution
+CivicPulse serves as a Digital Public Infrastructure (DPI) decision-support platform that:
+- **Understands**: Transcribes, translates, and structures multimodal voice and text inputs across 8 Indian languages using Google Gemini AI.
+- **Aggregates**: Group individual reports into micro-locality problem clusters and geospatial demand hotspots.
+- **Scores**: Evaluates development priority using a transparent, deterministic 5-pillar mathematical formula.
+- **Recommends**: Generates actionable infrastructure project briefs backed by an auditable, unbroken data lineage chain (`EvidenceBundle`).
 
 ---
 
@@ -70,129 +87,139 @@ $$\text{Recommendation} \longrightarrow \text{Priority Score} \longrightarrow \t
 
 ---
 
-## Key Features
+## 📊 Priority Scoring Model
 
-### 1. Multilingual Citizen Ingestion & Diagnostic AI
-- **8 Supported Regional Languages**: Full UI localization and diagnostic NLP support for English (`en`), Hindi (`hi`), Telugu (`te`), Tamil (`ta`), Kannada (`kn`), Marathi (`mr`), Bengali (`bn`), and Odia (`or`).
-- **Multimodal Voice Input**: Native audio recording and base64 audio processing via Gemini `gemini-3.6-flash`.
-- **Structured Extraction**: Transcribes audio, preserves original text, translates to English, and categorizes category, subcategory, duration, location, severity (1–10), urgency, and affected population.
-- **Truthful Fallback Engine**: If Gemini is offline or rate-limited, a deterministic diagnostic fallback engine processes inputs using language patterns and geographical rules.
+CivicPulse uses a deterministic, transparent 5-pillar mathematical scoring engine (`src/utils/scoring.ts`) to compute a 0–100 **Priority Score** for any district and infrastructure category. This ensures complete auditability, eliminates subjective bias, and decouples AI language processing from fiscal decision logic.
 
-### 2. Conversational AI Assistant
-- Interactive follow-up conversational agent helping citizens refine vague complaints (e.g., asking targeted questions and generating quick option pills in their native language).
-- Live state machine determining when a complaint is complete and ready for persistent submission.
+### Standardized 5-Pillar Formula
 
-### 3. Persistent Local Store & Dynamic Submission
-- All new citizen submissions submitted via the app interface are saved to a local JSON database (`civicpulse_citizen_requests.json`).
-- Immediate aggregation updates feed into live demand counters, community problem clusters, and district priority score calculations.
+$$\text{Priority Score} = (\text{Citizen Demand} \times 0.30) + (\text{Infrastructure Gap} \times 0.25) + (\text{Population Impact} \times 0.20) + (\text{Urgency} \times 0.15) + (\text{Government Priority} \times 0.10)$$
 
-### 4. Interactive Geospatial Demand Hotspots
-- **Custom TopoJSON Canvas**: High-resolution vector map of India with 52 canonical districts highlighted.
-- **Leaflet GeoJSON Overlay**: District boundaries colored dynamically based on demand signal intensity and infrastructure access deficits.
-- **Micro-Level Filtering**: Drill-down from State level to District, City/Taluk, and Locality.
+### Formula Component Breakdown
 
-### 5. Deterministic Priority Engine & Math Model
-Calculates a transparent, explainable 0–100 Priority Score for every district and infrastructure sector:
-
-$$S = (0.35 \cdot D_{\text{norm}}) + (0.35 \cdot G_{\text{norm}}) + (0.15 \cdot V_{\text{norm}}) + (0.15 \cdot I_{\text{norm}})$$
-
-Where:
-- $D_{\text{norm}}$: Normalized Citizen Demand Density (volume and urgency of signals relative to population)
-- $G_{\text{norm}}$: Infrastructure Gap Deficit ($100 - \text{Access Coverage \%}$)
-- $V_{\text{norm}}$: Multidimensional Poverty & Vulnerability Index
-- $I_{\text{norm}}$: Investment Under-Allocation Ratio ($\text{Target Cost} / \max(1, \text{Planned Outlay})$)
-
-### 6. Government Priority Register / Decision Queue
-- Public-sector decision support interface listing interventions ranked by priority score.
-- Clean column grid: `Rank & Project` (42%), `Priority Score` (14%), `Estimated Outlay` (14%), `Progress & Stage` (15%), `Status` (15%).
-- Complete evidence modal detailing key reasoning, target beneficiaries, scheme alignment, and full `EvidenceBundle` dossier.
-
-### 7. AI Executive Policy Brief Generator
-- Generates formal, data-grounded infrastructure policy briefs in the selected target language using `gemini-3.6-flash`.
-- Includes Executive Diagnostics, Strategic Priority Justification, 3-Phase Actionable Intervention Plan, and Target ROI Metrics.
-
-### 8. Natural-Language Search & Gemini Function Calling
-- Natural-language query parsing mapped to structured Gemini tool declarations (`get_request_by_id`, `search_citizen_reports`, `search_community_issues`, `search_hotspots`, `search_recommendations`, `search_locations`).
-- Grounded AI summary generation synthesizing search results strictly from verified system data.
-
-### 9. Modeled Closed-Loop Impact Simulator
-- Measures post-intervention outcomes for completed projects.
-- Compares pre-intervention demand signals against post-delivery complaint reduction and access coverage expansion.
+| Pillar Factor | Weight | Math Calculation / Logic | Description |
+| :--- | :---: | :--- | :--- |
+| **Citizen Demand** | **30%** (`0.30`) | $\min(22 \cdot \ln(1 + \text{DemandCount}), 100)$ | Logarithmic volume scaling of validated citizen voice and text signals. |
+| **Infrastructure Gap** | **25%** (`0.25`) | $100 - \text{Access Coverage \%}$ | Direct measure of physical infrastructure deficit in the sector. |
+| **Population Impact** | **20%** (`0.20`) | $\min\left(\frac{\text{Population}}{2,500,000} \cdot 50 + \text{PovertyIndex} \cdot 50, 100\right)$ | Combined metric of target beneficiary population and poverty index. |
+| **Urgency** | **15%** (`0.15`) | $\text{Clamped Severity (1–10)} \cdot 10$ | Extracted hazard severity and hazard urgency rating from citizen reports. |
+| **Government Priority** | **10%** (`0.10`) | $95 \text{ pts (Active Capex)} \text{ vs } 45 \text{ pts (No Capex)}$ | Alignment proxy measuring existing planned public capital expenditure. |
 
 ---
 
-## 📊 Canonical Data Registry
+## ⚙️ Current Prototype Capabilities
 
-CivicPulse operates on a curated, benchmarked registry representing Indian administrative divisions:
+The current version of CivicPulse is a fully working, demonstrable prototype equipped with the following functional features:
 
-- **52 Representative Districts** across **18 States and Union Territories**
-- **3 Governance Levels**:
-  - **Level 1 (Deep Baseline)**: Guntur (Andhra Pradesh), Patna (Bihar), Nashik (Maharashtra), Khordha (Odisha), Kamrup Metropolitan (Assam)
-  - **Level 2 (Expanded Baseline)**: 10 Districts (Madhubani, Gaya, Solapur, Varanasi, Cuttack, Krishna, Nalgonda, Bellary, Tiruchirappalli, Kanpur Nagar)
-  - **Level 3 (National Regional Coverage)**: 37 Additional Districts
-- **7 Infrastructure Sectors**: Water, Roads, Healthcare, Power/Electricity, Drainage & Flood Control, Education, Sanitation.
-- **Centrally Sponsored Schemes**: Jal Jeevan Mission (JJM), Pradhan Mantri Gram Sadak Yojana (PMGSY), National Health Mission (NHM), Revamped Distribution Sector Scheme (RDSS), PM-POSHAN, Swachh Bharat Mission (SBM).
+- **Multilingual Diagnostic Ingestion**:
+  - Full UI localization and diagnostic NLP processing across **8 Indian languages**: English (`en`), Hindi (`hi`), Telugu (`te`), Tamil (`ta`), Kannada (`kn`), Marathi (`mr`), Bengali (`bn`), and Odia (`or`).
+  - Base64 multimodal audio recording & processing powered by Google GenAI SDK (`gemini-3.6-flash`).
+  - Automatic extraction of sector category, subcategory, duration, location, severity (1–10), and target population.
+- **Conversational Follow-Up Assistant**:
+  - Interactive AI follow-up engine helping citizens complete vague complaints in their native language with suggested option pills.
+- **Real-Time Prototype Persistence & Signal Aggregation**:
+  - In-memory and local file persistence (`civicpulse_citizen_requests.json`) that saves new submissions and updates live demand counters.
+- **Geospatial Demand Hotspot Explorer**:
+  - Vector TopoJSON India map paired with an interactive Leaflet district layer highlighting high-priority demand clusters across 52 canonical districts.
+- **Government Priority Register / Decision Queue**:
+  - Public-sector decision support dashboard displaying ranked development priorities with responsive column grid layout.
+- **AI Executive Policy Brief Generator**:
+  - Automated generation of structured executive policy memos in the target regional language, complete with diagnostics, scheme alignment, 3-phase action plans, and expected ROI.
+- **Natural Language Search & Gemini Tool Calling**:
+  - Natural-language query parser mapped to structured function calls (`get_request_by_id`, `search_citizen_reports`, `search_community_issues`, `search_hotspots`, `search_recommendations`).
+- **Closed-Loop Impact Simulator**:
+  - Outcome evaluation module measuring pre-delivery demand signals against post-delivery complaint reduction.
 
 ---
 
-## 🛠️ Tech Stack & System Architecture
+## 💾 Prototype Persistence
 
-### Frontend
-- **Framework**: React 19 + TypeScript + Vite 6
-- **Styling**: Tailwind CSS v4 + `@tailwindcss/vite`
-- **Icons**: Lucide React
-- **Maps & Data Viz**: Leaflet, `react-leaflet`, `d3-geo`, `topojson-client`, Recharts
-- **Animations**: Motion (`motion/react`)
+CivicPulse currently uses local JSON file storage (`civicpulse_citizen_requests.json`) for prototype persistence of user-submitted citizen requests. This keeps the demonstration lightweight, highly responsive, and self-contained.
 
-### Backend Server
-- **Server**: Express v4 running on Node.js v22
-- **Compiler / Runtime**: `tsx` in development, `esbuild` CommonJS bundling for production (`dist/server.cjs`)
-- **AI SDK**: Google GenAI SDK (`@google/genai`) accessing models `gemini-3.6-flash` and `gemini-3.8-flash`
-- **Persistence**: Local JSON file storage (`civicpulse_citizen_requests.json`) with thread-safe file I/O and in-memory caches
+> **Production Note**: For production deployment, this local file storage layer would be replaced by a scalable relational/document database (e.g., PostgreSQL / Cloud SQL / Firestore) and an event streaming architecture (e.g., Apache Kafka / Pub/Sub) capable of managing concurrent national workloads.
+
+---
+
+## 🌐 Data Sources & Prototype Limitations
+
+To deliver an immediate, realistic, and evaluation-ready experience:
+
+> **Notice**: CivicPulse currently combines actual user-submitted prototype requests with curated benchmark data and synthetic demonstration signals. It is not connected to a production government database or live government data infrastructure.
+
+- **Curated Benchmark Data**: Baseline statistics for 52 representative districts derived from public data sources (Census of India, Jal Jeevan Mission, National Health Mission, Pradhan Mantri Gram Sadak Yojana).
+- **Prototype Persistence**: Live user submissions via the web interface are saved to the prototype store (`civicpulse_citizen_requests.json`).
+- **Synthetic Signals**: Initial baseline request sets are seeded to demonstrate multi-sector hotspot clustering across regions before user submissions occur.
+
+---
+
+## 🔮 Future Production Architecture
+
+When scaling CivicPulse from a functional prototype to a national production Digital Public Infrastructure (DPI) deployment, the system architecture would expand to include:
+
+1. **Authenticated Government Data Connectors**:
+   - Live integration with e-Governance portals, Centrally Sponsored Scheme dashboards (JJM, PMGSY, NHM), and municipal GIS databases.
+2. **Enterprise Cloud Persistence & Event Pipelines**:
+   - Cloud SQL / PostgreSQL cluster with Redis caching and distributed pub/sub event brokers for real-time signal processing.
+3. **Verified Citizen Identity & Channels**:
+   - Integration with WhatsApp Business API, IVR voice response gateways, SMS gateways, and Aadhaar-based/ABHA identity verification where appropriate.
+4. **Role-Based Access Control (RBAC) & Security**:
+   - Multi-tenant departmental access control for District Collectors, State Secretaries, and Central Ministry Directors.
+5. **National Monitoring & SLA Automation**:
+   - Automated routing of approved projects to departmental execution software with automatic SLA tracking and breach alerts.
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Technology | Description |
+| :--- | :--- | :--- |
+| **Frontend Framework** | React 19 + TypeScript | High-performance component architecture. |
+| **Build Tool & Bundler** | Vite 6 + esbuild | Fast development HMR and production CommonJS bundling. |
+| **Styling** | Tailwind CSS v4 + Motion | Modern utility-first styling and smooth UI animations. |
+| **Geospatial & Viz** | Leaflet, TopoJSON, D3, Recharts | District map rendering, vector topology, and analytics. |
+| **Backend Server** | Express v4 on Node.js v22 | Lightweight REST API server with custom route handlers. |
+| **AI SDK & Models** | Google GenAI SDK (`@google/genai`) | Utilizing `gemini-3.6-flash` and `gemini-3.8-flash`. |
+| **Prototype Storage** | Local JSON File System | Thread-safe local file storage (`civicpulse_citizen_requests.json`). |
+| **i18n & Localization** | Custom React i18n Context | Full support for 8 Indian regional languages. |
 
 ---
 
 ## 📁 Directory & Codebase Architecture
 
 ```
-/
+civicpulse/
 ├── server.ts                       # Express backend server with Gemini AI API & persistence
 ├── metadata.json                   # AI Studio applet capabilities and metadata
-├── package.json                    # Project dependencies and scripts
+├── package.json                    # Project configuration and dependencies
 ├── vite.config.ts                  # Vite configuration with Tailwind plugin
 ├── tsconfig.json                   # TypeScript compiler configuration
-├── civicpulse_citizen_requests.json # Local JSON storage for user-submitted citizen requests
+├── civicpulse_citizen_requests.json # Local JSON storage for prototype citizen requests
 ├── src/
 │   ├── main.tsx                    # React application entry point
-│   ├── App.tsx                     # Main layout, router, global view switcher, and state engine
+│   ├── App.tsx                     # Main layout, view routing, and global state engine
 │   ├── index.css                   # Global styles & Tailwind CSS imports
 │   ├── types.ts                    # Canonical TypeScript interfaces (District, CitizenRequest, etc.)
 │   ├── components/
 │   │   ├── Overview.tsx            # Executive Dashboard & Top Recommendation Panel
-│   │   ├── HotspotMap.tsx          # Geospatial Demand Hotspot Map with Leaflet & TopoJSON
-│   │   ├── CitizenIngestion.tsx    # Multilingual Voice/Text Submission Modal
-│   │   ├── CitizenSubmissionView.tsx # Dedicated Citizen Submission Hub
-│   │   ├── CitizenSignalsView.tsx  # Granular Citizen Signals Registry & Filters
+│   │   ├── HotspotMap.tsx          # Geospatial Demand Hotspot Map (Leaflet + TopoJSON)
+│   │   ├── CitizenIngestion.tsx    # Multilingual Voice/Text Ingestion Modal
+│   │   ├── CitizenSubmissionView.tsx # Dedicated Citizen Submission Portal
+│   │   ├── CitizenSignalsView.tsx  # Granular Citizen Signals Registry & Search
 │   │   ├── CommunityIssuesView.tsx # Aggregated Problem Clusters View
-│   │   ├── ProjectsView.tsx        # Government Priority Register / Action Queue
-│   │   ├── PriorityEngine.tsx      # Deterministic Priority Scoring Model Inspector
+│   │   ├── ProjectsView.tsx        # Government Priority Register / Decision Queue
+│   │   ├── PriorityEngine.tsx      # Deterministic Priority Scoring Formula Inspector
 │   │   ├── PolicyLab.tsx           # Policy Brief Generator & AI Executive Briefing
 │   │   ├── GovernmentBriefing.tsx  # Executive Briefing Dossier
 │   │   ├── ImpactSimulator.tsx     # Closed-Loop Impact Simulator & Outcome Metrics
 │   │   ├── DemographicsView.tsx    # Demographics & Vulnerability Index Explorer
-│   │   ├── InfrastructureView.tsx # Infrastructure Asset & Service Deficit Explorer
+│   │   ├── InfrastructureView.tsx # Infrastructure Deficit & Asset Explorer
 │   │   ├── InvestmentIntelligence.tsx # Public Capex & Scheme Alignment Explorer
 │   │   ├── PatternIntelligence.tsx# Signal Pattern & Anomaly Detection
 │   │   ├── GlobalSearchModal.tsx   # Gemini Search & Function Calling Interface
-│   │   ├── GlobalHeader.tsx        # Unified App Header with Search & Language Selector
-│   │   ├── Navbar.tsx              # Primary System Navigation Bar
-│   │   ├── Sidebar.tsx             # System Navigation Sidebar
-│   │   ├── ScoreBreakdownModal.tsx # Priority Score Formula Explanation Modal
+│   │   ├── GlobalHeader.tsx        # App Header with Search & Language Selector
+│   │   ├── ScoreBreakdownModal.tsx # Priority Score 5-Pillar Formula Modal
 │   │   ├── ArchitectureBlueprint.tsx # DPI System Architecture Diagram
-│   │   ├── IndiaMapCanvas.tsx      # Custom SVG/Canvas TopoJSON Map Renderer
-│   │   ├── AtlasLanding.tsx        # Atlas Landing Portal
-│   │   ├── PortalHub.tsx           # Departmental Portal Switcher
-│   │   ├── SettingsView.tsx        # Platform Settings & Configuration
+│   │   ├── IndiaMapCanvas.tsx      # Custom TopoJSON Map Renderer
 │   │   └── ...
 │   ├── context/
 │   │   └── LanguageContext.tsx     # Global i18n Provider (8 Languages)
@@ -209,7 +236,7 @@ CivicPulse operates on a curated, benchmarked registry representing Indian admin
 │   ├── translations/
 │   │   └── index.ts                # Translations for 8 Indian Languages
 │   └── utils/
-│       ├── scoring.ts              # Deterministic Priority Scoring Engine
+│       ├── scoring.ts              # Deterministic 5-Pillar Priority Scoring Engine
 │       ├── demandAggregation.ts    # Signal Aggregation & Problem Clustering
 │       ├── evidenceBundleService.ts # Traceable EvidenceBundle Generator
 │       ├── impactEvidence.ts       # Impact Verification Helpers
@@ -224,75 +251,52 @@ CivicPulse operates on a curated, benchmarked registry representing Indian admin
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | System health check and total persisted requests count. |
-| `GET` | `/api/citizen-requests` | Retrieves all live user-submitted citizen requests. |
-| `POST` | `/api/citizen-requests` | Persists a new citizen request object to local JSON store. |
-| `POST` | `/api/process-feedback` | Multimodal (audio/text) diagnostic extraction using Gemini. |
-| `POST` | `/api/conversational-followup` | Multilingual conversational assistant follow-up. |
-| `POST` | `/api/generate-policy-brief` | Generates structured policy brief in target language. |
-| `POST` | `/api/search/intent` | Parses query intent and maps to Gemini function calls. |
+| `GET` | `/api/citizen-requests` | Retrieves all live user-submitted citizen requests from local JSON storage. |
+| `POST` | `/api/citizen-requests` | Persists a new citizen request object to `civicpulse_citizen_requests.json`. |
+| `POST` | `/api/process-feedback` | Multimodal (audio/text) diagnostic extraction using Gemini API. |
+| `POST` | `/api/conversational-followup` | Multilingual conversational assistant follow-up handler. |
+| `POST` | `/api/generate-policy-brief` | Generates structured policy brief in target language via Gemini. |
+| `POST` | `/api/search/intent` | Parses natural language query intent and maps to Gemini tool declarations. |
 | `POST` | `/api/search/summary` | Synthesizes grounded policymaker summary of search results. |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Setup & Installation
 
 ### Prerequisites
 - **Node.js**: v20 or higher (v22 recommended)
 - **npm**: v9 or higher
 
 ### Environment Setup
-Create a `.env` file in the root directory (or declare in `.env.example`):
+Create a `.env` file in the project root directory:
 
 ```env
-# Server-side Gemini API Key (Required for AI features)
+# Server-side Gemini API Key (Required for AI processing features)
 GEMINI_API_KEY=your_gemini_api_key_here
 NODE_ENV=development
 ```
 
-### Installation
+### Installation Commands
 
 ```bash
-# Install dependencies
+# 1. Install dependencies
 npm install
-```
 
-### Development Server
-Runs Express + Vite dev server on `http://localhost:3000`:
-
-```bash
+# 2. Run local development server (Express + Vite on http://localhost:3000)
 npm run dev
-```
 
-### Type Checking & Linting
-
-```bash
+# 3. Type check & lint
 npm run lint
-```
 
-### Production Build & Execution
-
-```bash
-# 1. Compile Vite bundle and esbuild server.ts into dist/server.cjs
+# 4. Build for production (Vite client + esbuild CommonJS server)
 npm run build
 
-# 2. Launch production server
+# 5. Start production server
 npm run start
 ```
 
 ---
 
-## 🔒 Terminology Compliance Guidelines
-
-When describing or presenting CivicPulse, adhere strictly to these canonical terminology standards:
-
-- **Synthetic demonstration signals**: Synthetic baseline seed data generated for initial system demonstration.
-- **Actual user-submitted CivicPulse signals**: Live requests submitted by users through the voice/text interface.
-- **Government public-data benchmark**: Verified public datasets (Census, Jal Jeevan Mission, NHM, PMGSY).
-- **Deterministic priority score**: Transparent 0–100 score calculated by the scoring formula.
-- **Traceable EvidenceBundle**: Unbroken data lineage linking citizen signals to recommended outlays.
-
----
-
 ## 📄 License & Attribution
 
-Developed as a Digital Public Infrastructure (DPI) solution for National Development Intelligence. Built with Google Gemini API, React, Express, and Tailwind CSS.
+Developed as a Digital Public Infrastructure (DPI) prototype for National Development Intelligence. Powered by Google Gemini API, React 19, Express, and Tailwind CSS.
