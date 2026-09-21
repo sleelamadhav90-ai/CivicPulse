@@ -114,3 +114,14 @@ export const searchIntentCache = new MemoryCache<any>({
   maxEntries: 300,
   defaultTtlMs: 15 * 60 * 1000, // 15 min TTL
 });
+
+export const searchSummaryCache = new MemoryCache<string>({
+  maxEntries: 300,
+  defaultTtlMs: 15 * 60 * 1000, // 15 min TTL
+});
+
+export const conversationalCache = new MemoryCache<any>({
+  maxEntries: 300,
+  defaultTtlMs: 15 * 60 * 1000, // 15 min TTL
+});
+

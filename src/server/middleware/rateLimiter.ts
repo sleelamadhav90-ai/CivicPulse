@@ -55,6 +55,20 @@ export function createRateLimiter(options: RateLimiterOptions) {
 
     let entry = store.get(key);
 
+    // Safeguard store memory: if store reaches 10,000 unique client IPs, purge expired
+    if (!entry && store.size >= 10000) {
+      for (const [k, e] of store.entries()) {
+        if (now > e.resetTime) {
+          store.delete(k);
+        }
+      }
+      // If still above threshold, drop the oldest key
+      if (store.size >= 10000) {
+        const oldestKey = store.keys().next().value;
+        if (oldestKey) store.delete(oldestKey);
+      }
+    }
+
     if (!entry || now > entry.resetTime) {
       entry = {
         count: 1,
@@ -66,8 +80,12 @@ export function createRateLimiter(options: RateLimiterOptions) {
     }
 
     const remaining = Math.max(0, maxRequests - entry.count);
-    const resetSeconds = Math.ceil((entry.resetTime - now) / 1000);
+    const resetSeconds = Math.max(1, Math.ceil((entry.resetTime - now) / 1000));
 
+    // Set standard and legacy rate limit headers
+    res.setHeader('RateLimit-Limit', maxRequests);
+    res.setHeader('RateLimit-Remaining', remaining);
+    res.setHeader('RateLimit-Reset', resetSeconds);
     res.setHeader('X-RateLimit-Limit', maxRequests);
     res.setHeader('X-RateLimit-Remaining', remaining);
     res.setHeader('X-RateLimit-Reset', resetSeconds);

@@ -16,15 +16,31 @@ declare global {
  */
 export function requestIdMiddleware(req: Request, res: Response, next: NextFunction): void {
   const existingId = req.headers['x-request-id'];
-  const reqId =
-    typeof existingId === 'string' && existingId.trim()
-      ? existingId.trim().slice(0, 64)
-      : `cp-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
+  // Sanitize upstream X-Request-Id: only allow safe alphanumeric characters, dashes, and underscores
+  const isSafeUpstreamId =
+    typeof existingId === 'string' &&
+    existingId.trim().length > 0 &&
+    existingId.trim().length <= 64 &&
+    /^[a-zA-Z0-9_-]+$/.test(existingId.trim());
+
+  const reqId = isSafeUpstreamId
+    ? (existingId as string).trim()
+    : `cp-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 8)}`;
 
   req.id = reqId;
   req.startTime = Date.now();
 
   res.setHeader('X-Request-Id', reqId);
+
+  // Measure response duration and set X-Response-Time header before response commit
+  const originalWriteHead = res.writeHead;
+  res.writeHead = function (this: Response, statusCode: number, ...args: any[]) {
+    if (!res.headersSent && req.startTime) {
+      const durationMs = Math.max(0, Date.now() - req.startTime);
+      res.setHeader('X-Response-Time', `${durationMs}ms`);
+    }
+    return (originalWriteHead as any).apply(this, [statusCode, ...args]);
+  };
 
   res.on('finish', () => {
     const durationMs = req.startTime ? Date.now() - req.startTime : 0;

@@ -170,6 +170,16 @@ export class JsonCitizenRequestRepository implements CitizenRequestRepository {
     return updated;
   }
 
+  public async delete(id: string): Promise<boolean> {
+    if (!this.isLoaded) this.initStore();
+    const index = this.memoryCache.findIndex((r) => r.id === id);
+    if (index === -1) return false;
+
+    this.memoryCache.splice(index, 1);
+    this.persistToDisk();
+    return true;
+  }
+
   public async count(filter?: { category?: string; district?: string; state?: string }): Promise<number> {
     if (!this.isLoaded) this.initStore();
     if (!filter) return this.memoryCache.length;

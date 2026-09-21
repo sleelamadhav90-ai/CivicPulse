@@ -6,6 +6,8 @@ import { validateCitizenRequest, validateProcessFeedback } from '../validation/r
 import { createRateLimiter } from '../middleware/rateLimiter';
 import { MemoryCache } from '../cache/memoryCache';
 import { validateConfig } from '../config';
+import { requestIdMiddleware } from '../middleware/requestId';
+import { errorHandler, AppError } from '../middleware/errorHandler';
 import type { CitizenRequest } from '../../types';
 
 function assert(condition: boolean, message: string): void {
@@ -52,6 +54,19 @@ async function runScalabilityAndArchitectureTestSuite() {
 
   const notFound = await repo.getById('NON-EXISTENT');
   assert(notFound === null, 'getById returns null for non-existent record');
+
+  // Verify delete operation
+  const deleteNonExistent = await repo.delete('NON-EXISTENT');
+  assert(deleteNonExistent === false, 'delete returns false for non-existent record');
+
+  const deleteExisting = await repo.delete('CP-TEST-001');
+  assert(deleteExisting === true, 'delete returns true for successfully deleted record');
+
+  const postDeleteFetch = await repo.getById('CP-TEST-001');
+  assert(postDeleteFetch === null, 'getById returns null after deletion');
+
+  // Re-create testRequest to maintain baseline
+  await repo.create(testRequest);
 
   // Insert additional records to test pagination & filtering
   for (let i = 2; i <= 25; i++) {
@@ -236,12 +251,117 @@ async function runScalabilityAndArchitectureTestSuite() {
   const rateLimitFalse = validateConfig({ RATE_LIMIT_ENABLED: 'false' });
   assert(rateLimitFalse.config.rateLimitEnabled === false, 'RATE_LIMIT_ENABLED=false disables rate limiter');
 
+  // --- Test 9: Request ID Middleware & Latency Tracking ---
+  console.log('\n[Test 9] Request Traceability: Request ID and Response Time Measurement');
+  const req1 = { headers: {}, on: () => {} } as any;
+  const headersSet1: Record<string, any> = {};
+  const res1 = {
+    setHeader: (k: string, v: any) => {
+      headersSet1[k] = v;
+    },
+    writeHead: function () {
+      return this;
+    },
+    on: () => {},
+  } as any;
+
+  requestIdMiddleware(req1, res1, () => {});
+  assert(typeof req1.id === 'string' && req1.id.startsWith('cp-'), 'Generates valid default trace ID');
+  assert(headersSet1['X-Request-Id'] === req1.id, 'Sets X-Request-Id response header matching req.id');
+
+  // Safe upstream ID propagation
+  const req2 = { headers: { 'x-request-id': 'client-trace-abc-123' }, on: () => {} } as any;
+  const headersSet2: Record<string, any> = {};
+  const res2 = {
+    setHeader: (k: string, v: any) => {
+      headersSet2[k] = v;
+    },
+    writeHead: function () {
+      return this;
+    },
+    on: () => {},
+  } as any;
+  requestIdMiddleware(req2, res2, () => {});
+  assert(req2.id === 'client-trace-abc-123', 'Safely adopts valid upstream X-Request-Id');
+
+  // Unsafe upstream ID sanitization (rejects malicious chars / injections)
+  const req3 = { headers: { 'x-request-id': 'bad<script>alert(1)</script>' }, on: () => {} } as any;
+  const headersSet3: Record<string, any> = {};
+  const res3 = {
+    setHeader: (k: string, v: any) => {
+      headersSet3[k] = v;
+    },
+    writeHead: function () {
+      return this;
+    },
+    on: () => {},
+  } as any;
+  requestIdMiddleware(req3, res3, () => {});
+  assert(req3.id !== 'bad<script>alert(1)</script>' && req3.id.startsWith('cp-'), 'Rejects and sanitizes invalid upstream X-Request-Id');
+
+  // Response time calculation
+  res1.writeHead(200);
+  assert(typeof headersSet1['X-Response-Time'] === 'string' && headersSet1['X-Response-Time'].endsWith('ms'), 'Sets X-Response-Time header with ms suffix');
+
+  // --- Test 10: Error Handler Sanitization (No Secrets / Internal Paths Leaked) ---
+  console.log('\n[Test 10] Error Handling: Centralized JSON Error & Secrets Sanitization');
+  let errStatus = 0;
+  let errPayload: any = null;
+  const dummyErrRes = {
+    status: (s: number) => {
+      errStatus = s;
+      return {
+        json: (p: any) => {
+          errPayload = p;
+        },
+      };
+    },
+  } as any;
+  const dummyErrReq = { id: 'test-trace-999' } as any;
+
+  // Custom AppError
+  const customErr = new AppError('Invalid category selection', 400, 'INVALID_CATEGORY', { allowed: ['Water', 'Roads'] });
+  errorHandler(customErr, dummyErrReq, dummyErrRes, () => {});
+  assert(errStatus === 400, 'AppError preserves custom HTTP status code 400');
+  assert(errPayload.error.code === 'INVALID_CATEGORY', 'Preserves custom error code');
+  assert(errPayload.requestId === 'test-trace-999', 'Error payload includes request ID');
+  assert(errPayload.error.details.allowed.length === 2, 'Error payload preserves structured details');
+
+  // Leak prevention: strip simulated Gemini API key and internal path from error message
+  const leakyErr = new Error('Failed to query Gemini with key AIzaSyA123456789012345678901234567890b in /usr/local/app/src/server.ts');
+  errorHandler(leakyErr, dummyErrReq, dummyErrRes, () => {});
+  assert(errStatus === 500, 'Generic Error defaults to HTTP 500');
+  assert(!errPayload.error.message.includes('AIzaSy'), 'Error handler redacts Gemini API key pattern');
+  assert(!errPayload.error.message.includes('/usr/local/app'), 'Error handler redacts internal filesystem paths');
+
+  // --- Test 11: Rate Limiter Standard & RFC Headers ---
+  console.log('\n[Test 11] Rate Limiter Standard & Legacy Header Compliance');
+  const headersSetLimiter: Record<string, any> = {};
+  const dummyResLimiter = {
+    setHeader: (k: string, v: any) => {
+      headersSetLimiter[k] = v;
+    },
+    status: () => ({ json: () => {} }),
+  } as any;
+  const testLimiter = createRateLimiter({
+    windowMs: 60000,
+    maxRequests: 50,
+    name: 'test-header-limiter',
+    forceEnable: true,
+  });
+  testLimiter({ headers: {}, ip: '10.0.0.1' } as any, dummyResLimiter, () => {});
+  assert(headersSetLimiter['RateLimit-Limit'] === 50, 'Sets standard RateLimit-Limit');
+  assert(headersSetLimiter['RateLimit-Remaining'] === 49, 'Sets standard RateLimit-Remaining');
+  assert(headersSetLimiter['X-RateLimit-Limit'] === 50, 'Sets legacy X-RateLimit-Limit');
+  assert(headersSetLimiter['X-RateLimit-Remaining'] === 49, 'Sets legacy X-RateLimit-Remaining');
+  assert(headersSetLimiter['RateLimit-Reset'] >= 1, 'Sets RateLimit-Reset in seconds');
+
   // Cleanup test temporary file
   if (fs.existsSync(testStorePath)) {
     fs.unlinkSync(testStorePath);
   }
 
-  console.log('\n🎉 ALL 8 DEPLOYABILITY & SCALABILITY ARCHITECTURE TESTS PASSED SUCCESSFULLY!\n');
+  console.log('\n🎉 ALL 11 DEPLOYABILITY & SCALABILITY ARCHITECTURE TESTS PASSED SUCCESSFULLY!\n');
 }
 
 runScalabilityAndArchitectureTestSuite().catch((err) => {

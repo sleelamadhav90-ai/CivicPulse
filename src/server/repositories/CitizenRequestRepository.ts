@@ -61,6 +61,11 @@ export interface CitizenRequestRepository {
   update(id: string, updates: Partial<CitizenRequest>): Promise<CitizenRequest | null>;
 
   /**
+   * Delete an existing citizen request by id.
+   */
+  delete(id: string): Promise<boolean>;
+
+  /**
    * Return the total count of requests matching an optional filter.
    */
   count(filter?: { category?: string; district?: string; state?: string }): Promise<number>;

@@ -11,8 +11,14 @@ import { getCitizenRequestRepository } from './src/server/repositories/index';
 import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator';
 import { requestIdMiddleware } from './src/server/middleware/requestId';
 import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter';
-import { errorHandler } from './src/server/middleware/errorHandler';
-import { policyBriefCache, feedbackDiagnosticCache } from './src/server/cache/memoryCache';
+import { errorHandler, AppError } from './src/server/middleware/errorHandler';
+import {
+  policyBriefCache,
+  feedbackDiagnosticCache,
+  searchIntentCache,
+  searchSummaryCache,
+  conversationalCache,
+} from './src/server/cache/memoryCache';
 
 dotenv.config();
 
@@ -74,6 +80,9 @@ const handleHealthCheck = async (req: Request, res: Response) => {
       cache: {
         policyBriefs: policyBriefCache.getStats(),
         feedbackDiagnostics: feedbackDiagnosticCache.getStats(),
+        searchIntents: searchIntentCache.getStats(),
+        searchSummaries: searchSummaryCache.getStats(),
+        conversational: conversationalCache.getStats(),
       },
       aiService: {
         status: process.env.GEMINI_API_KEY ? 'configured' : 'unconfigured',
@@ -153,6 +162,48 @@ app.post('/api/citizen-requests', async (req: Request, res: Response, next: Next
   }
 });
 
+// Endpoint: Retrieve single citizen request by ID
+app.get('/api/citizen-requests/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const item = await requestRepository.getById(req.params.id);
+    if (!item) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Citizen request with id '${req.params.id}' was not found.`,
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    res.json({ success: true, request: item });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Endpoint: Delete single citizen request by ID
+app.delete('/api/citizen-requests/:id', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const deleted = await requestRepository.delete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 'NOT_FOUND',
+          message: `Citizen request with id '${req.params.id}' was not found.`,
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+    }
+    res.json({ success: true, deleted: true, id: req.params.id });
+  } catch (err) {
+    next(err);
+  }
+});
+
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
   hi: 'Hindi',
@@ -166,16 +217,20 @@ const LANGUAGE_NAMES: Record<string, string> = {
 
 async function callGeminiWithTimeoutAndRetry(
   fn: () => Promise<any>,
-  timeoutMs = 2500,
-  maxRetries = 0,
-  delayMs = 100
+  timeoutMs = 8000,
+  maxRetries = 1,
+  delayMs = 200
 ): Promise<any> {
   const runWithTimeout = () => {
+    let timer: NodeJS.Timeout;
+    const timeoutPromise = new Promise((_, reject) => {
+      timer = setTimeout(() => reject(new Error(`Gemini API call timed out after ${timeoutMs}ms`)), timeoutMs);
+      if (timer.unref) timer.unref();
+    });
+
     return Promise.race([
-      fn(),
-      new Promise((_, reject) =>
-        setTimeout(() => reject(new Error(`Gemini API call timed out after ${timeoutMs}ms`)), timeoutMs)
-      ),
+      fn().finally(() => clearTimeout(timer)),
+      timeoutPromise,
     ]);
   };
 
@@ -192,7 +247,6 @@ async function callGeminiWithTimeoutAndRetry(
         msg.includes('503') ||
         msg.includes('429') ||
         msg.includes('timed out') ||
-        msg.includes('demand') ||
         msg.includes('UNAVAILABLE') ||
         msg.includes('overloaded') ||
         msg.includes('RESOURCE_EXHAUSTED');
@@ -207,8 +261,8 @@ async function callGeminiWithTimeoutAndRetry(
 }
 
 // Backward compatible alias
-const callGeminiWithRetry = (fn: () => Promise<any>, maxRetries = 0, delayMs = 100) => 
-  callGeminiWithTimeoutAndRetry(fn, 2500, maxRetries, delayMs);
+const callGeminiWithRetry = (fn: () => Promise<any>, maxRetries = 1, delayMs = 200) => 
+  callGeminiWithTimeoutAndRetry(fn, 8000, maxRetries, delayMs);
 
 // Endpoint: Process Citizen Feedback (Multimodal: Audio / Text)
 app.post('/api/process-feedback', async (req: Request, res: Response) => {
@@ -461,6 +515,11 @@ app.post('/api/conversational-followup', async (req: Request, res: Response) => 
     const { userMessage, history = [], languagePreference, language } = req.body;
     const prefLang = LANGUAGE_NAMES[languagePreference || language] || languagePreference || language || 'English';
 
+    const cacheKey = `${(userMessage || '').trim().toLowerCase()}_${prefLang}`;
+    if ((!history || history.length === 0) && conversationalCache.has(cacheKey)) {
+      return res.json({ success: true, data: conversationalCache.get(cacheKey), cached: true });
+    }
+
     const ai = getGenAI();
     const model = 'gemini-2.5-flash';
 
@@ -557,6 +616,10 @@ Previous Chat History: ${JSON.stringify(history)}
         isComplete: true,
         quickOptions: []
       };
+    }
+
+    if (!history || history.length === 0) {
+      conversationalCache.set(cacheKey, data);
     }
 
     res.json({ success: true, data });
@@ -732,9 +795,6 @@ Projected to benefit over **${Number(population).toLocaleString()} residents**, 
 // =========================================================================
 // SEARCH ENDPOINTS (Step 2F: Natural-Language Search & Gemini Function Calling)
 // =========================================================================
-const searchIntentCache = new Map<string, any>();
-const searchSummaryCache = new Map<string, string>();
-const conversationalCache = new Map<string, any>();
 
 // Gemini Function Calling Declarations for CivicPulse Search Architecture
 const CIVICPULSE_SEARCH_TOOLS = [
@@ -822,11 +882,19 @@ const CIVICPULSE_SEARCH_TOOLS = [
 ];
 
 // Endpoint: Gemini Structured Intent Extraction with Function Calling Mapping
-app.post('/api/search/intent', async (req: Request, res: Response) => {
+app.post('/api/search/intent', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { query, language = 'en' } = req.body;
     if (!query || typeof query !== 'string' || !query.trim()) {
-      return res.status(400).json({ error: 'Search query is required' });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Search query is required and must be a non-empty string.',
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     const trimmedQuery = query.trim();
@@ -1065,12 +1133,12 @@ STRICT NO-INVENTION MANDATES:
 
     return res.json({ success: true, ...fallbackResult });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Failed to extract search intent' });
+    next(err);
   }
 });
 
 // Endpoint: Grounded Search Results Synthesis / Policymaker Summary
-app.post('/api/search/summary', async (req: Request, res: Response) => {
+app.post('/api/search/summary', async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { query, language = 'en' } = req.body;
     const results = req.body.results || {
@@ -1081,7 +1149,15 @@ app.post('/api/search/summary', async (req: Request, res: Response) => {
       totalCount: req.body.totalCount,
     };
     if (!query || (!results && !req.body.totalCount && !req.body.issues && !req.body.recommendations)) {
-      return res.status(400).json({ error: 'Query and results are required' });
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Query and results are required for search summarization.',
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
     }
 
     if (!process.env.GEMINI_API_KEY) {
@@ -1136,7 +1212,7 @@ STRICT GROUNDING RULES:
       summary: summaryText,
     });
   } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Failed to generate search summary' });
+    next(err);
   }
 });
 

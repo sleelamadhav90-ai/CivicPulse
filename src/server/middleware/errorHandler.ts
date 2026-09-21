@@ -32,10 +32,12 @@ export class AppError extends Error {
  */
 function sanitizeErrorMessage(msg: string): string {
   if (!msg) return 'An unexpected server error occurred.';
-  // Strip potential API keys or token strings
-  let clean = msg.replace(/AIza[0-9A-Za-z-_]{35}/g, '[REDACTED_KEY]');
+  // Strip potential Google/Gemini API keys (AIza...)
+  let clean = msg.replace(/AIza[0-9A-Za-z_\-]{20,}/g, '[REDACTED_KEY]');
+  // Strip bearer tokens or generic secrets
+  clean = clean.replace(/(?:key|token|secret|password)[=:\s]+[A-Za-z0-9_\-\.]{8,}/gi, '$1=[REDACTED_SECRET]');
   // Strip Unix / Windows filesystem paths
-  clean = clean.replace(/(?:\/[a-zA-Z0-9_.-]+)+/g, '[INTERNAL_PATH]');
+  clean = clean.replace(/(?:\/[a-zA-Z0-9_.-]+){2,}/g, '[INTERNAL_PATH]');
   clean = clean.replace(/[A-Z]:\\[^ \n\r]+/g, '[INTERNAL_PATH]');
   return clean;
 }

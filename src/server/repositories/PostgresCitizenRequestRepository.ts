@@ -100,6 +100,12 @@ export class PostgresCitizenRequestRepository implements CitizenRequestRepositor
     return null;
   }
 
+  public async delete(id: string): Promise<boolean> {
+    this.ensureConnected();
+    // DELETE FROM citizen_requests WHERE id = $1;
+    return false;
+  }
+
   public async count(filter?: { category?: string; district?: string; state?: string }): Promise<number> {
     this.ensureConnected();
     // SELECT COUNT(*) FROM citizen_requests WHERE ...;
