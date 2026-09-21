@@ -204,15 +204,74 @@ The current version of CivicPulse is a fully working, demonstrable prototype equ
 
 ---
 
-## 💾 Prototype Persistence
+## 🏗️ Production Scalability Architecture (Proposed)
 
-CivicPulse currently uses local JSON file storage (`civicpulse_citizen_requests.json`) for prototype persistence of user-submitted citizen requests. This keeps the demonstration lightweight, highly responsive, and self-contained.
+CivicPulse is engineered with **clean architectural boundaries** that separate domain intelligence, deterministic scoring, and multimodal AI diagnostics from physical storage and deployment topology.
 
-> **Production Note**: For production deployment, this local file storage layer would be replaced by a scalable relational/document database (e.g., PostgreSQL / Cloud SQL / Firestore) and an event streaming architecture (e.g., Apache Kafka / Pub/Sub) capable of managing concurrent national workloads.
+> ℹ️ **Architecture Notice**: The current demonstration runs as a self-contained prototype using **`JsonCitizenRequestRepository`** (`civicpulse_citizen_requests.json`), bounded in-memory LRU/TTL caching, and application-level sliding-window rate limiting. The design below illustrates the verified production evolution path required for national-scale Digital Public Infrastructure (DPI).
+
+### Scalability Data Flow Diagram (Proposed)
+
+```mermaid
+flowchart TD
+    subgraph Ingestion["1. Multimodal Citizen Ingestion Tier"]
+        C1[WhatsApp Business API] --> GW[API Gateway / Cloud Armor]
+        C2[IVR Telephony Audio Stream] --> GW
+        C3[Web Portal & Mobile PWA] --> GW
+        GW --> RL[Distributed Rate Limiter & WAF]
+    end
+
+    subgraph ApiTier["2. Horizontally Scaled API Tier"]
+        RL --> APINodes[Node.js API Cluster Instances]
+        APINodes --> V[Input Validation Boundary]
+        V --> RID[Request ID & Trace Context]
+    end
+
+    subgraph EventStream["3. Asynchronous Event Pipeline"]
+        APINodes -.->|High-volume async events| PubSub[(Google Cloud Pub/Sub / Kafka)]
+        PubSub --> W1[Worker: Multimodal Audio Transcription]
+        PubSub --> W2[Worker: NLP Structuring & Translation]
+        PubSub --> W3[Worker: Geospatial Demand Clustering]
+    end
+
+    subgraph PersistenceTier["4. Persistence & Storage Abstraction"]
+        APINodes --> Repo[CitizenRequestRepository Interface]
+        Repo -->|Prototype Mode| JSONRepo[JsonCitizenRequestRepository]
+        JSONRepo --> JSONFile[(civicpulse_citizen_requests.json)]
+        Repo -->|Production Mode| PGRepo[PostgresCitizenRequestRepository]
+        PGRepo --> CloudSQL[(Managed PostgreSQL + PostGIS)]
+        W1 --> GCS[(Cloud Storage: Audio & Evidence Dossiers)]
+    end
+
+    subgraph CachingTier["5. Caching & Acceleration"]
+        APINodes <--> Cache[Cache Abstraction Layer]
+        Cache -->|Prototype| MemCache[Bounded MemoryCache LRU/TTL]
+        Cache -->|Production| Redis[(Managed Redis / Memorystore)]
+    end
+
+    subgraph DecisionEngine["6. Core Deterministic Decision Pipeline"]
+        CloudSQL --> HotspotEngine[Geospatial Hotspot Aggregation]
+        HotspotEngine --> ScoringEngine[Deterministic 5-Pillar Priority Engine]
+        ScoringEngine --> ImpactEngine[Closed-Loop Impact Model]
+        ImpactEngine --> Policymakers[National Decision Dashboard & Policy Briefs]
+    end
+```
+
+### Prototype vs. Production Architecture Comparison
+
+| Architectural Dimension | Current Prototype Implementation | Proposed National Production Path |
+| :--- | :--- | :--- |
+| **Persistence Layer** | `JsonCitizenRequestRepository` reading and writing to `civicpulse_citizen_requests.json` with temporary file atomic commits. | `PostgresCitizenRequestRepository` connecting to managed PostgreSQL (Cloud SQL) with PostGIS geospatial indexes and connection pooling. |
+| **API Boundary & Scaling** | Single Express/Node.js instance binding on `0.0.0.0:3000` with graceful SIGTERM/SIGINT teardown. | Horizontally scaled container instances behind Google Cloud Load Balancer / Envoy with autoscaling (HPA). |
+| **Input Validation** | Centralized `requestValidator.ts` enforcing enum schemas, string lengths, coordinates (-90..90, -180..180), and numeric bounds. | Gateway-level OpenAPI/JSON schema validation plus defense-in-depth domain validation in API services. |
+| **Error Handling & Traceability** | Uniform `errorHandler.ts` omitting stack traces/API keys; lightweight `requestId.ts` injecting `X-Request-Id` headers. | Distributed OpenTelemetry tracing (Cloud Trace) with end-to-end trace propagation and structured JSON log sinks. |
+| **Rate Limiting & Abuse** | Sliding-window in-memory rate limiter (`generalApiLimiter`: 120 req/min, `expensiveAiLimiter`: 30 req/min). | Distributed token-bucket rate limiting at API Gateway / Cloud Armor to protect Gemini API quotas and withstand DDoS attacks. |
+| **AI Processing** | Synchronous on-demand Gemini 2.5 Flash inference with exponential backoff and truthful deterministic fallbacks. | Asynchronous Celery / PubSub worker queues for batch processing of high-volume voice/IVR streams. |
+| **Caching System** | Bounded LRU & TTL `MemoryCache` for policy briefs (1 hr), feedback diagnostics (30 min), and search intent. | Clustered Redis (Google Cloud Memorystore) with distributed key invalidation and read replicas. |
+| **Audio & File Evidence** | In-memory base64 payloads with 25MB Express limit for immediate interactive diagnostics. | Cloud Storage (GCS / S3) signed URLs with dedicated media compression and retention lifecycle policies. |
+| **Geospatial & Hotspot Analytics** | In-memory client/server geospatial aggregation across 70 registered districts with TopoJSON topology. | PostGIS spatial queries (`ST_DWithin`, spatial clustering) and pre-aggregated materialized views for sub-second macro analytics. |
 
 ---
-
-## ⚖️ Prototype Honesty & Data Tiering Architecture
 
 CivicPulse is a decision-support Digital Public Infrastructure (DPI) prototype. To maintain complete transparency regarding data provenance and depth across its expanded national scope:
 - **100% Geographic Representation (36 States & UTs)**: Every state (28) and Union Territory (8) in India is represented in the source-of-truth district registry (`DISTRICTS_REGISTRY`).

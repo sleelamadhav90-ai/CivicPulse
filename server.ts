@@ -1,9 +1,17 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
+
+// Scalability & Persistence Architecture modules
+import { getCitizenRequestRepository } from './src/server/repositories/index';
+import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator';
+import { requestIdMiddleware } from './src/server/middleware/requestId';
+import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter';
+import { errorHandler } from './src/server/middleware/errorHandler';
+import { policyBriefCache, feedbackDiagnosticCache } from './src/server/cache/memoryCache';
 
 dotenv.config();
 
@@ -12,6 +20,20 @@ const PORT = 3000;
 
 // Enable JSON body parsing with large payload limit for base64 audio
 app.use(express.json({ limit: '25mb' }));
+
+// Traceability: Attach request ID and measure response latency
+app.use(requestIdMiddleware);
+
+// Active Persistence Repository (Defaults to JsonCitizenRequestRepository)
+const requestRepository = getCitizenRequestRepository();
+
+// Global Rate Limiting across API endpoints
+app.use('/api', generalApiLimiter);
+
+// Dedicated Rate Limiting for high-cost AI operations
+app.use('/api/process-feedback', expensiveAiLimiter);
+app.use('/api/conversational-followup', expensiveAiLimiter);
+app.use('/api/generate-policy-brief', expensiveAiLimiter);
 
 // Lazy Google GenAI Client
 let genAIClient: GoogleGenAI | null = null;
@@ -30,90 +52,100 @@ function getGenAI(): GoogleGenAI {
   return genAIClient;
 }
 
-// Persistent Storage for live citizen requests
-const REQUESTS_STORE_FILE = path.join(process.cwd(), 'civicpulse_citizen_requests.json');
-
-function loadPersistedRequests(): Array<any> {
-  try {
-    if (fs.existsSync(REQUESTS_STORE_FILE)) {
-      const raw = fs.readFileSync(REQUESTS_STORE_FILE, 'utf-8');
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed)) {
-        // Sanitize IDs so they never collide with canonical demo seed IDs like CP-2026-004821
-        let modified = false;
-        const cleaned = parsed.map(item => {
-          if (item && item.id === 'CP-2026-004821') {
-            modified = true;
-            return { ...item, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
-          }
-          return item;
-        });
-        if (modified) {
-          savePersistedRequests(cleaned);
-        }
-        return cleaned;
-      }
-    }
-  } catch (err) {
-    console.warn('Error reading persisted requests:', err);
-  }
-  return [];
-}
-
-function savePersistedRequests(requests: Array<any>): void {
-  try {
-    fs.writeFileSync(REQUESTS_STORE_FILE, JSON.stringify(requests, null, 2), 'utf-8');
-  } catch (err) {
-    console.warn('Error saving persisted requests:', err);
-  }
-}
-
-let citizenRequestsStore: Array<any> = loadPersistedRequests();
-
-// API Routes
-app.get('/api/health', (req: Request, res: Response) => {
-  res.json({ status: 'ok', time: new Date().toISOString(), persistedRequestsCount: citizenRequestsStore.length });
-});
-
-// Endpoint: Get all persisted citizen requests
-app.get('/api/citizen-requests', (req: Request, res: Response) => {
+// Endpoint: Comprehensive Health & Readiness Check
+const handleHealthCheck = async (req: Request, res: Response) => {
+  const repoHealth = await requestRepository.healthCheck();
+  const stats = await requestRepository.getStatistics();
   res.json({
-    success: true,
-    count: citizenRequestsStore.length,
-    requests: citizenRequestsStore
+    status: repoHealth.status === 'down' ? 'degraded' : 'ok',
+    service: 'civicpulse-api',
+    version: '1.0.0',
+    uptimeSeconds: Number(process.uptime().toFixed(1)),
+    timestamp: new Date().toISOString(),
+    persistedRequestsCount: stats.totalRequests,
+    checks: {
+      persistence: repoHealth,
+      cache: {
+        policyBriefs: policyBriefCache.getStats(),
+        feedbackDiagnostics: feedbackDiagnosticCache.getStats(),
+      },
+      aiService: {
+        status: process.env.GEMINI_API_KEY ? 'configured' : 'unconfigured',
+        model: 'gemini-2.5-flash',
+      },
+    },
   });
-});
+};
+app.get('/api/health', handleHealthCheck);
+app.get('/health', handleHealthCheck);
 
-// Endpoint: Persist newly submitted citizen request
-app.post('/api/citizen-requests', (req: Request, res: Response) => {
+// Endpoint: Get persisted citizen requests with pagination and filtering
+app.get('/api/citizen-requests', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const newRequest = req.body;
-    if (!newRequest || !newRequest.id) {
-      return res.status(400).json({ error: 'Valid citizen request object with ID is required.' });
-    }
+    const page = req.query.page ? Number(req.query.page) : 1;
+    // Default limit to 50 if page requested; if neither page nor limit given, return all for backwards compatibility
+    const limit = req.query.limit !== undefined ? Number(req.query.limit) : (req.query.page ? 50 : 0);
+    const category = req.query.category as string | undefined;
+    const district = req.query.district as string | undefined;
+    const state = req.query.state as string | undefined;
+    const urgency = req.query.urgency as string | undefined;
+    const status = req.query.status as string | undefined;
+    const search = req.query.search as string | undefined;
 
-    const existingIndex = citizenRequestsStore.findIndex(r => r.id === newRequest.id);
-    if (existingIndex >= 0) {
-      citizenRequestsStore[existingIndex] = newRequest;
-    } else {
-      citizenRequestsStore.unshift(newRequest);
-    }
-
-    savePersistedRequests(citizenRequestsStore);
+    const result = await requestRepository.list({
+      page,
+      limit,
+      category,
+      district,
+      state,
+      urgency,
+      status,
+      search,
+    });
 
     res.json({
       success: true,
-      request: newRequest,
-      totalStored: citizenRequestsStore.length
+      count: result.items.length,
+      total: result.total,
+      page: result.page,
+      limit: result.limit,
+      totalPages: result.totalPages,
+      requests: result.items,
     });
-  } catch (err: any) {
-    res.status(500).json({ error: err?.message || 'Failed to persist request' });
+  } catch (err) {
+    next(err);
   }
 });
 
-// In-memory cache for policy briefs and conversational requests
-const policyBriefCache = new Map<string, string>();
-const feedbackCache = new Map<string, any>();
+// Endpoint: Persist newly submitted citizen request with validation
+app.post('/api/citizen-requests', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const validation = validateCitizenRequest(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Citizen request payload validation failed.',
+          details: validation.errors,
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
+    }
+
+    const saved = await requestRepository.create(req.body);
+    const stats = await requestRepository.getStatistics();
+
+    res.json({
+      success: true,
+      request: saved,
+      totalStored: stats.totalRequests,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',
@@ -175,16 +207,26 @@ const callGeminiWithRetry = (fn: () => Promise<any>, maxRetries = 0, delayMs = 1
 // Endpoint: Process Citizen Feedback (Multimodal: Audio / Text)
 app.post('/api/process-feedback', async (req: Request, res: Response) => {
   try {
-    const { text, audioBase64, mimeType, userLocation, userCategory, language } = req.body;
-
-    if (!text && !audioBase64) {
-      return res.status(400).json({ error: 'Either text or audio data must be provided.' });
+    const validation = validateProcessFeedback(req.body);
+    if (!validation.isValid) {
+      return res.status(400).json({
+        success: false,
+        error: {
+          code: 'VALIDATION_FAILED',
+          message: 'Feedback input payload validation failed.',
+          details: validation.errors,
+        },
+        requestId: req.id,
+        timestamp: new Date().toISOString(),
+      });
     }
+
+    const { text, audioBase64, mimeType, userLocation, userCategory, language } = req.body;
 
     const targetLangName = LANGUAGE_NAMES[language] || language || 'English';
     const cacheKey = `${text || ''}_${audioBase64 ? audioBase64.slice(0, 40) : ''}_${userLocation || ''}_${userCategory || ''}_${targetLangName}`;
-    if (feedbackCache.has(cacheKey)) {
-      return res.json({ success: true, data: feedbackCache.get(cacheKey) });
+    if (feedbackDiagnosticCache.has(cacheKey)) {
+      return res.json({ success: true, data: feedbackDiagnosticCache.get(cacheKey), cached: true });
     }
 
     const ai = getGenAI();
@@ -329,7 +371,7 @@ Strict Rules:
       parsedData.summary_en = parsedData.issue_summary || parsedData.translated_text || 'Civic infrastructure request logged.';
     }
 
-    feedbackCache.set(cacheKey, parsedData);
+    feedbackDiagnosticCache.set(cacheKey, parsedData);
 
     res.json({
       success: true,
@@ -1092,7 +1134,10 @@ STRICT GROUNDING RULES:
   }
 });
 
-// Start Server with Vite Middleware in Development
+// Centralized Error Handler for API routes
+app.use(errorHandler);
+
+// Start Server with Vite Middleware in Development & Graceful Shutdown
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
@@ -1108,9 +1153,27 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, '0.0.0.0', () => {
+  const server = app.listen(PORT, '0.0.0.0', () => {
     console.log(`CivicPulse Server running on http://0.0.0.0:${PORT}`);
   });
+
+  // Graceful shutdown handling for container termination
+  const handleShutdown = (signal: string) => {
+    console.log(`[CivicPulse Server] Received ${signal}. Initiating graceful connection teardown...`);
+    server.close(() => {
+      console.log('[CivicPulse Server] HTTP server closed cleanly. Process exiting.');
+      process.exit(0);
+    });
+
+    // Enforce 5-second termination deadline
+    setTimeout(() => {
+      console.error('[CivicPulse Server] Graceful teardown timed out after 5000ms. Forcing shutdown.');
+      process.exit(1);
+    }, 5000).unref();
+  };
+
+  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
+  process.on('SIGINT', () => handleShutdown('SIGINT'));
 }
 
 startServer();
