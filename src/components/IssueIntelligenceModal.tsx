@@ -1,8 +1,8 @@
-import React from 'react';
-import { X, CheckCircle2, ShieldCheck, Scale, Database, Building2, Layers, Play, AlertCircle, Users, Activity, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, CheckCircle2, ShieldCheck, Scale, Database, Building2, Layers, Play, AlertCircle, Users, Activity, FileText, ChevronDown, ChevronUp, Info } from 'lucide-react';
 import { CommunityIssue } from './CommunityIssuesView';
 import { District, CitizenRequest } from '../types';
-import { calculatePriorityScore, getScoreComponentContributions, getPriorityTier, getIssueEvidenceExplanation } from '../utils/scoring';
+import { calculatePriorityScore, getScoreComponentContributions, getPriorityTier, getIssueEvidenceExplanation, SCORING_CONFIG } from '../utils/scoring';
 import { validateSignalRecord } from '../utils/signalValidator';
 import { getProvenanceBadgeStyles } from '../utils/provenance';
 
@@ -19,6 +19,8 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
   requests = [],
   onClose,
 }) => {
+  const [showModelAssumptions, setShowModelAssumptions] = useState(false);
+
   // 1. Validation Layer
   const validation = validateSignalRecord(issue.location, issue.category, 8, district);
 
@@ -26,6 +28,7 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
   const scoreBreakdown = calculatePriorityScore(district, issue.category, 8, Math.max(issue.requestCount, 1));
   const contributions = getScoreComponentContributions(scoreBreakdown);
   const tier = getPriorityTier(scoreBreakdown.total_score);
+  const sensitivity = scoreBreakdown.sensitivity;
 
   // 3. Grounded Evidence Explanation
   const evidence = getIssueEvidenceExplanation(district, issue.category, requests, scoreBreakdown);
@@ -207,9 +210,65 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
               </div>
             </div>
 
-            <div className="p-2 bg-slate-100 rounded-lg font-mono text-[10px] text-slate-700 text-center">
-              Verified Formula: ({contributions.demandContrib}) + ({contributions.gapContrib}) + ({contributions.vulnContrib}) + ({contributions.urgencyContrib}) + ({contributions.govContrib}) = <strong className="text-slate-900">{scoreBreakdown.total_score} / 100</strong>
+            <div className="p-2.5 bg-slate-100 rounded-lg font-mono text-[10px] text-slate-700 space-y-1">
+              <div className="text-center font-bold text-slate-900">
+                Verified Formula: ({contributions.demandContrib}) + ({contributions.gapContrib}) + ({contributions.vulnContrib}) + ({contributions.urgencyContrib}) + ({contributions.govContrib}) = <span className="text-slate-900 font-extrabold">{scoreBreakdown.total_score} / 100</span>
+              </div>
+              {sensitivity && (
+                <div className="pt-1 border-t border-slate-200/80 text-[10px] flex items-center justify-between text-slate-600">
+                  <span>Primary Score Driver: <strong className="text-blue-700">{sensitivity.dominantPillar}</strong></span>
+                  <span>Relative Influence: <strong className="text-slate-900">{sensitivity.dominantPercentage}% of total score</strong></span>
+                </div>
+              )}
             </div>
+          </div>
+
+          {/* MODEL ASSUMPTIONS & PARAMETER TRANSPARENCY (EXPANDABLE) */}
+          <div className="border border-slate-200 rounded-xl bg-slate-50 overflow-hidden font-mono text-xs">
+            <button
+              onClick={() => setShowModelAssumptions(!showModelAssumptions)}
+              className="w-full p-3 flex items-center justify-between text-left hover:bg-slate-100/80 transition-colors cursor-pointer"
+            >
+              <div className="flex items-center gap-2">
+                <Info className="w-4 h-4 text-blue-600" />
+                <span className="font-bold text-slate-800 uppercase tracking-wide text-[11px]">
+                  Model Assumptions & Parameter Transparency
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[9px] bg-blue-100 text-blue-800 font-bold border border-blue-200">
+                  Deterministic Prototype
+                </span>
+              </div>
+              {showModelAssumptions ? <ChevronUp className="w-4 h-4 text-slate-500" /> : <ChevronDown className="w-4 h-4 text-slate-500" />}
+            </button>
+
+            {showModelAssumptions && (
+              <div className="p-3.5 bg-white border-t border-slate-200 space-y-2.5 text-[11px] text-slate-600 font-sans leading-relaxed">
+                <div className="p-2.5 bg-amber-50/80 border border-amber-200/80 rounded-lg text-amber-900 font-mono text-[10px] space-y-1">
+                  <span className="font-bold uppercase block">Technical Disclaimer & Prototype Calibration Note</span>
+                  <p>
+                    CivicPulse utilizes a transparent, deterministic decision-support prioritization model. The five pillar weights (Demand: 30%, Gap: 25%, Impact: 20%, Urgency: 15%, Gov Priority: 10%) are configurable initial parameters.
+                  </p>
+                </div>
+
+                <ul className="list-disc pl-4 space-y-1.5 text-slate-700">
+                  <li>
+                    <strong className="font-mono text-slate-900">Deterministic Engine:</strong> All scores are calculated using mathematical transformation rules without non-deterministic AI scoring or opaque black-box algorithms.
+                  </li>
+                  <li>
+                    <strong className="font-mono text-slate-900">Logarithmic Demand Scaling:</strong> Citizen demand uses a <code>22 × log(1 + signals)</code> transformation to prevent surge reports from monopolizing total priority score.
+                  </li>
+                  <li>
+                    <strong className="font-mono text-slate-900">Derived Baseline Benchmark:</strong> Infrastructure access indices (e.g. Electricity baseline 58%, Sanitation derived 75% multiplier) represent curated open data benchmarks and prototype assumptions for demonstration.
+                  </li>
+                  <li>
+                    <strong className="font-mono text-slate-900">Government Priority Signal:</strong> The Government Priority pillar evaluates presence of existing planned capital expenditure allocations (95 pts if budgeted, 45 pts if unbudgeted gap) rather than an official political priority ranking.
+                  </li>
+                  <li>
+                    <strong className="font-mono text-slate-900">Calibration Notice:</strong> The current model parameters have not been statistically backtested against historical government project intervention outcomes. Production deployment requires domain validation and stakeholder calibration.
+                  </li>
+                </ul>
+              </div>
+            )}
           </div>
 
           {/* SECTION 5: GOVERNMENT / SCHEME ALIGNMENT */}

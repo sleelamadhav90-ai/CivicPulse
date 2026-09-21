@@ -81,7 +81,7 @@ export function getImpactNatureBadge(nature: ImpactEvidenceNature): {
         label: 'Measured Outcome',
         badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-300',
         borderClass: 'border-emerald-300',
-        description: 'Empirically measured post-delivery outcome data verified by follow-up sensor or audit telemetries.'
+        description: 'Verified post-delivery outcome data from follow-up audits or physical telemetries.'
       };
     case 'PUBLIC_BENCHMARK':
       return {

@@ -1,4 +1,18 @@
-import { District, InfrastructureCategory, ScoreBreakdown, RecommendedProject, PriorityFactorDetail, CitizenRequest, InterventionType, DemographicProfile, InfrastructureAudit, EvidenceBundle } from '../types';
+import {
+  District,
+  InfrastructureCategory,
+  ScoreBreakdown,
+  RecommendedProject,
+  PriorityFactorDetail,
+  CitizenRequest,
+  InterventionType,
+  DemographicProfile,
+  InfrastructureAudit,
+  EvidenceBundle,
+  ScoreTrace,
+  SensitivityAnalysis,
+  PillarInfluence
+} from '../types';
 import { INFRASTRUCTURE_ASSETS_REGISTRY } from '../data/infrastructureAssets';
 import { getInvestmentAuditByCategory } from '../data/investmentData';
 import { getPublicDataForDistrict, getPublicContextSummary } from '../data/publicDataService';
@@ -6,18 +20,83 @@ import { buildEvidenceBundle } from './evidenceBundleService';
 import { DISTRICTS_REGISTRY } from '../data/districts';
 import { matchesDistrict } from './districtMatcher';
 
+/**
+ * Centralized Model Configuration & Normalization Parameters
+ *
+ * NOTE: CivicPulse uses a deterministic prototype decision-support model.
+ * These parameters are configurable initial heuristics designed for transparent prioritization.
+ * Production deployment would require empirical stakeholder calibration and domain backtesting.
+ */
+export const SCORING_CONFIG = {
+  /** Pillar weights summing to exactly 1.00 (100%) */
+  weights: {
+    citizenDemand: 0.30,      // 30%: Logarithmic volume scaling of citizen reports
+    infrastructureGap: 0.25,  // 25%: Direct measure of physical deficit (100 - access%)
+    populationImpact: 0.20,   // 20%: Combined target beneficiary population & poverty index
+    urgency: 0.15,            // 15%: Extracted hazard severity and urgency rating
+    governmentPriority: 0.10, // 10%: Planned capital expenditure & policy alignment signal
+  },
+
+  /** Demand pillar normalization heuristics */
+  demand: {
+    /** Logarithmic multiplier mapping raw report count to 0-100 scale. Reduces surge dominance. */
+    logCoefficient: 22,
+    /** Minimum raw count bound to ensure non-zero valid log evaluation */
+    minSignalCount: 1,
+    /** Maximum normalized demand pillar score */
+    maxDemandScore: 100,
+  },
+
+  /** Prototype baseline infrastructure assumptions when sector indicators are missing or derived */
+  infrastructure: {
+    /** Baseline electricity grid access (%) prototype heuristic */
+    defaultElectricityAccess: 58,
+    /** Default general facility access (%) prototype heuristic */
+    defaultOtherAccess: 60,
+    /** Default fallback access percentage */
+    defaultFallbackAccess: 50,
+    /** Derivative scaling factor for sanitation/drainage computed from water and road averages */
+    drainageSanitationDerivativeFactor: 0.75,
+  },
+
+  /** Urgency & Hazard severity bounds */
+  urgency: {
+    minSeverity: 1,
+    maxSeverity: 10,
+    normalizedMultiplier: 10, // Maps 1-10 severity scale to 0-100
+  },
+
+  /** Population Impact & Social Vulnerability parameters */
+  populationImpact: {
+    /** Reference benchmark population denominator (2.5M population district baseline) */
+    populationScaleDenominator: 2500000,
+    /** Max contribution points from population volume */
+    maxPopulationPoints: 50,
+    /** Max contribution points from poverty index (0.00-1.00) */
+    maxPovertyPoints: 50,
+  },
+
+  /** Government Priority signal parameters */
+  governmentPriority: {
+    /** Score signal when active planned capital expenditure exists in district (planned_investment > 0) */
+    activeCapexScore: 95,
+    /** Score signal when district has an unbudgeted capex gap (planned_investment == 0) */
+    unbudgetedCapexScore: 45,
+  },
+};
+
 export const SCORING_WEIGHTS = {
-  citizenDemand: 0.30,
-  infrastructureGap: 0.25,
-  populationImpact: 0.20,
-  urgency: 0.15,
-  governmentPriority: 0.10,
+  citizenDemand: SCORING_CONFIG.weights.citizenDemand,
+  infrastructureGap: SCORING_CONFIG.weights.infrastructureGap,
+  populationImpact: SCORING_CONFIG.weights.populationImpact,
+  urgency: SCORING_CONFIG.weights.urgency,
+  governmentPriority: SCORING_CONFIG.weights.governmentPriority,
   // legacy aliases for backward compatibility
-  demand: 0.30,
-  gap: 0.25,
-  severity: 0.15,
-  vulnerability: 0.20,
-  alignment: 0.10,
+  demand: SCORING_CONFIG.weights.citizenDemand,
+  gap: SCORING_CONFIG.weights.infrastructureGap,
+  severity: SCORING_CONFIG.weights.urgency,
+  vulnerability: SCORING_CONFIG.weights.populationImpact,
+  alignment: SCORING_CONFIG.weights.governmentPriority,
 };
 
 export function getCategoryAccess(district: District, category: InfrastructureCategory): number {
@@ -32,15 +111,179 @@ export function getCategoryAccess(district: District, category: InfrastructureCa
     case 'Education':
       return district.education_access;
     case 'Electricity':
-      return 58; // baseline grid stability
+      return SCORING_CONFIG.infrastructure.defaultElectricityAccess;
     case 'Drainage':
     case 'Sanitation':
-      return Math.round((district.water_access + district.road_quality) / 2 * 0.75);
+      return Math.round(
+        ((district.water_access + district.road_quality) / 2) *
+          SCORING_CONFIG.infrastructure.drainageSanitationDerivativeFactor
+      );
     case 'Other':
-      return 60;
+      return SCORING_CONFIG.infrastructure.defaultOtherAccess;
     default:
-      return district.water_access;
+      return district.water_access ?? SCORING_CONFIG.infrastructure.defaultFallbackAccess;
   }
+}
+
+/**
+ * Generates an explicit, audit-ready ScoreTrace object detailing:
+ * INPUT → NORMALIZATION → WEIGHT → CONTRIBUTION
+ */
+export function calculateScoreTrace(
+  district: District,
+  category: InfrastructureCategory,
+  severity: number,
+  demandCount: number,
+  overrideAccess?: number
+): ScoreTrace {
+  const currentAccess = overrideAccess !== undefined ? overrideAccess : getCategoryAccess(district, category);
+  
+  // 1. Citizen Demand
+  const safeDemandCount = Math.max(SCORING_CONFIG.demand.minSignalCount, Math.floor(demandCount || 0));
+  const demandNormalized = Math.min(
+    SCORING_CONFIG.demand.maxDemandScore,
+    SCORING_CONFIG.demand.logCoefficient * Math.log1p(safeDemandCount)
+  );
+  const demandWeight = SCORING_CONFIG.weights.citizenDemand;
+  const demandContribution = Number((demandNormalized * demandWeight).toFixed(2));
+
+  // 2. Infrastructure Deficit / Gap
+  const gapRaw = Math.max(0, 100 - currentAccess);
+  const gapNormalized = gapRaw;
+  const gapWeight = SCORING_CONFIG.weights.infrastructureGap;
+  const gapContribution = Number((gapNormalized * gapWeight).toFixed(2));
+
+  // 3. Population Impact & Social Vulnerability
+  const popRaw = district.population || 0;
+  const povertyRaw = district.poverty_index || 0;
+  const popPart = Math.min(
+    (popRaw / SCORING_CONFIG.populationImpact.populationScaleDenominator) *
+      SCORING_CONFIG.populationImpact.maxPopulationPoints,
+    SCORING_CONFIG.populationImpact.maxPopulationPoints
+  );
+  const povertyPart = povertyRaw * SCORING_CONFIG.populationImpact.maxPovertyPoints;
+  const populationNormalized = Math.min(100, popPart + povertyPart);
+  const populationWeight = SCORING_CONFIG.weights.populationImpact;
+  const populationContribution = Number((populationNormalized * populationWeight).toFixed(2));
+
+  // 4. Urgency & Hazard Severity
+  const clampedSeverity = Math.min(
+    Math.max(severity || SCORING_CONFIG.urgency.minSeverity, SCORING_CONFIG.urgency.minSeverity),
+    SCORING_CONFIG.urgency.maxSeverity
+  );
+  const urgencyNormalized = clampedSeverity * SCORING_CONFIG.urgency.normalizedMultiplier;
+  const urgencyWeight = SCORING_CONFIG.weights.urgency;
+  const urgencyContribution = Number((urgencyNormalized * urgencyWeight).toFixed(2));
+
+  // 5. Government Priority & Planned Investment Signal
+  const plannedInvestment = district.planned_investment || 0;
+  const governmentPriorityNormalized = plannedInvestment > 0
+    ? SCORING_CONFIG.governmentPriority.activeCapexScore
+    : SCORING_CONFIG.governmentPriority.unbudgetedCapexScore;
+  const governmentPriorityWeight = SCORING_CONFIG.weights.governmentPriority;
+  const governmentPriorityContribution = Number((governmentPriorityNormalized * governmentPriorityWeight).toFixed(2));
+
+  // Final Composite Score (computed with exact full precision)
+  const exactSum =
+    demandNormalized * demandWeight +
+    gapNormalized * gapWeight +
+    populationNormalized * populationWeight +
+    urgencyNormalized * urgencyWeight +
+    governmentPriorityNormalized * governmentPriorityWeight;
+  const finalScore = Math.min(100, Math.max(0, Number(exactSum.toFixed(1))));
+
+  return {
+    demand: {
+      raw: safeDemandCount,
+      normalized: Number(demandNormalized.toFixed(1)),
+      weight: demandWeight,
+      contribution: demandContribution,
+    },
+    gap: {
+      raw: `${currentAccess}% Access (${gapRaw}% Gap)`,
+      normalized: Number(gapNormalized.toFixed(1)),
+      weight: gapWeight,
+      contribution: gapContribution,
+    },
+    populationImpact: {
+      raw: { population: popRaw, povertyIndex: povertyRaw },
+      normalized: Number(populationNormalized.toFixed(1)),
+      weight: populationWeight,
+      contribution: populationContribution,
+    },
+    urgency: {
+      raw: clampedSeverity,
+      normalized: Number(urgencyNormalized.toFixed(1)),
+      weight: urgencyWeight,
+      contribution: urgencyContribution,
+    },
+    governmentPriority: {
+      raw: { plannedInvestment },
+      normalized: Number(governmentPriorityNormalized.toFixed(1)),
+      weight: governmentPriorityWeight,
+      contribution: governmentPriorityContribution,
+    },
+    finalScore,
+  };
+}
+
+/**
+ * Calculates a deterministic sensitivity & relative influence breakdown of a ScoreTrace
+ */
+export function calculateScoreSensitivity(trace: ScoreTrace): SensitivityAnalysis {
+  const total = trace.finalScore || 1;
+  const influences: PillarInfluence[] = [
+    {
+      pillarKey: 'citizenDemand',
+      label: 'Citizen Demand Volume',
+      weightPct: SCORING_CONFIG.weights.citizenDemand * 100,
+      normalizedScore: trace.demand.normalized,
+      contribution: trace.demand.contribution,
+      relativeInfluencePct: Number(((trace.demand.contribution / total) * 100).toFixed(1)),
+    },
+    {
+      pillarKey: 'infrastructureGap',
+      label: 'Infrastructure Access Deficit',
+      weightPct: SCORING_CONFIG.weights.infrastructureGap * 100,
+      normalizedScore: trace.gap.normalized,
+      contribution: trace.gap.contribution,
+      relativeInfluencePct: Number(((trace.gap.contribution / total) * 100).toFixed(1)),
+    },
+    {
+      pillarKey: 'populationImpact',
+      label: 'Population & Vulnerability Impact',
+      weightPct: SCORING_CONFIG.weights.populationImpact * 100,
+      normalizedScore: trace.populationImpact.normalized,
+      contribution: trace.populationImpact.contribution,
+      relativeInfluencePct: Number(((trace.populationImpact.contribution / total) * 100).toFixed(1)),
+    },
+    {
+      pillarKey: 'urgency',
+      label: 'Hazard Severity & Urgency',
+      weightPct: SCORING_CONFIG.weights.urgency * 100,
+      normalizedScore: trace.urgency.normalized,
+      contribution: trace.urgency.contribution,
+      relativeInfluencePct: Number(((trace.urgency.contribution / total) * 100).toFixed(1)),
+    },
+    {
+      pillarKey: 'governmentPriority',
+      label: 'Planned Capex & Policy Signal',
+      weightPct: SCORING_CONFIG.weights.governmentPriority * 100,
+      normalizedScore: trace.governmentPriority.normalized,
+      contribution: trace.governmentPriority.contribution,
+      relativeInfluencePct: Number(((trace.governmentPriority.contribution / total) * 100).toFixed(1)),
+    },
+  ];
+
+  const sorted = [...influences].sort((a, b) => b.contribution - a.contribution);
+  const top = sorted[0];
+
+  return {
+    dominantPillar: top.label,
+    dominantContribution: top.contribution,
+    dominantPercentage: top.relativeInfluencePct,
+    pillarInfluences: influences,
+  };
 }
 
 /**
@@ -55,60 +298,32 @@ export function calculatePriorityScore(
   overrideAccess?: number
 ): ScoreBreakdown {
   const currentAccess = overrideAccess !== undefined ? overrideAccess : getCategoryAccess(district, category);
-  
-  // 1. Citizen Demand Volume Score (0-100)
-  const safeDemandCount = Math.max(1, demandCount);
-  const demand_score = Math.min(22 * Math.log1p(safeDemandCount), 100);
-
-  // 2. Infrastructure Deficit / Gap Score (0-100)
-  const gapPercentage = Math.max(0, 100 - currentAccess);
-  const gap_score = gapPercentage;
-
-  // 3. Urgency & Severity (0-100)
-  const clampedSeverity = Math.min(Math.max(severity, 1), 10);
-  const sev_score = clampedSeverity * 10;
-
-  // 4. Population Impact & Social Vulnerability (0-100)
-  const popFactor = Math.min(district.population / 2500000 * 50, 50);
-  const povertyFactor = district.poverty_index * 50;
-  const vuln_score = Math.min(popFactor + povertyFactor, 100);
-
-  // 5. Government Priority & Existing Capex Gap (0-100)
-  const align_score = district.planned_investment > 0 ? 95 : 45;
-
-  // Final Weighted Composite Score
-  const total_score = Number(
-    (
-      demand_score * SCORING_WEIGHTS.citizenDemand +
-      gap_score * SCORING_WEIGHTS.infrastructureGap +
-      vuln_score * SCORING_WEIGHTS.populationImpact +
-      sev_score * SCORING_WEIGHTS.urgency +
-      align_score * SCORING_WEIGHTS.governmentPriority
-    ).toFixed(1)
-  );
-
+  const trace = calculateScoreTrace(district, category, severity, demandCount, overrideAccess);
+  const sensitivity = calculateScoreSensitivity(trace);
   const publicContext = getPublicContextSummary(district.name, category);
 
   return {
-    demand_score: Number(demand_score.toFixed(1)),
-    gap_score: Number(gap_score.toFixed(1)),
-    sev_score: Number(sev_score.toFixed(1)),
-    vuln_score: Number(vuln_score.toFixed(1)),
-    align_score: Number(align_score.toFixed(1)),
-    total_score: Math.min(100, Math.max(0, total_score)),
-    demand_count: safeDemandCount,
+    demand_score: trace.demand.normalized,
+    gap_score: trace.gap.normalized,
+    sev_score: trace.urgency.normalized,
+    vuln_score: trace.populationImpact.normalized,
+    align_score: trace.governmentPriority.normalized,
+    total_score: trace.finalScore,
+    demand_count: Number(trace.demand.raw),
     current_access: currentAccess,
-    gap_percentage: gapPercentage,
+    gap_percentage: Math.max(0, 100 - currentAccess),
     weights: {
-      demand: SCORING_WEIGHTS.citizenDemand,
-      gap: SCORING_WEIGHTS.infrastructureGap,
-      severity: SCORING_WEIGHTS.urgency,
-      vulnerability: SCORING_WEIGHTS.populationImpact,
-      alignment: SCORING_WEIGHTS.governmentPriority,
+      demand: SCORING_CONFIG.weights.citizenDemand,
+      gap: SCORING_CONFIG.weights.infrastructureGap,
+      severity: SCORING_CONFIG.weights.urgency,
+      vulnerability: SCORING_CONFIG.weights.populationImpact,
+      alignment: SCORING_CONFIG.weights.governmentPriority,
     },
     publicContextSummary: publicContext.headline,
     publicDataSource: publicContext.primarySourceBadge,
     isSyntheticDemo: publicContext.isSynthetic,
+    scoreTrace: trace,
+    sensitivity,
   };
 }
 
@@ -188,6 +403,8 @@ export function getIssueEvidenceExplanation(
       capexStatus: district.planned_investment > 0 ? `Active CapEx (₹${(district.planned_investment / 10000000).toFixed(1)} Cr)` : 'Unbudgeted CapEx Gap',
     },
     totalScore: effectiveBreakdown.total_score,
+    scoreTrace: effectiveBreakdown.scoreTrace,
+    sensitivity: effectiveBreakdown.sensitivity,
     evidenceBundle: bundle,
     dataSources: [
       { name: 'Citizen Ingestion Gateway', label: 'Citizen-Submitted Signal', year: '2026', isSynthetic: matchingSignals.length === 0 },

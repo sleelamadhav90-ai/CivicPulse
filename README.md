@@ -93,21 +93,30 @@ $$\text{Recommendation} \longrightarrow \text{Priority Score} \longrightarrow \t
 
 ## 📊 Priority Scoring Model
 
-CivicPulse uses a deterministic, transparent 5-pillar mathematical scoring engine (`src/utils/scoring.ts`) to compute a 0–100 **Priority Score** for any district and infrastructure category. This ensures complete auditability, eliminates subjective bias, and decouples AI language processing from fiscal decision logic.
+CivicPulse uses an **explainable deterministic prototype prioritization model** (`src/utils/scoring.ts`) to compute a 0–100 **Priority Score** for any district and infrastructure category. The model is transparent by design and intentionally exposes its parameters and assumptions. This ensures complete auditability, eliminates subjective bias, and decouples AI language processing from fiscal decision logic.
 
 ### Standardized 5-Pillar Formula
 
 $$\text{Priority Score} = (\text{Citizen Demand} \times 0.30) + (\text{Infrastructure Gap} \times 0.25) + (\text{Population Impact} \times 0.20) + (\text{Urgency} \times 0.15) + (\text{Government Priority} \times 0.10)$$
 
-### Formula Component Breakdown
+### Centralized Parameter Store (`SCORING_CONFIG`) & Pillar Formula Breakdown
 
-| Pillar Factor | Weight | Math Calculation / Logic | Description |
+All model parameters, weights, and normalization bounds are centralized in `SCORING_CONFIG` in `src/utils/scoring.ts`:
+
+| Pillar Factor | Weight | Formula / Normalization Logic | Model Assumption & Technical Rationale |
 | :--- | :---: | :--- | :--- |
-| **Citizen Demand** | **30%** (`0.30`) | $\min(22 \cdot \ln(1 + \text{DemandCount}), 100)$ | Logarithmic volume scaling of validated citizen voice and text signals. |
-| **Infrastructure Gap** | **25%** (`0.25`) | $100 - \text{Access Coverage \%}$ | Direct measure of physical infrastructure deficit in the sector. |
-| **Population Impact** | **20%** (`0.20`) | $\min\left(\frac{\text{Population}}{2,500,000} \cdot 50 + \text{PovertyIndex} \cdot 50, 100\right)$ | Combined metric of target beneficiary population and poverty index. |
-| **Urgency** | **15%** (`0.15`) | $\text{Clamped Severity (1–10)} \cdot 10$ | Extracted hazard severity and hazard urgency rating from citizen reports. |
-| **Government Priority** | **10%** (`0.10`) | $95 \text{ pts (Active Capex)} \text{ vs } 45 \text{ pts (No Capex)}$ | Alignment proxy measuring existing planned public capital expenditure. |
+| **Citizen Demand** | **30%** (`0.30`) | $\min(22 \cdot \ln(1 + \text{DemandCount}), 100)$ | Logarithmic volume transformation reduces the dominance of sudden signal surges. |
+| **Infrastructure Gap** | **25%** (`0.25`) | $100 - \text{Access Coverage \%}$ | Direct measure of physical access deficit derived from public indicators or baseline heuristics. |
+| **Population Impact** | **20%** (`0.20`) | $\min\left(\frac{\text{Population}}{2.5\text{M}} \cdot 50 + \text{PovertyIndex} \cdot 50, 100\right)$ | Scales beneficiary count relative to a 2.5M population benchmark district plus Multidimensional Poverty Index weighting. |
+| **Urgency** | **15%** (`0.15`) | $\text{Clamped Severity (1–10)} \cdot 10$ | Extracted hazard severity bounded between 1–10 to prevent extreme values from dominating. |
+| **Government Priority** | **10%** (`0.10`) | $95 \text{ pts (Planned Capex)} \text{ vs } 45 \text{ pts (Unbudgeted Gap)}$ | Proxy signal indicating presence of existing planned capital expenditure allocations rather than political ranking. |
+
+### Model Transparency & Calibration Methodology
+
+- **Configurable Parameters**: All weights, logarithmic coefficients, and benchmark bounds are defined in a single centralized parameter object (`SCORING_CONFIG`), enabling straightforward tuning without codebase modification.
+- **Derived Benchmarks & Prototype Heuristics**: Sector indicators without direct census coverage (e.g., electricity grid stability baseline at 58%, sanitation derived via a 0.75 multiplier on water and road averages) utilize explicit benchmark assumptions clearly identified in data lineage metadata.
+- **Score Trace & Sensitivity Analysis**: Every score calculation generates an audit trace (`ScoreTrace`) and relative influence breakdown (`calculateScoreSensitivity`) identifying the dominant score-driving factor.
+- **Future Calibration Requirements**: The current prototype parameters represent logical decision-support heuristics designed for transparent demonstration. Production deployment would require domain validation, historical backtesting against past project outcomes, and stakeholder calibration.
 
 ---
 

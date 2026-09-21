@@ -140,8 +140,16 @@ export const EvidenceExplanationCard: React.FC<EvidenceExplanationCardProps> = (
 
             </div>
 
-            <div className="p-2 bg-slate-100 rounded-lg font-mono text-[10px] text-slate-700 text-center">
-              Formula: ({evidence.citizenDemand.contribution}) + ({evidence.infrastructureGap.contribution}) + ({evidence.populationImpact.contribution}) + ({evidence.urgency.contribution}) + ({evidence.governmentPriority.contribution}) = <strong className="text-slate-900">{evidence.totalScore} / 100</strong>
+            <div className="p-2.5 bg-slate-100 rounded-lg font-mono text-[10px] text-slate-700 space-y-1">
+              <div className="text-center font-bold text-slate-900">
+                Formula: ({evidence.citizenDemand.contribution}) + ({evidence.infrastructureGap.contribution}) + ({evidence.populationImpact.contribution}) + ({evidence.urgency.contribution}) + ({evidence.governmentPriority.contribution}) = <span className="text-slate-900 font-extrabold">{evidence.totalScore} / 100</span>
+              </div>
+              {evidence.sensitivity && (
+                <div className="pt-1 border-t border-slate-200/80 text-[10px] flex items-center justify-between text-slate-600">
+                  <span>Primary Driver: <strong className="text-blue-700">{evidence.sensitivity.dominantPillar}</strong></span>
+                  <span>Relative Influence: <strong className="text-slate-900">{evidence.sensitivity.dominantPercentage}% of total</strong></span>
+                </div>
+              )}
             </div>
           </div>
 

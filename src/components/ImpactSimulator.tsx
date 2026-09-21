@@ -330,7 +330,7 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
           <div className="flex items-center justify-between text-xs text-[#57534E] px-1 font-mono">
             <span className="flex items-center gap-1.5 font-bold text-[#171717]">
               <ShieldCheck className="w-4 h-4 text-emerald-700" />
-              Empirically Measured Outcomes & Verified Public Works
+              Verified Post-Delivery Outcomes & Public Works
             </span>
             {onNavigateToProjects && (
               <button 

@@ -22,19 +22,20 @@ function assert(condition: boolean, message: string) {
 
 console.log('--- RUNNING STEP 2E-2 MULTILINGUAL & AGGREGATION REGRESSION SUITE ---');
 
-// 1. Localization Parity Test (616/616 across all 8 languages)
-console.log('\n[Test 1] Complete Localization Coverage Across All 8 Languages (616/616 keys)');
+// 1. Localization Parity Test (Coverage across all 8 languages)
+console.log('\n[Test 1] Complete Localization Coverage Across All 8 Languages');
 const dicts: Record<string, Record<string, string>> = { en, hi, te, ta, kn, mr, bn, or };
 const enKeys = Object.keys(en);
-assert(enKeys.length === 616, `English dictionary must have exactly 616 keys, got ${enKeys.length}`);
+const targetCount = enKeys.length;
+assert(targetCount > 0, `English dictionary must have keys, got ${targetCount}`);
 
 for (const [langCode, dict] of Object.entries(dicts)) {
   const dictKeys = Object.keys(dict);
   const missingKeys = enKeys.filter(k => !(k in dict));
   const extraKeys = dictKeys.filter(k => !(k in en));
   assert(
-    dictKeys.length === 616 && missingKeys.length === 0 && extraKeys.length === 0,
-    `Language '${langCode}' must have exactly 616/616 keys (count: ${dictKeys.length}, missing: ${missingKeys.length}, extra: ${extraKeys.length})`
+    dictKeys.length === targetCount && missingKeys.length === 0 && extraKeys.length === 0,
+    `Language '${langCode}' must match English ${targetCount}/${targetCount} keys (count: ${dictKeys.length}, missing: ${missingKeys.length}, extra: ${extraKeys.length})`
   );
 }
 

@@ -312,6 +312,38 @@ export interface CitizenRequest {
   ai_analysis?: AIAnalysisResult;
 }
 
+export interface ScoreTracePillar {
+  raw: number | string | object;
+  normalized: number;
+  weight: number;
+  contribution: number;
+}
+
+export interface ScoreTrace {
+  demand: ScoreTracePillar;
+  gap: ScoreTracePillar;
+  populationImpact: ScoreTracePillar;
+  urgency: ScoreTracePillar;
+  governmentPriority: ScoreTracePillar;
+  finalScore: number;
+}
+
+export interface PillarInfluence {
+  pillarKey: 'citizenDemand' | 'infrastructureGap' | 'populationImpact' | 'urgency' | 'governmentPriority';
+  label: string;
+  weightPct: number;
+  normalizedScore: number;
+  contribution: number;
+  relativeInfluencePct: number;
+}
+
+export interface SensitivityAnalysis {
+  dominantPillar: string;
+  dominantContribution: number;
+  dominantPercentage: number;
+  pillarInfluences: PillarInfluence[];
+}
+
 export interface ScoreBreakdown {
   demand_score: number;
   gap_score: number;
@@ -332,6 +364,8 @@ export interface ScoreBreakdown {
   publicContextSummary?: string;
   publicDataSource?: string;
   isSyntheticDemo?: boolean;
+  scoreTrace?: ScoreTrace;
+  sensitivity?: SensitivityAnalysis;
 }
 
 export interface PriorityFactorDetail {
