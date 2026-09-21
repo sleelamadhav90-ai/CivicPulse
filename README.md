@@ -5,7 +5,7 @@
 [![Framework](https://img.shields.io/badge/Framework-React%2019%20%2B%20Express-blue.svg)](https://react.dev/)
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
-[![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%203.6%2F3.8%20Flash-8e44ad.svg)](https://ai.google.dev/)
+[![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%202.5%20Flash-8e44ad.svg)](https://ai.google.dev/)
 [![Districts](https://img.shields.io/badge/Registry-70%20Districts%20%7C%2036%20States%20%26%20UTs-blue.svg)](#-canonical-data-registry)
 
 ---
@@ -259,17 +259,17 @@ flowchart TD
 
 ### Prototype vs. Production Architecture Comparison
 
-| Architectural Dimension | Current Prototype Implementation | Proposed National Production Path |
+| Architectural Dimension | Current Prototype Implementation (Verified) | Proposed National Production Path |
 | :--- | :--- | :--- |
-| **Persistence Layer** | `JsonCitizenRequestRepository` reading and writing to `civicpulse_citizen_requests.json` with temporary file atomic commits. | `PostgresCitizenRequestRepository` connecting to managed PostgreSQL (Cloud SQL) with PostGIS geospatial indexes and connection pooling. |
-| **API Boundary & Scaling** | Single Express/Node.js instance binding on `0.0.0.0:3000` with graceful SIGTERM/SIGINT teardown. | Horizontally scaled container instances behind Google Cloud Load Balancer / Envoy with autoscaling (HPA). |
-| **Input Validation** | Centralized `requestValidator.ts` enforcing enum schemas, string lengths, coordinates (-90..90, -180..180), and numeric bounds. | Gateway-level OpenAPI/JSON schema validation plus defense-in-depth domain validation in API services. |
-| **Error Handling & Traceability** | Uniform `errorHandler.ts` omitting stack traces/API keys; lightweight `requestId.ts` injecting `X-Request-Id` headers. | Distributed OpenTelemetry tracing (Cloud Trace) with end-to-end trace propagation and structured JSON log sinks. |
-| **Rate Limiting & Abuse** | Sliding-window in-memory rate limiter (`generalApiLimiter`: 120 req/min, `expensiveAiLimiter`: 30 req/min). | Distributed token-bucket rate limiting at API Gateway / Cloud Armor to protect Gemini API quotas and withstand DDoS attacks. |
-| **AI Processing** | Synchronous on-demand Gemini 2.5 Flash inference with exponential backoff and truthful deterministic fallbacks. | Asynchronous Celery / PubSub worker queues for batch processing of high-volume voice/IVR streams. |
-| **Caching System** | Bounded LRU & TTL `MemoryCache` for policy briefs (1 hr), feedback diagnostics (30 min), and search intent. | Clustered Redis (Google Cloud Memorystore) with distributed key invalidation and read replicas. |
-| **Audio & File Evidence** | In-memory base64 payloads with 25MB Express limit for immediate interactive diagnostics. | Cloud Storage (GCS / S3) signed URLs with dedicated media compression and retention lifecycle policies. |
-| **Geospatial & Hotspot Analytics** | In-memory client/server geospatial aggregation across 70 registered districts with TopoJSON topology. | PostGIS spatial queries (`ST_DWithin`, spatial clustering) and pre-aggregated materialized views for sub-second macro analytics. |
+| **Persistence Layer** | `JsonCitizenRequestRepository` implementing full CRUD lifecycle (`create`, `getById`, `delete`, `list`, `getStatistics`, `checkHealth`) reading/writing to `civicpulse_citizen_requests.json` via atomic temporary-file swaps. | `PostgresCitizenRequestRepository` connecting to managed PostgreSQL (Cloud SQL) with PostGIS geospatial indexes and connection pooling. |
+| **API Boundary & Lifecycle** | Single Express/Node.js instance binding on `0.0.0.0:3000` with graceful `SIGTERM`/`SIGINT` teardown and connection draining. | Horizontally scaled container instances behind Google Cloud Load Balancer / Envoy with autoscaling (HPA). |
+| **Input Validation** | Centralized `requestValidator.ts` enforcing enum schemas, text limits, coordinate ranges (-90..90, -180..180), and numeric bounds. | Gateway-level OpenAPI/JSON schema validation plus defense-in-depth domain validation in API services. |
+| **Error Handling & Traceability** | Centralized `errorHandler.ts` returning normalized JSON errors and redacting API keys, secrets, and internal paths; `requestId.ts` ensuring unique `X-Request-Id` and `X-Response-Time` headers. | Distributed OpenTelemetry tracing (Cloud Trace) with end-to-end trace propagation and structured JSON log sinks. |
+| **Rate Limiting & Abuse** | Sliding-window in-memory rate limiter (`generalApiLimiter`: 120 req/min, `expensiveAiLimiter`: 30 req/min) with standard (`RateLimit-*`) and legacy (`X-RateLimit-*`) headers, toggleable via `RATE_LIMIT_ENABLED` (default: `false`). | Distributed token-bucket rate limiting at API Gateway / Cloud Armor to protect Gemini API quotas and withstand DDoS attacks. |
+| **AI Processing & Resilience** | Synchronous Gemini 2.5 Flash inference with exponential backoff, retry logic, timeout guards (`callGeminiWithTimeoutAndRetry`), and truthful deterministic fallbacks. | Asynchronous Celery / PubSub worker queues for batch processing of high-volume voice/IVR streams. |
+| **Caching System** | 5 active bounded LRU & TTL `MemoryCache` instances for policy briefs (1 hr), feedback diagnostics (30 min), search intents (15 min), search summaries (30 min), and conversational follow-ups (30 min) with telemetry exposed via `/api/health`. | Clustered Redis (Google Cloud Memorystore) with distributed key invalidation and read replicas. |
+| **Audio & File Evidence** | In-memory base64 payloads with 25MB Express limit for immediate interactive multimodal diagnostics. | Cloud Storage (GCS / S3) signed URLs with dedicated media compression and retention lifecycle policies. |
+| **Geospatial & Hotspot Analytics** | In-memory client/server geospatial aggregation across 70 registered districts covering all 36 States & UTs with TopoJSON topology. | PostGIS spatial queries (`ST_DWithin`, spatial clustering) and pre-aggregated materialized views for sub-second macro analytics. |
 
 ---
 
@@ -321,12 +321,13 @@ When scaling CivicPulse from a functional prototype to a national production Dig
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
 | **Frontend Framework** | React 19 + TypeScript | High-performance component architecture. |
-| **Build Tool & Bundler** | Vite 6 + esbuild | Fast development HMR and production CommonJS bundling. |
+| **Build Tool & Bundler** | Vite 6 + esbuild | Fast development HMR and production CommonJS server bundling. |
 | **Styling** | Tailwind CSS v4 + Motion | Modern utility-first styling and smooth UI animations. |
 | **Geospatial & Viz** | Leaflet, TopoJSON, D3, Recharts | District map rendering, vector topology, and analytics. |
-| **Backend Server** | Express v4 on Node.js v22 | Lightweight REST API server with custom route handlers. |
-| **AI SDK & Models** | Google GenAI SDK (`@google/genai`) | Utilizing `gemini-3.6-flash` and `gemini-3.8-flash`. |
-| **Prototype Storage** | Local JSON File System | Thread-safe local file storage (`civicpulse_citizen_requests.json`). |
+| **Backend Server** | Express v4 on Node.js v22 | REST API with repository abstraction, validation, and middleware. |
+| **AI SDK & Models** | Google GenAI SDK (`@google/genai`) | Utilizing `gemini-2.5-flash` with timeout, retry, and truthful fallback. |
+| **Persistence Engine** | Repository Pattern (`CitizenRequestRepository`) | Default: `JsonCitizenRequestRepository` (`civicpulse_citizen_requests.json`) with atomic temporary file commits; Production path: `PostgresCitizenRequestRepository`. |
+| **Caching Engine** | Bounded LRU & TTL `MemoryCache` | 5 active bounded caches with hit/miss/eviction telemetry. |
 | **i18n & Localization** | Custom React i18n Context | Full support for 8 Indian regional languages. |
 
 ---
@@ -335,77 +336,126 @@ When scaling CivicPulse from a functional prototype to a national production Dig
 
 ```
 civicpulse/
-├── server.ts                       # Express backend server with Gemini AI API & persistence
-├── metadata.json                   # AI Studio applet capabilities and metadata
-├── package.json                    # Project configuration and dependencies
-├── vite.config.ts                  # Vite configuration with Tailwind plugin
-├── tsconfig.json                   # TypeScript compiler configuration
-├── civicpulse_citizen_requests.json # Local JSON storage for prototype citizen requests
+├── server.ts                         # Express server: routes, Gemini AI services, graceful shutdown
+├── metadata.json                     # AI Studio applet capabilities and frame permissions
+├── package.json                      # Project dependencies, scripts (dev, build, start, lint, test)
+├── vite.config.ts                    # Vite configuration with Tailwind CSS plugin
+├── tsconfig.json                     # TypeScript compiler configuration
+├── civicpulse_citizen_requests.json   # Prototype persistence file for citizen submissions
 ├── src/
-│   ├── main.tsx                    # React application entry point
-│   ├── App.tsx                     # Main layout, view routing, and global state engine
-│   ├── index.css                   # Global styles & Tailwind CSS imports
-│   ├── types.ts                    # Canonical TypeScript interfaces (District, CitizenRequest, etc.)
+│   ├── main.tsx                      # React client entry point
+│   ├── App.tsx                       # Main layout, view routing, and global state engine
+│   ├── index.css                     # Global styles & Tailwind CSS imports
+│   ├── types.ts                      # Canonical TypeScript interfaces (District, CitizenRequest, etc.)
 │   ├── components/
-│   │   ├── Overview.tsx            # Executive Dashboard & Top Recommendation Panel
-│   │   ├── HotspotMap.tsx          # Geospatial Demand Hotspot Map (Leaflet + TopoJSON)
-│   │   ├── CitizenIngestion.tsx    # Multilingual Voice/Text Ingestion Modal
+│   │   ├── Overview.tsx              # Executive Dashboard & Top Recommendation Panel
+│   │   ├── HotspotMap.tsx            # Geospatial Demand Hotspot Map (Leaflet + TopoJSON)
+│   │   ├── CitizenIngestion.tsx      # Multilingual Voice/Text Ingestion Modal
 │   │   ├── CitizenSubmissionView.tsx # Dedicated Citizen Submission Portal
-│   │   ├── CitizenSignalsView.tsx  # Granular Citizen Signals Registry & Search
-│   │   ├── CommunityIssuesView.tsx # Aggregated Problem Clusters View
-│   │   ├── ProjectsView.tsx        # Government Priority Register / Decision Queue
-│   │   ├── PriorityEngine.tsx      # Deterministic Priority Scoring Formula Inspector
-│   │   ├── PolicyLab.tsx           # Policy Brief Generator & AI Executive Briefing
-│   │   ├── GovernmentBriefing.tsx  # Executive Briefing Dossier
-│   │   ├── ImpactSimulator.tsx     # Closed-Loop Impact Simulator & Outcome Metrics
-│   │   ├── DemographicsView.tsx    # Demographics & Vulnerability Index Explorer
-│   │   ├── InfrastructureView.tsx # Infrastructure Deficit & Asset Explorer
+│   │   ├── CitizenSignalsView.tsx    # Granular Citizen Signals Registry & Search
+│   │   ├── CommunityIssuesView.tsx   # Aggregated Problem Clusters View
+│   │   ├── ProjectsView.tsx          # Government Priority Register / Decision Queue
+│   │   ├── PriorityEngine.tsx        # Deterministic Priority Scoring Formula Inspector
+│   │   ├── PolicyLab.tsx             # Policy Brief Generator & AI Executive Briefing
+│   │   ├── GovernmentBriefing.tsx    # Executive Briefing Dossier
+│   │   ├── ImpactSimulator.tsx       # Closed-Loop Impact Simulator & Outcome Metrics
+│   │   ├── DemographicsView.tsx      # Demographics & Vulnerability Index Explorer
+│   │   ├── InfrastructureView.tsx   # Infrastructure Deficit & Asset Explorer
 │   │   ├── InvestmentIntelligence.tsx # Public Capex & Scheme Alignment Explorer
-│   │   ├── PatternIntelligence.tsx# Signal Pattern & Anomaly Detection
-│   │   ├── GlobalSearchModal.tsx   # Gemini Search & Function Calling Interface
-│   │   ├── GlobalHeader.tsx        # App Header with Search & Language Selector
-│   │   ├── ScoreBreakdownModal.tsx # Priority Score 5-Pillar Formula Modal
+│   │   ├── PatternIntelligence.tsx  # Signal Pattern & Anomaly Detection
+│   │   ├── GlobalSearchModal.tsx     # Gemini Search & Function Calling Interface
+│   │   ├── GlobalHeader.tsx          # App Header with Search & Language Selector
+│   │   ├── ScoreBreakdownModal.tsx   # Priority Score 5-Pillar Formula Modal
 │   │   ├── ArchitectureBlueprint.tsx # DPI System Architecture Diagram
-│   │   ├── IndiaMapCanvas.tsx      # Custom TopoJSON Map Renderer
-│   │   └── ...
+│   │   └── IndiaMapCanvas.tsx        # Custom TopoJSON Map Renderer
 │   ├── context/
-│   │   └── LanguageContext.tsx     # Global i18n Provider (8 Languages)
+│   │   └── LanguageContext.tsx       # Global i18n Provider (8 Languages)
 │   ├── data/
-│   │   ├── districts.ts            # Canonical 70-District Registry Data (36 States & UTs)
-│   │   ├── initialRequests.ts      # Prototype Seed Signals
-│   │   ├── initialProjects.ts      # Recommended Government Projects Baseline
+│   │   ├── districts.ts              # Canonical 70-District Registry Data (36 States & UTs)
+│   │   ├── initialRequests.ts        # Prototype Seed Signals
+│   │   ├── initialProjects.ts        # Recommended Government Projects Baseline
 │   │   ├── governmentBaselineData.ts # Benchmark Infrastructure & Demographic Data
-│   │   ├── infrastructureAssets.ts # Facilities & Grid Assets
-│   │   ├── investmentData.ts       # Centrally Sponsored Scheme Budgets
-│   │   └── publicDataService.ts    # Public Dataset Integration Layer
+│   │   ├── infrastructureAssets.ts   # Facilities & Grid Assets
+│   │   ├── investmentData.ts         # Centrally Sponsored Scheme Budgets
+│   │   └── publicDataService.ts      # Public Dataset Integration Layer
+│   ├── server/                       # Backend architecture & deployability layer
+│   │   ├── config.ts                 # Centralized configuration schema & validation
+│   │   ├── cache/
+│   │   │   └── memoryCache.ts        # Bounded LRU & TTL cache with telemetry
+│   │   ├── middleware/
+│   │   │   ├── requestId.ts          # X-Request-Id sanitization & X-Response-Time
+│   │   │   ├── rateLimiter.ts        # Sliding-window rate limiter & RFC headers
+│   │   │   └── errorHandler.ts       # Structured JSON error handling & secret redaction
+│   │   ├── repositories/
+│   │   │   ├── CitizenRequestRepository.ts     # Data access interface
+│   │   │   ├── JsonCitizenRequestRepository.ts # Active atomic JSON storage
+│   │   │   ├── PostgresCitizenRequestRepository.ts # PostgreSQL migration adapter
+│   │   │   └── index.ts              # Repository factory
+│   │   ├── validation/
+│   │   │   └── requestValidator.ts   # Boundary payload schemas & coordinate checks
+│   │   └── tests/
+│   │       └── scalability.test.ts   # 11 unit tests for deployability & architecture
 │   ├── services/
-│   │   └── humanSearchService.ts   # Natural Language Search Intent Engine
+│   │   └── humanSearchService.ts     # Natural Language Search Intent Engine
 │   ├── translations/
-│   │   └── index.ts                # Translations for 8 Indian Languages
+│   │   └── index.ts                  # Translations for 8 Indian Languages
 │   └── utils/
-│       ├── scoring.ts              # Deterministic 5-Pillar Priority Scoring Engine
-│       ├── signalValidator.ts      # Deterministic Signal Validation & Quality Engine
-│       ├── demandAggregation.ts    # Signal Aggregation & Problem Clustering
-│       ├── evidenceBundleService.ts # Traceable EvidenceBundle Generator
-│       ├── impactEvidence.ts       # Impact Verification Helpers
-│       ├── districtMatcher.ts      # Location & Text Extraction Matcher
-│       └── geography.ts            # Coordinates & Map Utilities
+│       ├── scoring.ts                # Deterministic 5-Pillar Priority Scoring Engine
+│       ├── scoring.test.ts           # Priority scoring unit tests
+│       ├── impactModel.ts            # Deterministic Closed-Loop Impact Model
+│       ├── impactModel.test.ts       # Impact model unit tests
+│       ├── signalValidator.ts        # Deterministic Signal Validation Engine
+│       ├── demandAggregation.ts      # Signal Aggregation & Problem Clustering
+│       ├── evidenceBundleService.ts   # Traceable EvidenceBundle Generator
+│       ├── impactEvidence.ts         # Impact Verification Helpers
+│       ├── impactEvidence.test.ts    # Evidence validation tests
+│       ├── districtMatcher.ts        # Location & Text Extraction Matcher
+│       ├── geography.ts              # Coordinates & Map Utilities
+│       └── geographyCoverage.test.ts # 36 States/UTs coverage tests
 ```
 
 ---
 
 ## 📡 Backend API Endpoints Reference
 
+All endpoints return uniform structured JSON responses with `X-Request-Id` and `X-Response-Time` headers:
+
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/health` | System health check and total persisted requests count. |
-| `GET` | `/api/citizen-requests` | Retrieves all live user-submitted citizen requests from local JSON storage. |
-| `POST` | `/api/citizen-requests` | Persists a new citizen request object to `civicpulse_citizen_requests.json`. |
-| `POST` | `/api/process-feedback` | Multimodal (audio/text) diagnostic extraction using Gemini API. |
-| `POST` | `/api/conversational-followup` | Multilingual conversational assistant follow-up handler. |
-| `POST` | `/api/generate-policy-brief` | Generates structured policy brief in target language via Gemini. |
-| `POST` | `/api/search/intent` | Parses natural language query intent and maps to Gemini tool declarations. |
-| `POST` | `/api/search/summary` | Synthesizes grounded policymaker summary of search results. |
+| `GET` | `/api/health` | Comprehensive system health: repository status, persistence type, rate limiting status, memory usage, and telemetry across all 5 bounded caches. |
+| `GET` | `/api/citizen-requests` | Retrieves stored citizen requests with pagination (`page`, `limit`) and filtering (`category`, `district`, `state`). |
+| `GET` | `/api/citizen-requests/:id` | Retrieves an individual citizen request by its unique ID. Returns HTTP 404 if not found. |
+| `POST` | `/api/citizen-requests` | Validates input payload schema and persists a new citizen request via `CitizenRequestRepository`. |
+| `DELETE` | `/api/citizen-requests/:id` | Removes an individual citizen request by ID. Returns HTTP 404 if not found. |
+| `POST` | `/api/process-feedback` | Multimodal (audio/text) diagnostic extraction using Gemini API with timeout, retry, and truthful fallback. |
+| `POST` | `/api/conversational-followup` | Multilingual conversational assistant follow-up with response caching. |
+| `POST` | `/api/generate-policy-brief` | Generates structured policy brief in target language via Gemini with 1-hour bounded cache. |
+| `POST` | `/api/search/intent` | Parses natural language query intent and maps to Gemini tool declarations with 15-minute cache. |
+| `POST` | `/api/search/summary` | Synthesizes grounded policymaker summary of search results with 30-minute cache. |
+
+---
+
+## 🧪 Testing & Verification
+
+CivicPulse includes automated unit tests covering the backend deployability architecture, scoring model, impact engine, and geographical coverage:
+
+```bash
+# Run the 11 Deployability & Scalability Architecture unit tests
+npm test
+```
+
+### Verified Test Suites:
+1. **Persistence Abstraction**: Repository lifecycle, record creation, retrieval, deletion, and health telemetry.
+2. **Pagination & Filtering**: Structured slicing (`page`, `limit`, `category`).
+3. **Telemetry & Health Reporting**: System status, uptime, cache metrics, and error rates.
+4. **PostgreSQL Migration Adapter**: Interface compliance and graceful fallback handling.
+5. **Input Boundary Validation**: Schema enforcement, coordinate ranges (-90..90, -180..180), severity bounds (1..10), and string limits.
+6. **Rate Limiter Protection**: Bypass when disabled, threshold enforcement, and HTTP 429 generation when enabled.
+7. **Bounded Memory Cache**: LRU eviction order, TTL expiration, capacity bounds, and hit/miss accounting.
+8. **Configuration Validation**: Default JSON persistence, optional `DATABASE_URL`, and PostgreSQL enforcement.
+9. **Request Traceability**: `X-Request-Id` generation, header sanitization, and `X-Response-Time` timing.
+10. **Error Handling & Secret Redaction**: Centralized JSON error format, API key redaction, and internal path stripping.
+11. **Rate Limiting Headers**: Standard (`RateLimit-*`) and legacy (`X-RateLimit-*`) compliance.
 
 ---
 
@@ -415,31 +465,48 @@ civicpulse/
 - **Node.js**: v20 or higher (v22 recommended)
 - **npm**: v9 or higher
 
-### Environment Setup
-Create a `.env` file in the project root directory:
+### Environment Configuration
+Configure environment variables using `.env.example` as a baseline:
 
 ```env
 # Server-side Gemini API Key (Required for AI processing features)
 GEMINI_API_KEY=your_gemini_api_key_here
+
+# App URL (Injected automatically in Cloud Run)
+APP_URL=http://localhost:3000
+
+# Persistence Strategy: 'json' (default for prototype) or 'postgres' (for production)
+PERSISTENCE_TYPE=json
+
+# Managed PostgreSQL connection string (ONLY required when PERSISTENCE_TYPE=postgres; optional for json)
+# DATABASE_URL=postgresql://user:password@host:5432/civicpulse_db
+
+# Operational Rate Limiting: 'false' (default) or 'true'
+RATE_LIMIT_ENABLED=false
+
+# Runtime Profile
 NODE_ENV=development
 ```
 
-### Installation Commands
+### Commands
 
 ```bash
 # 1. Install dependencies
 npm install
 
-# 2. Run local development server (Express + Vite on http://localhost:3000)
-npm run dev
+# 2. Run unit tests
+npm test
 
 # 3. Type check & lint
 npm run lint
 
-# 4. Build for production (Vite client + esbuild CommonJS server)
+# 4. Run local development server (Express + Vite on http://localhost:3000)
+npm run dev
+
+# 5. Build for production (Vite client + esbuild CommonJS server)
 npm run build
 
-# 5. Start production server
+# 6. Start production server
 npm run start
 ```
 
