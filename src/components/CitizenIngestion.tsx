@@ -85,12 +85,12 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
 
   const handleNextStep = () => {
     if (step === 3) {
-      // Transitioning to Step 4: AI Automatic Inference Simulation
+      // Transitioning to Step 4: Fast Automatic Inference
       setIsProcessingAI(true);
       setTimeout(() => {
         setIsProcessingAI(false);
         setStep(4);
-      }, 1000);
+      }, 200);
     } else {
       setStep((prev) => Math.min(prev + 1, 5));
     }

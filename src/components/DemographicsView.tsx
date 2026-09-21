@@ -119,9 +119,11 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
     return stateDistricts.filter(d => {
       if (highRiskOnly && d.poverty_index < 0.50) return false;
       if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const matchName = d.name.toLowerCase().includes(q);
-        const matchState = d.state.toLowerCase().includes(q);
+        const q = searchQuery.trim().toLowerCase();
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const prefixRegex = new RegExp(`(?:^|\\b|\\s)${escapedQ}`, 'i');
+        const matchName = prefixRegex.test(d.name) || (q.length >= 4 && d.name.toLowerCase().includes(q));
+        const matchState = prefixRegex.test(d.state) || (q.length >= 4 && d.state.toLowerCase().includes(q));
         if (!matchName && !matchState) return false;
       }
       return true;

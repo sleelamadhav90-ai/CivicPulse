@@ -179,12 +179,25 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         }
       }
 
-      if (normTitle.includes(intent.normalizedQuery) || normDist.includes(intent.normalizedQuery) || normDept.includes(intent.normalizedQuery)) {
+      const q = intent.normalizedQuery;
+      const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const prefixRegex = new RegExp(`(?:^|\\b|\\s)${escapedQ}`, 'i');
+
+      const matchesWordBoundary = prefixRegex.test(p.title) || prefixRegex.test(p.district) || prefixRegex.test(p.departmentName) || prefixRegex.test(p.category);
+
+      if (q.length < 4 ? matchesWordBoundary : (normTitle.includes(q) || normDist.includes(q) || normDept.includes(q))) {
         return true;
       }
 
       if (intent.keywords.length > 0) {
-        return intent.keywords.some(kw => normTitle.includes(kw) || normDist.includes(kw) || normDept.includes(kw) || normCat.includes(kw));
+        return intent.keywords.some(kw => {
+          if (kw.length < 4) {
+            const kwEscaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const kwRegex = new RegExp(`(?:^|\\b|\\s)${kwEscaped}`, 'i');
+            return kwRegex.test(p.title) || kwRegex.test(p.district) || kwRegex.test(p.departmentName) || kwRegex.test(p.category);
+          }
+          return normTitle.includes(kw) || normDist.includes(kw) || normDept.includes(kw) || normCat.includes(kw);
+        });
       }
 
       return false;

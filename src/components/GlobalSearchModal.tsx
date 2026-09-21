@@ -102,7 +102,10 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
-  // Asynchronously query server-side Gemini intent extraction (debounced)
+  // Asynchronously query server-side Gemini intent extraction (debounced & cancellable)
+  const currentQueryRef = useRef(query);
+  currentQueryRef.current = query;
+
   useEffect(() => {
     if (!query.trim() || query.trim().length < 3) {
       setServerIntent(null);
@@ -112,21 +115,23 @@ export const GlobalSearchModal: React.FC<GlobalSearchModalProps> = ({
       return;
     }
 
+    const requestQuery = query;
     const timer = setTimeout(async () => {
+      if (currentQueryRef.current !== requestQuery) return;
       setIsAiExtracting(true);
       setAiError(false);
       try {
-        const result = await fetchServerSearchIntent(query, districts);
-        if (result.isAiExtracted) {
+        const result = await fetchServerSearchIntent(requestQuery, districts);
+        if (currentQueryRef.current === requestQuery && result && result.intent) {
           setServerIntent(result.intent);
         }
       } catch (e) {
         console.warn('Intent extraction fallback:', e);
-        setAiError(true);
+        if (currentQueryRef.current === requestQuery) setAiError(true);
       } finally {
-        setIsAiExtracting(false);
+        if (currentQueryRef.current === requestQuery) setIsAiExtracting(false);
       }
-    }, 300);
+    }, 200);
 
     return () => clearTimeout(timer);
   }, [query, districts]);

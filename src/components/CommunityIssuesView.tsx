@@ -272,16 +272,28 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
         return true;
       }
 
-      // Query substring match
-      if (normTitle.includes(searchIntent.normalizedQuery) || normLoc.includes(searchIntent.normalizedQuery) || normScheme.includes(searchIntent.normalizedQuery) || normInfra.includes(searchIntent.normalizedQuery)) {
-        return true;
+      // Query match (use word boundary for short queries < 4 chars)
+      const q = searchIntent.normalizedQuery;
+      if (q) {
+        const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const prefixRegex = new RegExp(`(?:^|\\b|\\s)${escapedQ}`, 'i');
+        const matchesWordBoundary = prefixRegex.test(iss.title) || prefixRegex.test(iss.location) || prefixRegex.test(iss.category) || prefixRegex.test(iss.relatedScheme || '') || prefixRegex.test(iss.infrastructureName || '');
+
+        if (q.length < 4 ? matchesWordBoundary : (normTitle.includes(q) || normLoc.includes(q) || normScheme.includes(q) || normInfra.includes(q))) {
+          return true;
+        }
       }
 
       // Keyword match
       if (searchIntent.keywords.length > 0) {
-        const matchesKw = searchIntent.keywords.some(kw => 
-          normTitle.includes(kw) || normLoc.includes(kw) || normCat.includes(kw) || normScheme.includes(kw) || normInfra.includes(kw)
-        );
+        const matchesKw = searchIntent.keywords.some(kw => {
+          if (kw.length < 4) {
+            const kwEscaped = kw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            const kwRegex = new RegExp(`(?:^|\\b|\\s)${kwEscaped}`, 'i');
+            return kwRegex.test(iss.title) || kwRegex.test(iss.location) || kwRegex.test(iss.category) || kwRegex.test(iss.relatedScheme || '') || kwRegex.test(iss.infrastructureName || '');
+          }
+          return normTitle.includes(kw) || normLoc.includes(kw) || normCat.includes(kw) || normScheme.includes(kw) || normInfra.includes(kw);
+        });
         if (matchesKw) return true;
       }
 

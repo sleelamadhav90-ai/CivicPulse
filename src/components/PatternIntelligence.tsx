@@ -179,12 +179,23 @@ export const PatternIntelligence: React.FC<PatternIntelligenceProps> = ({
 
   const filteredPatterns = useMemo(() => {
     return localizedPatterns.filter(pat => {
-      const q = searchQuery.toLowerCase();
-      const matchesSearch = !q ||
-        pat.name.toLowerCase().includes(q) ||
-        pat.description.toLowerCase().includes(q) ||
-        pat.affectedDistricts.some((d: any) => d.name.toLowerCase().includes(q));
+      const q = searchQuery.trim().toLowerCase();
+      if (!q) return selectedCategory === 'ALL' || pat.category === selectedCategory;
 
+      const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const prefixRegex = new RegExp(`(?:^|\\b|\\s)${escapedQ}`, 'i');
+
+      const matchesName = prefixRegex.test(pat.name);
+      const matchesCategory = prefixRegex.test(pat.category);
+      const matchesType = prefixRegex.test(pat.type);
+      const matchesDistricts = pat.affectedDistricts.some((d: any) => prefixRegex.test(d.name) || prefixRegex.test(d.state));
+
+      // For long descriptions, use word-prefix matching for short queries (< 4 chars) to avoid matching inner substrings like 'where' or 'reached'
+      const matchesDescription = q.length >= 4 
+        ? pat.description.toLowerCase().includes(q) 
+        : prefixRegex.test(pat.description);
+
+      const matchesSearch = matchesName || matchesCategory || matchesType || matchesDistricts || matchesDescription;
       const matchesCat = selectedCategory === 'ALL' || pat.category === selectedCategory;
       return matchesSearch && matchesCat;
     });

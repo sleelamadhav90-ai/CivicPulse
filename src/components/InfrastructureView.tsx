@@ -39,10 +39,15 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
     const matchesDistrict = !districtId || asset.districtId.toLowerCase() === districtId.toLowerCase();
     const matchesCategory = selectedCategory === 'ALL' || asset.category === selectedCategory;
     const matchesCondition = selectedCondition === 'ALL' || asset.condition.includes(selectedCondition);
-    const matchesSearch = 
-      asset.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      asset.districtName.toLowerCase().includes(searchQuery.toLowerCase());
+    const q = searchQuery.trim().toLowerCase();
+    const escapedQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const prefixRegex = new RegExp(`(?:^|\\b|\\s)${escapedQ}`, 'i');
+
+    const matchesSearch = !q ||
+      prefixRegex.test(asset.name) ||
+      prefixRegex.test(asset.location) ||
+      prefixRegex.test(asset.districtName) ||
+      (q.length >= 4 && (asset.name.toLowerCase().includes(q) || asset.location.toLowerCase().includes(q)));
 
     return matchesDistrict && matchesCategory && matchesCondition && matchesSearch;
   });

@@ -126,19 +126,38 @@ const LANGUAGE_NAMES: Record<string, string> = {
   or: 'Odia',
 };
 
-async function callGeminiWithRetry(fn: () => Promise<any>, maxRetries = 2, delayMs = 400): Promise<any> {
+async function callGeminiWithTimeoutAndRetry(
+  fn: () => Promise<any>,
+  timeoutMs = 2500,
+  maxRetries = 0,
+  delayMs = 100
+): Promise<any> {
+  const runWithTimeout = () => {
+    return Promise.race([
+      fn(),
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Gemini API call timed out after ${timeoutMs}ms`)), timeoutMs)
+      ),
+    ]);
+  };
+
   let lastErr: any = null;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      return await fn();
+      return await runWithTimeout();
     } catch (err: any) {
       lastErr = err;
+      const msg = err?.message || '';
       const isRetryable =
         err?.status === 503 ||
         err?.status === 429 ||
-        err?.message?.includes('503') ||
-        err?.message?.includes('demand') ||
-        err?.message?.includes('UNAVAILABLE');
+        msg.includes('503') ||
+        msg.includes('429') ||
+        msg.includes('timed out') ||
+        msg.includes('demand') ||
+        msg.includes('UNAVAILABLE') ||
+        msg.includes('overloaded') ||
+        msg.includes('RESOURCE_EXHAUSTED');
       if (attempt < maxRetries && isRetryable) {
         await new Promise((resolve) => setTimeout(resolve, delayMs * (attempt + 1)));
         continue;
@@ -148,6 +167,10 @@ async function callGeminiWithRetry(fn: () => Promise<any>, maxRetries = 2, delay
   }
   throw lastErr;
 }
+
+// Backward compatible alias
+const callGeminiWithRetry = (fn: () => Promise<any>, maxRetries = 0, delayMs = 100) => 
+  callGeminiWithTimeoutAndRetry(fn, 2500, maxRetries, delayMs);
 
 // Endpoint: Process Citizen Feedback (Multimodal: Audio / Text)
 app.post('/api/process-feedback', async (req: Request, res: Response) => {
@@ -165,7 +188,7 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-3.6-flash';
+    const model = 'gemini-2.5-flash';
 
     const promptText = `
 You are the AI Civic Infrastructure Diagnostic Engine for CivicPulse (India Digital Public Infrastructure).
@@ -391,7 +414,7 @@ app.post('/api/conversational-followup', async (req: Request, res: Response) => 
     const prefLang = LANGUAGE_NAMES[languagePreference || language] || languagePreference || language || 'English';
 
     const ai = getGenAI();
-    const model = 'gemini-3.6-flash';
+    const model = 'gemini-2.5-flash';
 
     const prompt = `
 You are CivicPulse Assistant, an empathetic AI for municipal citizen reporting.
@@ -535,7 +558,7 @@ app.post('/api/generate-policy-brief', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-3.6-flash';
+    const model = 'gemini-2.5-flash';
 
     const prompt = `
 You are the Senior Chief Public Policy & Infrastructure Advisor for the National Development Planning Board (BRICS Digital Public Infrastructure Taskforce).
@@ -662,6 +685,8 @@ Projected to benefit over **${Number(population).toLocaleString()} residents**, 
 // SEARCH ENDPOINTS (Step 2F: Natural-Language Search & Gemini Function Calling)
 // =========================================================================
 const searchIntentCache = new Map<string, any>();
+const searchSummaryCache = new Map<string, string>();
+const conversationalCache = new Map<string, any>();
 
 // Gemini Function Calling Declarations for CivicPulse Search Architecture
 const CIVICPULSE_SEARCH_TOOLS = [
@@ -796,7 +821,7 @@ app.post('/api/search/intent', async (req: Request, res: Response) => {
     if (process.env.GEMINI_API_KEY) {
       try {
         const ai = getGenAI();
-        const model = 'gemini-3.8-flash';
+        const model = 'gemini-2.5-flash';
 
         const promptText = `
 You are the CivicPulse Natural-Language Search Intent Parser for Indian Public Infrastructure & Citizen Development Requests.
@@ -1019,8 +1044,17 @@ app.post('/api/search/summary', async (req: Request, res: Response) => {
       });
     }
 
+    const cacheKey = `${query.trim().toLowerCase()}_${language}_${results.totalCount || 0}_${JSON.stringify(results).slice(0, 150)}`;
+    if (searchSummaryCache.has(cacheKey)) {
+      return res.json({
+        success: true,
+        summary: searchSummaryCache.get(cacheKey),
+        cached: true,
+      });
+    }
+
     const ai = getGenAI();
-    const model = 'gemini-3.8-flash';
+    const model = 'gemini-2.5-flash';
 
     const promptText = `
 You are the CivicPulse Policy Research Assistant.
@@ -1046,9 +1080,12 @@ STRICT GROUNDING RULES:
       })
     );
 
+    const summaryText = response.text || '';
+    searchSummaryCache.set(cacheKey, summaryText);
+
     res.json({
       success: true,
-      summary: response.text || '',
+      summary: summaryText,
     });
   } catch (err: any) {
     res.status(500).json({ error: err?.message || 'Failed to generate search summary' });

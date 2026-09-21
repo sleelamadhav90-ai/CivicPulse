@@ -113,7 +113,7 @@ The current version of CivicPulse is a fully working, demonstrable prototype equ
 
 - **Multilingual Diagnostic Ingestion**:
   - Full UI localization and diagnostic NLP processing across **8 Indian languages**: English (`en`), Hindi (`hi`), Telugu (`te`), Tamil (`ta`), Kannada (`kn`), Marathi (`mr`), Bengali (`bn`), and Odia (`or`).
-  - Base64 multimodal audio recording & processing powered by Google GenAI SDK (`gemini-3.6-flash`).
+  - Base64 multimodal audio recording & processing powered by Google GenAI SDK (`gemini-2.5-flash`).
   - Automatic extraction of sector category, subcategory, duration, location, severity (1–10), and target population.
 - **Conversational Follow-Up Assistant**:
   - Interactive AI follow-up engine helping citizens complete vague complaints in their native language with suggested option pills.
