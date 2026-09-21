@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Scale, Calculator, ChevronDown, ChevronUp, Layers, FileText, Database, Users, AlertTriangle, Building2, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Scale, Calculator, ChevronDown, ChevronUp, Layers, FileText, Database, Users, AlertTriangle, Building2, CheckCircle2, Sliders, Clock, Info } from 'lucide-react';
 import { ScoreBreakdown, District, InfrastructureCategory, CitizenRequest } from '../types';
 import { getScoreComponentContributions, getIssueEvidenceExplanation, getPriorityTier } from '../utils/scoring';
 import { getProvenanceBadgeStyles } from '../utils/provenance';
 import { validateSignalRecord } from '../utils/signalValidator';
+import { evaluateModeledImpact } from '../utils/impactModel';
 
 interface EvidenceExplanationCardProps {
   district: District;
@@ -21,9 +22,18 @@ export const EvidenceExplanationCard: React.FC<EvidenceExplanationCardProps> = (
   compact = false,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(!compact);
+  const [showImpactPlan, setShowImpactPlan] = useState<boolean>(false);
   const evidence = getIssueEvidenceExplanation(district, category, requests, breakdown);
   const tier = getPriorityTier(evidence.totalScore);
   const valResult = validateSignalRecord(district.name, category, 8, district);
+
+  const modeledImpact = evaluateModeledImpact({
+    district,
+    category,
+    requests,
+    interventionType: 'UPGRADE',
+    intensity: 'Medium',
+  });
 
   return (
     <div className="bg-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-xs font-sans text-xs space-y-0">
@@ -218,6 +228,85 @@ export const EvidenceExplanationCard: React.FC<EvidenceExplanationCardProps> = (
                   </span>
                 );
               })}
+            </div>
+
+            {/* Section 3: Prospective Modeled Impact & Verification Plan */}
+            <div className="pt-3 border-t border-slate-200 space-y-2.5">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Sliders className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="font-mono text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                    3. Prospective Modeled Impact & Verification Plan
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowImpactPlan(!showImpactPlan)}
+                  className="text-[10px] font-mono text-blue-700 hover:underline flex items-center gap-0.5 cursor-pointer font-bold"
+                >
+                  {showImpactPlan ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                  <span>{showImpactPlan ? 'Hide modeled projection' : 'Show modeled projection'}</span>
+                </button>
+              </div>
+
+              {showImpactPlan && (
+                <div className="bg-white border border-amber-200 rounded-lg p-3.5 space-y-3 animate-in fade-in duration-100">
+                  <div className="flex items-center justify-between flex-wrap gap-2 pb-2 border-b border-stone-100">
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-900 border border-amber-300 rounded font-mono text-[9px] font-bold uppercase">
+                      MODELED IMPACT — NOT OBSERVED OUTCOME
+                    </span>
+                    <span className="text-[10px] font-mono text-stone-500">
+                      Standard Scheme: {modeledImpact.assumptions.interventionLabel} (Medium)
+                    </span>
+                  </div>
+
+                  {/* 5-part breakdown */}
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 font-mono text-[11px]">
+                    {/* 1. Baseline */}
+                    <div className="p-2 bg-slate-50 border border-slate-200 rounded">
+                      <span className="text-[9px] text-slate-500 uppercase font-bold block">1. Baseline (Observed)</span>
+                      <div className="text-slate-900 font-bold mt-1">Access: {modeledImpact.baseline.accessPct}%</div>
+                      <div className="text-slate-600 text-[10px]">Signals: {modeledImpact.baseline.signalsCount}</div>
+                      <div className="text-slate-600 text-[10px]">Score: {modeledImpact.baseline.priorityScore} / 100</div>
+                      <div className="text-[8px] text-slate-400 font-sans mt-1">Source: {modeledImpact.baseline.provenanceLabel}</div>
+                    </div>
+
+                    {/* 2. Assumptions */}
+                    <div className="p-2 bg-stone-50 border border-stone-200 rounded">
+                      <span className="text-[9px] text-stone-500 uppercase font-bold block">2. Model Assumptions</span>
+                      <div className="text-stone-900 font-bold mt-1">Gain Factor: {modeledImpact.assumptions.baseCoverageGainFactor}</div>
+                      <div className="text-stone-600 text-[10px]">Intensity: {modeledImpact.assumptions.intensityMultiplier}x</div>
+                      <div className="text-stone-600 text-[10px]">Horizon: {modeledImpact.assumptions.evaluationHorizonMonths} months</div>
+                      <div className="text-[8px] text-stone-400 font-sans mt-1">Benchmark capital: ₹{modeledImpact.assumptions.estimatedCapitalCr} Cr</div>
+                    </div>
+
+                    {/* 3. Modeled Projection */}
+                    <div className="p-2 bg-amber-50/50 border border-amber-200 rounded">
+                      <span className="text-[9px] text-amber-800 uppercase font-bold block">3. Modeled Projection</span>
+                      <div className="text-emerald-700 font-bold mt-1">Access: {modeledImpact.modeled.projectedAccessPct}% (+{modeledImpact.modeled.accessGainPct}%)</div>
+                      <div className="text-stone-700 text-[10px]">Signals: {modeledImpact.modeled.projectedSignals} ({modeledImpact.modeled.signalsReductionPct}%)</div>
+                      <div className="text-stone-700 text-[10px]">Score: {modeledImpact.modeled.projectedPriorityScore} / 100 ({modeledImpact.modeled.priorityScoreDelta} pts)</div>
+                      <div className="text-[8px] text-amber-700 font-sans mt-1">Source: {modeledImpact.modeled.provenanceLabel}</div>
+                    </div>
+                  </div>
+
+                  {/* Measurement Requirement */}
+                  <div className="p-2 bg-blue-50/60 border border-blue-200 rounded text-[10px] space-y-1 font-sans text-blue-950">
+                    <div className="font-bold flex items-center gap-1 font-mono text-[10px] text-blue-900">
+                      <Clock className="w-3 h-3 text-blue-700" />
+                      Proposed Post-Intervention Verification Criteria:
+                    </div>
+                    <ul className="list-disc pl-4 space-y-0.5 text-blue-900/90 text-[10px]">
+                      <li>Physical infrastructure saturation survey (Third-party engineering audit)</li>
+                      <li>Post-delivery citizen grievance signal density over 12-24 month window</li>
+                      <li>Vulnerable population service continuity verification</li>
+                    </ul>
+                    <div className="text-[9px] font-mono text-blue-800 italic pt-1">
+                      Status: Proposed post-intervention metrics, not currently measured outcomes.
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

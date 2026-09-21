@@ -120,6 +120,65 @@ All model parameters, weights, and normalization bounds are centralized in `SCOR
 
 ---
 
+## 🔁 Closed-Loop Impact Evaluation Model
+
+CivicPulse implements a **deterministic, closed-loop impact evaluation engine** (`src/utils/impactModel.ts`) that links citizen grievances, public capital expenditure, and post-delivery outcome verification.
+
+> ⚠️ **Important Evaluation Notice**: Modeled impact values are calculated prototype projections based on explicit assumptions and do not represent observed government outcomes or verified real-world results. Production validation requires post-intervention physical and grievance telemetry measurement.
+
+### The 8-Stage Closed-Loop Architecture
+
+The platform models public works through an end-to-end decision and verification lifecycle:
+
+$$\begin{aligned}
+\text{1. Citizen Signals} &\longrightarrow \text{2. Baseline Measurement} \longrightarrow \text{3. Priority Scoring} \longrightarrow \text{4. Recommended Intervention} \\
+&\longrightarrow \text{5. Modeled Impact Projection} \longrightarrow \text{6. Real-World Implementation} \longrightarrow \text{7. Post-Intervention Measurement} \longrightarrow \text{8. Actual Evaluation}
+\end{aligned}$$
+
+| Stage | Purpose | Data Nature / Provenance |
+| :--- | :--- | :--- |
+| **1. Citizen Signals** | Ingestion of raw multilingual citizen distress reports. | Observed / Prototype Ingestion |
+| **2. Baseline Measurement** | Grounding against district demographics and access deficits. | Grounded Public Datasets (JJM, PMGSY, NHM) |
+| **3. Priority Scoring** | Deterministic 5-pillar prioritization index (0–100). | Deterministic Algorithm |
+| **4. Recommended Intervention** | Alignment with Centrally Sponsored Schemes (JJM, PMGSY, SBM). | Scheme Alignment Blueprint |
+| **5. Modeled Impact Projection** | What-if simulation using explicit elasticity assumptions. | **Modeled Impact — Not Observed Outcome** |
+| **6. Real-World Implementation** | Tracking administrative handoff and departmental execution. | Action Queue Lifecycle |
+| **7. Post-Intervention Measurement** | Verification protocol using field sensors & third-party audits. | **Proposed Measurement Plan** |
+| **8. Actual Evaluation** | Comparison of baseline vs. observed post-delivery telemetry. | Observed Evaluation (Future) |
+
+### Deterministic Modeling Parameters (`IMPACT_MODEL_CONFIG`)
+
+The impact engine calculates projected changes using explicit, transparent elasticity formulas:
+
+- **Intervention Gain Factors**:
+  - `FIX` (Targeted Remediation): `25%` baseline gap reduction factor.
+  - `UPGRADE` (Capacity Augmentation): `40%` baseline gap reduction factor.
+  - `BUILD` (Capital Commissioning): `65%` baseline gap reduction factor.
+  - `POLICY` (Operational Reform): `20%` baseline gap reduction factor.
+- **Intensity Multipliers**: Low (`0.8x`), Medium (`1.0x`), High (`1.25x`).
+- **Elasticity Bounds**: Effective gap reduction is capped at `85%` to prevent unrealistic 100% resolution claims.
+- **Demand Response Elasticity**: Grievance reduction tracks infrastructure access gains with a configurable demand elasticity factor (`0.90x`).
+
+### Side-by-Side Comparison Framework
+
+Every scenario in the **What-If Simulator** (`src/components/ImpactSimulator.tsx`) and **Evidence Explanation Card** (`src/components/EvidenceExplanationCard.tsx`) clearly delineates:
+
+1. **Baseline (Observed / Grounded)**: Current infrastructure access, grievance signal volume, priority score, and affected population.
+2. **Modeled Projection (Prototype Model)**: Projected coverage gain, estimated complaint reduction, and priority score de-escalation.
+3. **Modeled Delta (Calculated Variance)**: Exact projected percentage and absolute changes.
+
+### Proposed Post-Intervention Measurement Plan
+
+To transition from prototype modeling to production evaluation, CivicPulse establishes a standardized **5-dimension measurement plan** required for real-world verification:
+
+1. **Infrastructure Access Rate**: Third-party physical sample survey & municipal telemetry (Quarterly audit by State Evaluation Authority).
+2. **Grievance Signal Volume**: Ingested citizen reports via WhatsApp, IVR, and Web over a 12–24 month post-commissioning horizon.
+3. **Mean Time to Resolution (MTTR)**: Municipal departmental SLA tracking across administrative tiers.
+4. **Service Continuity & Uptime**: IoT pressure sensors, grid stability monitors, and water quality telemetry.
+5. **Vulnerable Population Protection**: Targeted saturation survey in low-income and minority habitations.
+
+---
+
 ## ⚙️ Current Prototype Capabilities
 
 The current version of CivicPulse is a fully working, demonstrable prototype equipped with the following functional features:
