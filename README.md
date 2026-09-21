@@ -158,7 +158,7 @@ CivicPulse currently uses local JSON file storage (`civicpulse_citizen_requests.
 CivicPulse is a decision-support Digital Public Infrastructure (DPI) prototype. To maintain complete transparency regarding data provenance and depth across its expanded national scope:
 - **100% Geographic Representation (36 States & UTs)**: Every state (28) and Union Territory (8) in India is represented in the source-of-truth district registry (`DISTRICTS_REGISTRY`).
 - **3-Tier Data Provenance Classification**:
-  - **Tier 1: Deep Baseline (5 Districts)**: `vijayawada`, `guntur`, `visakhapatnam`, `kurnool`, `solapur` — Complete multi-sector infrastructure metrics, historical capex allocations, and field-validated citizen signal clusters.
+  - **Tier 1: Deep Baseline (5 Districts)**: `vijayawada`, `guntur`, `visakhapatnam`, `kurnool`, `solapur` — Complete multi-sector infrastructure metrics, historical capex allocations, and curated representative citizen signal clusters.
   - **Tier 2: Expanded Baseline (10 Districts)**: `warangal`, `hyderabad`, `nashik`, `patna`, `gaya`, `jaipur`, `bengaluru`, `chennai`, `kolkata`, `lucknow` — Comprehensive baseline public dataset metrics (JJM, PMGSY, NHM) and seeded issue clusters.
   - **Tier 3: Regional Coverage (55 Districts)**: Representative regional districts covering all remaining Indian States and Union Territories with explicit regional provenance metadata.
 - **100 Multilingual Citizen Signals**: Seeded multilingual reports across 8 Indian languages (Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, Odia, English).

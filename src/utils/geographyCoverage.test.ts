@@ -11,8 +11,19 @@ function assert(condition: boolean, message: string) {
 console.log('🧪 Starting Geographic Coverage & Registry Integrity Tests...\n');
 
 // 1. Uniqueness & Required Field Audit
+assert(DISTRICTS_REGISTRY.length === 70, `Expected exactly 70 registered districts, found ${DISTRICTS_REGISTRY.length}`);
+
 const seenIds = new Set<string>();
 const seenNameState = new Set<string>();
+
+const normalizeStateName = (str: string) =>
+  (str || '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/\(ncr\)/g, '')
+    .replace(/[^a-z0-9]/g, '');
+
+const recognizedStateNorms = INDIA_STATES_AND_UTS.map(s => normalizeStateName(s.name));
 
 for (const dist of DISTRICTS_REGISTRY) {
   assert(Boolean(dist.id && dist.id.trim()), `District missing ID: ${dist.name}`);
@@ -24,10 +35,19 @@ for (const dist of DISTRICTS_REGISTRY) {
   seenNameState.add(key);
 
   assert(Boolean(dist.state && dist.state.trim()), `District missing state: ${dist.id}`);
-  assert(typeof dist.lat === 'number' && !isNaN(dist.lat), `Invalid latitude for ${dist.id}`);
-  assert(typeof dist.lon === 'number' && !isNaN(dist.lon), `Invalid longitude for ${dist.id}`);
+  const distStateNorm = normalizeStateName(dist.state);
+  const matchesKnownState = recognizedStateNorms.some(rn => distStateNorm.includes(rn) || rn.includes(distStateNorm));
+  assert(matchesKnownState, `District ${dist.id} has unrecognized State/UT: "${dist.state}"`);
+
+  assert(typeof dist.lat === 'number' && !isNaN(dist.lat) && dist.lat >= 6 && dist.lat <= 38, `Invalid latitude (${dist.lat}) for ${dist.id}`);
+  assert(typeof dist.lon === 'number' && !isNaN(dist.lon) && dist.lon >= 68 && dist.lon <= 98, `Invalid longitude (${dist.lon}) for ${dist.id}`);
   assert(typeof dist.population === 'number' && dist.population > 0, `Invalid population for ${dist.id}`);
   assert(typeof dist.poverty_index === 'number' && dist.poverty_index >= 0 && dist.poverty_index <= 1, `Invalid poverty index for ${dist.id}`);
+
+  const tier = getDistrictCoverageTier(dist.id);
+  assert(['deep-baseline', 'expanded-baseline', 'regional-coverage'].includes(tier), `Invalid tier "${tier}" for district ${dist.id}`);
+  const depth = getDistrictDataDepth(dist.id);
+  assert(Boolean(depth && depth.badgeLabel && depth.badgeClass), `Invalid data depth info for ${dist.id}`);
 }
 
 console.log(`✅ Test 1 Passed: ${DISTRICTS_REGISTRY.length} districts verified for field completeness and key uniqueness.`);
