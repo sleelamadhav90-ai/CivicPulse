@@ -5,6 +5,7 @@ import { PostgresCitizenRequestRepository } from '../repositories/PostgresCitize
 import { validateCitizenRequest, validateProcessFeedback } from '../validation/requestValidator';
 import { createRateLimiter } from '../middleware/rateLimiter';
 import { MemoryCache } from '../cache/memoryCache';
+import { validateConfig } from '../config';
 import type { CitizenRequest } from '../../types';
 
 function assert(condition: boolean, message: string): void {
@@ -136,10 +137,12 @@ async function runScalabilityAndArchitectureTestSuite() {
 
   // --- Test 6: In-Memory Rate Limiting ---
   console.log('\n[Test 6] Rate Limiting Abuse Protection');
-  const limiter = createRateLimiter({
+  // 6a: Default disabled rate limiting passes all requests
+  const defaultLimiter = createRateLimiter({
     windowMs: 1000,
     maxRequests: 3,
-    name: 'test-limiter',
+    name: 'test-default-limiter',
+    forceEnable: false,
   });
 
   const dummyReq = { headers: {}, ip: '192.168.1.100' } as any;
@@ -157,13 +160,29 @@ async function runScalabilityAndArchitectureTestSuite() {
     nextCalls++;
   };
 
-  limiter(dummyReq, dummyRes, nextFn); // Req 1
-  limiter(dummyReq, dummyRes, nextFn); // Req 2
-  limiter(dummyReq, dummyRes, nextFn); // Req 3
-  assert(nextCalls === 3, 'First 3 requests within threshold execute next()');
+  // When disabled by default, exceeding maxRequests does NOT block
+  for (let i = 0; i < 5; i++) {
+    defaultLimiter(dummyReq, dummyRes, nextFn);
+  }
+  assert(nextCalls === 5, 'Rate limiter is disabled by default (RATE_LIMIT_ENABLED=false) and bypasses');
 
-  limiter(dummyReq, dummyRes, nextFn); // Req 4 (exceeded)
-  assert(statusSent === 429, 'Fourth request exceeding limit triggers HTTP 429');
+  // 6b: Explicitly enabled rate limiting enforces thresholds
+  const enabledLimiter = createRateLimiter({
+    windowMs: 1000,
+    maxRequests: 3,
+    name: 'test-enabled-limiter',
+    forceEnable: true,
+  });
+
+  nextCalls = 0;
+  statusSent = 0;
+  enabledLimiter(dummyReq, dummyRes, nextFn); // Req 1
+  enabledLimiter(dummyReq, dummyRes, nextFn); // Req 2
+  enabledLimiter(dummyReq, dummyRes, nextFn); // Req 3
+  assert(nextCalls === 3, 'When enabled, first 3 requests within threshold execute next()');
+
+  enabledLimiter(dummyReq, dummyRes, nextFn); // Req 4 (exceeded)
+  assert(statusSent === 429, 'When enabled, fourth request exceeding limit triggers HTTP 429');
 
   // --- Test 7: Memory Cache LRU & TTL ---
   console.log('\n[Test 7] Bounded Memory Cache LRU & TTL');
@@ -186,12 +205,43 @@ async function runScalabilityAndArchitectureTestSuite() {
   assert(cacheStats.evictions === 1, 'Cache records exactly 1 eviction');
   assert(cacheStats.hits > 0, 'Cache records hits correctly');
 
+  // --- Test 8: Configuration Validation (JSON Default & Optional DATABASE_URL) ---
+  console.log('\n[Test 8] Configuration Validation: Default JSON Persistence & Optional DATABASE_URL');
+  
+  // 8a: Default empty environment -> json persistence, rateLimitEnabled: false, DATABASE_URL optional
+  const defaultEnvConfig = validateConfig({});
+  assert(defaultEnvConfig.isValid, 'Default configuration with no env vars is valid');
+  assert(defaultEnvConfig.config.persistenceType === 'json', 'Default persistenceType is strictly json');
+  assert(defaultEnvConfig.config.rateLimitEnabled === false, 'Default rateLimitEnabled is strictly false');
+  assert(defaultEnvConfig.config.databaseUrl === undefined, 'databaseUrl is undefined and optional by default');
+
+  // 8b: Explicit PERSISTENCE_TYPE=json without DATABASE_URL -> completely valid
+  const jsonExplicitConfig = validateConfig({ PERSISTENCE_TYPE: 'json', DATABASE_URL: '' });
+  assert(jsonExplicitConfig.isValid, 'PERSISTENCE_TYPE=json is valid without DATABASE_URL');
+  assert(jsonExplicitConfig.config.persistenceType === 'json', 'Configured persistenceType is json');
+
+  // 8c: PERSISTENCE_TYPE=postgres WITHOUT DATABASE_URL -> invalid, requires DATABASE_URL
+  const pgMissingUrl = validateConfig({ PERSISTENCE_TYPE: 'postgres' });
+  assert(!pgMissingUrl.isValid, 'PERSISTENCE_TYPE=postgres without DATABASE_URL fails validation');
+  assert(pgMissingUrl.errors.some((e) => e.includes('DATABASE_URL is required')), 'Error indicates DATABASE_URL is required for postgres');
+
+  // 8d: PERSISTENCE_TYPE=postgres WITH DATABASE_URL -> valid
+  const pgValid = validateConfig({ PERSISTENCE_TYPE: 'postgres', DATABASE_URL: 'postgresql://admin:secret@localhost:5432/civicpulse' });
+  assert(pgValid.isValid, 'PERSISTENCE_TYPE=postgres with DATABASE_URL is valid');
+  assert(pgValid.config.persistenceType === 'postgres', 'Configured persistenceType is postgres');
+
+  // 8e: RATE_LIMIT_ENABLED toggling
+  const rateLimitTrue = validateConfig({ RATE_LIMIT_ENABLED: 'true' });
+  assert(rateLimitTrue.config.rateLimitEnabled === true, 'RATE_LIMIT_ENABLED=true enables rate limiter');
+  const rateLimitFalse = validateConfig({ RATE_LIMIT_ENABLED: 'false' });
+  assert(rateLimitFalse.config.rateLimitEnabled === false, 'RATE_LIMIT_ENABLED=false disables rate limiter');
+
   // Cleanup test temporary file
   if (fs.existsSync(testStorePath)) {
     fs.unlinkSync(testStorePath);
   }
 
-  console.log('\n🎉 ALL 7 DEPLOYABILITY & SCALABILITY ARCHITECTURE TESTS PASSED SUCCESSFULLY!\n');
+  console.log('\n🎉 ALL 8 DEPLOYABILITY & SCALABILITY ARCHITECTURE TESTS PASSED SUCCESSFULLY!\n');
 }
 
 runScalabilityAndArchitectureTestSuite().catch((err) => {

@@ -6,6 +6,7 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // Scalability & Persistence Architecture modules
+import { getServerConfig } from './src/server/config';
 import { getCitizenRequestRepository } from './src/server/repositories/index';
 import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator';
 import { requestIdMiddleware } from './src/server/middleware/requestId';
@@ -65,6 +66,11 @@ const handleHealthCheck = async (req: Request, res: Response) => {
     persistedRequestsCount: stats.totalRequests,
     checks: {
       persistence: repoHealth,
+      configuration: {
+        persistenceType: getServerConfig().persistenceType,
+        rateLimitEnabled: getServerConfig().rateLimitEnabled,
+        databaseConfigured: Boolean(getServerConfig().databaseUrl),
+      },
       cache: {
         policyBriefs: policyBriefCache.getStats(),
         feedbackDiagnostics: feedbackDiagnosticCache.getStats(),

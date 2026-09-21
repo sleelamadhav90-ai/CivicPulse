@@ -10,17 +10,19 @@ interface RateLimiterOptions {
   maxRequests: number;
   message?: string;
   name?: string;
+  forceEnable?: boolean;
 }
 
 /**
  * In-memory sliding window rate limiter.
  * Protects prototype endpoints against accidental request flooding and high-cost AI abuse.
+ * Disabled by default (RATE_LIMIT_ENABLED=false) to keep prototype access friction-free.
  * 
  * Production Note: In production, distributed rate limiting is handled by an API Gateway
  * (e.g., Google Cloud Armor, Envoy, or Redis-backed token bucket) to scale across horizontal instances.
  */
 export function createRateLimiter(options: RateLimiterOptions) {
-  const { windowMs, maxRequests, message = 'Too many requests, please slow down.', name = 'default' } = options;
+  const { windowMs, maxRequests, message = 'Too many requests, please slow down.', name = 'default', forceEnable = false } = options;
   const store = new Map<string, RateLimitEntry>();
 
   // Periodically sweep expired clients every 2 minutes to prevent memory leaks
@@ -39,8 +41,10 @@ export function createRateLimiter(options: RateLimiterOptions) {
   }
 
   return function rateLimitMiddleware(req: Request, res: Response, next: NextFunction): void {
-    // If rate limiting is disabled via env
-    if (process.env.RATE_LIMIT_ENABLED === 'false') {
+    // Rate limiting is disabled by default (RATE_LIMIT_ENABLED=false).
+    // Only active when explicitly enabled via environment variable or forceEnable flag.
+    const isEnabled = forceEnable || process.env.RATE_LIMIT_ENABLED === 'true';
+    if (!isEnabled) {
       return next();
     }
 
