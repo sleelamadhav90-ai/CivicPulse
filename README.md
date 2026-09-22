@@ -1,12 +1,15 @@
 # CivicPulse (CivicPulse India DPI)
 > **AI-Powered National Development Intelligence & Digital Public Infrastructure Platform**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-success.svg?style=flat&logo=vercel)](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
 [![Runtime](https://img.shields.io/badge/Runtime-Node.js%20v22-green.svg)](https://nodejs.org/)
 [![Framework](https://img.shields.io/badge/Framework-React%2019%20%2B%20Express-blue.svg)](https://react.dev/)
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
 [![Styling](https://img.shields.io/badge/Styling-Tailwind%20CSS%20v4-38bdf8.svg)](https://tailwindcss.com/)
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%202.5%20Flash-8e44ad.svg)](https://ai.google.dev/)
 [![Districts](https://img.shields.io/badge/Registry-70%20Districts%20%7C%2036%20States%20%26%20UTs-blue.svg)](#-canonical-data-registry)
+
+> 🌐 **Live Deployed Application**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
 
 ---
 
@@ -456,6 +459,17 @@ npm test
 9. **Request Traceability**: `X-Request-Id` generation, header sanitization, and `X-Response-Time` timing.
 10. **Error Handling & Secret Redaction**: Centralized JSON error format, API key redaction, and internal path stripping.
 11. **Rate Limiting Headers**: Standard (`RateLimit-*`) and legacy (`X-RateLimit-*`) compliance.
+
+---
+
+## 🌐 Live Production Deployment
+
+CivicPulse is deployed to production on Vercel with serverless API integration and optimized client asset delivery:
+
+- **Live Application URL**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
+- **National Intelligence Dashboard**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
+- **Citizen Voice & Multilingual Input**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
+- **API Health & Telemetry Endpoint**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/api/health](https://civic-pulse-3olc47qk0-slm15.vercel.app/api/health)
 
 ---
 
