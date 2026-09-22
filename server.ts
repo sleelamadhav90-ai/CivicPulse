@@ -1219,45 +1219,25 @@ STRICT GROUNDING RULES:
 // Centralized Error Handler for API routes
 app.use(errorHandler);
 
-// Start Server with Vite Middleware in Development & Graceful Shutdown
-async function startServer() {
+// Start Vite middleware only during local development.
+// On Vercel, the Express app itself is the serverless function.
+async function startDevelopmentServer() {
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
+
     app.use(vite.middlewares);
-  } else {
-    const publicPath = path.join(process.cwd(), 'public');
 
-app.use(express.static(publicPath));
-
-app.get('*', (req: Request, res: Response) => {
-  res.sendFile(path.join(publicPath, 'index.html'));
-});
-  }
-
-  const server = app.listen(PORT, '0.0.0.0', () => {
-    console.log(`CivicPulse Server running on http://0.0.0.0:${PORT}`);
-  });
-
-  // Graceful shutdown handling for container termination
-  const handleShutdown = (signal: string) => {
-    console.log(`[CivicPulse Server] Received ${signal}. Initiating graceful connection teardown...`);
-    server.close(() => {
-      console.log('[CivicPulse Server] HTTP server closed cleanly. Process exiting.');
-      process.exit(0);
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`CivicPulse Server running on http://0.0.0.0:${PORT}`);
     });
-
-    // Enforce 5-second termination deadline
-    setTimeout(() => {
-      console.error('[CivicPulse Server] Graceful teardown timed out after 5000ms. Forcing shutdown.');
-      process.exit(1);
-    }, 5000).unref();
-  };
-
-  process.on('SIGTERM', () => handleShutdown('SIGTERM'));
-  process.on('SIGINT', () => handleShutdown('SIGINT'));
+  }
 }
 
-startServer();
+if (process.env.NODE_ENV !== 'production') {
+  startDevelopmentServer();
+}
+
+export default app;
