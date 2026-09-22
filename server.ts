@@ -6,12 +6,12 @@ import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // Scalability & Persistence Architecture modules
-import { getServerConfig } from './src/server/config';
-import { getCitizenRequestRepository } from './src/server/repositories/index';
-import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator';
-import { requestIdMiddleware } from './src/server/middleware/requestId';
-import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter';
-import { errorHandler, AppError } from './src/server/middleware/errorHandler';
+import { getServerConfig } from './src/server/config.js';
+import { getCitizenRequestRepository } from './src/server/repositories/index.js';
+import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator.js';
+import { requestIdMiddleware } from './src/server/middleware/requestId.js';
+import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter.js';
+import { errorHandler, AppError } from './src/server/middleware/errorHandler.js';
 import {
   policyBriefCache,
   feedbackDiagnosticCache,
