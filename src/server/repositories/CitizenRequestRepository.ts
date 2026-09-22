@@ -1,4 +1,4 @@
-import type { CitizenRequest } from '../../types';
+import type { CitizenRequest } from '../../types.js';
 
 export interface PaginationOptions {
   page?: number;

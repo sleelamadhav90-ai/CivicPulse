@@ -1,11 +1,11 @@
-import type { CitizenRequest } from '../../types';
+import type { CitizenRequest } from '../../types.js';
 import type {
   CitizenRequestRepository,
   PaginationOptions,
   PaginatedResult,
   RepositoryStatistics,
   RepositoryHealth,
-} from './CitizenRequestRepository';
+} from './CitizenRequestRepository.js';
 
 /**
  * Production-ready PostgreSQL repository adapter for CivicPulse.

@@ -18,7 +18,7 @@ import {
   searchIntentCache,
   searchSummaryCache,
   conversationalCache,
-} from './src/server/cache/memoryCache';
+} from './src/server/cache/memoryCache.js';
 
 dotenv.config();
 

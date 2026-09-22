@@ -1,4 +1,4 @@
-import type { InfrastructureCategory } from '../../types';
+import type { InfrastructureCategory } from '../../types.js';
 
 export interface ValidationError {
   field: string;

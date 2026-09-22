@@ -1,14 +1,14 @@
 import fs from 'fs';
 import path from 'path';
-import { JsonCitizenRequestRepository } from '../repositories/JsonCitizenRequestRepository';
-import { PostgresCitizenRequestRepository } from '../repositories/PostgresCitizenRequestRepository';
-import { validateCitizenRequest, validateProcessFeedback } from '../validation/requestValidator';
-import { createRateLimiter } from '../middleware/rateLimiter';
-import { MemoryCache } from '../cache/memoryCache';
-import { validateConfig } from '../config';
-import { requestIdMiddleware } from '../middleware/requestId';
-import { errorHandler, AppError } from '../middleware/errorHandler';
-import type { CitizenRequest } from '../../types';
+import { JsonCitizenRequestRepository } from '../repositories/JsonCitizenRequestRepository.js';
+import { PostgresCitizenRequestRepository } from '../repositories/PostgresCitizenRequestRepository.js';
+import { validateCitizenRequest, validateProcessFeedback } from '../validation/requestValidator.js';
+import { createRateLimiter } from '../middleware/rateLimiter.js';
+import { MemoryCache } from '../cache/memoryCache.js';
+import { validateConfig } from '../config.js';
+import { requestIdMiddleware } from '../middleware/requestId.js';
+import { errorHandler, AppError } from '../middleware/errorHandler.js';
+import type { CitizenRequest } from '../../types.js';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {

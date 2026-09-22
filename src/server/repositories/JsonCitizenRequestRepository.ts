@@ -1,13 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import type { CitizenRequest } from '../../types';
+import type { CitizenRequest } from '../../types.js';
 import type {
   CitizenRequestRepository,
   PaginationOptions,
   PaginatedResult,
   RepositoryStatistics,
   RepositoryHealth,
-} from './CitizenRequestRepository';
+} from './CitizenRequestRepository.js';
 
 /**
  * JSON File-based persistence adapter for Citizen Requests.
