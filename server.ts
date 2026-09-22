@@ -2,7 +2,6 @@ import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 
 // Scalability & Persistence Architecture modules
@@ -1223,6 +1222,7 @@ app.use(errorHandler);
 // On Vercel, the Express app itself is the serverless function.
 async function startDevelopmentServer() {
   if (process.env.NODE_ENV !== 'production') {
+    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
