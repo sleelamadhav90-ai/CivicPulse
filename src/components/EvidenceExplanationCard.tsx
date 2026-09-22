@@ -281,12 +281,20 @@ export const EvidenceExplanationCard: React.FC<EvidenceExplanationCardProps> = (
                     </div>
 
                     {/* 3. Modeled Projection */}
-                    <div className="p-2 bg-amber-50/50 border border-amber-200 rounded">
-                      <span className="text-[9px] text-amber-800 uppercase font-bold block">3. Modeled Projection</span>
-                      <div className="text-emerald-700 font-bold mt-1">Access: {modeledImpact.modeled.projectedAccessPct}% (+{modeledImpact.modeled.accessGainPct}%)</div>
-                      <div className="text-stone-700 text-[10px]">Signals: {modeledImpact.modeled.projectedSignals} ({modeledImpact.modeled.signalsReductionPct}%)</div>
+                    <div className="p-2 bg-amber-50/70 border border-amber-300 rounded space-y-1">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[9px] text-amber-900 uppercase font-bold block">3. MODELED PROJECTION</span>
+                        <span className="text-[8px] font-mono px-1 py-0.2 bg-amber-200 text-amber-900 rounded font-semibold">SIMULATION</span>
+                      </div>
+                      <div className="text-emerald-800 font-bold">Access: {modeledImpact.modeled.projectedAccessPct}% (+{modeledImpact.modeled.accessGainPct}%)</div>
+                      <div className="text-stone-900 text-[10px] font-semibold">
+                        Estimated grievance reduction: {Math.abs(modeledImpact.modeled.signalsReductionPct)}%
+                      </div>
+                      <div className="text-stone-700 text-[10px]">Projected signals: {modeledImpact.modeled.projectedSignals}</div>
                       <div className="text-stone-700 text-[10px]">Score: {modeledImpact.modeled.projectedPriorityScore} / 100 ({modeledImpact.modeled.priorityScoreDelta} pts)</div>
-                      <div className="text-[8px] text-amber-700 font-sans mt-1">Source: {modeledImpact.modeled.provenanceLabel}</div>
+                      <div className="text-[8px] text-amber-900/90 font-sans italic pt-0.5 border-t border-amber-200/80">
+                        Prototype simulation — not an observed government outcome.
+                      </div>
                     </div>
                   </div>
 

@@ -254,9 +254,14 @@ export const Overview: React.FC<OverviewProps> = ({
                 / 100
               </span>
             </div>
-            <div className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] inline-block"></span>
-              <span>{t('status.critical')}</span>
+            <div className="flex items-center gap-1.5">
+              <span className="text-[9px] font-mono px-1.5 py-0.2 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-semibold uppercase">
+                Model Estimate
+              </span>
+              <div className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] inline-block"></span>
+                <span>{t('status.critical')}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -266,9 +271,14 @@ export const Overview: React.FC<OverviewProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:divide-x md:divide-[#171717]/15">
             {/* Column 1: Demand */}
             <div className="space-y-0.5 md:pr-4">
-              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                Demand
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                  Demand
+                </span>
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-semibold uppercase">
+                  Demo Signal
+                </span>
+              </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
                 {priorityIssues[0]?.signalCount || totalRequests || 742}
               </div>
@@ -279,9 +289,14 @@ export const Overview: React.FC<OverviewProps> = ({
 
             {/* Column 2: Service Gap */}
             <div className="space-y-0.5 md:px-6">
-              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                Service Gap
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                  Service Gap
+                </span>
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-sky-100 text-sky-900 border border-sky-300 rounded font-semibold uppercase">
+                  Public Data
+                </span>
+              </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
                 31.6%
               </div>
@@ -292,9 +307,14 @@ export const Overview: React.FC<OverviewProps> = ({
 
             {/* Column 3: Investment */}
             <div className="space-y-0.5 md:pl-6">
-              <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                Investment
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
+                  Investment
+                </span>
+                <span className="text-[9px] font-mono px-1 py-0.2 bg-stone-100 text-stone-700 border border-stone-300 rounded font-semibold uppercase">
+                  Curated Plan
+                </span>
+              </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#285943] tracking-tight">
                 ₹6.50 Cr
               </div>

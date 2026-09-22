@@ -512,7 +512,10 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
                       {evaluation.modeled.projectedSignals} signals
                     </td>
                     <td className="p-3.5 font-bold text-emerald-700">
-                      {evaluation.modeled.signalsReductionPct}% ({evaluation.modeled.signalsDelta} signals)
+                      <div>Estimated grievance reduction: {Math.abs(evaluation.modeled.signalsReductionPct)}%</div>
+                      <div className="text-[10px] text-stone-500 font-sans font-normal mt-0.5">
+                        ({evaluation.modeled.signalsDelta} signals · Prototype simulation — not an observed government outcome)
+                      </div>
                     </td>
                   </tr>
 

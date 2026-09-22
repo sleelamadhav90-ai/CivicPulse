@@ -311,9 +311,9 @@ export const GlobalConnectorsView: React.FC<GlobalConnectorsViewProps> = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 font-mono text-xs">
               {[
-                { name: 'Voice Ingestion', desc: 'Regional dialect STT & telephony', color: '#D65A3A', tag: 'IN | BR | ZA' },
-                { name: 'Text SMS / USSD', desc: 'Feature phone offline ingestion', color: '#285943', tag: 'ZA | IN' },
-                { name: 'Messaging Gateway', desc: 'WhatsApp / GovChat integration', color: '#D9A441', tag: 'BR | ZA | IN' },
+                { name: 'Voice Ingestion', desc: 'Web audio intake (STT via Gemini)', color: '#D65A3A', tag: 'Active Prototype' },
+                { name: 'Text SMS / USSD', desc: 'Feature phone offline ingestion (Proposed)', color: '#285943', tag: 'Proposed Spec' },
+                { name: 'Messaging Gateway', desc: 'WhatsApp / GovChat integration (Proposed)', color: '#D9A441', tag: 'Proposed Spec' },
                 { name: 'Language AI', desc: 'Multilingual translation to schema', color: '#171717', tag: 'Universal' },
                 { name: 'Gemini AI Engine', desc: 'Categorization & policy drafter', color: '#D65A3A', tag: 'Universal' },
                 { name: 'Geospatial Location', desc: 'District & ward boundary maps', color: '#285943', tag: 'Universal' },

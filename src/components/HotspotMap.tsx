@@ -638,7 +638,10 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </span>
           <span className="text-stone-600 hidden sm:inline">•</span>
           <span className="text-stone-300 shrink-0 hidden sm:inline">
-            <strong className="text-white">{coverageStats.totalDistricts}</strong> Districts
+            <strong className="text-white">{coverageStats.totalDistricts}</strong> Districts Represented
+          </span>
+          <span className="text-stone-400 text-[10px] shrink-0 hidden md:inline">
+            • Data depth varies by district
           </span>
           <span className="text-stone-600">•</span>
           <div className="flex items-center gap-1 text-[10px] shrink-0">

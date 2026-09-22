@@ -185,12 +185,12 @@ export const PORTAL_MODULES: PortalModule[] = [
     categoryEmoji: '🏗️',
     icon: TrendingUp,
     emoji: '📊',
-    badge: '4.2M Reach',
-    badgeColor: 'bg-[#285943] text-white',
-    tagline: 'Capital Allocation Slider & Deficit Reduction Projection',
-    description: 'Interactive simulation tool quantifying how proposed capital investments reduce infrastructure access gaps and improve beneficiary coverage.',
+    badge: 'Modeled Impact',
+    badgeColor: 'bg-amber-700 text-white',
+    tagline: 'Assumption-Based Capital Allocation & Deficit Reduction Modeling',
+    description: 'Deterministic simulation tool quantifying how proposed capital investments could reduce infrastructure access gaps and citizen signals.',
     userPersonas: ['Budget Officers', 'Economists', 'Policy Researchers'],
-    keyFeatures: ['Capital Allocation Slider', 'Deficit Reduction Curve', 'Beneficiary Population Reach', 'Before/After Comparison']
+    keyFeatures: ['Capital Allocation Slider', 'Modeled Reduction Curve', 'Beneficiary Population Reach', 'Baseline vs Modeled Comparison']
   },
   {
     id: 'submit',
