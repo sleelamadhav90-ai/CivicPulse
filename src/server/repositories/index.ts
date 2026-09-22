@@ -1,11 +1,11 @@
-import type { CitizenRequestRepository } from './CitizenRequestRepository';
+import type { CitizenRequestRepository } from './CitizenRequestRepository.js';
 import { JsonCitizenRequestRepository } from './JsonCitizenRequestRepository.js';
 import { PostgresCitizenRequestRepository } from './PostgresCitizenRequestRepository.js';
 import { getServerConfig } from '../config.js';
 
-export * from './CitizenRequestRepository';
-export * from './JsonCitizenRequestRepository';
-export * from './PostgresCitizenRequestRepository';
+export * from './CitizenRequestRepository.js';
+export * from './JsonCitizenRequestRepository.js';
+export * from './PostgresCitizenRequestRepository.js';
 
 let repositoryInstance: CitizenRequestRepository | null = null;
 
