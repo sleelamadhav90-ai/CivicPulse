@@ -1238,6 +1238,34 @@ async function startDevelopmentServer() {
 
 if (process.env.NODE_ENV !== 'production') {
   startDevelopmentServer();
+} else {
+  // In production (Vercel serverless function or container production),
+  // serve static assets and provide SPA fallback to index.html.
+  const publicDir = path.join(process.cwd(), 'public');
+  const distDir = path.join(process.cwd(), 'dist');
+  const staticDir = fs.existsSync(path.join(publicDir, 'index.html')) ? publicDir : distDir;
+
+  app.use(express.static(staticDir));
+
+  // SPA fallback: send index.html for non-API client routes
+  app.get('*', (req: Request, res: Response) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'Endpoint not found' });
+    }
+    const indexPath = path.join(staticDir, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(404).send('Not Found');
+    }
+  });
+
+  // Only bind port if not running as a serverless function (e.g. Vercel)
+  if (!process.env.VERCEL) {
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`CivicPulse Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
 }
 
 export default app;
