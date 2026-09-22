@@ -1,7 +1,7 @@
 import type { CitizenRequestRepository } from './CitizenRequestRepository';
 import { JsonCitizenRequestRepository } from './JsonCitizenRequestRepository.js';
 import { PostgresCitizenRequestRepository } from './PostgresCitizenRequestRepository.js';
-import { getServerConfig } from '../config';
+import { getServerConfig } from '../config.js';
 
 export * from './CitizenRequestRepository';
 export * from './JsonCitizenRequestRepository';
