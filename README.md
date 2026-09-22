@@ -462,14 +462,11 @@ npm test
 
 ---
 
-## 🌐 Live Production Deployment
+## 🚀 Live Demo
 
-CivicPulse is deployed to production on Vercel with serverless API integration and optimized client asset delivery:
+**Live Application:** https://civic-pulse-3olc47qk0-slm15.vercel.app/
 
-- **Live Application URL**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
-- **National Intelligence Dashboard**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
-- **Citizen Voice & Multilingual Input**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
-- **API Health & Telemetry Endpoint**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/api/health](https://civic-pulse-3olc47qk0-slm15.vercel.app/api/health)
+The live application URL is the main link judges should use to access CivicPulse.
 
 ---
 
