@@ -1355,16 +1355,16 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
             {/* AUTHENTICATION & TRANSPARENCY BLOCK */}
             {user ? (
-              <div className="p-3.5 bg-emerald-50 border-2 border-emerald-600/60 rounded-xs space-y-1.5 font-sans">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+              <div className="p-3 sm:p-3.5 bg-emerald-50 border-2 border-emerald-600/60 rounded-xs space-y-1.5 font-sans">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs font-bold text-emerald-900">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Authenticated Citizen</span>
-                    <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 border border-emerald-300">
+                    <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-1.5 py-0.5 border border-emerald-300">
                       Account-authenticated submission
                     </span>
                   </div>
-                  <span className="text-[11px] font-mono text-emerald-800">
+                  <span className="text-[11px] font-mono text-emerald-800 truncate max-w-full">
                     {user.email || 'Authenticated Account'}
                   </span>
                 </div>
