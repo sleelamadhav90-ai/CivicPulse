@@ -204,6 +204,11 @@ The current version of CivicPulse is a fully working, demonstrable prototype equ
   - Natural-language query parser mapped to structured function calls (`get_request_by_id`, `search_citizen_reports`, `search_community_issues`, `search_hotspots`, `search_recommendations`).
 - **Closed-Loop Impact Simulator**:
   - Outcome evaluation module measuring pre-delivery demand signals against post-delivery complaint reduction.
+- **Adaptive Mobile-First Responsive Design (320px–480px Optimized)**:
+  - Streamlined, ultra-compact mobile header with dynamic viewport height (`100dvh`) support.
+  - Interactive popover account drawer for authenticated citizens with quick sign-out and profile status.
+  - Adaptive 2-letter language code badges (`EN`, `HI`, `TE`, `TA`, `KN`, `MR`, `BN`, `OR`) and icon-only search triggers on narrow viewports.
+  - Zero-horizontal-overflow layout with touch-accessible buttons tested across 320px, 375px, 390px, 414px, and 480px screen widths.
 
 ---
 
