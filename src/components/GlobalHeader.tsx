@@ -10,11 +10,14 @@ import {
   MapPin,
   X,
   Menu,
-  Search
+  Search,
+  CheckCircle2,
+  LogIn
 } from 'lucide-react';
 import { CountryCode } from '../types';
 import { NavTab } from './Sidebar';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 interface GlobalHeaderProps {
   activeTab?: NavTab;
@@ -44,6 +47,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
   const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
+  const { user, isFirebaseConfigured, signInWithGoogle, signOut } = useAuth();
 
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
@@ -135,6 +139,31 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             <span className="text-xs">🇮🇳</span>
             <span className="uppercase tracking-wider">{t('brand.jurisdiction')}</span>
           </div>
+
+          {/* AUTHENTICATION STATUS / ACTION */}
+          {user ? (
+            <div className="flex items-center gap-1.5 bg-[#285943]/60 border border-emerald-500/50 text-emerald-200 px-2.5 py-1 rounded-xs text-[11px]">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              <span className="hidden md:inline font-sans font-medium text-white">Authenticated Citizen</span>
+              <span className="md:hidden font-sans font-medium text-white">Citizen</span>
+              <button
+                onClick={() => signOut()}
+                className="text-[10px] text-emerald-300 hover:text-white underline ml-1 cursor-pointer font-mono"
+                title="Sign out of account"
+              >
+                Sign out
+              </button>
+            </div>
+          ) : isFirebaseConfigured ? (
+            <button
+              onClick={() => signInWithGoogle()}
+              className="px-2.5 py-1 bg-[#D65A3A] hover:bg-[#c34e2f] text-white border border-[#D65A3A] transition-colors cursor-pointer flex items-center space-x-1.5 text-[11px] rounded-xs font-sans font-semibold shadow-[1px_1px_0px_#000]"
+              title="Sign in with Google to submit grievances"
+            >
+              <LogIn className="w-3 h-3" />
+              <span>Sign in</span>
+            </button>
+          ) : null}
 
           {/* LANGUAGE SWITCHER */}
           <div className="relative">

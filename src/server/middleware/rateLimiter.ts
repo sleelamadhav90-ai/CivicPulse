@@ -51,7 +51,8 @@ export function createRateLimiter(options: RateLimiterOptions) {
     const now = Date.now();
     // Resolve client IP (supporting standard reverse proxy headers)
     const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() || req.ip || '127.0.0.1';
-    const key = `${name}:${clientIp}`;
+    const userId = (req as any).user?.uid;
+    const key = userId ? `${name}:usr:${userId}:${clientIp}` : `${name}:ip:${clientIp}`;
 
     let entry = store.get(key);
 

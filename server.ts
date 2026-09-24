@@ -11,6 +11,7 @@ import { validateCitizenRequest, validateProcessFeedback } from './src/server/va
 import { requestIdMiddleware } from './src/server/middleware/requestId.js';
 import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter.js';
 import { errorHandler, AppError } from './src/server/middleware/errorHandler.js';
+import { requireAuth } from './src/server/middleware/authMiddleware.js';
 import {
   policyBriefCache,
   feedbackDiagnosticCache,
@@ -131,8 +132,8 @@ app.get('/api/citizen-requests', async (req: Request, res: Response, next: NextF
   }
 });
 
-// Endpoint: Persist newly submitted citizen request with validation
-app.post('/api/citizen-requests', async (req: Request, res: Response, next: NextFunction) => {
+// Endpoint: Persist newly submitted citizen request with validation & authentication
+app.post('/api/citizen-requests', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
   try {
     const validation = validateCitizenRequest(req.body);
     if (!validation.isValid) {
@@ -148,7 +149,14 @@ app.post('/api/citizen-requests', async (req: Request, res: Response, next: Next
       });
     }
 
-    const saved = await requestRepository.create(req.body);
+    // Security Architecture: Overwrite any client-supplied userId with verified Firebase token UID
+    const verifiedUid = req.user?.uid;
+    const sanitizedPayload = {
+      ...req.body,
+      ...(verifiedUid ? { userId: verifiedUid } : {}),
+    };
+
+    const saved = await requestRepository.create(sanitizedPayload);
     const stats = await requestRepository.getStatistics();
 
     res.json({

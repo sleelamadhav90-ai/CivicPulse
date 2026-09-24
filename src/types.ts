@@ -271,6 +271,7 @@ export interface GovernmentGrievanceRecord {
 export interface CitizenRequest {
   id: string; // e.g. "CP-2026-004821"
   request_id?: string;
+  userId?: string; // Verified Firebase Authentication UID (Account-authenticated submission)
   created_at?: string;
   timestamp: string;
   original_text: string;

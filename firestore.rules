@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidRequestId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    /**
+     * Citizen Requests Collection (citizenRequests/{requestId})
+     *
+     * Production Architecture:
+     * - Authoritative writes (create, update, delete) are processed exclusively by the
+     *   CivicPulse backend service via Firebase Admin SDK after token verification,
+     *   Gemini diagnostic structuring, and deterministic priority scoring.
+     * - Client-side direct writes are strictly blocked to prevent unvalidated data insertion.
+     * - Authenticated citizens may read their own submissions where request.auth.uid matches userId.
+     */
+    match /citizenRequests/{requestId} {
+      allow get: if isSignedIn() && (resource.data.userId == request.auth.uid);
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid);
+      allow write: if false; // All mutations must go through the verified CivicPulse backend API
+    }
+  }
+}

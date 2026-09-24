@@ -523,6 +523,87 @@ npm run start
 
 ---
 
+## 🔐 Firebase Authentication & Firestore Setup
+
+CivicPulse supports **Account-Authenticated Submissions** via Firebase Authentication (Google Sign-In) and cloud document persistence via Cloud Firestore.
+
+> ⚠️ **Verification Notice**: Firebase Authentication provides verified account ownership to associate grievances with an authenticated user account and mitigate automated spam. It does **NOT** represent government identity verification, residency verification, or an Aadhaar integration.
+
+### Step-by-Step Setup Guide
+
+1. **Create or Select a Firebase Project**:
+   - Visit the [Firebase Console](https://console.firebase.google.com/) and create a new project (or select an existing project).
+
+2. **Enable Firebase Authentication**:
+   - In the Firebase Console, navigate to **Build** → **Authentication** → **Get Started**.
+
+3. **Enable Google Sign-In Provider**:
+   - Under the **Sign-in method** tab, select **Google** from the provider list and enable it.
+   - Configure the public-facing project support email and save.
+
+4. **Create Cloud Firestore Database**:
+   - Navigate to **Build** → **Firestore Database** → **Create Database**.
+   - Select your preferred cloud region (e.g., `asia-south1` or `us-central1`).
+   - Start in **production mode** (rules are deployed in Step 6).
+
+5. **Configure Required Environment Variables**:
+   - Register a Web App in Firebase Project Settings to obtain client credentials.
+   - Set the following variables in `.env` (or your local environment):
+     ```env
+     # Frontend Client Configuration (Vite)
+     VITE_FIREBASE_API_KEY="AIzaSyYourFirebaseWebApiKey"
+     VITE_FIREBASE_AUTH_DOMAIN="your-project-id.firebaseapp.com"
+     VITE_FIREBASE_PROJECT_ID="your-project-id"
+     VITE_FIREBASE_STORAGE_BUCKET="your-project-id.appspot.com"
+     VITE_FIREBASE_MESSAGING_SENDER_ID="123456789012"
+     VITE_FIREBASE_APP_ID="1:123456789012:web:abcdef123456"
+
+     # Backend Admin SDK Configuration (Server-Side)
+     FIREBASE_PROJECT_ID="your-project-id"
+     FIREBASE_CLIENT_EMAIL="firebase-adminsdk-xxxxx@your-project-id.iam.gserviceaccount.com"
+     FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+
+     # Set Persistence Mode to Firestore
+     PERSISTENCE_TYPE="firestore"
+     ```
+
+6. **Configure Firestore Security Rules**:
+   - Apply the audited `firestore.rules` included in the root directory:
+     ```javascript
+     rules_version = '2';
+     service cloud.firestore {
+       match /databases/{database}/documents {
+         match /{document=**} {
+           allow read, write: if false;
+         }
+         match /citizenRequests/{requestId} {
+           allow get, list: if request.auth != null && resource.data.userId == request.auth.uid;
+           allow write: if false; // Authoritative mutations processed exclusively by verified backend API
+         }
+       }
+     }
+     ```
+
+7. **Configure Vercel Environment Variables**:
+   - In the Vercel Dashboard for your CivicPulse project:
+   - Navigate to **Settings** → **Environment Variables**.
+   - Add all `VITE_FIREBASE_*` variables for browser execution.
+   - Add `FIREBASE_PROJECT_ID`, `FIREBASE_CLIENT_EMAIL`, `FIREBASE_PRIVATE_KEY`, and `PERSISTENCE_TYPE=firestore` for serverless execution.
+
+8. **Redeploy Project**:
+   - Trigger a new deployment via git push or Vercel CLI:
+     ```bash
+     git push origin main
+     ```
+
+9. **Test Authenticated Citizen Submission**:
+   - Open the deployed application URL.
+   - Navigate to **Report an Issue** (`/submit`).
+   - Log an issue via voice or text input, proceed to AI Review, and authenticate with Google.
+   - Verify that your submission receives an authoritative tracking ID (`CP-2026-XXXXXX`) tagged as an **Account-Authenticated submission** backed by your verified user account.
+
+---
+
 ## 📄 License & Attribution
 
 Developed as a Digital Public Infrastructure (DPI) prototype for National Development Intelligence. Powered by Google Gemini API, React 19, Express, and Tailwind CSS.

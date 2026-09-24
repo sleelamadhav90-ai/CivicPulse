@@ -21,10 +21,13 @@ import {
   Radio,
   ExternalLink,
   ChevronRight,
-  Info
+  Info,
+  LogIn,
+  UserCheck
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory, District, RequestStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 interface CitizenSubmissionViewProps {
   districts: District[];
@@ -60,6 +63,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   onViewRequest,
 }) => {
   const { t, tCategory, tStatus, language } = useLanguage();
+  const { user, isFirebaseConfigured, signInWithGoogle, getIdToken } = useAuth();
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
 
   // Mode: 'write' or 'voice'
   const [activeMode, setActiveMode] = useState<'write' | 'voice'>(initialMode);
@@ -487,6 +493,20 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   // Final Submission to Backend & Persistent Storage
   const handleConfirmAndSubmit = async () => {
     if (!aiResult) return;
+    setAuthError(null);
+
+    // If Firebase is configured and user is not signed in, enforce Google authentication
+    if (isFirebaseConfigured && !user) {
+      try {
+        setIsSigningIn(true);
+        await signInWithGoogle();
+        setIsSigningIn(false);
+      } catch (err: any) {
+        setIsSigningIn(false);
+        setAuthError(err?.message || 'Please sign in with Google to authenticate your submission.');
+        return;
+      }
+    }
 
     // Generate unique tracking ID: CP-2026-XXXXXXXX (timestamp + random entropy)
     const currentYear = new Date().getFullYear();
@@ -520,6 +540,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     const newRequest: CitizenRequest = {
       id: trackingId,
       request_id: trackingId,
+      userId: user?.uid,
       created_at: new Date().toISOString(),
       timestamp: new Date().toISOString(),
       original_text: aiResult.original_text,
@@ -587,13 +608,27 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       }
     };
 
-    // Save to server backend
+    // Save to server backend with Authorization header
     try {
-      await fetch('/api/citizen-requests', {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const idToken = await getIdToken();
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+
+      const res = await fetch('/api/citizen-requests', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify(newRequest),
       });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          setAuthError(errorData?.error?.message || 'Authentication required to submit feedback.');
+          return;
+        }
+      }
     } catch (err) {
       console.warn('Backend offline, relying on client persistent state:', err);
     }
@@ -1317,6 +1352,59 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                 </p>
               </div>
             )}
+
+            {/* AUTHENTICATION & TRANSPARENCY BLOCK */}
+            {user ? (
+              <div className="p-3.5 bg-emerald-50 border-2 border-emerald-600/60 rounded-xs space-y-1.5 font-sans">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-900">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span>Authenticated Citizen</span>
+                    <span className="font-mono text-[10px] text-emerald-800 bg-emerald-100 px-2 py-0.5 border border-emerald-300">
+                      Account-authenticated submission
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-mono text-emerald-800">
+                    {user.email || 'Authenticated Account'}
+                  </span>
+                </div>
+                <p className="text-[11px] text-emerald-900/80 leading-relaxed font-sans">
+                  Authentication helps CivicPulse associate submissions with an authenticated account and reduce anonymous abuse. Your authentication identity is used for submission ownership; CivicPulse does not require government ID verification.
+                </p>
+              </div>
+            ) : isFirebaseConfigured ? (
+              <div className="p-4 bg-orange-50/80 border-2 border-[#D65A3A]/70 rounded-xs space-y-2.5 font-sans">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <UserCheck className="w-4 h-4 text-[#D65A3A]" />
+                    <span className="text-xs font-bold text-[#171717]">
+                      Sign in to submit your grievance
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => signInWithGoogle()}
+                    disabled={isSigningIn}
+                    className="px-4 py-2 bg-[#D65A3A] hover:bg-[#c34e2f] text-white text-xs font-bold font-sans uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-center"
+                  >
+                    <LogIn className="w-3.5 h-3.5" />
+                    <span>{isSigningIn ? 'Signing in...' : 'Sign in with Google'}</span>
+                  </button>
+                </div>
+                <p className="text-[11px] text-[#171717]/80 leading-relaxed">
+                  Authentication helps CivicPulse associate submissions with an authenticated account and reduce anonymous abuse. Your authentication identity is used for submission ownership; CivicPulse does not require government ID verification.
+                </p>
+                {authError && (
+                  <div className="text-[11px] font-mono font-bold text-red-700 bg-red-50 p-2 border border-red-300">
+                    ⚠️ {authError}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-3 bg-slate-50 border border-slate-300 rounded-xs text-[11px] text-slate-600 font-sans">
+                <strong>Public Prototype Mode:</strong> Direct submission without authentication is active in local development. Configure Firebase credentials to enable Google Sign-In and account-authenticated submissions.
+              </div>
+            )}
           </div>
 
           {/* Action Buttons: Confirm & Submit vs Edit */}
@@ -1333,10 +1421,11 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             <button
               type="button"
               onClick={handleConfirmAndSubmit}
-              className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer"
+              disabled={isSigningIn}
+              className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-70"
             >
               <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-              <span>✓ Confirm & Submit</span>
+              <span>{user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
             </button>
           </div>
         </div>
@@ -1373,6 +1462,12 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                 </span>
               </div>
               <div className="flex items-center space-x-2">
+                {submittedReceipt.userId && (
+                  <span className="px-2.5 py-1 bg-emerald-100 text-emerald-900 border border-emerald-300 font-mono text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                    <span>Account-Authenticated</span>
+                  </span>
+                )}
                 <span className="px-3 py-1 bg-[#285943] text-white font-mono text-xs font-bold uppercase tracking-wider">
                   {t('table.status')}: {tStatus('Received')}
                 </span>

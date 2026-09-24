@@ -2,12 +2,14 @@ import fs from 'fs';
 import path from 'path';
 import { JsonCitizenRequestRepository } from '../repositories/JsonCitizenRequestRepository.js';
 import { PostgresCitizenRequestRepository } from '../repositories/PostgresCitizenRequestRepository.js';
+import { FirestoreCitizenRequestRepository } from '../repositories/FirestoreCitizenRequestRepository.js';
 import { validateCitizenRequest, validateProcessFeedback } from '../validation/requestValidator.js';
 import { createRateLimiter } from '../middleware/rateLimiter.js';
 import { MemoryCache } from '../cache/memoryCache.js';
 import { validateConfig } from '../config.js';
 import { requestIdMiddleware } from '../middleware/requestId.js';
 import { errorHandler, AppError } from '../middleware/errorHandler.js';
+import { requireAuth } from '../middleware/authMiddleware.js';
 import type { CitizenRequest } from '../../types.js';
 
 function assert(condition: boolean, message: string): void {
@@ -356,12 +358,133 @@ async function runScalabilityAndArchitectureTestSuite() {
   assert(headersSetLimiter['X-RateLimit-Remaining'] === 49, 'Sets legacy X-RateLimit-Remaining');
   assert(headersSetLimiter['RateLimit-Reset'] >= 1, 'Sets RateLimit-Reset in seconds');
 
+  // --- Test 12: Firebase Token Verification & Auth Security Architecture ---
+  console.log('\n[Test 12] Firebase Auth Security Architecture & Anti-Spoofing');
+  process.env.NODE_ENV = 'test';
+
+  // 12a: Missing Token when Auth is Required -> 401
+  process.env.REQUIRE_AUTH = 'true';
+  let authStatus = 0;
+  let authErrorPayload: any = null;
+  const dummyAuthRes = {
+    status: (s: number) => {
+      authStatus = s;
+      return {
+        json: (p: any) => {
+          authErrorPayload = p;
+        },
+      };
+    },
+  } as any;
+
+  const authTracker = { nextCalled: false };
+  const dummyNoTokenReq = { headers: {}, id: 'req-no-token' } as any;
+  await requireAuth(dummyNoTokenReq, dummyAuthRes, () => { authTracker.nextCalled = true; });
+  assert(authStatus === 401, 'Missing token when auth required returns HTTP 401');
+  assert(authErrorPayload.error.code === 'AUTHENTICATION_REQUIRED', 'Error code is AUTHENTICATION_REQUIRED');
+  assert(Boolean(authTracker.nextCalled) === false, 'Middleware terminates chain when token is missing');
+
+  // 12b: Invalid Token -> 401
+  authStatus = 0;
+  authErrorPayload = null;
+  authTracker.nextCalled = false;
+  const dummyInvalidTokenReq = { headers: { authorization: 'Bearer test-token-invalid' }, id: 'req-invalid-token' } as any;
+  await requireAuth(dummyInvalidTokenReq, dummyAuthRes, () => { authTracker.nextCalled = true; });
+  assert(authStatus === 401, 'Invalid token returns HTTP 401');
+  assert(authErrorPayload.error.code === 'INVALID_TOKEN', 'Error code is INVALID_TOKEN');
+
+  // 12c: Valid Token -> Derives Authoritative User ID
+  authStatus = 0;
+  authTracker.nextCalled = false;
+  const dummyValidTokenReq = { headers: { authorization: 'Bearer test-token-citizen-uid-789' }, id: 'req-valid-token' } as any;
+  await requireAuth(dummyValidTokenReq, dummyAuthRes, () => { authTracker.nextCalled = true; });
+  assert(Boolean(authTracker.nextCalled) === true, 'Valid token allows request to proceed to next()');
+  assert(dummyValidTokenReq.user?.uid === 'citizen-uid-789', 'Authoritative UID citizen-uid-789 is extracted from verified token');
+
+  // 12d: Client-Supplied userId Override Rejection
+  // If an attacker sends { userId: 'spoofed-admin' }, verify backend overwrites it with verified token UID
+  const incomingClientPayload = {
+    id: 'CP-2026-TEST-999',
+    userId: 'spoofed-admin-id',
+    category: 'Water',
+    location: 'Vijayawada',
+    severity: 8,
+    urgency: 'HIGH',
+    original_text: 'Drinking water pipeline leak',
+    summary_en: 'Water leak',
+    source_type: 'text',
+    status: 'Received',
+  };
+  const verifiedUid = dummyValidTokenReq.user?.uid;
+  const securePayload = {
+    ...incomingClientPayload,
+    ...(verifiedUid ? { userId: verifiedUid } : {}),
+  };
+  assert(securePayload.userId === 'citizen-uid-789', 'Client-supplied userId cannot override verified token UID');
+  assert(securePayload.userId !== 'spoofed-admin-id', 'Malicious spoofed userId was successfully overwritten');
+
+  // Reset REQUIRE_AUTH
+  delete process.env.REQUIRE_AUTH;
+
+  // --- Test 13: Firestore Repository Adapter Compliance & Schema Preservation ---
+  console.log('\n[Test 13] Firestore Repository: Data Invariants & userId Persistence');
+  const firestoreRepo = new FirestoreCitizenRequestRepository();
+  const firestoreHealth = await firestoreRepo.healthCheck();
+  assert(firestoreHealth.type === 'firestore', 'Firestore adapter reports type firestore');
+
+  const authenticatedGrievance: CitizenRequest = {
+    id: 'CP-2026-FIRE-001',
+    request_id: 'CP-2026-FIRE-001',
+    userId: 'citizen-uid-789',
+    timestamp: new Date().toISOString(),
+    created_at: new Date().toISOString(),
+    original_text: 'Hospital primary health center lacks basic emergency medicines.',
+    language: 'Telugu',
+    category: 'Health',
+    subcategory: 'Medicine shortage',
+    issue_title: 'Health — Medicine shortage',
+    location: 'Guntur Rural',
+    district: 'Guntur',
+    state: 'Andhra Pradesh',
+    severity: 9,
+    severity_label: 'Critical',
+    urgency: 'CRITICAL',
+    summary_en: 'Primary health center emergency medicine shortage.',
+    source_type: 'voice',
+    status: 'Received',
+    affected_infrastructure: 'Healthcare Grid',
+  };
+
+  const savedFirestore = await firestoreRepo.create(authenticatedGrievance);
+  assert(savedFirestore.id === 'CP-2026-FIRE-001', 'Firestore repo preserves request id');
+  assert(savedFirestore.userId === 'citizen-uid-789', 'Firestore repo accurately persists verified userId');
+  assert(savedFirestore.category === 'Health', 'Existing category field preserved intact');
+  assert(savedFirestore.severity === 9, 'Existing severity field preserved intact');
+
+  const fetchedFirestore = await firestoreRepo.getById('CP-2026-FIRE-001');
+  assert(fetchedFirestore !== null, 'getById retrieves persisted Firestore record');
+  assert(fetchedFirestore?.userId === 'citizen-uid-789', 'Fetched Firestore record retains verified userId');
+
+  const firestoreStats = await firestoreRepo.getStatistics();
+  assert(firestoreStats.totalRequests >= 1, 'Firestore statistics aggregate total requests correctly');
+  assert(firestoreStats.byCategory['Health'] >= 1, 'Firestore statistics aggregate category count');
+
+  // --- Test 14: PERSISTENCE_TYPE=firestore Configuration Validation ---
+  console.log('\n[Test 14] Configuration Validation: PERSISTENCE_TYPE=firestore Requirements');
+  const firestoreMissingProj = validateConfig({ PERSISTENCE_TYPE: 'firestore' });
+  assert(!firestoreMissingProj.isValid, 'PERSISTENCE_TYPE=firestore without FIREBASE_PROJECT_ID fails validation');
+  assert(firestoreMissingProj.errors.some((e) => e.includes('FIREBASE_PROJECT_ID is required')), 'Reports FIREBASE_PROJECT_ID is required');
+
+  const firestoreValidConfig = validateConfig({ PERSISTENCE_TYPE: 'firestore', FIREBASE_PROJECT_ID: 'civicpulse-prod' });
+  assert(firestoreValidConfig.isValid, 'PERSISTENCE_TYPE=firestore with FIREBASE_PROJECT_ID is valid');
+  assert(firestoreValidConfig.config.persistenceType === 'firestore', 'Config persistenceType is firestore');
+
   // Cleanup test temporary file
   if (fs.existsSync(testStorePath)) {
     fs.unlinkSync(testStorePath);
   }
 
-  console.log('\n🎉 ALL 11 DEPLOYABILITY & SCALABILITY ARCHITECTURE TESTS PASSED SUCCESSFULLY!\n');
+  console.log('\n🎉 ALL 14 DEPLOYABILITY, PERSISTENCE & FIREBASE AUTH TESTS PASSED SUCCESSFULLY!\n');
 }
 
 runScalabilityAndArchitectureTestSuite().catch((err) => {

@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
 import { calculatePriorityScore } from '../utils/scoring';
+import { useAuth } from '../context/AuthContext';
 
 interface CitizenIngestionProps {
   districts: District[];
@@ -46,6 +47,8 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   onNavigateToHotspots,
   initialCategory,
 }) => {
+  const { user, getIdToken } = useAuth();
+
   // Mode selection: 'wizard' (5-Step Government Service) or 'assistant' (Multilingual Dialect Assistant)
   const [activeMode, setActiveMode] = useState<'wizard' | 'assistant'>('wizard');
 
@@ -100,13 +103,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
-  const handleFinalSubmit = () => {
+  const handleFinalSubmit = async () => {
     const trackingId = `CP-IN-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
     const matchedDist = districts.find(d => d.name.toLowerCase() === selectedDistrict.toLowerCase()) || districts[0];
 
     const newReq: CitizenRequest = {
       id: trackingId,
+      request_id: trackingId,
+      userId: user?.uid,
       timestamp: new Date().toISOString(),
+      created_at: new Date().toISOString(),
       original_text: inputText || 'Voice report submitted via CivicPulse Service',
       language: selectedLanguage,
       category: selectedCategory,
@@ -131,6 +137,22 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         recommended_action: `Inspect and resolve ${selectedCategory} deficit.`
       }
     };
+
+    // Forward to backend API with Bearer token if available
+    try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const idToken = await getIdToken();
+      if (idToken) {
+        headers['Authorization'] = `Bearer ${idToken}`;
+      }
+      await fetch('/api/citizen-requests', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(newReq),
+      });
+    } catch (err) {
+      console.warn('Backend unavailable, local state preserved:', err);
+    }
 
     onAddRequest(newReq);
 

@@ -1,0 +1,109 @@
+{
+  "entities": {
+    "CitizenRequest": {
+      "title": "Citizen Request",
+      "description": "Citizen development grievance or infrastructure request record.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Authoritative CivicPulse tracking ID, e.g. CP-2026-004821"
+        },
+        "request_id": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Alias matching the tracking ID"
+        },
+        "userId": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Authoritative Firebase Auth UID of the submitting citizen"
+        },
+        "category": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Infrastructure sector (Water, Roads, Health, Electricity, Education, Drainage, Sanitation, Other)"
+        },
+        "subcategory": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "Specific issue title"
+        },
+        "location": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Locality, district, or block"
+        },
+        "district": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "District name"
+        },
+        "state": {
+          "type": "string",
+          "maxLength": 128,
+          "description": "State name"
+        },
+        "severity": {
+          "type": "integer",
+          "description": "Severity rating from 1 to 10"
+        },
+        "urgency": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Urgency classification (LOW, MEDIUM, HIGH, CRITICAL)"
+        },
+        "summary_en": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "English factual issue summary"
+        },
+        "original_text": {
+          "type": "string",
+          "maxLength": 5000,
+          "description": "Original citizen submission text"
+        },
+        "language": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Submission language"
+        },
+        "status": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Request pipeline status"
+        },
+        "source_type": {
+          "type": "string",
+          "maxLength": 32,
+          "description": "Input source format: voice, text, photo, etc."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "ISO-8601 submission timestamp"
+        },
+        "created_at": {
+          "type": "string",
+          "description": "ISO-8601 creation timestamp"
+        }
+      },
+      "required": [
+        "id",
+        "category",
+        "location",
+        "original_text",
+        "summary_en",
+        "severity",
+        "urgency",
+        "status"
+      ]
+    }
+  },
+  "firestore": {
+    "/citizenRequests/{requestId}": {
+      "schema": "CitizenRequest",
+      "description": "Collection of citizen grievances and development requests persisted via CivicPulse backend."
+    }
+  }
+}
