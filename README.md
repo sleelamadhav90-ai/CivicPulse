@@ -1,7 +1,7 @@
 # CivicPulse (CivicPulse India DPI)
 > **AI-Powered National Development Intelligence & Digital Public Infrastructure Platform**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-success.svg?style=flat&logo=vercel)](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Vercel%20Production-success.svg?style=flat&logo=vercel)](https://civic-pulse-5mmcf0dbm-slm15.vercel.app/)
 [![Runtime](https://img.shields.io/badge/Runtime-Node.js%20v22-green.svg)](https://nodejs.org/)
 [![Framework](https://img.shields.io/badge/Framework-React%2019%20%2B%20Express-blue.svg)](https://react.dev/)
 [![Build System](https://img.shields.io/badge/Build-Vite%20%2B%20esbuild-orange.svg)](https://vitejs.dev/)
@@ -9,7 +9,7 @@
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%202.5%20Flash-8e44ad.svg)](https://ai.google.dev/)
 [![Districts](https://img.shields.io/badge/Registry-70%20Districts%20%7C%2036%20States%20%26%20UTs-blue.svg)](#-canonical-data-registry)
 
-> 🌐 **Live Deployed Application**: [https://civic-pulse-3olc47qk0-slm15.vercel.app/](https://civic-pulse-3olc47qk0-slm15.vercel.app/)
+> 🌐 **Live Deployed Application**: [https://civic-pulse-5mmcf0dbm-slm15.vercel.app/](https://civic-pulse-5mmcf0dbm-slm15.vercel.app/)
 
 ---
 
@@ -464,7 +464,7 @@ npm test
 
 ## 🚀 Live Demo
 
-**Live Application:** https://civic-pulse-3olc47qk0-slm15.vercel.app/
+**Live Application:** https://civic-pulse-5mmcf0dbm-slm15.vercel.app/
 
 The live application URL is the main link judges should use to access CivicPulse.
 
