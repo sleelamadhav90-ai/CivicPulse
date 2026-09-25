@@ -443,6 +443,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
         {layers.citizen_demand && displayedEvaluations.map((item) => {
+          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
           const isSelected = item.district.id === activeDistrictId;
           const evidence = getReportEvidence(item.district, item.category, item.demandHotspot);
           const score = item.breakdown.total_score;
@@ -538,56 +539,68 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         })}
 
         {/* HEALTHCARE CLINICS LAYER */}
-        {layers.healthcare && displayedEvaluations.map((item) => (
-          <Marker
-            key={`hc-${item.district.id}`}
-            position={[item.district.lat + 0.04, item.district.lon - 0.04]}
-            icon={createAtlasIcon('Health', false, 'healthcare')}
-          >
-            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>🏥 {item.district.name} District Hospital & PHC</div>
-            </Tooltip>
-          </Marker>
-        ))}
+        {layers.healthcare && displayedEvaluations.map((item) => {
+          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          return (
+            <Marker
+              key={`hc-${item.district.id}`}
+              position={[item.district.lat + 0.04, item.district.lon - 0.04]}
+              icon={createAtlasIcon('Health', false, 'healthcare')}
+            >
+              <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
+                <div>🏥 {item.district.name} District Hospital & PHC</div>
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* EDUCATION INSTITUTIONS LAYER */}
-        {layers.education && displayedEvaluations.map((item) => (
-          <Marker
-            key={`edu-${item.district.id}`}
-            position={[item.district.lat - 0.04, item.district.lon + 0.04]}
-            icon={createAtlasIcon('Education', false, 'education')}
-          >
-            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>🎓 {item.district.name} Govt Polytechnic & High School</div>
-            </Tooltip>
-          </Marker>
-        ))}
+        {layers.education && displayedEvaluations.map((item) => {
+          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          return (
+            <Marker
+              key={`edu-${item.district.id}`}
+              position={[item.district.lat - 0.04, item.district.lon + 0.04]}
+              icon={createAtlasIcon('Education', false, 'education')}
+            >
+              <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
+                <div>🎓 {item.district.name} Govt Polytechnic & High School</div>
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* GOVERNMENT SANCTIONED PROJECTS LAYER */}
-        {layers.projects && displayedEvaluations.map((item) => (
-          <Marker
-            key={`proj-${item.district.id}`}
-            position={[item.district.lat + 0.02, item.district.lon + 0.05]}
-            icon={createAtlasIcon('Project', false, 'project')}
-          >
-            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>🏗️ Active Project Site — Sanction ₹14.8 Cr</div>
-            </Tooltip>
-          </Marker>
-        ))}
+        {layers.projects && displayedEvaluations.map((item) => {
+          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          return (
+            <Marker
+              key={`proj-${item.district.id}`}
+              position={[item.district.lat + 0.02, item.district.lon + 0.05]}
+              icon={createAtlasIcon('Project', false, 'project')}
+            >
+              <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
+                <div>🏗️ Active Project Site — Sanction ₹14.8 Cr</div>
+              </Tooltip>
+            </Marker>
+          );
+        })}
 
         {/* DIGITAL CONNECTIVITY TOWERS LAYER */}
-        {layers.digital && displayedEvaluations.map((item) => (
-          <Marker
-            key={`dig-${item.district.id}`}
-            position={[item.district.lat - 0.03, item.district.lon - 0.05]}
-            icon={createAtlasIcon('Digital', false, 'digital')}
-          >
-            <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
-              <div>📡 BharatNet Optical Fiber Distribution Node</div>
-            </Tooltip>
-          </Marker>
-        ))}
+        {layers.digital && displayedEvaluations.map((item) => {
+          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          return (
+            <Marker
+              key={`dig-${item.district.id}`}
+              position={[item.district.lat - 0.03, item.district.lon - 0.05]}
+              icon={createAtlasIcon('Digital', false, 'digital')}
+            >
+              <Tooltip direction="top" className="bg-[#171717] text-white border border-white/20 font-mono text-xs">
+                <div>📡 BharatNet Optical Fiber Distribution Node</div>
+              </Tooltip>
+            </Marker>
+          );
+        })}
       </MapContainer>
     </div>
   );

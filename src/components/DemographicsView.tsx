@@ -30,7 +30,8 @@ import {
   REFERENCE_PLACES_TILE_URL,
   REFERENCE_PLACES_ATTRIBUTION,
   INDIA_STATES_GEOJSON_PATH,
-  getIndiaStateBoundaryStyle
+  getIndiaStateBoundaryStyle,
+  isValidCoordinate
 } from '../utils/mapStandards';
 
 interface DemographicsViewProps {
@@ -44,7 +45,7 @@ interface DemographicsViewProps {
 function MapFocusController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center && center[0] && center[1]) {
+    if (center && isValidCoordinate(center[0], center[1])) {
       map.flyTo(center, zoom, { duration: 0.9 });
     }
   }, [center, zoom, map]);
@@ -280,10 +281,10 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
 
   // Map center coordinates
   const mapCenter: [number, number] = useMemo(() => {
-    if (selectedDistrict && selectedDistrict.lat && selectedDistrict.lon) {
+    if (selectedDistrict && isValidCoordinate(selectedDistrict.lat, selectedDistrict.lon)) {
       return [selectedDistrict.lat, selectedDistrict.lon];
     }
-    return [20.5937, 78.9629]; // Default India center
+    return INDIA_MAP_CENTER; // Default India center
   }, [selectedDistrict]);
 
   return (
@@ -579,7 +580,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
               )}
 
               {/* Fly to selected district */}
-              {selectedDistrict && (
+              {selectedDistrict && isValidCoordinate(selectedDistrict.lat, selectedDistrict.lon) && (
                 <MapFocusController 
                   center={[selectedDistrict.lat, selectedDistrict.lon]} 
                   zoom={7} 
@@ -587,7 +588,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
               )}
 
               {/* Focus Ring on Selected District */}
-              {selectedDistrict && (
+              {selectedDistrict && isValidCoordinate(selectedDistrict.lat, selectedDistrict.lon) && (
                 <Circle
                   center={[selectedDistrict.lat, selectedDistrict.lon]}
                   radius={12000}
@@ -605,6 +606,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
 
               {/* Single-spectrum district circle markers */}
               {filteredDistricts.map((district) => {
+                if (!district || !isValidCoordinate(district.lat, district.lon)) return null;
                 const isSelected = selectedDistrict?.id === district.id;
                 const color = getVulnerabilityColor(district.poverty_index);
                 const vulnPct = Math.round(district.poverty_index * 100);

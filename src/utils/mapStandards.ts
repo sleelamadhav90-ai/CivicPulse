@@ -31,6 +31,23 @@ export const REFERENCE_PLACES_ATTRIBUTION = '&copy; Esri Reference';
 export const INDIA_STATES_GEOJSON_PATH = '/india_states_simplified.geojson';
 
 /**
+ * Validates whether numeric latitude and longitude coordinates are valid finite numbers.
+ */
+export const isValidCoordinate = (lat?: any, lon?: any): boolean => {
+  return typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
+};
+
+/**
+ * Converts potentially nullable/NaN lat and lon to safe Leaflet [lat, lon] tuple.
+ */
+export const toSafeLatLng = (lat?: any, lon?: any, fallback: [number, number] = INDIA_MAP_CENTER): [number, number] => {
+  if (isValidCoordinate(lat, lon)) {
+    return [lat, lon];
+  }
+  return fallback;
+};
+
+/**
  * Returns dynamic GeoJSON polygon styling for Indian State boundaries
  * Highlights the active state/district's parent state while keeping other boundaries subtle.
  */

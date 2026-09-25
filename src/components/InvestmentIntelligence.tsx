@@ -42,7 +42,8 @@ import {
   REFERENCE_PLACES_TILE_URL,
   REFERENCE_PLACES_ATTRIBUTION,
   INDIA_STATES_GEOJSON_PATH,
-  getIndiaStateBoundaryStyle
+  getIndiaStateBoundaryStyle,
+  isValidCoordinate
 } from '../utils/mapStandards';
 
 interface InvestmentIntelligenceProps {
@@ -58,7 +59,7 @@ interface InvestmentIntelligenceProps {
 function MapFocusController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center && typeof center[0] === 'number' && typeof center[1] === 'number' && !isNaN(center[0]) && !isNaN(center[1])) {
+    if (center && isValidCoordinate(center[0], center[1])) {
       map.flyTo(center, zoom, { duration: 1.1, easeLinearity: 0.25 });
     }
   }, [center, zoom, map]);
@@ -391,18 +392,22 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
 
   // Map center and zoom calculations for Zero-Cost India GIS
   const mapCenterAndZoom = useMemo<{ center: [number, number]; zoom: number }>(() => {
-    if (selectedDistrictData && selectedDistrictData.lat && selectedDistrictData.lon) {
+    if (selectedDistrictData && isValidCoordinate(selectedDistrictData.lat, selectedDistrictData.lon)) {
       return { center: [selectedDistrictData.lat, selectedDistrictData.lon], zoom: 8 };
     }
     if (selectedState !== 'ALL') {
-      const stateDistricts = filteredDistrictInvestments.filter(d => d.state.toLowerCase() === selectedState.toLowerCase());
+      const stateDistricts = filteredDistrictInvestments.filter(d => 
+        d.state.toLowerCase() === selectedState.toLowerCase() && isValidCoordinate(d.lat, d.lon)
+      );
       if (stateDistricts.length > 0) {
         const avgLat = stateDistricts.reduce((sum, d) => sum + d.lat, 0) / stateDistricts.length;
         const avgLon = stateDistricts.reduce((sum, d) => sum + d.lon, 0) / stateDistricts.length;
-        return { center: [avgLat, avgLon], zoom: 7 };
+        if (isValidCoordinate(avgLat, avgLon)) {
+          return { center: [avgLat, avgLon], zoom: 7 };
+        }
       }
     }
-    return { center: [20.5937, 78.9629], zoom: 5 }; // National view of India
+    return { center: INDIA_MAP_CENTER, zoom: 5 }; // National view of India
   }, [selectedDistrictData, selectedState, filteredDistrictInvestments]);
 
   // Styling for Official India State Boundaries overlay
@@ -926,7 +931,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               )}
 
               {/* Focus Ring on Selected District */}
-              {selectedDistrictData && (
+              {selectedDistrictData && isValidCoordinate(selectedDistrictData.lat, selectedDistrictData.lon) && (
                 <Circle
                   center={[selectedDistrictData.lat, selectedDistrictData.lon]}
                   radius={12000}
@@ -943,6 +948,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               )}
 
               {filteredDistrictInvestments.map(item => {
+                if (!item || !isValidCoordinate(item.lat, item.lon)) return null;
                 const isSelected = selectedDistrictData?.id === item.id;
                 // Radius proportional to investment: 10px min to 26px max
                 const radius = Math.max(10, Math.min(26, Math.round(item.investmentInr / 25000000)));
