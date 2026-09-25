@@ -9,7 +9,7 @@
 [![AI Engine](https://img.shields.io/badge/AI%20Engine-Google%20Gemini%202.5%20Flash-8e44ad.svg)](https://ai.google.dev/)
 [![Districts](https://img.shields.io/badge/Registry-70%20Districts%20%7C%2036%20States%20%26%20UTs-blue.svg)](#-canonical-data-registry)
 
-> 🌐 **Live Deployed Application**: [https://civic-pulse-5mmcf0dbm-slm15.vercel.app/](https://civic-pulse-5mmcf0dbm-slm15.vercel.app/)
+> 🌐 **Live Deployed Application**: https://civic-pulse-zeta-seven.vercel.app/
 
 ---
 
