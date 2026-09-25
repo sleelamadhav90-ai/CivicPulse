@@ -724,6 +724,43 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               </div>
             </div>
 
+            {/* Photographic Evidence (if present) */}
+            {selectedRequest.photo_url && (
+              <div className="p-3 bg-[#FAF8F5] border border-[#171717]/15 rounded-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-semibold uppercase tracking-wider text-[#57534E]">
+                    Attached Photographic Evidence
+                  </span>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
+                    selectedRequest.photo_url.startsWith('http')
+                      ? 'bg-amber-50 text-amber-900 border border-amber-300'
+                      : 'bg-emerald-50 text-emerald-900 border border-emerald-300'
+                  }`}>
+                    {selectedRequest.photo_url.startsWith('http')
+                      ? '🧪 Demo Sample Image (Synthetic Reference)'
+                      : '📷 Authentic Citizen Photo Evidence'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={selectedRequest.photo_url} 
+                    alt="Citizen Evidence" 
+                    className="w-16 h-16 object-cover border border-[#171717] rounded-xs shadow-xs shrink-0" 
+                  />
+                  <div className="text-xs space-y-0.5">
+                    <p className="font-semibold text-[#171717]">
+                      {selectedRequest.photo_url.startsWith('http')
+                        ? 'Illustrative reference image from CivicPulse prototype benchmark dataset.'
+                        : 'Authentic local camera snapshot captured and attached during citizen intake.'}
+                    </p>
+                    <span className="text-[10px] font-mono text-[#78716C]">
+                      Source Type: {selectedRequest.source_type || 'photo'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Provenance & Baseline Triangulation */}
             <div className="p-3 bg-[#FAF8F5] border border-[#171717]/15 rounded-xs space-y-1 text-xs">
               <div className="flex items-center justify-between">

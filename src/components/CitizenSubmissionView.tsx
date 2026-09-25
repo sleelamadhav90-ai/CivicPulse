@@ -55,6 +55,49 @@ interface AIUnderstandingResult {
   recommended_action?: string;
 }
 
+export const DEMO_SAMPLE_PHOTOS: Record<string, { url: string; name: string; label: string }> = {
+  Water: {
+    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_water_pipeline_fracture.jpg',
+    label: 'Water Pipeline & Supply Infrastructure (Demo Sample)',
+  },
+  Roads: {
+    url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_pothole_asphalt_damage.jpg',
+    label: 'Road Surface & Pavement Damage (Demo Sample)',
+  },
+  Health: {
+    url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_rural_health_clinic.jpg',
+    label: 'Public Health Facility & Clinic (Demo Sample)',
+  },
+  Electricity: {
+    url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_power_line_grid_fault.jpg',
+    label: 'Power Distribution & Lighting Grid (Demo Sample)',
+  },
+  Drainage: {
+    url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_drainage_overflow_conduit.jpg',
+    label: 'Stormwater Conduit & Drainage Canal (Demo Sample)',
+  },
+  Sanitation: {
+    url: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_solid_waste_accumulation.jpg',
+    label: 'Municipal Solid Waste & Cleanliness (Demo Sample)',
+  },
+  Education: {
+    url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_school_building_facility.jpg',
+    label: 'Public School Building & Classroom (Demo Sample)',
+  },
+  General: {
+    url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    name: 'demo_civic_infrastructure_damage.jpg',
+    label: 'Civic Infrastructure Asset (Demo Sample)',
+  }
+};
+
 export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   districts,
   initialMode = 'write',
@@ -89,6 +132,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   const [showLocationPicker, setShowLocationPicker] = useState<boolean>(false);
   const [attachedPhoto, setAttachedPhoto] = useState<string | null>(null);
   const [photoName, setPhotoName] = useState<string | null>(null);
+  const [isDemoPhoto, setIsDemoPhoto] = useState<boolean>(false);
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState<boolean>(false);
@@ -214,6 +258,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     const file = e.target.files?.[0];
     if (file) {
       setPhotoName(file.name);
+      setIsDemoPhoto(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setAttachedPhoto(reader.result as string);
@@ -222,10 +267,31 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     }
   };
 
-  // Select sample photo
+  // Select sample photo with category-specific selection
   const handleSelectSamplePhoto = () => {
-    setAttachedPhoto('https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80');
-    setPhotoName('civic_evidence_photo.jpg');
+    const textLower = (complaintText || voiceTranscript || '').toLowerCase();
+    let detectedCategory: string = initialCategory || 'General';
+
+    if (textLower.includes('water') || textLower.includes('నీరు') || textLower.includes('पानी') || textLower.includes('pipe') || textLower.includes('tank')) {
+      detectedCategory = 'Water';
+    } else if (textLower.includes('road') || textLower.includes('pothole') || textLower.includes('గడ్డ') || textLower.includes('सड़क') || textLower.includes('traffic')) {
+      detectedCategory = 'Roads';
+    } else if (textLower.includes('health') || textLower.includes('hospital') || textLower.includes('doctor') || textLower.includes('clinic') || textLower.includes('ఆసుపత్రి') || textLower.includes('दवा')) {
+      detectedCategory = 'Health';
+    } else if (textLower.includes('electric') || textLower.includes('power') || textLower.includes('light') || textLower.includes('lamp') || textLower.includes('కరెంట్') || textLower.includes('बिजली')) {
+      detectedCategory = 'Electricity';
+    } else if (textLower.includes('drain') || textLower.includes('flood') || textLower.includes('sewage') || textLower.includes('వర్షం') || textLower.includes('नाली')) {
+      detectedCategory = 'Drainage';
+    } else if (textLower.includes('sanitat') || textLower.includes('garbage') || textLower.includes('waste') || textLower.includes('చెత్త')) {
+      detectedCategory = 'Sanitation';
+    } else if (textLower.includes('school') || textLower.includes('education') || textLower.includes('బడి')) {
+      detectedCategory = 'Education';
+    }
+
+    const sample = DEMO_SAMPLE_PHOTOS[detectedCategory] || DEMO_SAMPLE_PHOTOS.General;
+    setAttachedPhoto(sample.url);
+    setPhotoName(sample.name);
+    setIsDemoPhoto(true);
   };
 
   // Start Audio Recording
@@ -1140,20 +1206,32 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             </div>
 
             {attachedPhoto && (
-              <div className="flex items-center justify-between p-3 bg-[#F7F5EF] border border-[#171717]">
-                <div className="flex items-center space-x-3">
-                  <img src={attachedPhoto} alt="Evidence" className="w-12 h-12 object-cover border border-[#171717]" />
-                  <span className="text-xs font-mono text-[#171717] font-bold truncate max-w-xs">
-                    {photoName || 'civic_photo_evidence.jpg'}
-                  </span>
+              <div className="flex items-center justify-between p-3 bg-[#F7F5EF] border border-[#171717] gap-3">
+                <div className="flex items-center space-x-3 min-w-0">
+                  <img src={attachedPhoto} alt="Evidence" className="w-14 h-14 object-cover border border-[#171717] shrink-0" />
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase tracking-wider ${
+                        isDemoPhoto
+                          ? 'bg-amber-100 text-amber-900 border-amber-300'
+                          : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                      }`}>
+                        {isDemoPhoto ? '🧪 Demo Sample Image (Synthetic)' : '📷 Authentic Citizen Photo Upload'}
+                      </span>
+                    </div>
+                    <span className="text-xs font-mono text-[#171717] font-bold truncate block max-w-xs sm:max-w-md">
+                      {photoName || (isDemoPhoto ? 'demo_sample_evidence.jpg' : 'citizen_photo_evidence.jpg')}
+                    </span>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setAttachedPhoto(null);
                     setPhotoName(null);
+                    setIsDemoPhoto(false);
                   }}
-                  className="text-xs font-mono text-red-700 hover:underline cursor-pointer"
+                  className="text-xs font-mono text-red-700 hover:underline cursor-pointer shrink-0 font-bold"
                 >
                   Remove
                 </button>
@@ -1367,18 +1445,53 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                     onChange={(e) => setEditedSeverity(e.target.value)}
                     className="w-full p-1.5 border border-[#171717] bg-white text-xs font-bold focus:outline-none text-red-700"
                   >
-                    <option value="Critical">Critical (9/10)</option>
-                    <option value="High">High (8/10)</option>
-                    <option value="Medium">Medium (6/10)</option>
-                    <option value="Low">Low (4/10)</option>
+                    <option value="Critical">Critical (9–10/10)</option>
+                    <option value="High">High (7–8/10)</option>
+                    <option value="Medium">Medium (5–6/10)</option>
+                    <option value="Low">Low (1–4/10)</option>
                   </select>
                 ) : (
                   <span className="font-bold text-red-700 text-sm block">
-                    {editedSeverity} (8/10)
+                    {editedSeverity} ({aiResult.severity_number ?? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5)}/10)
                   </span>
                 )}
               </div>
             </div>
+
+            {/* Attached Photo Verification Card */}
+            {attachedPhoto && (
+              <div className="p-3.5 bg-white border border-[#171717] space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                    Attached Photographic Evidence
+                  </span>
+                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 border rounded-xs uppercase tracking-wider ${
+                    isDemoPhoto
+                      ? 'bg-amber-100 text-amber-900 border-amber-300'
+                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                  }`}>
+                    {isDemoPhoto ? '🧪 Demo Sample Image (Synthetic)' : '📷 Authentic Citizen Photo Evidence'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <img 
+                    src={attachedPhoto} 
+                    alt="Evidence Preview" 
+                    className="w-20 h-20 object-cover border border-[#171717] shadow-xs shrink-0" 
+                  />
+                  <div className="text-xs space-y-1">
+                    <p className="font-bold text-[#171717] font-mono">
+                      {photoName || (isDemoPhoto ? 'demo_sample_evidence.jpg' : 'citizen_photo_evidence.jpg')}
+                    </p>
+                    <p className="text-[11px] text-slate-600">
+                      {isDemoPhoto 
+                        ? 'Illustrative synthetic reference image attached via prototype demo selector.'
+                        : 'Authentic citizen camera/device photo uploaded directly to CivicPulse.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* AI Recommended Immediate Intervention */}
             {aiResult.recommended_action && (
@@ -1548,6 +1661,31 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                 </span>
               </div>
             </div>
+
+            {/* Attached Photo in Receipt */}
+            {submittedReceipt.photo_url && (
+              <div className="pt-2 border-t border-[#171717]/10 flex items-center gap-3">
+                <img 
+                  src={submittedReceipt.photo_url} 
+                  alt="Lodged Evidence" 
+                  className="w-14 h-14 object-cover border border-[#171717] shadow-xs shrink-0" 
+                />
+                <div className="text-xs space-y-0.5">
+                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase tracking-wider inline-block ${
+                    submittedReceipt.photo_url.startsWith('http')
+                      ? 'bg-amber-100 text-amber-900 border-amber-300'
+                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                  }`}>
+                    {submittedReceipt.photo_url.startsWith('http') 
+                      ? '🧪 Demo Sample Image (Synthetic Reference)'
+                      : '📷 Authentic Citizen Photo Evidence'}
+                  </span>
+                  <p className="text-[11px] font-mono text-slate-600">
+                    Photographic evidence recorded with intake package.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Summarized problem description */}
             <div className="pt-2 border-t border-[#171717]/10 font-sans text-xs text-slate-800">
