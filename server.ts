@@ -86,7 +86,7 @@ const handleHealthCheck = async (req: Request, res: Response) => {
       },
       aiService: {
         status: process.env.GEMINI_API_KEY ? 'configured' : 'unconfigured',
-        model: 'gemini-2.5-flash',
+        model: 'gemini-3.8-flash',
       },
     },
   });
@@ -320,10 +320,31 @@ function evaluateSeverityScore(text: string, category?: string, duration?: strin
     return { severity_number: 7, severity: 'High', urgency: 'HIGH' };
   }
 
-  // Level 6: Significant service problem affecting daily life
+  // Level 1-2: Minor cosmetic issue or minor inconvenience
+  const isLevel1or2 = 
+    lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
+    lower.includes('faded') || lower.includes('aesthetic') || lower.includes('poster') || lower.includes('weed');
+
+  if (isLevel1or2) {
+    return { severity_number: 2, severity: 'Low', urgency: 'LOW' };
+  }
+
+  // Level 3-4: Localized issue affecting a small number of people, with limited consequences
+  const isLevel3or4 = 
+    lower.includes('single') || lower.includes('flicker') || lower.includes('one lamp') || 
+    lower.includes('streetlight') || lower.includes('small pothole') || lower.includes('minor crack') || 
+    lower.includes('individual pipe leak') || lower.includes('lane') || lower.includes('alley') ||
+    lower.includes('గల్లీ') || lower.includes('చిన్న');
+
+  if (isLevel3or4) {
+    return { severity_number: 4, severity: 'Low', urgency: 'LOW' };
+  }
+
+  // Level 6: Significant service problem affecting daily life (e.g. garbage collection delay, low pressure, muddy water)
   const isLevel6 = 
+    lower.includes('garbage') || lower.includes('waste') || lower.includes('sanitat') || lower.includes('చెత్త') ||
     lower.includes('muddy water') || lower.includes('low pressure') || lower.includes('frequent power') ||
-    lower.includes('irregular supply') || lower.includes('garbage accumulation') || lower.includes('waste dumped') ||
+    lower.includes('irregular supply') || lower.includes('five days') || lower.includes('5 day') || lower.includes('several days') ||
     lower.includes('slow traffic') || lower.includes('stagnant water');
 
   if (isLevel6) {
@@ -338,25 +359,6 @@ function evaluateSeverityScore(text: string, category?: string, duration?: strin
 
   if (isLevel5) {
     return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
-  }
-
-  // Level 3-4: Localized issue affecting a small number of people, with limited consequences
-  const isLevel3or4 = 
-    lower.includes('single street') || lower.includes('one lamp') || lower.includes('streetlight flick') ||
-    lower.includes('small pothole') || lower.includes('minor crack') || lower.includes('individual pipe leak') ||
-    lower.includes('lane') || lower.includes('alley');
-
-  if (isLevel3or4) {
-    return { severity_number: 4, severity: 'Low', urgency: 'LOW' };
-  }
-
-  // Level 1-2: Minor cosmetic issue or minor inconvenience
-  const isLevel1or2 = 
-    lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
-    lower.includes('faded') || lower.includes('aesthetic') || lower.includes('poster') || lower.includes('weed');
-
-  if (isLevel1or2) {
-    return { severity_number: 2, severity: 'Low', urgency: 'LOW' };
   }
 
   return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
@@ -392,7 +394,7 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.8-flash';
 
     const promptText = `
 You are the AI Civic Infrastructure Diagnostic Engine for CivicPulse (India Digital Public Infrastructure).
@@ -590,11 +592,13 @@ Other Extraction Rules:
     const isWater = textInput.includes('water') || textInput.includes('నీరు') || textInput.includes('पानी') || textInput.includes('pipeline') || textInput.includes('tank');
     const isRoads = textInput.includes('road') || textInput.includes('pothole') || textInput.includes('రోడ్డు') || textInput.includes('सड़क') || textInput.includes('traffic');
     const isHealth = textInput.includes('health') || textInput.includes('hospital') || textInput.includes('doctor') || textInput.includes('ఆసుపత్రి') || textInput.includes('दवा');
-    const isLighting = textInput.includes('light') || textInput.includes('power') || textInput.includes('current') || textInput.includes('దీపం') || textInput.includes('बिजली');
+    const isLighting = textInput.includes('light') || textInput.includes('power') || textInput.includes('current') || textInput.includes('దీపం') || textInput.includes('बिजली') || textInput.includes('streetlight');
     const isDrainage = textInput.includes('drain') || textInput.includes('flood') || textInput.includes('వర్షం') || textInput.includes('नाली');
+    const isSanitation = textInput.includes('garbage') || textInput.includes('waste') || textInput.includes('sanitat') || textInput.includes('clean') || textInput.includes('చెత్త');
+    const isEducation = textInput.includes('school') || textInput.includes('edu') || textInput.includes('teacher') || textInput.includes('బడి');
 
-    const fallbackCat = isWater ? 'Water' : isRoads ? 'Roads' : isHealth ? 'Health' : isLighting ? 'Electricity' : isDrainage ? 'Drainage' : (req.body.userCategory || 'Water');
-    const fallbackDisplay = fallbackCat === 'Water' ? 'Water & Sanitation' : fallbackCat === 'Roads' ? 'Roads & Transport' : fallbackCat === 'Health' ? 'Healthcare & Clinics' : fallbackCat === 'Electricity' ? 'Power & Street Lighting' : 'Public Infrastructure';
+    const fallbackCat = isSanitation ? 'Sanitation' : isWater ? 'Water' : isRoads ? 'Roads' : isHealth ? 'Health' : isLighting ? 'Electricity' : isDrainage ? 'Drainage' : isEducation ? 'Education' : (req.body.userCategory || 'Water');
+    const fallbackDisplay = fallbackCat === 'Sanitation' ? 'Sanitation & Cleanliness' : fallbackCat === 'Water' ? 'Water & Sanitation' : fallbackCat === 'Roads' ? 'Roads & Transport' : fallbackCat === 'Health' ? 'Healthcare & Clinics' : fallbackCat === 'Electricity' ? 'Power & Street Lighting' : fallbackCat === 'Drainage' ? 'Drainage & Stormwater' : fallbackCat === 'Education' ? 'Education & Schools' : 'Public Infrastructure';
 
     const isTelugu = /[\u0C00-\u0C7F]/.test(req.body.text || '');
     const isHindi = /[\u0900-\u097F]/.test(req.body.text || '');
@@ -630,10 +634,14 @@ Other Extraction Rules:
       translated_text: rawText,
       category: fallbackCat,
       category_display: fallbackDisplay,
-      subcategory: isWater 
+      subcategory: isSanitation
+        ? 'Municipal solid waste accumulation'
+        : isWater 
         ? 'Drinking water supply disruption' 
         : isRoads 
         ? 'Road resurfacing and pothole hazard'
+        : isLighting
+        ? 'Street lighting and grid disruption'
         : `${fallbackCat} service disruption`,
       issue_summary: rawText,
       summary_en: rawText,
@@ -644,8 +652,12 @@ Other Extraction Rules:
       duration,
       affected_area: `${fallbackLocation} local grid`,
       affected_population_if_available: 'Not specified',
-      recommended_action: isWater 
+      recommended_action: isSanitation
+        ? 'Dispatch municipal sanitation vehicle and clear accumulation.'
+        : isWater 
         ? 'Inspect supply pipeline valves and audit distribution schedules.'
+        : isLighting
+        ? 'Dispatch electrical technician to replace luminaire/ballast.'
         : 'Dispatch rapid response municipal team for inspection.'
     };
 
@@ -669,7 +681,7 @@ app.post('/api/conversational-followup', async (req: Request, res: Response) => 
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.8-flash';
 
     const prompt = `
 You are CivicPulse Assistant, an empathetic AI for municipal citizen reporting.
@@ -817,7 +829,7 @@ app.post('/api/generate-policy-brief', async (req: Request, res: Response) => {
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.8-flash';
 
     const prompt = `
 You are the Senior Chief Public Policy & Infrastructure Advisor for the National Development Planning Board (BRICS Digital Public Infrastructure Taskforce).
@@ -1085,7 +1097,7 @@ app.post('/api/search/intent', async (req: Request, res: Response, next: NextFun
     if (process.env.GEMINI_API_KEY) {
       try {
         const ai = getGenAI();
-        const model = 'gemini-2.5-flash';
+        const model = 'gemini-3.8-flash';
 
         const promptText = `
 You are the CivicPulse Natural-Language Search Intent Parser for Indian Public Infrastructure & Citizen Development Requests.
@@ -1326,7 +1338,7 @@ app.post('/api/search/summary', async (req: Request, res: Response, next: NextFu
     }
 
     const ai = getGenAI();
-    const model = 'gemini-2.5-flash';
+    const model = 'gemini-3.8-flash';
 
     const promptText = `
 You are the CivicPulse Policy Research Assistant.
