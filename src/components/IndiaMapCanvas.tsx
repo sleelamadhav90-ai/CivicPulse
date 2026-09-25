@@ -292,34 +292,35 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   return (
     <div className="w-full h-full relative z-0 bg-[#121417] overflow-hidden">
       
-      {/* 1. BREADCRUMB & REGIONAL BADGE (TOP-LEFT) */}
-      <div className="absolute top-3 left-3 z-20 bg-[#171717]/85 border border-white/20 px-3 py-1.5 shadow-md backdrop-blur-md flex items-center space-x-2 font-mono text-[11px] text-white rounded-lg">
-        <span className="text-xs">🇮🇳</span>
-        <span className="font-bold tracking-wider uppercase">INDIA</span>
-        <span className="text-white/40">/</span>
-        <span className="font-semibold text-[#D65A3A] uppercase">
+      {/* 1. BREADCRUMB & REGIONAL BADGE (TOP-LEFT OVERLAY) */}
+      <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-130px)] sm:max-w-[calc(100%-180px)] bg-[#171717]/90 border border-white/20 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-md backdrop-blur-md flex items-center space-x-1.5 sm:space-x-2 font-mono text-[10px] sm:text-[11px] text-white rounded-md overflow-hidden truncate">
+        <span className="text-xs shrink-0">🇮🇳</span>
+        <span className="font-bold tracking-wider uppercase shrink-0">INDIA</span>
+        <span className="text-white/40 shrink-0">/</span>
+        <span className="font-semibold text-[#D65A3A] uppercase truncate">
           {activeEvaluation?.district.state || 'NATIONAL GIS'}
         </span>
         {activeEvaluation && (
           <>
-            <span className="text-white/40">/</span>
-            <span className="font-bold text-white uppercase">{activeEvaluation.district.name}</span>
+            <span className="text-white/40 shrink-0">/</span>
+            <span className="font-bold text-white uppercase truncate">{activeEvaluation.district.name}</span>
           </>
         )}
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1"></span>
-        <span className="text-[10px] text-gray-300 font-sans">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1 shrink-0 hidden xs:inline-block"></span>
+        <span className="text-[10px] text-gray-300 font-sans shrink-0 hidden md:inline">
           {displayedEvaluations.length} Active Hotspots
         </span>
       </div>
 
-      {/* 2. SATELLITE BASEMAP BADGE (TOP-RIGHT) */}
-      <div className="absolute top-3 right-3 z-20 bg-[#171717]/85 backdrop-blur-md border border-white/20 px-2.5 py-1 shadow-md flex items-center gap-1.5 font-mono text-[10px] text-white/90 rounded-lg">
-        <span>🛰️</span>
-        <span className="font-bold uppercase tracking-wider">Satellite Hybrid</span>
+      {/* 2. SATELLITE BASEMAP BADGE (TOP-RIGHT OVERLAY) */}
+      <div className="absolute top-3 right-3 z-20 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-2 sm:px-2.5 py-1 shadow-md flex items-center gap-1 sm:gap-1.5 font-mono text-[10px] text-white/90 rounded-md shrink-0">
+        <span className="shrink-0">🛰️</span>
+        <span className="font-bold uppercase tracking-wider hidden sm:inline">Satellite Hybrid</span>
+        <span className="font-bold uppercase tracking-wider sm:hidden">Satellite</span>
       </div>
 
-      {/* 3. COMPACT FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-[#171717]/85 text-white border border-white/15 px-3 py-2 shadow-lg backdrop-blur-md font-sans text-xs rounded-lg space-y-1.5 min-w-[135px]">
+      {/* 3. COMPACT FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT OVERLAY) */}
+      <div className="absolute bottom-4 left-3 sm:left-4 z-20 bg-[#171717]/90 text-white border border-white/15 px-2.5 sm:px-3 py-1.5 sm:py-2 shadow-lg backdrop-blur-md font-sans text-[11px] sm:text-xs rounded-md space-y-1 sm:space-y-1.5 min-w-[125px] sm:min-w-[135px]">
         <div className="flex items-center justify-between text-[10px] font-mono font-bold text-stone-300 uppercase tracking-wider border-b border-white/10 pb-1">
           <span>Priority</span>
           <button 

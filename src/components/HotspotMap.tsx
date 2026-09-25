@@ -295,47 +295,48 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     searchQuery.trim() !== '';
 
   return (
-    <div className="flex flex-col w-full h-full bg-[#121417] font-sans text-[#171717] overflow-hidden select-none">
+    <div className="flex flex-col w-full h-full max-w-full bg-[#121417] font-sans text-[#171717] overflow-hidden select-none">
       
-      {/* 1. CONSOLIDATED ONE-ROW COMPACT MAP TOOLBAR */}
-      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-3 py-2 sm:px-4 sm:py-2 z-20 shrink-0 flex flex-wrap items-center justify-between gap-2 text-xs font-mono">
+      {/* 1. CONSOLIDATED ONE-ROW COMPACT RESPONSIVE MAP TOOLBAR */}
+      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-2.5 py-1.5 sm:px-4 sm:py-2 z-20 shrink-0 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 text-xs font-mono max-w-full">
         
         {/* Left: District Inspector Label & Cascading Geographic Dropdowns */}
-        <div className="flex items-center space-x-2 sm:space-x-2.5 overflow-x-auto no-scrollbar py-0.5">
+        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1 py-0.5">
           <div className="flex items-center gap-1.5 shrink-0">
             <span className="px-1.5 py-0.5 bg-white text-[#D65A3A] border border-[#D65A3A]/30 text-[9px] font-mono font-bold tracking-wider uppercase rounded-xs">
               {t('map.page_label') || 'Civic Map'}
             </span>
-            <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap">
+            <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap hidden xs:inline">
               {t('map.question_title') || 'Where is the need concentrated?'}
             </span>
           </div>
 
-          <span className="text-stone-300 hidden sm:inline">•</span>
+          <span className="text-stone-300 hidden md:inline">•</span>
 
           {/* 1. STATE DROPDOWN (Strictly States / UTs) */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 const next = !stateDropdownOpen;
                 closeAllDropdowns();
                 setStateDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              title={selectedState === 'ALL' ? t('filter.all_states') : selectedState}
             >
-              <span className="text-stone-500 font-normal">{t('state')}:</span>
-              <span className="font-bold truncate max-w-[110px]">{selectedState === 'ALL' ? t('filter.all_states') : selectedState}</span>
+              <span className="text-stone-500 font-normal hidden sm:inline">{t('state')}:</span>
+              <span className="font-bold truncate max-w-[70px] sm:max-w-[100px] md:max-w-[130px]">{selectedState === 'ALL' ? t('filter.all_states') : selectedState}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {stateDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-56 max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
                 <button
                   onClick={() => handleSelectState('ALL')}
                   className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
                     selectedState === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>{t('filter.all_states_uts')}</span>
+                  <span className="truncate">{t('filter.all_states_uts')}</span>
                   {selectedState === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -347,7 +348,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       selectedState === st ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{st}</span>
+                    <span className="truncate">{st}</span>
                     {selectedState === st && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
@@ -356,28 +357,29 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
 
           {/* 2. DISTRICT DROPDOWN (Strictly for selected state) */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 const next = !districtDropdownOpen;
                 closeAllDropdowns();
                 setDistrictDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              title={selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}
             >
-              <span className="text-stone-500 font-normal">{t('district')}:</span>
-              <span className="font-bold truncate max-w-[110px]">{selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}</span>
+              <span className="text-stone-500 font-normal hidden sm:inline">{t('district')}:</span>
+              <span className="font-bold truncate max-w-[70px] sm:max-w-[100px] md:max-w-[130px]">{selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {districtDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-56 max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
                 <button
                   onClick={() => handleSelectDistrict('ALL')}
                   className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
                     selectedDistrict === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>{selectedState !== 'ALL' ? `${t('filter.all_districts')} (${selectedState})` : t('filter.all_districts')}</span>
+                  <span className="truncate">{selectedState !== 'ALL' ? `${t('filter.all_districts')} (${selectedState})` : t('filter.all_districts')}</span>
                   {selectedDistrict === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -389,7 +391,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       selectedDistrict === d.name ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{d.name}</span>
+                    <span className="truncate">{d.name}</span>
                     {selectedDistrict === d.name && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
@@ -398,7 +400,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
 
           {/* 3. CITY / TOWN / LOCALITY DROPDOWN */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 if (selectedDistrict === 'ALL') return;
@@ -407,25 +409,26 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 setLocalityDropdownOpen(next);
               }}
               disabled={selectedDistrict === 'ALL'}
-              className={`border px-2.5 py-1 rounded-xs flex items-center space-x-1.5 transition-colors font-medium ${
+              className={`border px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 transition-colors font-medium ${
                 selectedDistrict === 'ALL'
                   ? 'bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed'
                   : 'bg-white border-[#171717]/20 text-[#171717] hover:border-[#171717]/50 cursor-pointer'
               }`}
+              title={selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}
             >
-              <span className="text-stone-500 font-normal">{t('locality')}:</span>
-              <span className="font-bold truncate max-w-[100px]">{selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}</span>
+              <span className="text-stone-500 font-normal hidden sm:inline">{t('locality')}:</span>
+              <span className="font-bold truncate max-w-[65px] sm:max-w-[90px] md:max-w-[120px]">{selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}</span>
               <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {localityDropdownOpen && availableLocalities.length > 0 && (
-              <div className="absolute left-0 top-full mt-1 w-52 max-h-64 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(220px,calc(100vw-2rem))] max-h-64 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
                 <button
                   onClick={() => handleSelectLocality('ALL')}
                   className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
                     selectedLocality === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                   }`}
                 >
-                  <span>{t('filter.all_locations_in', { district: selectedDistrict })}</span>
+                  <span className="truncate">{t('filter.all_locations_in', { district: selectedDistrict })}</span>
                   {selectedLocality === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
                 </button>
                 <div className="border-t border-stone-100 my-1"></div>
@@ -437,7 +440,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       selectedLocality === loc ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{loc}</span>
+                    <span className="truncate">{loc}</span>
                     {selectedLocality === loc && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
@@ -446,17 +449,17 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
 
           {/* 4. Category Dropdown: [ All issues ▼ ] */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 const next = !categoryDropdownOpen;
                 closeAllDropdowns();
                 setCategoryDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
             >
-              <span>{selectedCategory === 'All' ? t('filter.all_issues') : tCategory(selectedCategory)}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500" />
+              <span className="truncate max-w-[80px] sm:max-w-[110px]">{selectedCategory === 'All' ? t('filter.all_issues') : tCategory(selectedCategory)}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {categoryDropdownOpen && (
               <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
@@ -471,7 +474,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       selectedCategory === cat ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
                     }`}
                   >
-                    <span>{cat === 'All' ? t('filter.all_issues') : tCategory(cat)}</span>
+                    <span className="truncate">{cat === 'All' ? t('filter.all_issues') : tCategory(cat)}</span>
                     {selectedCategory === cat && <span className="text-[#D65A3A] font-bold">✓</span>}
                   </button>
                 ))}
@@ -480,18 +483,18 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
 
           {/* 5. Time Window Dropdown: [ 30 days ▼ ] */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 const next = !timeDropdownOpen;
                 closeAllDropdowns();
                 setTimeDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
-              <Clock className="w-3 h-3 text-stone-500" />
-              <span>{timeFilter === 'all' ? t('time.all_time') : timeFilter === '7d' ? t('time.7_days') : timeFilter === '30d' ? t('time.30_days') : t('time.90_days')}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500" />
+              <Clock className="w-3 h-3 text-stone-500 shrink-0" />
+              <span className="truncate max-w-[65px] sm:max-w-[85px]">{timeFilter === 'all' ? t('time.all_time') : timeFilter === '7d' ? t('time.7_days') : timeFilter === '30d' ? t('time.30_days') : t('time.90_days')}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {timeDropdownOpen && (
               <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
@@ -520,18 +523,18 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           </div>
 
           {/* 6. Layers Dropdown: [ Layers ▼ ] */}
-          <div className="relative">
+          <div className="relative shrink-0">
             <button 
               onClick={() => {
                 const next = !layersDropdownOpen;
                 closeAllDropdowns();
                 setLayersDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2.5 py-1 rounded-xs flex items-center space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
             >
-              <Layers className="w-3 h-3 text-stone-500" />
-              <span>{t('layers.title')}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500" />
+              <Layers className="w-3 h-3 text-stone-500 shrink-0" />
+              <span className="hidden sm:inline">{t('layers.title')}</span>
+              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
             </button>
             {layersDropdownOpen && (
               <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-2 font-mono text-xs space-y-1.5">
@@ -580,7 +583,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             <button
               onClick={handleResetFilters}
               title="Reset all geographic and category filters"
-              className="text-[#D65A3A] hover:text-black transition-colors px-1.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer"
+              className="text-[#D65A3A] hover:text-black transition-colors px-1.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0"
             >
               <RotateCcw className="w-3 h-3" />
               <span>{t('filter.reset')}</span>
@@ -589,7 +592,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         </div>
 
         {/* Right: Search Location Input with Dropdown */}
-        <div className="relative shrink-0">
+        <div className="relative shrink-0 min-w-0">
           <div className="flex items-center bg-white border border-[#171717]/20 rounded-xs px-2 py-1 text-xs focus-within:border-[#171717]">
             <Search className="w-3.5 h-3.5 text-[#78716C] mr-1.5 shrink-0" />
             <input
@@ -597,28 +600,28 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               placeholder={t('map.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs w-28 sm:w-36 text-[#171717] placeholder:text-[#A8A29E]"
+              className="bg-transparent border-none outline-none text-xs w-24 sm:w-32 md:w-40 text-[#171717] placeholder:text-[#A8A29E]"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer">
+              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer ml-1">
                 <X className="w-3 h-3" />
               </button>
             )}
           </div>
 
           {searchResults.length > 0 && (
-            <div className="absolute right-0 top-full mt-1 w-60 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-1 font-mono text-xs">
+            <div className="absolute right-0 top-full mt-1 w-[min(260px,calc(100vw-2rem))] bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-1 font-mono text-xs">
               {searchResults.map(d => (
                 <button
                   key={d.id}
                   onClick={() => handleSelectSearchedDistrict(d.id)}
                   className="w-full text-left px-3 py-1.5 hover:bg-[#FAF8F5] rounded-xs flex items-center justify-between text-[#171717] cursor-pointer"
                 >
-                  <div>
-                    <div className="font-bold">{d.name}</div>
-                    <div className="text-[10px] text-[#78716C]">{d.state}</div>
+                  <div className="min-w-0 pr-1">
+                    <div className="font-bold truncate">{d.name}</div>
+                    <div className="text-[10px] text-[#78716C] truncate">{d.state}</div>
                   </div>
-                  <span className="text-[10px] text-[#D65A3A] font-bold">Inspect →</span>
+                  <span className="text-[10px] text-[#D65A3A] font-bold shrink-0">Inspect →</span>
                 </button>
               ))}
             </div>
@@ -627,8 +630,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
       </header>
 
       {/* 1.5 INDIA GEOGRAPHIC COVERAGE SUB-BAR */}
-      <div className="bg-[#1C1917] text-stone-300 text-[11px] font-mono px-3 py-1.5 sm:px-4 z-15 shrink-0 flex flex-wrap items-center justify-between gap-2 border-b border-stone-800">
-        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+      <div className="bg-[#1C1917] text-stone-300 text-[11px] font-mono px-3 py-1.5 sm:px-4 z-15 shrink-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-stone-800 w-full max-w-full overflow-hidden">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
           <span className="flex items-center gap-1 font-bold text-amber-400 uppercase tracking-wider text-[10px] shrink-0">
             <MapPin className="w-3 h-3 text-amber-400" />
             National Coverage:
@@ -643,27 +646,27 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           <span className="text-stone-400 text-[10px] shrink-0 hidden md:inline">
             • Data depth varies by district
           </span>
-          <span className="text-stone-600">•</span>
-          <div className="flex items-center gap-1 text-[10px] shrink-0">
-            <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 rounded-xs font-medium">
+          <span className="text-stone-600 hidden sm:inline">•</span>
+          <div className="flex flex-wrap items-center gap-1 text-[10px]">
+            <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 rounded-xs font-medium shrink-0">
               {coverageStats.deepBaselineCount} Deep Baseline
             </span>
-            <span className="px-1.5 py-0.5 bg-blue-950/80 text-blue-300 border border-blue-800/60 rounded-xs font-medium">
+            <span className="px-1.5 py-0.5 bg-blue-950/80 text-blue-300 border border-blue-800/60 rounded-xs font-medium shrink-0">
               {coverageStats.expandedBaselineCount} Expanded
             </span>
-            <span className="px-1.5 py-0.5 bg-stone-800 text-stone-300 border border-stone-700 rounded-xs font-medium">
+            <span className="px-1.5 py-0.5 bg-stone-800 text-stone-300 border border-stone-700 rounded-xs font-medium shrink-0">
               {coverageStats.regionalCoverageCount} Regional Coverage
             </span>
           </div>
         </div>
-        <div className="hidden xl:flex items-center gap-1.5 text-[10px] text-stone-400 italic">
+        <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] text-stone-400 italic shrink-0">
           <ShieldAlert className="w-3 h-3 text-amber-400 shrink-0" />
           <span>Geographic representation across all 36 Indian States & UTs with transparent provenance classification.</span>
         </div>
       </div>
 
       {/* 2. HERO MAP WORKSPACE (OCCUPIES FULL VIEWPORT) */}
-      <div className="flex-1 w-full h-full relative overflow-hidden">
+      <div className="flex-1 w-full min-h-0 relative overflow-hidden bg-[#121417]">
         
         {/* Full Viewport Canvas */}
         <div className="w-full h-full absolute inset-0">
@@ -684,7 +687,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
         {/* 3. PROGRESSIVE CONTEXTUAL DRAWER (OVERLAYS MAP ON HOTSPOT CLICK WITHOUT SQUEEZING CANVAS) */}
         {isDrawerOpen && activeEvaluation && (
-          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[340px] bg-[#FAF8F5]/98 backdrop-blur-md border-l border-[#171717]/20 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-150">
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[340px] max-w-full bg-[#FAF8F5]/98 backdrop-blur-md border-l border-[#171717]/20 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-150">
             <div className="p-4 space-y-3.5">
               
               {/* Header with Close button */}

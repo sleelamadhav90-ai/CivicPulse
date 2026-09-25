@@ -393,9 +393,9 @@ export default function App() {
           />
 
           {/* Main Content Area - Independently Scrollable Container */}
-          <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-y-auto bg-[#F7F5EF]">
+          <div className={`flex-1 flex flex-col min-w-0 min-h-0 ${activeTab === 'map' ? 'overflow-hidden' : 'overflow-y-auto'} bg-[#F7F5EF]`}>
             {/* Dynamic View Panel */}
-            <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-full overflow-hidden' : 'p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
+            <main className={`flex-1 ${activeTab === 'map' ? 'p-0 w-full h-full overflow-hidden flex flex-col min-h-0' : 'p-3 sm:p-6 lg:p-8 max-w-7xl w-full mx-auto'}`}>
               {activeTab === 'world' && (
                 <GlobalWorldMapCanvas
                   selectedCountryCode={selectedCountryCode}
