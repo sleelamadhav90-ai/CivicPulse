@@ -457,23 +457,62 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       }
     } catch (err) {
       console.warn('Using deterministic AI extraction fallback:', err);
-      const isWater = textToProcess.toLowerCase().includes('water') || textToProcess.includes('నీరు') || textToProcess.includes('पानी');
-      const isRoad = textToProcess.toLowerCase().includes('road') || textToProcess.includes('గడ్డ') || textToProcess.includes('सड़क');
+      const lower = textToProcess.toLowerCase();
+      const isWater = lower.includes('water') || textToProcess.includes('నీరు') || textToProcess.includes('पानी');
+      const isRoad = lower.includes('road') || textToProcess.includes('గడ్డ') || textToProcess.includes('सड़क') || textToProcess.includes('రహదారి');
+      const isHealth = lower.includes('health') || lower.includes('hospital') || textToProcess.includes('ఆసుపత్రి') || textToProcess.includes('दवा');
+      const isPower = lower.includes('power') || lower.includes('electric') || textToProcess.includes('కరెంట్') || textToProcess.includes('बिजली');
 
-      const cat: InfrastructureCategory = isWater ? 'Water' : isRoad ? 'Roads' : 'Water';
+      const cat: InfrastructureCategory = isWater ? 'Water' : isRoad ? 'Roads' : isHealth ? 'Health' : isPower ? 'Electricity' : 'Water';
+      
+      // Deterministic severity evaluation based on rubric
+      let sevNum = 5;
+      let sevLabel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Medium';
+      let urgLabel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
+
+      if (lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || lower.includes('electrocution') || lower.includes('collapsed bridge')) {
+        sevNum = 10;
+        sevLabel = 'Critical';
+        urgLabel = 'CRITICAL';
+      } else if (lower.includes('ambulance') || lower.includes('hospital') || lower.includes('outbreak') || lower.includes('contamination') || lower.includes('severe hazard')) {
+        sevNum = 9;
+        sevLabel = 'Critical';
+        urgLabel = 'CRITICAL';
+      } else if (lower.includes('2 week') || lower.includes('two week') || lower.includes('month') || lower.includes('no water for') || lower.includes('entire village')) {
+        sevNum = 8;
+        sevLabel = 'High';
+        urgLabel = 'HIGH';
+      } else if (lower.includes('overturn') || lower.includes('crater') || lower.includes('shortage') || lower.includes('overflow') || lower.includes('flood')) {
+        sevNum = 7;
+        sevLabel = 'High';
+        urgLabel = 'HIGH';
+      } else if (lower.includes('muddy') || lower.includes('low pressure') || lower.includes('garbage') || lower.includes('pothole')) {
+        sevNum = 6;
+        sevLabel = 'Medium';
+        urgLabel = 'MEDIUM';
+      } else if (lower.includes('single') || lower.includes('flicker') || lower.includes('minor') || lower.includes('lane')) {
+        sevNum = 4;
+        sevLabel = 'Low';
+        urgLabel = 'LOW';
+      } else if (lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard')) {
+        sevNum = 2;
+        sevLabel = 'Low';
+        urgLabel = 'LOW';
+      }
+
       const fallbackResult: AIUnderstandingResult = {
         language: selectedLanguage,
         original_text: textToProcess,
         translated_text: textToProcess,
         category: cat,
-        category_display: cat === 'Water' ? 'Water & Sanitation' : 'Roads & Transport',
-        subcategory: isWater ? 'Drinking water supply disruption' : 'Pothole corridor hazard',
+        category_display: cat === 'Water' ? 'Water & Sanitation' : cat === 'Roads' ? 'Roads & Transport' : cat === 'Health' ? 'Healthcare & Clinics' : 'Power & Energy',
+        subcategory: isWater ? 'Drinking water supply disruption' : isRoad ? 'Pothole corridor hazard' : isHealth ? 'Primary health center shortage' : 'Power reliability issue',
         issue_summary: textToProcess,
         location: locationName,
-        severity: 'Medium',
-        severity_number: 5,
-        urgency: 'MEDIUM',
-        duration: 'Not specified',
+        severity: sevLabel,
+        severity_number: sevNum,
+        urgency: urgLabel,
+        duration: lower.includes('2 week') || lower.includes('two week') ? '2 weeks' : lower.includes('month') ? '1 month' : 'Not specified',
         affected_area: `${locationName} local grid`,
         affected_population_if_available: 'Not specified',
         recommended_action: isWater 

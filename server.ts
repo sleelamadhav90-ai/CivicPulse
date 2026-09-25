@@ -267,6 +267,101 @@ async function callGeminiWithTimeoutAndRetry(
   throw lastErr;
 }
 
+// Deterministic Severity Evaluator implementing the CivicPulse Severity Scoring Rubric
+function evaluateSeverityScore(text: string, category?: string, duration?: string): {
+  severity_number: number;
+  severity: 'Low' | 'Medium' | 'High' | 'Critical';
+  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+} {
+  const lower = (text || '').toLowerCase();
+  
+  // Level 10: Immediate life-threatening emergency, fatal accident hazard, imminent collapse, active electrocution
+  const isLevel10 = 
+    lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
+    lower.includes('dying') || lower.includes('electrocution') || lower.includes('collapsed bridge') ||
+    lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('प्राణ') ||
+    lower.includes('చనిపో') || lower.includes('ప్రాణాపాయం') || lower.includes('உயிர் ஆபத்து');
+
+  if (isLevel10) {
+    return { severity_number: 10, severity: 'Critical', urgency: 'CRITICAL' };
+  }
+
+  // Level 9: Critical issue involving major public safety, health outbreak, essential-service failure, severe infrastructure rupture
+  const isLevel9 = 
+    lower.includes('ambulance') || lower.includes('hospital outage') || lower.includes('contamination') ||
+    lower.includes('epidemic') || lower.includes('severe flood') || lower.includes('poison') ||
+    lower.includes('rupture') || lower.includes('major accident') || lower.includes('severe hazard') ||
+    lower.includes('ఆసుపత్రి') || lower.includes('కలుషిత') || lower.includes('విష') || lower.includes('మహమ్మారి');
+
+  if (isLevel9) {
+    return { severity_number: 9, severity: 'Critical', urgency: 'CRITICAL' };
+  }
+
+  // Level 8: Serious issue affecting many people or essential public service with long duration
+  const isLevel8 = 
+    lower.includes('no water for') || lower.includes('2 week') || lower.includes('two week') ||
+    lower.includes('1 month') || lower.includes('one month') || lower.includes('complete blackout') ||
+    lower.includes('entire village') || lower.includes('whole ward') || lower.includes('arterial road') ||
+    lower.includes('గత రెండు వారాలు') || lower.includes('రెండు వారాలు') || lower.includes('మొత్తం గ్రామం') ||
+    lower.includes('दो हफ्ते') || lower.includes('पूरे गांव') || (duration && (duration.includes('week') || duration.includes('month')));
+
+  if (isLevel8) {
+    return { severity_number: 8, severity: 'High', urgency: 'HIGH' };
+  }
+
+  // Level 7: Serious issue affecting many people or an essential public service
+  const isLevel7 = 
+    lower.includes('medicine shortage') || lower.includes('doctor shortage') || lower.includes('deep crater') ||
+    lower.includes('toxic backflow') || lower.includes('drainage overflow') || lower.includes('sewage entering') ||
+    lower.includes('large pothole') || lower.includes('auto overturn') || lower.includes('no drinking water') ||
+    lower.includes('ట్రాఫిక్') || lower.includes('వరద') || lower.includes('నాళా') || lower.includes('गड्ढे');
+
+  if (isLevel7) {
+    return { severity_number: 7, severity: 'High', urgency: 'HIGH' };
+  }
+
+  // Level 6: Significant service problem affecting daily life
+  const isLevel6 = 
+    lower.includes('muddy water') || lower.includes('low pressure') || lower.includes('frequent power') ||
+    lower.includes('irregular supply') || lower.includes('garbage accumulation') || lower.includes('waste dumped') ||
+    lower.includes('slow traffic') || lower.includes('stagnant water');
+
+  if (isLevel6) {
+    return { severity_number: 6, severity: 'Medium', urgency: 'MEDIUM' };
+  }
+
+  // Level 5: Standard significant service/infrastructure disruption
+  const isLevel5 = 
+    lower.includes('water') || lower.includes('road') || lower.includes('power') || 
+    lower.includes('light') || lower.includes('drain') || lower.includes('bus') ||
+    lower.includes('నీరు') || lower.includes('రోడ్డు') || lower.includes('కరెంట్');
+
+  if (isLevel5) {
+    return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
+  }
+
+  // Level 3-4: Localized issue affecting a small number of people, with limited consequences
+  const isLevel3or4 = 
+    lower.includes('single street') || lower.includes('one lamp') || lower.includes('streetlight flick') ||
+    lower.includes('small pothole') || lower.includes('minor crack') || lower.includes('individual pipe leak') ||
+    lower.includes('lane') || lower.includes('alley');
+
+  if (isLevel3or4) {
+    return { severity_number: 4, severity: 'Low', urgency: 'LOW' };
+  }
+
+  // Level 1-2: Minor cosmetic issue or minor inconvenience
+  const isLevel1or2 = 
+    lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
+    lower.includes('faded') || lower.includes('aesthetic') || lower.includes('poster') || lower.includes('weed');
+
+  if (isLevel1or2) {
+    return { severity_number: 2, severity: 'Low', urgency: 'LOW' };
+  }
+
+  return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
+}
+
 // Backward compatible alias
 const callGeminiWithRetry = (fn: () => Promise<any>, maxRetries = 1, delayMs = 200) => 
   callGeminiWithTimeoutAndRetry(fn, 8000, maxRetries, delayMs);
@@ -301,7 +396,7 @@ app.post('/api/process-feedback', async (req: Request, res: Response) => {
 
     const promptText = `
 You are the AI Civic Infrastructure Diagnostic Engine for CivicPulse (India Digital Public Infrastructure).
-Analyze this citizen infrastructure request and extract structured diagnostic intelligence.
+Analyze this citizen infrastructure request and extract structured diagnostic intelligence with precise severity evaluation.
 
 Input:
 Text: """${text || '(Spoken Audio Input attached)'}"""
@@ -309,25 +404,46 @@ ${userLocation ? `User-provided location: ${userLocation}` : ''}
 ${userCategory ? `User-provided category: ${userCategory}` : ''}
 ${targetLangName !== 'English' ? `Target UI Language: ${targetLangName}` : ''}
 
-Strict Rules:
-1. Do NOT invent information that is not present in the citizen's complaint.
-2. If location cannot be confidently determined from the text or hint, indicate that it needs confirmation.
-3. If input is in Telugu, Hindi, Tamil, Kannada, Marathi, Bengali, etc., detect the exact language, transcribe if audio, and provide a clear, accurate translation.
-4. If duration or affected population are NOT mentioned by the citizen, output "Not specified" — never fabricate numbers or timeframes.
-5. Extract:
+Severity Scoring Rubric (1–10 Scale):
+- 1–2: Minor inconvenience, cosmetic issue, little immediate impact (e.g. faded signboard, minor paint peeling).
+- 3–4: Localized issue affecting a small number of people, with limited consequences (e.g. single flickering streetlamp in back lane, small minor pothole).
+- 5–6: Significant service/infrastructure problem affecting normal daily life (e.g. low water pressure, recurring scheduled power cuts, garbage collection delays, muddy tap water).
+- 7–8: Serious issue affecting many people or an essential public service (e.g. multi-day/multi-week drinking water outage, deep arterial road craters causing vehicle accidents, primary health clinic staff/medicine shortages, sewage flooding streets).
+- 9: Critical issue involving major public safety, health hazard, essential-service failure, or severe infrastructure damage (e.g. drinking water contamination outbreak, hospital power failure, ambulance route impassable, collapsed culvert/bridge).
+- 10: Immediate life-threatening or large-scale emergency requiring urgent intervention (e.g. active high-voltage wire electrocution hazard, toxic gas leak, imminent dam/building structural collapse, fatal accident hotspot).
+
+Scoring Rules:
+1. Base the score strictly on:
+   - risk to life/safety
+   - essential-service disruption
+   - number of people potentially affected
+   - severity of infrastructure damage
+   - urgency/time sensitivity
+   - duration, ONLY when the citizen explicitly provides duration in the complaint
+2. Do NOT assign the same default score to different complaints. Use the full 1–10 range when justified by the evidence.
+3. Do NOT infer facts or fabricate numbers that the citizen did not provide.
+4. Set:
+   - severity_number: Integer 1 to 10
+   - severity: "Low" (1-4), "Medium" (5-6), "High" (7-8), or "Critical" (9-10)
+   - urgency: "LOW" (1-4), "MEDIUM" (5-6), "HIGH" (7-8), or "CRITICAL" (9-10)
+
+Other Extraction Rules:
+- If location cannot be confidently determined from the text or hint, indicate that it needs confirmation.
+- If duration or affected population are NOT mentioned by the citizen, output "Not specified" — never fabricate numbers or timeframes.
+- Extract:
    - language: Natural language name (e.g. Telugu, Hindi, Tamil, Kannada, English)
    - original_text: The user's exact words (or transcription if audio)
    - translated_text: Clear English translation
    - category: One of "Water", "Roads", "Health", "Electricity", "Education", "Drainage", "Sanitation", "Other"
    - category_display: Friendly display name, e.g. "Water & Sanitation", "Roads & Transport", "Healthcare & Clinics", "Power & Energy", "Education & Schools", "Drainage & Flood Control"
-   - subcategory: Specific issue title (e.g., "Drinking water supply disruption", "Pothole corridor hazard", "Primary health center medicine shortage", "Broken street lighting")
+   - subcategory: Specific issue title
    - issue_summary: A concise, factual summary of the issue in ${targetLangName}
-   - location: The detected locality or district (e.g., "Vijayawada Rural", "Guntur", "Krishna", etc.)
-   - severity: "High", "Critical", "Medium", or "Low"
+   - location: The detected locality or district
+   - severity: "Low", "Medium", "High", or "Critical"
    - severity_number: Integer rating from 1 to 10
-   - urgency: "HIGH", "CRITICAL", "MEDIUM", or "LOW"
+   - urgency: "LOW", "MEDIUM", "HIGH", or "CRITICAL"
    - duration: If mentioned in complaint (e.g., "3 days", "Not specified")
-   - affected_area: The physical facility or area (e.g., "Local drinking water supply network", "Main road corridor")
+   - affected_area: The physical facility or area
    - affected_population_if_available: If mentioned by citizen, otherwise "Not specified"
    - recommended_action: Practical municipal diagnostic action
 `;
@@ -425,9 +541,32 @@ Strict Rules:
       parsedData.category_display = 'Water & Sanitation';
     }
 
-    if (!parsedData.severity_number) {
-      parsedData.severity_number = parsedData.severity === 'Critical' ? 9 : parsedData.severity === 'High' ? 8 : parsedData.severity === 'Low' ? 3 : 5;
+    // Rubric-based severity validation & normalization
+    if (typeof parsedData.severity_number === 'number') {
+      parsedData.severity_number = Math.max(1, Math.min(10, Math.round(parsedData.severity_number)));
+      if (!parsedData.severity) {
+        parsedData.severity = parsedData.severity_number >= 9 ? 'Critical'
+          : parsedData.severity_number >= 7 ? 'High'
+          : parsedData.severity_number >= 5 ? 'Medium'
+          : 'Low';
+      }
+      if (!parsedData.urgency) {
+        parsedData.urgency = parsedData.severity_number >= 9 ? 'CRITICAL'
+          : parsedData.severity_number >= 7 ? 'HIGH'
+          : parsedData.severity_number >= 5 ? 'MEDIUM'
+          : 'LOW';
+      }
+    } else {
+      const evaluated = evaluateSeverityScore(
+        parsedData.original_text || text || '',
+        parsedData.category,
+        parsedData.duration
+      );
+      parsedData.severity_number = evaluated.severity_number;
+      parsedData.severity = evaluated.severity;
+      parsedData.urgency = evaluated.urgency;
     }
+
     if (!parsedData.duration) {
       parsedData.duration = 'Not specified';
     }
@@ -483,6 +622,8 @@ Strict Rules:
       ? 'Several days' 
       : 'Not specified';
 
+    const evaluatedSeverity = evaluateSeverityScore(rawText, fallbackCat, duration);
+
     const fallbackData = {
       language: detectedLang,
       original_text: rawText,
@@ -497,9 +638,9 @@ Strict Rules:
       issue_summary: rawText,
       summary_en: rawText,
       location: fallbackLocation,
-      severity: 'Medium',
-      severity_number: 5,
-      urgency: 'MEDIUM',
+      severity: evaluatedSeverity.severity,
+      severity_number: evaluatedSeverity.severity_number,
+      urgency: evaluatedSeverity.urgency,
       duration,
       affected_area: `${fallbackLocation} local grid`,
       affected_population_if_available: 'Not specified',
