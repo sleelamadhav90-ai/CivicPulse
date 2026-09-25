@@ -179,7 +179,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
             {t('signals.page_label') || 'Citizen Signals'}
           </span>
           <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 1 · Listen
+            {t('workflow.step_1')}
           </span>
         </div>
         
@@ -199,7 +199,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 onClick={onNavigateToIssues}
                 className="px-3 py-2 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer text-[#171717]"
               >
-                <span>View Community Issues</span>
+                <span>{t('action.explore_community_issues')}</span>
                 <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
               </button>
             )}

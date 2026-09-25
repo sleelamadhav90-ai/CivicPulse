@@ -639,7 +639,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
                 {t('investment.page_label') || 'Government Investment'}
               </span>
               <span className="text-xs font-mono text-[#171717]/60 uppercase tracking-wider">
-                Step 4 · Align Investment
+                {t('workflow.step_4')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-serif font-bold text-[#171717] tracking-tight">

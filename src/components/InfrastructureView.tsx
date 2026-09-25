@@ -67,7 +67,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
             {t('infrastructure.page_label') || 'Infrastructure'}
           </span>
           <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 3 · Measure Need
+            {t('workflow.step_3')}
           </span>
         </div>
 

@@ -104,7 +104,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             {t('recommendations.page_label') || 'Recommendations'}
           </span>
           <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 5 · Decide
+            {t('workflow.step_5')}
           </span>
         </div>
 
@@ -123,7 +123,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
               onClick={onNavigateToProjects}
               className="px-3.5 py-2 bg-white border border-[#171717]/20 hover:border-[#171717] text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 shrink-0 cursor-pointer text-[#171717] self-start sm:self-auto"
             >
-              <span>View Action Queue</span>
+              <span>{t('recommendations.view_action_queue')}</span>
               <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
             </button>
           )}
@@ -134,15 +134,15 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
       <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-0.5">
           <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
-            Deterministic Decision Formula
+            {t('recommendations.decision_formula_title')}
           </span>
           <p className="text-[#34322D] leading-relaxed">
-            <strong className="text-[#171717]">PRIORITY SCORE = CITIZEN DEMAND + INFRASTRUCTURE GAP + VULNERABILITY WEIGHT.</strong>{' '}
-            Rankings are computed deterministically from verified data. Machine learning generates the executive memo and justification, ensuring auditability and democratic accountability.
+            <strong className="text-[#171717]">{t('recommendations.formula_headline')}</strong>{' '}
+            {t('recommendations.formula_explanation')}
           </p>
         </div>
         <span className="text-[11px] font-mono px-2.5 py-1 bg-white border border-[#171717]/15 rounded-xs shrink-0 text-[#171717] font-semibold">
-          {filteredProjects.length} Ranked Interventions
+          {t('recommendations.ranked_interventions', { count: filteredProjects.length })}
         </span>
       </div>
 
@@ -361,10 +361,10 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   <div className="flex items-center justify-between border-b border-[#171717]/10 pb-2">
                     <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                       <Database className="w-3.5 h-3.5 text-[#D65A3A]" />
-                      <span>{t('recommendations.modal_cross_domain') || 'Unified Evidence Dossier'}</span>
+                      <span>{t('recommendations.unified_evidence_dossier')}</span>
                     </span>
                     <span className="font-mono text-[10px] px-2 py-0.5 bg-stone-100 text-stone-700 rounded-xs border border-stone-200">
-                      Completeness: {bundle.summary.evidenceCompleteness}
+                      {t('recommendations.completeness')}: {bundle.summary.evidenceCompleteness}
                     </span>
                   </div>
 
@@ -373,7 +373,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                         <Users className="w-3.5 h-3.5 text-blue-600" />
-                        <span>Citizen Demand Evidence</span>
+                        <span>{t('recommendations.citizen_demand_evidence')}</span>
                       </span>
                       <span className={`text-[10px] font-mono px-1.5 py-0.5 rounded-xs border ${bundle.citizenDemand.provenance.isSyntheticDemo ? 'bg-amber-50 text-amber-800 border-amber-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'}`}>
                         {bundle.citizenDemand.provenance.displayLabel}
@@ -381,25 +381,25 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-[11px]">
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Total Signals</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.total_signals')}</span>
                         <span className="font-bold text-[#171717]">{bundle.citizenDemand.totalSignals.toLocaleString()}</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">User Verified</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.user_verified')}</span>
                         <span className="font-bold text-blue-700">{bundle.citizenDemand.userSubmittedSignals.toLocaleString()}</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Demo Seeded</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.demo_seeded')}</span>
                         <span className="font-bold text-amber-700">{bundle.citizenDemand.demoSignals.toLocaleString()}</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Avg Severity</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.avg_severity')}</span>
                         <span className="font-bold text-rose-700">{bundle.citizenDemand.averageSeverity || '6.0'} / 10</span>
                       </div>
                     </div>
                     {bundle.citizenDemand.localityCoverage.length > 0 && (
                       <p className="text-[11px] text-[#57534E]">
-                        <span className="font-semibold">Localities:</span> {bundle.citizenDemand.localityCoverage.slice(0, 4).join(', ')}
+                        <span className="font-semibold">{t('recommendations.localities')}:</span> {bundle.citizenDemand.localityCoverage.slice(0, 4).join(', ')}
                       </p>
                     )}
                   </div>
@@ -409,7 +409,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                         <Layers className="w-3.5 h-3.5 text-rose-600" />
-                        <span>Infrastructure Baseline & Deficit Gap</span>
+                        <span>{t('recommendations.infra_baseline_gap')}</span>
                       </span>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-stone-100 text-stone-700 border-stone-200">
                         {bundle.infrastructure.baselineAccess?.scope || 'District'} Baseline
@@ -417,11 +417,11 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Current Access</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.current_access')}</span>
                         <span className="font-bold text-[#171717]">{bundle.infrastructure.baselineAccess?.value}%</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Deficit Gap</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.deficit_gap')}</span>
                         <span className="font-bold text-rose-700">{bundle.infrastructure.deficit?.value}%</span>
                       </div>
                       {bundle.infrastructure.benchmarkComparisons.length > 0 && (
@@ -443,7 +443,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                         <ShieldCheck className="w-3.5 h-3.5 text-purple-600" />
-                        <span>Population & Social Vulnerability</span>
+                        <span>{t('recommendations.pop_vulnerability')}</span>
                       </span>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-purple-50 text-purple-800 border-purple-200">
                         Census & NITI Aayog
@@ -451,15 +451,15 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">District Population</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.district_population')}</span>
                         <span className="font-bold text-[#171717]">{(bundle.vulnerability.population.value / 1000000).toFixed(2)}M</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Poverty Index</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.poverty_index')}</span>
                         <span className="font-bold text-amber-700">{bundle.vulnerability.povertyIndex.value}</span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Vulnerability Score</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.vulnerability_score')}</span>
                         <span className="font-bold text-[#D65A3A]">{bundle.vulnerability.vulnerabilityScore.value} / 100</span>
                       </div>
                     </div>
@@ -476,7 +476,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                       <div className="flex items-center justify-between">
                         <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                           <AlertCircle className="w-3.5 h-3.5 text-teal-600" />
-                          <span>Government Grievance Context (Isolated Benchmark)</span>
+                          <span>{t('recommendations.gov_grievance_title')}</span>
                         </span>
                         <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-teal-50 text-teal-800 border-teal-200">
                           {bundle.governmentGrievance.geographyLevel || 'National'} Digest
@@ -509,7 +509,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="font-semibold text-[#171717] flex items-center space-x-1.5">
                         <Coins className="w-3.5 h-3.5 text-amber-600" />
-                        <span>Public Investment & Existing Works</span>
+                        <span>{t('recommendations.investment_works_title')}</span>
                       </span>
                       <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-xs border bg-stone-100 text-stone-700 border-stone-200">
                         PFMS & Works Register
@@ -517,19 +517,19 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 font-mono text-[11px]">
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">State Scheme Headroom</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.scheme_headroom')}</span>
                         <span className="font-bold text-[#171717]">
                           {bundle.investment.stateSchemeAllocation ? `₹${(bundle.investment.stateSchemeAllocation.stateAllocationInr / 10000000).toFixed(0)} Cr` : 'N/A'}
                         </span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">District CapEx Pipeline</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.district_capex')}</span>
                         <span className="font-bold text-blue-700">
                           {bundle.investment.districtPlannedCapex ? `₹${(bundle.investment.districtPlannedCapex.valueInr / 10000000).toFixed(1)} Cr` : '₹0.0 Cr'}
                         </span>
                       </div>
                       <div className="p-1.5 bg-white border border-[#171717]/10 rounded-xs">
-                        <span className="text-[9px] text-[#78716C] block">Existing Active Works</span>
+                        <span className="text-[9px] text-[#78716C] block">{t('recommendations.active_works')}</span>
                         <span className="font-bold text-[#171717]">
                           {bundle.existingProjects.matchingProjects.length} project(s)
                         </span>
@@ -547,7 +547,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
 
                   {/* 6. Lineage Trail */}
                   <div className="p-2.5 bg-white border border-[#171717]/15 rounded-xs space-y-1">
-                    <span className="text-[10px] font-mono text-[#78716C] block uppercase tracking-wider">Lineage Audit Trail</span>
+                    <span className="text-[10px] font-mono text-[#78716C] block uppercase tracking-wider">{t('recommendations.lineage_audit_trail')}</span>
                     <p className="text-[10px] font-mono text-[#57534E] leading-normal break-words">
                       {bundle.metadata.lineageTrail}
                     </p>

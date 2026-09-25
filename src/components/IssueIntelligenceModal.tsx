@@ -5,6 +5,7 @@ import { District, CitizenRequest } from '../types';
 import { calculatePriorityScore, getScoreComponentContributions, getPriorityTier, getIssueEvidenceExplanation, SCORING_CONFIG } from '../utils/scoring';
 import { validateSignalRecord } from '../utils/signalValidator';
 import { getProvenanceBadgeStyles } from '../utils/provenance';
+import { useLanguage } from '../context/LanguageContext';
 
 interface IssueIntelligenceModalProps {
   issue: CommunityIssue;
@@ -19,6 +20,7 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
   requests = [],
   onClose,
 }) => {
+  const { t, tCategory, tDistrict, tState } = useLanguage();
   const [showModelAssumptions, setShowModelAssumptions] = useState(false);
 
   // 1. Validation Layer
@@ -37,6 +39,13 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
   const targetBeneficiaries = Math.round(district.population * (scoreBreakdown.gap_percentage / 100) * 0.45);
   const projectedScoreAfter = Math.max(15, scoreBreakdown.total_score - 48);
 
+  const localizedFlags = validation.validationFlags.map(f => {
+    if (f === 'District Validated') return t('evidence.district_validated');
+    if (f === 'Category Verified') return t('evidence.category_verified');
+    if (f === 'Urgency Bounded') return t('evidence.urgency_bounded');
+    return f;
+  });
+
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto animate-fade-in font-sans">
       <div className="bg-white border border-slate-300 rounded-2xl max-w-3xl w-full my-8 overflow-hidden shadow-2xl flex flex-col max-h-[90vh]">
@@ -46,24 +55,24 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
           <div className="space-y-1">
             <div className="flex items-center space-x-2">
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                {issue.category}
+                {tCategory(issue.category)}
               </span>
               <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-emerald-400" />
-                Validated Signal
+                {t('modal.validated_signal')}
               </span>
             </div>
             <h2 className="text-lg font-serif font-bold text-slate-100 mt-1">
               {issue.title}
             </h2>
             <p className="text-xs text-slate-400 font-mono">
-              Location: <strong className="text-slate-200">{issue.location}</strong> ({district.name}, {district.state})
+              {t('modal.location')}: <strong className="text-slate-200">{issue.location}</strong> ({tDistrict(district.name)}, {tState(district.state)})
             </p>
           </div>
 
           <div className="flex items-center space-x-4">
             <div className="text-right font-mono">
-              <span className="text-[10px] text-slate-400 block uppercase">Priority Score</span>
+              <span className="text-[10px] text-slate-400 block uppercase">{t('metric.priority_score')}</span>
               <span className="text-xl font-bold" style={{ color: tier.color }}>
                 {scoreBreakdown.total_score}<span className="text-xs text-slate-400">/100</span>
               </span>
@@ -85,14 +94,14 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
             <div className="flex items-center justify-between">
               <span className="font-mono font-bold text-emerald-900 text-xs uppercase flex items-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4 text-emerald-700" />
-                Signal Validation & Data Quality Layer
+                {t('modal.data_quality_layer')}
               </span>
               <span className="px-2 py-0.5 text-[10px] font-mono font-bold bg-emerald-100 text-emerald-800 rounded border border-emerald-300">
-                Quality Index: {validation.dataQualityScore}/100
+                {t('modal.quality_index')}: {validation.dataQualityScore}/100
               </span>
             </div>
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-1 text-[11px] text-emerald-800 font-mono">
-              {validation.validationFlags.map((flag, idx) => (
+              {localizedFlags.map((flag, idx) => (
                 <li key={idx} className="flex items-center gap-1">
                   <span className="text-emerald-600 font-bold">✓</span> {flag}
                 </li>

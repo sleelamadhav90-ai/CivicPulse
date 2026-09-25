@@ -229,10 +229,10 @@ export const Overview: React.FC<OverviewProps> = ({
 
             <div className="space-y-0.5 pt-0.5">
               <div className="text-xs font-mono font-bold text-[#171717] tracking-wider uppercase">
-                Water Infrastructure
+                {t('overview.water_infrastructure')}
               </div>
               <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
-                High-priority development need
+                {t('overview.high_priority_need')}
               </h1>
             </div>
 
@@ -245,7 +245,7 @@ export const Overview: React.FC<OverviewProps> = ({
           <div className="sm:text-right shrink-0 bg-[#FAF8F5] sm:bg-transparent p-2.5 sm:p-0 rounded-xs sm:rounded-none border sm:border-0 border-[#171717]/10 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1.5">
             <div className="flex items-baseline gap-1 font-mono">
               <span className="text-[10px] uppercase tracking-wider text-[#78716C] font-semibold sm:inline-block">
-                Priority
+                {t('overview.priority')}
               </span>
               <span className="text-2xl sm:text-3xl font-bold text-[#171717] tracking-tight ml-1">
                 91
@@ -256,7 +256,7 @@ export const Overview: React.FC<OverviewProps> = ({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-[9px] font-mono px-1.5 py-0.2 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-semibold uppercase">
-                Model Estimate
+                {t('overview.model_estimate')}
               </span>
               <div className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] inline-block"></span>
@@ -273,17 +273,17 @@ export const Overview: React.FC<OverviewProps> = ({
             <div className="space-y-0.5 md:pr-4">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  Demand
+                  {t('overview.demand')}
                 </span>
                 <span className="text-[9px] font-mono px-1 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-semibold uppercase">
-                  Demo Signal
+                  {t('overview.demo_signal')}
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
                 {priorityIssues[0]?.signalCount || totalRequests || 742}
               </div>
               <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                synthetic demonstration signals
+                {t('overview.synthetic_signals_desc')}
               </p>
             </div>
 
@@ -291,17 +291,17 @@ export const Overview: React.FC<OverviewProps> = ({
             <div className="space-y-0.5 md:px-6">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  Service Gap
+                  {t('overview.service_gap')}
                 </span>
                 <span className="text-[9px] font-mono px-1 py-0.2 bg-sky-100 text-sky-900 border border-sky-300 rounded font-semibold uppercase">
-                  Public Data
+                  {t('overview.public_data')}
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
                 31.6%
               </div>
               <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                service deficit · JJM benchmark
+                {t('overview.jjm_benchmark_desc')}
               </p>
             </div>
 
@@ -309,17 +309,17 @@ export const Overview: React.FC<OverviewProps> = ({
             <div className="space-y-0.5 md:pl-6">
               <div className="flex items-center gap-1.5">
                 <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  Investment
+                  {t('overview.investment')}
                 </span>
                 <span className="text-[9px] font-mono px-1 py-0.2 bg-stone-100 text-stone-700 border border-stone-300 rounded font-semibold uppercase">
-                  Curated Plan
+                  {t('overview.curated_plan')}
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#285943] tracking-tight">
                 ₹6.50 Cr
               </div>
               <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                planned municipal capital pipeline
+                {t('overview.planned_capital_desc')}
               </p>
             </div>
           </div>
@@ -327,10 +327,10 @@ export const Overview: React.FC<OverviewProps> = ({
           {/* Short Evidence Interpretation */}
           <div className="pt-2 border-t border-[#171717]/10 flex flex-wrap items-baseline gap-1.5">
             <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
-              Why this is prioritized:
+              {t('overview.why_prioritized_label')}
             </span>
             <p className="text-xs text-[#57534E] font-sans">
-              High citizen demand combined with a significant infrastructure gap makes this a high-priority development need.
+              {t('overview.why_prioritized_text')}
             </p>
           </div>
         </div>
@@ -339,10 +339,10 @@ export const Overview: React.FC<OverviewProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
           <div className="space-y-0.5 max-w-2xl">
             <span className="text-[10px] font-mono font-bold text-[#285943] uppercase tracking-wider block">
-              Recommended Intervention
+              {t('overview.recommended_intervention')}
             </span>
             <p className="text-xs sm:text-sm font-medium text-[#171717]">
-              Water distribution booster network & direct pipeline trunk stabilization
+              {t('overview.recommended_intervention_text')}
             </p>
           </div>
 
@@ -356,7 +356,7 @@ export const Overview: React.FC<OverviewProps> = ({
               }}
               className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-mono font-semibold rounded-xs transition-colors cursor-pointer whitespace-nowrap shadow-xs"
             >
-              <span>View Evidence Dossier</span>
+              <span>{t('overview.view_evidence_dossier')}</span>
               <span>→</span>
             </button>
           </div>

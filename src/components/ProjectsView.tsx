@@ -48,7 +48,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   onNavigateToPolicyLab,
   onNavigateToEngine,
 }) => {
-  const { t, tCategory, tStatus, tGovernmentProject } = useLanguage();
+  const { t, tCategory, tStatus, tGovernmentProject, tDistrict, tState } = useLanguage();
   const [viewMode, setViewMode] = useState<'table' | 'kanban'>('table');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
@@ -214,11 +214,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
-              Priority Projects
+              {t('projects.priority_projects')}
             </span>
             <span className="text-[#171717]/20 select-none">•</span>
             <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider">
-              Government Decision Queue
+              {t('projects.decision_queue')}
             </span>
           </div>
 
@@ -233,7 +233,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               }`}
             >
               <TableIcon className="w-3.5 h-3.5" />
-              <span>Register</span>
+              <span>{t('projects.register')}</span>
             </button>
             <button
               onClick={() => setViewMode('kanban')}
@@ -244,17 +244,17 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               }`}
             >
               <KanbanIcon className="w-3.5 h-3.5" />
-              <span>Stages</span>
+              <span>{t('projects.stages')}</span>
             </button>
           </div>
         </div>
 
         <div className="space-y-0.5">
           <h1 className="text-2xl sm:text-3xl font-serif font-bold tracking-tight text-[#171717]">
-            Development priorities
+            {t('projects.development_priorities')}
           </h1>
           <p className="text-xs sm:text-[13px] text-[#57534E] max-w-2xl leading-relaxed font-sans">
-            Development interventions ranked by CivicPulse priority analysis and current implementation status.
+            {t('projects.subtitle')}
           </p>
         </div>
       </header>
@@ -267,13 +267,13 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search projects, departments or districts..."
+            placeholder={t('projects.search_placeholder')}
             className="w-full pl-8 pr-3 py-1.5 text-xs bg-white border border-[#171717]/20 rounded-xs focus:outline-hidden focus:border-[#171717] text-[#171717] placeholder:text-[#78716C]"
           />
         </div>
 
         <div className="flex items-center space-x-1 text-xs overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[#78716C] text-[10px] font-mono uppercase tracking-wider mr-1 shrink-0">Sector:</span>
+          <span className="text-[#78716C] text-[10px] font-mono uppercase tracking-wider mr-1 shrink-0">{t('filter.sector')}:</span>
           {['All', 'Water', 'Roads', 'Health', 'Electricity'].map(cat => (
             <button
               key={cat}
@@ -284,7 +284,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/40'
               }`}
             >
-              {cat === 'All' ? 'ALL' : cat.toUpperCase()}
+              {cat === 'All' ? 'ALL' : tCategory(cat).toUpperCase()}
             </button>
           ))}
         </div>
@@ -296,11 +296,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           
           {/* Header Row (Desktop Only, lg+) */}
           <div className="hidden lg:grid lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-4 items-center py-2.5 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
-            <div className="min-w-0">Rank & Project / Location / Department</div>
-            <div className="min-w-0">Priority Score</div>
-            <div className="min-w-0">Estimated Outlay</div>
-            <div className="min-w-0">Progress & Stage</div>
-            <div className="min-w-0 text-right">Status</div>
+            <div className="min-w-0">{t('projects.header_project')}</div>
+            <div className="min-w-0">{t('metric.priority_score')}</div>
+            <div className="min-w-0">{t('projects.capital_allocation')}</div>
+            <div className="min-w-0">{t('projects.progress_stage')}</div>
+            <div className="min-w-0 text-right">{t('projects.status')}</div>
           </div>
 
           {/* Data Rows */}
@@ -516,21 +516,21 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               {/* Priority Decision & Key Metrics */}
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Priority Score</span>
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('metric.priority_score')}</span>
                   <span className="text-base font-bold text-[#171717] mt-0.5 block">{selectedProject.displayPriorityScore} / 100</span>
                 </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Estimated Outlay</span>
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.capital_allocation')}</span>
                   <span className="text-base font-bold text-[#285943] mt-0.5 block">{selectedProject.formattedBudget}</span>
                 </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Progress</span>
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.progress_stage')}</span>
                   <span className={`text-base font-bold mt-0.5 block ${isCompleted ? 'text-[#285943]' : 'text-[#171717]'}`}>
                     {selectedProject.progress}%
                   </span>
                 </div>
                 <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">Status</span>
+                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.status')}</span>
                   <span className="text-base font-bold text-[#171717] mt-0.5 block">{tStatus(selectedProject.stage)}</span>
                 </div>
               </div>
@@ -549,8 +549,8 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
               {/* Provenance Footer */}
               <div className="flex items-center justify-between text-[10px] font-mono text-[#78716C] px-2 py-1.5 bg-stone-50 border border-stone-200 rounded-xs">
-                <span>Provenance: Census Demographics & CivicPulse Grievance Baseline</span>
-                <span className="text-emerald-700 font-bold">Deterministic Lineage Verified</span>
+                <span>{t('projects.provenance_note')}</span>
+                <span className="text-emerald-700 font-bold">{t('projects.deterministic_lineage')}</span>
               </div>
 
               {/* Action Buttons */}
@@ -563,7 +563,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     }}
                     className="flex-1 px-3 py-2 bg-[#171717] hover:bg-[#34322D] text-white rounded-xs text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                   >
-                    <span>View Evidence Dossier</span>
+                    <span>{t('overview.view_evidence_dossier')}</span>
                     <ArrowRight className="w-3.5 h-3.5" />
                   </button>
                 )}
@@ -575,7 +575,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                     }}
                     className="flex-1 px-3 py-2 bg-white hover:bg-[#FAF8F5] text-[#171717] border border-[#171717]/20 rounded-xs text-xs font-mono font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>Open in Impact Simulator</span>
+                    <span>{t('projects.open_in_impact')}</span>
                     <ArrowRight className="w-3.5 h-3.5 text-[#D65A3A]" />
                   </button>
                 )}
@@ -583,7 +583,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
 
               {/* Administrative Status Updates */}
               <div className="space-y-1.5 pt-2 border-t border-[#171717]/10">
-                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase block">Update Administrative Status:</span>
+                <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase block">{t('projects.update_admin_status')}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {(['Approved', 'In Progress', 'Completed'] as ProjectLifecycleStatus[]).map(st => (
                     <button

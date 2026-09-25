@@ -297,7 +297,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
             {t('demographics.page_label') || 'Population & Vulnerability'}
           </span>
           <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-            Step 3 · Measure Need
+            {t('workflow.step_3')}
           </span>
         </div>
 

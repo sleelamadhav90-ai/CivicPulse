@@ -200,10 +200,10 @@ export const ImpactSimulator: React.FC<ImpactSimulatorProps> = ({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-[#D65A3A] bg-orange-50 border border-orange-200 px-2 py-0.5 rounded">
-                Category 4 · Impact Potential
+                {t('workflow.step_6')}
               </span>
               <span className="text-[10px] font-mono font-bold uppercase px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
-                Modeled Impact — Not Observed Outcome
+                {t('evidence.modeled_impact_warning')}
               </span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717] mt-1">
