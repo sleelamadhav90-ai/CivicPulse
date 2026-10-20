@@ -9,6 +9,8 @@ export interface PaginationOptions {
   urgency?: string;
   status?: string;
   search?: string;
+  /** Restrict results to the server-assigned owner UID from a verified token. */
+  ownerUid?: string;
 }
 
 export interface PaginatedResult<T> {
@@ -45,6 +47,9 @@ export interface CitizenRequestRepository {
    */
   create(request: CitizenRequest): Promise<CitizenRequest>;
 
+  /** Persist only when the identifier is new or already belongs to the verified owner. */
+  createOwned(request: CitizenRequest, userId: string): Promise<CitizenRequest | null>;
+
   /**
    * Retrieve a single citizen request by its unique identifier.
    */
@@ -64,6 +69,9 @@ export interface CitizenRequestRepository {
    * Delete an existing citizen request by id.
    */
   delete(id: string): Promise<boolean>;
+
+  /** Delete a record only when it belongs to the supplied verified user. */
+  deleteOwned(id: string, userId: string): Promise<boolean>;
 
   /**
    * Return the total count of requests matching an optional filter.

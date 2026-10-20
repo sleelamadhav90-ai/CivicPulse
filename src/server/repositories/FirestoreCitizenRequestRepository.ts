@@ -7,6 +7,7 @@ import type {
   RepositoryHealth,
 } from './CitizenRequestRepository.js';
 import { getFirestoreDb, isFirebaseAdminConfigured } from '../firebaseAdmin.js';
+import { hasTrustedOwner, withTrustedOwner } from './citizenRecordOwnership.js';
 
 /**
  * Removes undefined fields from objects before saving to Firestore,
@@ -30,7 +31,7 @@ function sanitizeForFirestore<T extends Record<string, any>>(obj: T): Record<str
  * Production Firestore repository adapter for CivicPulse.
  * Persists citizen requests into the `citizenRequests` collection.
  * Uses request.id (e.g. CP-2026-XXXXXX) as the authoritative document ID.
- * Links every submitted request to the verified Firebase user UID (userId).
+ * Links each API-submitted request to a verified Firebase UID and server HMAC owner signature.
  */
 export class FirestoreCitizenRequestRepository implements CitizenRequestRepository {
   private collectionName = 'citizenRequests';
@@ -62,6 +63,30 @@ export class FirestoreCitizenRequestRepository implements CitizenRequestReposito
     }
   }
 
+  public async createOwned(request: CitizenRequest, userId: string): Promise<CitizenRequest | null> {
+    const ownedRequest = withTrustedOwner(request, userId);
+    const db = this.getDb();
+    if (!db) {
+      const existing = this.mockStore.get(request.id);
+      if (existing && !hasTrustedOwner(existing, userId)) return null;
+      this.mockStore.set(request.id, ownedRequest);
+      return ownedRequest;
+    }
+
+    try {
+      const ref = db.collection(this.collectionName).doc(request.id);
+      return await db.runTransaction(async (transaction: any) => {
+        const snapshot = await transaction.get(ref);
+        if (snapshot.exists && !hasTrustedOwner(snapshot.data() as CitizenRequest, userId)) return null;
+        transaction.set(ref, sanitizeForFirestore({ ...ownedRequest, updated_at: new Date().toISOString() }), { merge: true });
+        return ownedRequest;
+      });
+    } catch (err: any) {
+      console.warn('[FirestoreCitizenRequestRepository] createOwned error:', err?.message);
+      return null;
+    }
+  }
+
   public async getById(id: string): Promise<CitizenRequest | null> {
     const db = this.getDb();
     if (!db) {
@@ -90,6 +115,10 @@ export class FirestoreCitizenRequestRepository implements CitizenRequestReposito
       try {
         let query: any = db.collection(this.collectionName);
 
+        if (options.ownerUid) {
+          query = query.where('ownerUid', '==', options.ownerUid);
+        }
+
         if (options.category) {
           query = query.where('category', '==', options.category);
         }
@@ -111,6 +140,11 @@ export class FirestoreCitizenRequestRepository implements CitizenRequestReposito
         console.warn('[FirestoreCitizenRequestRepository] list error:', err?.message);
         allItems = Array.from(this.mockStore.values());
       }
+    }
+
+    // Apply ownership filtering even for the in-memory fallback store.
+    if (options.ownerUid) {
+      allItems = allItems.filter((r) => hasTrustedOwner(r, options.ownerUid!));
     }
 
     // Apply in-memory search and secondary filters
@@ -184,6 +218,29 @@ export class FirestoreCitizenRequestRepository implements CitizenRequestReposito
     } catch (err: any) {
       console.warn('[FirestoreCitizenRequestRepository] delete error:', err?.message);
       return true;
+    }
+  }
+
+  public async deleteOwned(id: string, userId: string): Promise<boolean> {
+    const db = this.getDb();
+    if (!db) {
+      const existing = this.mockStore.get(id);
+      if (!hasTrustedOwner(existing, userId)) return false;
+      this.mockStore.delete(id);
+      return true;
+    }
+
+    try {
+      const ref = db.collection(this.collectionName).doc(id);
+      return await db.runTransaction(async (transaction: any) => {
+        const snapshot = await transaction.get(ref);
+        if (!snapshot.exists || !hasTrustedOwner(snapshot.data() as CitizenRequest, userId)) return false;
+        transaction.delete(ref);
+        return true;
+      });
+    } catch (err: any) {
+      console.warn('[FirestoreCitizenRequestRepository] deleteOwned error:', err?.message);
+      return false;
     }
   }
 

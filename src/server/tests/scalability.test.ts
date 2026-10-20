@@ -11,6 +11,7 @@ import { requestIdMiddleware } from '../middleware/requestId.js';
 import { errorHandler, AppError } from '../middleware/errorHandler.js';
 import { requireAuth } from '../middleware/authMiddleware.js';
 import type { CitizenRequest } from '../../types.js';
+import { hasTrustedOwner } from '../repositories/citizenRecordOwnership.js';
 
 function assert(condition: boolean, message: string): void {
   if (!condition) {
@@ -361,6 +362,7 @@ async function runScalabilityAndArchitectureTestSuite() {
   // --- Test 12: Firebase Token Verification & Auth Security Architecture ---
   console.log('\n[Test 12] Firebase Auth Security Architecture & Anti-Spoofing');
   process.env.NODE_ENV = 'test';
+  process.env.CITIZEN_RECORD_OWNER_SECRET = 'test-only-owner-signing-secret-32-bytes-minimum';
 
   // 12a: Missing Token when Auth is Required -> 401
   process.env.REQUIRE_AUTH = 'true';
@@ -484,7 +486,25 @@ async function runScalabilityAndArchitectureTestSuite() {
     fs.unlinkSync(testStorePath);
   }
 
-  console.log('\n🎉 ALL 14 DEPLOYABILITY, PERSISTENCE & FIREBASE AUTH TESTS PASSED SUCCESSFULLY!\n');
+  // --- Test 15: Owner-scoped request access in the default JSON repository ---
+  console.log('\n[Test 15] Citizen Record Ownership: JSON Repository Filtering and Deletion');
+  const ownershipStorePath = `${testStorePath}.ownership`;
+  const ownershipRepo = new JsonCitizenRequestRepository(ownershipStorePath);
+  await ownershipRepo.createOwned({ ...testRequest, id: 'CP-OWNER-ALICE', userId: 'bob', ownerUid: 'bob' }, 'alice');
+  await ownershipRepo.createOwned({ ...testRequest, id: 'CP-OWNER-BOB', userId: 'bob', ownerUid: 'bob' }, 'bob');
+  await ownershipRepo.create({ ...testRequest, id: 'CP-OWNER-LEGACY', userId: 'alice', ownerUid: 'alice' });
+  const aliceRecords = await ownershipRepo.list({ ownerUid: 'alice' });
+  assert(aliceRecords.total === 1 && aliceRecords.items[0].id === 'CP-OWNER-ALICE', 'JSON list filters persisted records by verified owner UID');
+  assert(aliceRecords.items[0].userId === 'alice' && aliceRecords.items[0].ownerUid === 'alice', 'JSON repository overwrites client ownership fields with the verified UID');
+  assert(hasTrustedOwner(aliceRecords.items[0], 'alice'), 'JSON repository persists verifiable server-generated ownership provenance');
+  assert(!(await ownershipRepo.createOwned({ ...testRequest, id: 'CP-OWNER-BOB', userId: 'alice' }, 'alice')), 'JSON repository refuses to reassign another owner’s record by ID');
+  assert(!(await ownershipRepo.deleteOwned('CP-OWNER-BOB', 'alice')), 'JSON repository refuses cross-owner deletion');
+  assert(Boolean(await ownershipRepo.getById('CP-OWNER-BOB')), 'Cross-owner deletion attempt leaves the record intact');
+  assert(!(await ownershipRepo.deleteOwned('CP-OWNER-LEGACY', 'alice')), 'Legacy JSON records with spoofable owner fields remain undeletable without a server signature');
+  assert(await ownershipRepo.deleteOwned('CP-OWNER-ALICE', 'alice'), 'JSON repository allows owner deletion');
+  if (fs.existsSync(ownershipStorePath)) fs.unlinkSync(ownershipStorePath);
+
+  console.log('\n🎉 ALL 15 DEPLOYABILITY, PERSISTENCE, FIREBASE AUTH & OWNERSHIP TESTS PASSED SUCCESSFULLY!\n');
 }
 
 runScalabilityAndArchitectureTestSuite().catch((err) => {

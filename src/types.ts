@@ -271,7 +271,9 @@ export interface GovernmentGrievanceRecord {
 export interface CitizenRequest {
   id: string; // e.g. "CP-2026-004821"
   request_id?: string;
-  userId?: string; // Verified Firebase Authentication UID (Account-authenticated submission)
+  userId?: string; // Legacy/client display field; never used for API ownership authorization.
+  ownerUid?: string; // Server-assigned Firebase UID used for API ownership authorization.
+  ownerSignature?: string; // Server-only HMAC proving ownerUid was assigned by this API version.
   created_at?: string;
   timestamp: string;
   original_text: string;

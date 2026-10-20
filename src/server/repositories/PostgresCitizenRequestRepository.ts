@@ -19,6 +19,8 @@ import type {
  * ```sql
  * CREATE TABLE citizen_requests (
  *   id VARCHAR(64) PRIMARY KEY,
+ *   owner_uid VARCHAR(128) NOT NULL,
+ *   owner_signature VARCHAR(128) NOT NULL,
  *   request_id VARCHAR(64),
  *   timestamp TIMESTAMPTZ NOT NULL DEFAULT NOW(),
  *   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -74,6 +76,13 @@ export class PostgresCitizenRequestRepository implements CitizenRequestRepositor
     return request;
   }
 
+  public async createOwned(request: CitizenRequest, userId: string): Promise<CitizenRequest | null> {
+    this.ensureConnected();
+    // Production implementation must persist the verified owner UID and server HMAC,
+    // rejecting conflicting IDs atomically. Legacy rows without valid provenance stay inaccessible.
+    return null;
+  }
+
   public async getById(id: string): Promise<CitizenRequest | null> {
     this.ensureConnected();
     // SELECT * FROM citizen_requests WHERE id = $1 LIMIT 1;
@@ -82,7 +91,7 @@ export class PostgresCitizenRequestRepository implements CitizenRequestRepositor
 
   public async list(options: PaginationOptions = {}): Promise<PaginatedResult<CitizenRequest>> {
     this.ensureConnected();
-    // SELECT * FROM citizen_requests WHERE ... ORDER BY timestamp DESC LIMIT $limit OFFSET $offset;
+    // SELECT * FROM citizen_requests WHERE owner_uid = $ownerUid AND ... ORDER BY timestamp DESC LIMIT $limit OFFSET $offset;
     const page = Math.max(1, Number(options.page) || 1);
     const limit = Math.min(100, Math.max(1, Number(options.limit) || 50));
     return {
@@ -103,6 +112,12 @@ export class PostgresCitizenRequestRepository implements CitizenRequestRepositor
   public async delete(id: string): Promise<boolean> {
     this.ensureConnected();
     // DELETE FROM citizen_requests WHERE id = $1;
+    return false;
+  }
+
+  public async deleteOwned(id: string, userId: string): Promise<boolean> {
+    this.ensureConnected();
+    // Production implementation must atomically match id, owner_uid, and a valid server signature.
     return false;
   }
 

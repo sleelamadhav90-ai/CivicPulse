@@ -8,6 +8,7 @@ import type {
   RepositoryStatistics,
   RepositoryHealth,
 } from './CitizenRequestRepository.js';
+import { hasTrustedOwner, withTrustedOwner } from './citizenRecordOwnership.js';
 
 /**
  * JSON File-based persistence adapter for Citizen Requests.
@@ -90,6 +91,22 @@ export class JsonCitizenRequestRepository implements CitizenRequestRepository {
     return sanitizedRequest;
   }
 
+  public async createOwned(request: CitizenRequest, userId: string): Promise<CitizenRequest | null> {
+    if (!this.isLoaded) this.initStore();
+    const existingIndex = this.memoryCache.findIndex((r) => r.id === request.id);
+    if (existingIndex >= 0 && !hasTrustedOwner(this.memoryCache[existingIndex], userId)) return null;
+
+    const ownedRequest: CitizenRequest = withTrustedOwner({
+      ...request,
+      timestamp: request.timestamp || new Date().toISOString(),
+      status: request.status || 'Received',
+    }, userId);
+    if (existingIndex >= 0) this.memoryCache[existingIndex] = { ...this.memoryCache[existingIndex], ...ownedRequest };
+    else this.memoryCache.unshift(ownedRequest);
+    this.persistToDisk();
+    return ownedRequest;
+  }
+
   public async getById(id: string): Promise<CitizenRequest | null> {
     if (!this.isLoaded) this.initStore();
     const found = this.memoryCache.find((r) => r.id === id);
@@ -100,6 +117,10 @@ export class JsonCitizenRequestRepository implements CitizenRequestRepository {
     if (!this.isLoaded) this.initStore();
 
     let filtered = [...this.memoryCache];
+
+    if (options.ownerUid) {
+      filtered = filtered.filter((r) => hasTrustedOwner(r, options.ownerUid!));
+    }
 
     if (options.category) {
       const catLower = options.category.toLowerCase();
@@ -175,6 +196,15 @@ export class JsonCitizenRequestRepository implements CitizenRequestRepository {
     const index = this.memoryCache.findIndex((r) => r.id === id);
     if (index === -1) return false;
 
+    this.memoryCache.splice(index, 1);
+    this.persistToDisk();
+    return true;
+  }
+
+  public async deleteOwned(id: string, userId: string): Promise<boolean> {
+    if (!this.isLoaded) this.initStore();
+    const index = this.memoryCache.findIndex((r) => r.id === id && hasTrustedOwner(r, userId));
+    if (index === -1) return false;
     this.memoryCache.splice(index, 1);
     this.persistToDisk();
     return true;

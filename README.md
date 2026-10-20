@@ -431,15 +431,17 @@ All endpoints return uniform structured JSON responses with `X-Request-Id` and `
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
 | `GET` | `/api/health` | Comprehensive system health: repository status, persistence type, rate limiting status, memory usage, and telemetry across all 5 bounded caches. |
-| `GET` | `/api/citizen-requests` | Retrieves stored citizen requests with pagination (`page`, `limit`) and filtering (`category`, `district`, `state`). |
-| `GET` | `/api/citizen-requests/:id` | Retrieves an individual citizen request by its unique ID. Returns HTTP 404 if not found. |
-| `POST` | `/api/citizen-requests` | Validates input payload schema and persists a new citizen request via `CitizenRequestRepository`. |
-| `DELETE` | `/api/citizen-requests/:id` | Removes an individual citizen request by ID. Returns HTTP 404 if not found. |
+| `GET` | `/api/citizen-requests` | Requires a verified Firebase ID token; returns only the caller's saved requests, with pagination and filtering (`category`, `district`, `state`). |
+| `GET` | `/api/citizen-requests/:id` | Requires a verified Firebase ID token; returns only the caller's record. Other-owner and missing records both return HTTP 404. |
+| `POST` | `/api/citizen-requests` | Requires a verified Firebase ID token; validates input and assigns ownership from the verified token UID. |
+| `DELETE` | `/api/citizen-requests/:id` | Requires a verified Firebase ID token; removes only the caller's record. Other-owner and missing records both return HTTP 404. |
 | `POST` | `/api/process-feedback` | Multimodal (audio/text) diagnostic extraction using Gemini API with timeout, retry, and truthful fallback. |
 | `POST` | `/api/conversational-followup` | Multilingual conversational assistant follow-up with response caching. |
 | `POST` | `/api/generate-policy-brief` | Generates structured policy brief in target language via Gemini with 1-hour bounded cache. |
 | `POST` | `/api/search/intent` | Parses natural language query intent and maps to Gemini tool declarations with 15-minute cache. |
 | `POST` | `/api/search/summary` | Synthesizes grounded policymaker summary of search results with 30-minute cache. |
+
+Citizen-record reads, writes, and deletion require a Firebase ID token verified by the server. Ownership comes from a server-assigned `ownerUid`, never the payload's `userId`, and each new record receives an HMAC `ownerSignature` using the server-only `CITIZEN_RECORD_OWNER_SECRET`. The secret must be at least 32 bytes and remain stable across restarts and deployments. Existing rows with only legacy `userId`/`ownerUid` fields are excluded because older POST handlers accepted arbitrary payload fields; they cannot be claimed or deleted through this API. Migrate an old record only after verifying its owner through an independent trusted source. If Firebase Admin verification is not configured, requests fail closed with HTTP 401; if the ownership-signing secret is absent or invalid, records remain unreadable and writes fail. The prototype does not provide a cross-citizen administrator view; that requires a separately authorized role and access policy.
 
 ---
 

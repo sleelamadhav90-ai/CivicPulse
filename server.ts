@@ -7,11 +7,11 @@ import { GoogleGenAI, Type } from '@google/genai';
 // Scalability & Persistence Architecture modules
 import { getServerConfig } from './src/server/config.js';
 import { getCitizenRequestRepository } from './src/server/repositories/index.js';
-import { validateCitizenRequest, validateProcessFeedback } from './src/server/validation/requestValidator.js';
+import { validateProcessFeedback } from './src/server/validation/requestValidator.js';
 import { requestIdMiddleware } from './src/server/middleware/requestId.js';
 import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter.js';
 import { errorHandler, AppError } from './src/server/middleware/errorHandler.js';
-import { requireAuth } from './src/server/middleware/authMiddleware.js';
+import { createCitizenRequestRouter } from './src/server/routes/citizenRequestRoutes.js';
 import {
   policyBriefCache,
   feedbackDiagnosticCache,
@@ -94,122 +94,8 @@ const handleHealthCheck = async (req: Request, res: Response) => {
 app.get('/api/health', handleHealthCheck);
 app.get('/health', handleHealthCheck);
 
-// Endpoint: Get persisted citizen requests with pagination and filtering
-app.get('/api/citizen-requests', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const page = req.query.page ? Number(req.query.page) : 1;
-    // Default limit to 50 if page requested; if neither page nor limit given, return all for backwards compatibility
-    const limit = req.query.limit !== undefined ? Number(req.query.limit) : (req.query.page ? 50 : 0);
-    const category = req.query.category as string | undefined;
-    const district = req.query.district as string | undefined;
-    const state = req.query.state as string | undefined;
-    const urgency = req.query.urgency as string | undefined;
-    const status = req.query.status as string | undefined;
-    const search = req.query.search as string | undefined;
-
-    const result = await requestRepository.list({
-      page,
-      limit,
-      category,
-      district,
-      state,
-      urgency,
-      status,
-      search,
-    });
-
-    res.json({
-      success: true,
-      count: result.items.length,
-      total: result.total,
-      page: result.page,
-      limit: result.limit,
-      totalPages: result.totalPages,
-      requests: result.items,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Endpoint: Persist newly submitted citizen request with validation & authentication
-app.post('/api/citizen-requests', requireAuth, async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const validation = validateCitizenRequest(req.body);
-    if (!validation.isValid) {
-      return res.status(400).json({
-        success: false,
-        error: {
-          code: 'VALIDATION_FAILED',
-          message: 'Citizen request payload validation failed.',
-          details: validation.errors,
-        },
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-    }
-
-    // Security Architecture: Overwrite any client-supplied userId with verified Firebase token UID
-    const verifiedUid = req.user?.uid;
-    const sanitizedPayload = {
-      ...req.body,
-      ...(verifiedUid ? { userId: verifiedUid } : {}),
-    };
-
-    const saved = await requestRepository.create(sanitizedPayload);
-    const stats = await requestRepository.getStatistics();
-
-    res.json({
-      success: true,
-      request: saved,
-      totalStored: stats.totalRequests,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Endpoint: Retrieve single citizen request by ID
-app.get('/api/citizen-requests/:id', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const item = await requestRepository.getById(req.params.id);
-    if (!item) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Citizen request with id '${req.params.id}' was not found.`,
-        },
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-    }
-    res.json({ success: true, request: item });
-  } catch (err) {
-    next(err);
-  }
-});
-
-// Endpoint: Delete single citizen request by ID
-app.delete('/api/citizen-requests/:id', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    const deleted = await requestRepository.delete(req.params.id);
-    if (!deleted) {
-      return res.status(404).json({
-        success: false,
-        error: {
-          code: 'NOT_FOUND',
-          message: `Citizen request with id '${req.params.id}' was not found.`,
-        },
-        requestId: req.id,
-        timestamp: new Date().toISOString(),
-      });
-    }
-    res.json({ success: true, deleted: true, id: req.params.id });
-  } catch (err) {
-    next(err);
-  }
-});
+// Persisted record reads and deletion require a verified token and are owner-scoped.
+app.use('/api/citizen-requests', createCitizenRequestRouter(requestRepository));
 
 const LANGUAGE_NAMES: Record<string, string> = {
   en: 'English',

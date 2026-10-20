@@ -71,6 +71,44 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 /**
+ * Strict Firebase authentication for routes that expose or mutate stored citizen data.
+ * Unlike requireAuth, this middleware never permits the local anonymous-development
+ * fallback. A verified Firebase ID token is always required.
+ */
+export async function requireVerifiedAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
+  const authHeader = req.headers.authorization;
+  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7).trim() : null;
+
+  if (!token) {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'AUTHENTICATION_REQUIRED',
+        message: 'Please sign in before accessing saved citizen requests.',
+      },
+      requestId: (req as any).id,
+      timestamp: new Date().toISOString(),
+    });
+    return;
+  }
+
+  try {
+    req.user = await verifyFirebaseIdToken(token);
+    return next();
+  } catch {
+    res.status(401).json({
+      success: false,
+      error: {
+        code: 'INVALID_TOKEN',
+        message: 'Authentication token is invalid or expired. Please sign in again.',
+      },
+      requestId: (req as any).id,
+      timestamp: new Date().toISOString(),
+    });
+  }
+}
+
+/**
  * Optional Auth middleware: attaches user if valid token present,
  * but does not reject request if token is absent.
  */

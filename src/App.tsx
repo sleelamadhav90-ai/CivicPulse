@@ -41,76 +41,104 @@ import { CommunityIssuesView } from './components/CommunityIssuesView';
 import { InfrastructureView } from './components/InfrastructureView';
 import { DemographicsView } from './components/DemographicsView';
 import { GlobalSearchModal } from './components/GlobalSearchModal';
+import { useAuth } from './context/AuthContext';
 
 export default function App() {
+  const { user, loading: authLoading, getIdToken } = useAuth();
   const [hasEntered, setHasEntered] = useState(true);
   const [selectedCountryCode, setSelectedCountryCode] = useState<CountryCode>('IN');
   const [selectedLanguage, setSelectedLanguage] = useState<string>('en');
 
   const districts = useMemo(() => getDistrictsForCountry(selectedCountryCode), [selectedCountryCode]);
 
-  // Persistent citizen requests initialized from local storage
-  const [customRequests, setCustomRequests] = useState<CitizenRequest[]>(() => {
+  // Keep browser-cached citizen records isolated between signed-in accounts.
+  const requestStorageKey = `civicpulse_custom_requests_${user?.uid || 'anonymous'}`;
+  const [customRequests, setCustomRequests] = useState<CitizenRequest[]>([]);
+  const [loadedRequestStorageKey, setLoadedRequestStorageKey] = useState<string | null>(null);
+  const activeCustomRequests = loadedRequestStorageKey === requestStorageKey ? customRequests : [];
+
+  useEffect(() => {
+    if (authLoading) return;
+    let parsedRequests: CitizenRequest[] = [];
     try {
-      const saved = localStorage.getItem('civicpulse_custom_requests');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const seen = new Set<string>();
-          return parsed.map((item: CitizenRequest) => {
-            // Migrate colliding demo seed ID if present in user's browser localStorage
-            if (item && item.id === 'CP-2026-004821') {
-              return { ...item, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
-            }
-            return item;
-          }).filter((item: CitizenRequest) => {
-            if (!item || !item.id || seen.has(item.id)) return false;
-            seen.add(item.id);
-            return true;
-          });
-        }
+      const scopedSaved = localStorage.getItem(requestStorageKey);
+      const legacySaved = localStorage.getItem('civicpulse_custom_requests');
+      const scoped = scopedSaved ? JSON.parse(scopedSaved) : [];
+      const legacy = legacySaved ? JSON.parse(legacySaved) : [];
+      // The old shared key has no server-verifiable ownership metadata. Keep only
+      // anonymous local drafts there; never migrate its client-supplied userId values.
+      const ownedLegacy = Array.isArray(legacy) && !user
+        ? legacy.filter((item: CitizenRequest) => !item?.userId && !item?.ownerUid)
+        : [];
+      const parsed = [
+        ...(Array.isArray(scoped) ? scoped : []),
+        ...ownedLegacy,
+      ];
+      if (parsed.length > 0) {
+        const seen = new Set<string>();
+        parsedRequests = parsed.map((item: CitizenRequest) => {
+          if (item && item.id === 'CP-2026-004821') {
+            return { ...item, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
+          }
+          return item;
+        }).filter((item: CitizenRequest) => {
+          if (!item || !item.id || seen.has(item.id)) return false;
+          seen.add(item.id);
+          return true;
+        });
       }
     } catch {}
-    return [];
-  });
+    setCustomRequests(parsedRequests);
+    setLoadedRequestStorageKey(requestStorageKey);
+  }, [authLoading, requestStorageKey, user?.uid]);
 
-  // Fetch backend persisted requests from file storage on mount
+  // Fetch only this authenticated citizen's persisted requests.
   useEffect(() => {
-    fetch('/api/citizen-requests')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.requests) && data.requests.length > 0) {
-          setCustomRequests(prev => {
-            const existingIds = new Set(prev.map(r => r.id));
-            const newOnes = data.requests
-              .map((r: CitizenRequest) => {
-                if (r && r.id === 'CP-2026-004821') {
-                  return { ...r, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
-                }
-                return r;
-              })
-              .filter((r: CitizenRequest) => r && r.id && !existingIds.has(r.id));
+    if (authLoading || !user || loadedRequestStorageKey !== requestStorageKey) return;
 
-            if (newOnes.length > 0) {
-              const merged = [...newOnes, ...prev];
-              try {
-                localStorage.setItem('civicpulse_custom_requests', JSON.stringify(merged));
-              } catch {}
-              return merged;
-            }
-            return prev;
-          });
-        }
-      })
-      .catch(err => console.warn('Could not fetch server persisted requests:', err));
-  }, []);
+    let cancelled = false;
+    const syncOwnedRequests = async () => {
+      try {
+        const idToken = await getIdToken();
+        if (!idToken || cancelled) return;
+        const response = await fetch('/api/citizen-requests', {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (!response.ok) return;
+        const data = await response.json();
+        if (cancelled || !data.success || !Array.isArray(data.requests) || data.requests.length === 0) return;
+
+        setCustomRequests(prev => {
+          const existingIds = new Set(prev.map(r => r.id));
+          const newOnes = data.requests
+            .map((r: CitizenRequest) => {
+              if (r && r.id === 'CP-2026-004821') {
+                return { ...r, id: 'CP-2026-USER-004821', request_id: 'CP-2026-USER-004821' };
+              }
+              return r;
+            })
+            .filter((r: CitizenRequest) => r && r.id && !existingIds.has(r.id));
+
+          if (newOnes.length === 0) return prev;
+          const merged = [...newOnes, ...prev];
+          return merged;
+        });
+      } catch (err) {
+        console.warn('Could not sync this citizen’s saved requests:', err);
+      }
+    };
+
+    void syncOwnedRequests();
+    return () => { cancelled = true; };
+  }, [authLoading, user, getIdToken, loadedRequestStorageKey, requestStorageKey]);
 
   // Save custom requests to local storage whenever updated
   useEffect(() => {
+    if (authLoading || loadedRequestStorageKey !== requestStorageKey) return;
     try {
-      localStorage.setItem('civicpulse_custom_requests', JSON.stringify(customRequests));
+      localStorage.setItem(requestStorageKey, JSON.stringify(customRequests));
     } catch {}
-  }, [customRequests]);
+  }, [authLoading, customRequests, loadedRequestStorageKey, requestStorageKey]);
   
   const requests = useMemo(() => {
     const defaultCountryRequests = getRequestsForCountry(selectedCountryCode);
@@ -119,7 +147,7 @@ export default function App() {
     const sanitized: CitizenRequest[] = [];
 
     // 1. Process custom requests, ensuring no collision with default seed IDs or duplicate entries
-    for (const cr of customRequests) {
+    for (const cr of activeCustomRequests) {
       if (!cr || !cr.id) continue;
       let uniqueId = cr.id;
       if (defaultIds.has(uniqueId) || seenIds.has(uniqueId)) {
@@ -142,7 +170,7 @@ export default function App() {
     }
 
     return sanitized;
-  }, [selectedCountryCode, customRequests]);
+  }, [selectedCountryCode, activeCustomRequests]);
 
   const [governmentProjects, setGovernmentProjects] = useState<GovernmentProject[]>(() => {
     try {
