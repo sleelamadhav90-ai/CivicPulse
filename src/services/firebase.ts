@@ -2,14 +2,13 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithPopup, 
+  signInWithRedirect, 
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged, 
   User, 
   Auth 
 } from 'firebase/auth';
-
 /**
  * Firebase Client Configuration
  * Uses Vite client environment variables (VITE_FIREBASE_*).
@@ -50,17 +49,16 @@ if (isFirebaseConfigured) {
 export { auth };
 
 /**
- * Sign in with Google using popup.
- * Returns authenticated user and fresh Firebase ID token.
+ * Sign in with Google using redirect.
+ * Firebase's auth state listener detects the signed-in user after redirect.
  */
-export async function signInWithGoogle(): Promise<{ user: User; idToken: string }> {
+export async function signInWithGoogle(): Promise<void> {
   if (!auth) {
     throw new Error('FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.');
   }
 
-  const result = await signInWithPopup(auth, googleProvider);
-  const idToken = await result.user.getIdToken();
-  return { user: result.user, idToken };
+  await signInWithRedirect(auth, googleProvider);
+  
 }
 
 /**
