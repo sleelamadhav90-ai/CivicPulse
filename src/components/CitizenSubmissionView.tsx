@@ -28,6 +28,7 @@ import {
 import { CitizenRequest, InfrastructureCategory, District, RequestStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { submitCitizenRequest } from '../services/citizenRequestSubmission.js';
 
 interface CitizenSubmissionViewProps {
   districts: District[];
@@ -109,6 +110,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   const { user, isFirebaseConfigured, signInWithGoogle, getIdToken } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Mode: 'write' or 'voice'
   const [activeMode, setActiveMode] = useState<'write' | 'voice'>(initialMode);
@@ -597,7 +599,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
   // Final Submission to Backend & Persistent Storage
   const handleConfirmAndSubmit = async () => {
-    if (!aiResult) return;
+    if (!aiResult || isSubmitting) return;
     setAuthError(null);
 
     // If Firebase is configured and user is not signed in, enforce Google authentication
@@ -713,36 +715,23 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       }
     };
 
-    // Save to server backend with Authorization header
+    setIsSubmitting(true);
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const idToken = await getIdToken();
-      if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`;
-      }
+      const savedRequest = await submitCitizenRequest(newRequest, idToken);
 
-      const res = await fetch('/api/citizen-requests', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newRequest),
-      });
-
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          setAuthError(errorData?.error?.message || 'Authentication required to submit feedback.');
-          return;
-        }
-      }
+      // Update local dashboard state and show the receipt only after the server
+      // confirms that its repository save completed.
+      onAddRequest(savedRequest);
+      setSubmittedReceipt(savedRequest);
+      setStage('success');
     } catch (err) {
-      console.warn('Backend offline, relying on client persistent state:', err);
+      const message = err instanceof Error ? err.message : 'CivicPulse could not save your report. Please try again.';
+      setAuthError(message);
+      console.warn('Citizen report submission failed.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Call parent handler to update React state & localStorage
-    onAddRequest(newRequest);
-
-    setSubmittedReceipt(newRequest);
-    setStage('success');
   };
 
   // Reset form to report another issue
@@ -1561,6 +1550,11 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
           {/* Action Buttons: Confirm & Submit vs Edit */}
           <div className="border-t border-[#171717]/15 pt-6 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+            {authError && (
+              <div role="alert" className="w-full text-xs font-mono font-bold text-red-700 bg-red-50 p-3 border border-red-300">
+                ⚠️ {authError}
+              </div>
+            )}
             <button
               type="button"
               onClick={() => setStage('input')}
@@ -1573,11 +1567,11 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             <button
               type="button"
               onClick={handleConfirmAndSubmit}
-              disabled={isSigningIn}
+              disabled={isSigningIn || isSubmitting}
               className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-70"
             >
               <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-              <span>{user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
+              <span>{isSubmitting ? 'Saving report...' : user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
             </button>
           </div>
         </div>
