@@ -49,7 +49,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
   const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
-  const { user, isFirebaseConfigured, signInWithGoogle, signOut } = useAuth();
+  const { user, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = useAuth();
 
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
@@ -249,7 +249,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             </>
           ) : isFirebaseConfigured ? (
             <button
-              onClick={() => signInWithGoogle()}
+              onClick={() => {
+                clearAuthError();
+                void signInWithGoogle().catch(() => {});
+              }}
               className="px-2 sm:px-2.5 py-1 bg-[#D65A3A] hover:bg-[#c34e2f] text-white border border-[#D65A3A] transition-colors cursor-pointer flex items-center space-x-1 sm:space-x-1.5 text-[11px] rounded-xs font-sans font-semibold shadow-[1px_1px_0px_#000] shrink-0"
               title="Sign in with Google to submit grievances"
             >
@@ -316,6 +319,22 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {authError && (
+        <div className="mx-auto max-w-7xl px-3 pb-2" role="alert">
+          <div className="flex items-start justify-between gap-3 border border-red-400/70 bg-red-950/80 px-3 py-2 text-[11px] font-sans text-red-100">
+            <span>{authError}</span>
+            <button
+              type="button"
+              onClick={clearAuthError}
+              className="shrink-0 text-red-200 underline hover:text-white"
+              aria-label="Dismiss sign-in error"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* SCALABILITY BY DESIGN MODAL */}
       {scalabilityModalOpen && (
