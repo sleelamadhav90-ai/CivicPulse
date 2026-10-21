@@ -1,5 +1,7 @@
 type FirebaseAuthErrorLike = { code?: unknown };
 
+export const SIGN_IN_REDIRECT_TIMEOUT_MESSAGE = 'Google sign-in did not redirect. Please try again. If this continues, check the Firebase and Vercel sign-in settings.';
+
 export function firebaseAuthErrorCode(error: unknown): string | null {
   if (!error || typeof error !== 'object') return null;
   const code = (error as FirebaseAuthErrorLike).code;
@@ -54,4 +56,29 @@ export function createRedirectResultReader<Auth, Result>(
     resultPromise ??= getRedirectResult(auth);
     return resultPromise;
   };
+}
+
+/**
+ * Firebase redirect sign-in normally navigates away before its promise settles.
+ * Bound the UI wait so a blocked or stalled navigation cannot leave the form
+ * permanently disabled. The page unloads normally when redirect succeeds.
+ */
+export async function runRedirectSignInAttempt(
+  signIn: () => Promise<void>,
+  setLoading: (loading: boolean) => void,
+  timeoutMs = 30_000
+): Promise<void> {
+  setLoading(true);
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    await Promise.race([
+      signIn(),
+      new Promise<never>((_resolve, reject) => {
+        timeout = setTimeout(() => reject(new Error(SIGN_IN_REDIRECT_TIMEOUT_MESSAGE)), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+    setLoading(false);
+  }
 }

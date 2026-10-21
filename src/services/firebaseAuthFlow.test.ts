@@ -2,6 +2,8 @@ import {
   createRedirectResultReader,
   firebaseAuthErrorCode,
   firebaseAuthErrorMessage,
+  runRedirectSignInAttempt,
+  SIGN_IN_REDIRECT_TIMEOUT_MESSAGE,
   startGoogleRedirectFlow,
 } from './firebaseAuthFlow.js';
 
@@ -77,6 +79,28 @@ async function runFirebaseAuthFlowTests() {
   assert(firebaseAuthErrorMessage({ code: 'auth/operation-not-allowed' }).includes('not enabled'), 'Disabled Google provider gets an actionable message');
   assert(firebaseAuthErrorMessage({ code: 'auth/popup-blocked' }).includes('older sign-in build'), 'Popup-blocked errors explain the likely stale-build cause without browser-permission advice');
   assert(!firebaseAuthErrorMessage({ code: 'auth/unknown', message: 'private error text' }).includes('private error text'), 'Unexpected Firebase details are not shown to users');
+
+  let loading = false;
+  await runRedirectSignInAttempt(async () => {}, (value) => { loading = value; }, 50);
+  assert(!loading, 'A resolved sign-in attempt clears the loading state');
+
+  let rejectedAttemptLoading = false;
+  try {
+    await runRedirectSignInAttempt(async () => { throw new Error('sign-in failed'); }, (value) => { rejectedAttemptLoading = value; }, 50);
+  } catch {
+    // Failure should propagate to the form while still releasing its spinner.
+  }
+  assert(!rejectedAttemptLoading, 'A rejected sign-in attempt clears the loading state');
+
+  let stalledAttemptLoading = false;
+  let timeoutMessage = '';
+  try {
+    await runRedirectSignInAttempt(() => new Promise<void>(() => {}), (value) => { stalledAttemptLoading = value; }, 5);
+  } catch (error) {
+    timeoutMessage = error instanceof Error ? error.message : '';
+  }
+  assert(!stalledAttemptLoading, 'A stalled redirect attempt releases the loading state');
+  assert(timeoutMessage === SIGN_IN_REDIRECT_TIMEOUT_MESSAGE, 'A stalled redirect reports an actionable timeout error');
 
   console.log('✅ Firebase redirect flow, persistence order, result handling, and safe error messages passed.');
 }

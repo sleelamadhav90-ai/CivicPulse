@@ -28,6 +28,7 @@ import {
 import { CitizenRequest, InfrastructureCategory, District, RequestStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { runRedirectSignInAttempt } from '../services/firebaseAuthFlow.js';
 
 interface CitizenSubmissionViewProps {
   districts: District[];
@@ -109,6 +110,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   const { user, isFirebaseConfigured, signInWithGoogle, getIdToken, error: contextAuthError, clearError: clearContextAuthError } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   // Mode: 'write' or 'voice'
   const [activeMode, setActiveMode] = useState<'write' | 'voice'>(initialMode);
@@ -161,6 +163,21 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
   // Submitted Request Receipt State
   const [submittedReceipt, setSubmittedReceipt] = useState<CitizenRequest | null>(null);
+
+  // Auth state or a redirect error resolves any stale local spinner after return.
+  useEffect(() => {
+    if (user || contextAuthError) setIsSigningIn(false);
+  }, [user, contextAuthError]);
+
+  const handleGoogleSignIn = async () => {
+    setAuthError(null);
+    clearContextAuthError();
+    try {
+      await runRedirectSignInAttempt(signInWithGoogle, setIsSigningIn);
+    } catch (err: unknown) {
+      setAuthError(err instanceof Error ? err.message : 'Google sign-in could not be completed. Please try again.');
+    }
+  };
 
   // Quick Language Presets
   const supportedLanguages = [
@@ -602,17 +619,10 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
     // If Firebase is configured and user is not signed in, enforce Google authentication
     if (isFirebaseConfigured && !user) {
-      try {
-        setIsSigningIn(true);
-        await signInWithGoogle();
-        // Redirect sign-in leaves this page. Never continue into persistence without
-        // a verified Firebase user after the browser returns to CivicPulse.
-        return;
-      } catch (err: any) {
-        setIsSigningIn(false);
-        setAuthError(err?.message || 'Please sign in with Google to authenticate your submission.');
-        return;
-      }
+      await handleGoogleSignIn();
+      // Starting a redirect is not authentication. Require Firebase auth state
+      // after the browser returns before the citizen can submit.
+      return;
     }
 
     // Generate unique tracking ID: CP-2026-XXXXXXXX (timestamp + random entropy)
@@ -715,7 +725,8 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       }
     };
 
-    // Save to server backend with Authorization header
+    // Save to server backend with Authorization header.
+    setIsSubmitting(true);
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const idToken = await getIdToken();
@@ -729,22 +740,27 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         body: JSON.stringify(newRequest),
       });
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          setAuthError(errorData?.error?.message || 'Authentication required to submit feedback.');
-          return;
-        }
+      const responseData: any = await res.json().catch(() => null);
+      if (!res.ok || responseData?.success !== true || !responseData.request || typeof responseData.request !== 'object' || Array.isArray(responseData.request)) {
+        const message = typeof responseData?.error?.message === 'string'
+          ? responseData.error.message
+          : res.status === 401
+            ? 'Authentication required to submit feedback.'
+            : 'CivicPulse could not save your report. Please try again.';
+        setAuthError(message);
+        return;
       }
-    } catch (err) {
-      console.warn('Backend offline, relying on client persistent state:', err);
+
+      const savedRequest = responseData.request as CitizenRequest;
+      onAddRequest(savedRequest);
+      setSubmittedReceipt(savedRequest);
+      setStage('success');
+    } catch {
+      setAuthError('Could not reach CivicPulse. Check your connection and try again.');
+      console.warn('Citizen report submission failed.');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Call parent handler to update React state & localStorage
-    onAddRequest(newRequest);
-
-    setSubmittedReceipt(newRequest);
-    setStage('success');
   };
 
   // Reset form to report another issue
@@ -1538,10 +1554,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setAuthError(null);
-                      clearContextAuthError();
-                      setIsSigningIn(true);
-                      void signInWithGoogle().catch(() => setIsSigningIn(false));
+                      void handleGoogleSignIn();
                     }}
                     disabled={isSigningIn}
                     className="px-4 py-2 bg-[#D65A3A] hover:bg-[#c34e2f] text-white text-xs font-bold font-sans uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-center"
@@ -1580,11 +1593,11 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             <button
               type="button"
               onClick={handleConfirmAndSubmit}
-              disabled={isSigningIn}
+              disabled={isSigningIn || isSubmitting}
               className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-70"
             >
               <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-              <span>{user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
+              <span>{isSubmitting ? 'Saving report...' : user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
             </button>
           </div>
         </div>
