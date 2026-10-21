@@ -106,7 +106,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   onViewRequest,
 }) => {
   const { t, tCategory, tStatus, language } = useLanguage();
-  const { user, isFirebaseConfigured, signInWithGoogle, getIdToken } = useAuth();
+  const { user, isFirebaseConfigured, signInWithGoogle, getIdToken, error: contextAuthError, clearError: clearContextAuthError } = useAuth();
   const [authError, setAuthError] = useState<string | null>(null);
   const [isSigningIn, setIsSigningIn] = useState<boolean>(false);
 
@@ -605,7 +605,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       try {
         setIsSigningIn(true);
         await signInWithGoogle();
-        setIsSigningIn(false);
+        // Redirect sign-in leaves this page. Never continue into persistence without
+        // a verified Firebase user after the browser returns to CivicPulse.
+        return;
       } catch (err: any) {
         setIsSigningIn(false);
         setAuthError(err?.message || 'Please sign in with Google to authenticate your submission.');
@@ -1535,7 +1537,12 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                   </div>
                   <button
                     type="button"
-                    onClick={() => signInWithGoogle()}
+                    onClick={() => {
+                      setAuthError(null);
+                      clearContextAuthError();
+                      setIsSigningIn(true);
+                      void signInWithGoogle().catch(() => setIsSigningIn(false));
+                    }}
                     disabled={isSigningIn}
                     className="px-4 py-2 bg-[#D65A3A] hover:bg-[#c34e2f] text-white text-xs font-bold font-sans uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-center"
                   >
@@ -1546,9 +1553,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                 <p className="text-[11px] text-[#171717]/80 leading-relaxed">
                   Authentication helps CivicPulse associate submissions with an authenticated account and reduce anonymous abuse. Your authentication identity is used for submission ownership; CivicPulse does not require government ID verification.
                 </p>
-                {authError && (
+                {(authError || contextAuthError) && (
                   <div className="text-[11px] font-mono font-bold text-red-700 bg-red-50 p-2 border border-red-300">
-                    ⚠️ {authError}
+                    ⚠️ {authError || contextAuthError}
                   </div>
                 )}
               </div>

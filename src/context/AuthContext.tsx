@@ -5,8 +5,10 @@ import {
   signOutUser as firebaseSignOut, 
   getCurrentIdToken, 
   onAuthChange,
+  getGoogleRedirectResult,
   isFirebaseConfigured 
 } from '../services/firebase.js';
+import { firebaseAuthErrorCode, firebaseAuthErrorMessage } from '../services/firebaseAuthFlow.js';
 
 interface AuthContextType {
   user: User | null;
@@ -41,12 +43,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    const unsubscribe = onAuthChange((firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
+    let active = true;
+    const unsubscribe = onAuthChange(
+      (firebaseUser) => {
+        if (!active) return;
+        setUser(firebaseUser);
+        setLoading(false);
+      },
+      (authError) => {
+        if (!active) return;
+        console.warn('[CivicPulse Auth Error]', firebaseAuthErrorCode(authError) || 'unknown');
+        setError(firebaseAuthErrorMessage(authError));
+        setLoading(false);
+      }
+    );
 
-    return () => unsubscribe();
+    void getGoogleRedirectResult()
+      .then((credential) => {
+        if (active && credential?.user) setUser(credential.user);
+      })
+      .catch((authError: unknown) => {
+        if (!active) return;
+        console.warn('[CivicPulse Auth Error]', firebaseAuthErrorCode(authError) || 'unknown');
+        setError(firebaseAuthErrorMessage(authError));
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, []);
 
   const handleSignIn = async () => {
@@ -54,10 +82,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseSignIn();
     } catch (err: any) {
-      const msg = err?.message || 'Authentication failed';
-      console.warn('[CivicPulse Auth Error]:', msg);
+      const msg = firebaseAuthErrorMessage(err);
+      console.warn('[CivicPulse Auth Error]', firebaseAuthErrorCode(err) || 'unknown');
       setError(msg);
-      throw err;
+      throw new Error(msg);
     }
   };
 
@@ -67,7 +95,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       await firebaseSignOut();
       setUser(null);
     } catch (err: any) {
-      setError(err?.message || 'Sign out failed');
+      console.warn('[CivicPulse Auth Error]', firebaseAuthErrorCode(err) || 'unknown');
+      setError('Sign-out could not be completed. Please try again.');
     }
   };
 

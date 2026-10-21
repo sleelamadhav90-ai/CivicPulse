@@ -2,13 +2,19 @@
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { 
   getAuth, 
-  signInWithRedirect, 
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider, 
+  browserLocalPersistence,
+  browserSessionPersistence,
+  setPersistence,
   signOut, 
   onAuthStateChanged, 
   User, 
-  Auth 
+  Auth,
+  UserCredential,
 } from 'firebase/auth';
+import { createRedirectResultReader, startGoogleRedirectFlow } from './firebaseAuthFlow.js';
 /**
  * Firebase Client Configuration
  * Uses Vite client environment variables (VITE_FIREBASE_*).
@@ -18,7 +24,7 @@ const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || '',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || '',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || (env.VITE_FIREBASE_PROJECT_ID ? `${env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com` : ''),
   projectId: env.VITE_FIREBASE_PROJECT_ID || '',
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
@@ -48,17 +54,33 @@ if (isFirebaseConfigured) {
 
 export { auth };
 
+const readGoogleRedirectResult: () => Promise<UserCredential | null> = auth
+  ? createRedirectResultReader(auth, getRedirectResult)
+  : async () => null;
+
+/**
+ * Resolve the result (or error) from a completed Google redirect once at app startup.
+ */
+export function getGoogleRedirectResult(): Promise<UserCredential | null> {
+  return readGoogleRedirectResult();
+}
+
 /**
  * Sign in with Google using redirect.
- * Firebase's auth state listener detects the signed-in user after redirect.
+ * The auth state listener and getRedirectResult complete the sign-in after redirect.
  */
 export async function signInWithGoogle(): Promise<void> {
   if (!auth) {
     throw new Error('FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.');
   }
 
-  await signInWithRedirect(auth, googleProvider);
-  
+  await startGoogleRedirectFlow(
+    auth,
+    googleProvider,
+    [browserLocalPersistence, browserSessionPersistence],
+    setPersistence,
+    signInWithRedirect
+  );
 }
 
 /**
@@ -80,10 +102,13 @@ export async function getCurrentIdToken(forceRefresh = false): Promise<string | 
 /**
  * Subscribe to authentication state changes.
  */
-export function onAuthChange(callback: (user: User | null) => void): () => void {
+export function onAuthChange(
+  callback: (user: User | null) => void,
+  onError?: (error: Error) => void
+): () => void {
   if (!auth) {
     callback(null);
     return () => {};
   }
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, callback, onError);
 }

@@ -1,0 +1,57 @@
+type FirebaseAuthErrorLike = { code?: unknown };
+
+export function firebaseAuthErrorCode(error: unknown): string | null {
+  if (!error || typeof error !== 'object') return null;
+  const code = (error as FirebaseAuthErrorLike).code;
+  return typeof code === 'string' ? code : null;
+}
+
+export function firebaseAuthErrorMessage(error: unknown): string {
+  switch (firebaseAuthErrorCode(error)) {
+    case 'auth/popup-blocked':
+      return 'Google sign-in was blocked before it started. Refresh CivicPulse and try again. If this continues, the deployed page may still be using an older sign-in build.';
+    case 'auth/unauthorized-domain':
+      return 'Google sign-in is not enabled for this CivicPulse domain. The site administrator needs to add the production domain in Firebase Authentication settings.';
+    case 'auth/operation-not-allowed':
+      return 'Google sign-in is not enabled for this Firebase project.';
+    case 'auth/web-storage-unsupported':
+    case 'auth/unsupported-persistence-type':
+      return 'This browser could not keep the sign-in session. Try again in a browser with site storage enabled.';
+    default:
+      return 'Google sign-in could not be completed. Please try again.';
+  }
+}
+
+export async function startGoogleRedirectFlow<Auth, Provider, Persistence>(
+  auth: Auth,
+  provider: Provider,
+  persistences: readonly Persistence[],
+  setPersistence: (auth: Auth, persistence: Persistence) => Promise<unknown>,
+  signInWithRedirect: (auth: Auth, provider: Provider) => Promise<unknown>
+): Promise<void> {
+  let persistenceReady = false;
+  for (let index = 0; index < persistences.length; index += 1) {
+    try {
+      await setPersistence(auth, persistences[index]);
+      persistenceReady = true;
+      break;
+    } catch (error) {
+      const code = firebaseAuthErrorCode(error);
+      const canTrySessionPersistence = code === 'auth/web-storage-unsupported' || code === 'auth/unsupported-persistence-type';
+      if (!canTrySessionPersistence || index === persistences.length - 1) throw error;
+    }
+  }
+  if (!persistenceReady) throw new Error('No supported browser persistence is available.');
+  await signInWithRedirect(auth, provider);
+}
+
+export function createRedirectResultReader<Auth, Result>(
+  auth: Auth,
+  getRedirectResult: (auth: Auth) => Promise<Result>
+): () => Promise<Result> {
+  let resultPromise: Promise<Result> | undefined;
+  return () => {
+    resultPromise ??= getRedirectResult(auth);
+    return resultPromise;
+  };
+}
