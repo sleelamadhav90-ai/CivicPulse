@@ -1,7 +1,10 @@
 import {
   createRedirectResultReader,
+  consumeGoogleRedirectResult,
+  applyFirebaseAuthState,
   firebaseAuthErrorCode,
   firebaseAuthErrorMessage,
+  resolveFirebaseAuthDomain,
   runRedirectSignInAttempt,
   SIGN_IN_REDIRECT_TIMEOUT_MESSAGE,
   startGoogleRedirectFlow,
@@ -73,6 +76,42 @@ async function runFirebaseAuthFlowTests() {
   const [firstResult, secondResult] = await Promise.all([readRedirectResult(), readRedirectResult()]);
   assert(firstResult === result && secondResult === result, 'Redirect result is shared across repeated initialization calls');
   assert(redirectResultReads === 1, 'Redirect result is consumed once, including under React StrictMode');
+
+  assert(
+    resolveFirebaseAuthDomain('civicpulse-13c03.firebaseapp.com', 'civicpulse-13c03', 'civic-pulse-pr-123-slm15.vercel.app') === 'civic-pulse-pr-123-slm15.vercel.app',
+    'Vercel deployments use their current hostname for the same-domain Firebase auth proxy'
+  );
+  assert(
+    resolveFirebaseAuthDomain('custom-auth.example.com', 'civicpulse-13c03', 'localhost') === 'custom-auth.example.com',
+    'Non-Vercel hosts preserve their explicitly configured auth domain'
+  );
+  assert(
+    resolveFirebaseAuthDomain(undefined, 'civicpulse-13c03') === 'civicpulse-13c03.firebaseapp.com',
+    'Firebase project host remains the fallback when no app hostname is available'
+  );
+
+  const redirectedUser = { uid: 'redirect-user' };
+  let currentUser: typeof redirectedUser | null = null;
+  let redirectError: unknown;
+  await consumeGoogleRedirectResult<typeof redirectedUser, { user: typeof redirectedUser }>(
+    async () => ({ user: redirectedUser }),
+    (user) => { currentUser = user; },
+    (error) => { redirectError = error; }
+  );
+  assert(currentUser === redirectedUser && !redirectError, 'A successful redirect result updates the authenticated-user state');
+
+  const redirectFailure = { code: 'auth/network-request-failed' };
+  await consumeGoogleRedirectResult(
+    async () => { throw redirectFailure; },
+    () => {},
+    (error) => { redirectError = error; }
+  );
+  assert(redirectError === redirectFailure, 'Redirect-result errors are delivered to the authentication context');
+
+  let listenerUser: typeof redirectedUser | null | undefined;
+  let authLoading = true;
+  applyFirebaseAuthState(redirectedUser, (user) => { listenerUser = user; }, (loading) => { authLoading = loading; });
+  assert(listenerUser === redirectedUser && !authLoading, 'Firebase auth-state events update the user and release auth loading');
 
   assert(firebaseAuthErrorCode({ code: 'auth/unauthorized-domain', message: 'private error text' }) === 'auth/unauthorized-domain', 'Auth diagnostics expose only the Firebase error code');
   assert(firebaseAuthErrorMessage({ code: 'auth/unauthorized-domain' }).includes('add the production domain'), 'Unauthorized domains get an actionable message');

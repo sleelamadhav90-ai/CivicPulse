@@ -14,7 +14,7 @@ import {
   Auth,
   UserCredential,
 } from 'firebase/auth';
-import { createRedirectResultReader, startGoogleRedirectFlow } from './firebaseAuthFlow.js';
+import { createRedirectResultReader, resolveFirebaseAuthDomain, startGoogleRedirectFlow } from './firebaseAuthFlow.js';
 /**
  * Firebase Client Configuration
  * Uses Vite client environment variables (VITE_FIREBASE_*).
@@ -24,7 +24,11 @@ const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || '',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || (env.VITE_FIREBASE_PROJECT_ID ? `${env.VITE_FIREBASE_PROJECT_ID}.firebaseapp.com` : ''),
+  authDomain: resolveFirebaseAuthDomain(
+    env.VITE_FIREBASE_AUTH_DOMAIN,
+    env.VITE_FIREBASE_PROJECT_ID,
+    typeof window !== 'undefined' ? window.location.hostname : undefined
+  ),
   projectId: env.VITE_FIREBASE_PROJECT_ID || '',
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
   messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',

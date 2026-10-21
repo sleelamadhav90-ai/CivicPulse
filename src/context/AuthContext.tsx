@@ -8,7 +8,7 @@ import {
   getGoogleRedirectResult,
   isFirebaseConfigured 
 } from '../services/firebase.js';
-import { firebaseAuthErrorCode, firebaseAuthErrorMessage } from '../services/firebaseAuthFlow.js';
+import { applyFirebaseAuthState, consumeGoogleRedirectResult, firebaseAuthErrorCode, firebaseAuthErrorMessage } from '../services/firebaseAuthFlow.js';
 
 interface AuthContextType {
   user: User | null;
@@ -47,8 +47,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const unsubscribe = onAuthChange(
       (firebaseUser) => {
         if (!active) return;
-        setUser(firebaseUser);
-        setLoading(false);
+        applyFirebaseAuthState(firebaseUser, setUser, setLoading);
       },
       (authError) => {
         if (!active) return;
@@ -58,15 +57,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     );
 
-    void getGoogleRedirectResult()
-      .then((credential) => {
-        if (active && credential?.user) setUser(credential.user);
-      })
-      .catch((authError: unknown) => {
+    void consumeGoogleRedirectResult(
+      getGoogleRedirectResult,
+      (firebaseUser) => {
+        if (active) setUser(firebaseUser);
+      },
+      (authError) => {
         if (!active) return;
         console.warn('[CivicPulse Auth Error]', firebaseAuthErrorCode(authError) || 'unknown');
         setError(firebaseAuthErrorMessage(authError));
-      })
+      }
+    )
       .finally(() => {
         if (active) setLoading(false);
       });

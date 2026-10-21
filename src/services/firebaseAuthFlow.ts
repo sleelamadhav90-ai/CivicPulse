@@ -2,6 +2,16 @@ type FirebaseAuthErrorLike = { code?: unknown };
 
 export const SIGN_IN_REDIRECT_TIMEOUT_MESSAGE = 'Google sign-in did not redirect. Please try again. If this continues, check the Firebase and Vercel sign-in settings.';
 
+export function resolveFirebaseAuthDomain(
+  configuredDomain: string | undefined,
+  projectId: string | undefined,
+  appHostname?: string
+): string {
+  const hostname = appHostname?.toLowerCase();
+  if (hostname?.endsWith('.vercel.app')) return hostname;
+  return configuredDomain || (projectId ? `${projectId}.firebaseapp.com` : '');
+}
+
 export function firebaseAuthErrorCode(error: unknown): string | null {
   if (!error || typeof error !== 'object') return null;
   const code = (error as FirebaseAuthErrorLike).code;
@@ -56,6 +66,28 @@ export function createRedirectResultReader<Auth, Result>(
     resultPromise ??= getRedirectResult(auth);
     return resultPromise;
   };
+}
+
+export async function consumeGoogleRedirectResult<User, Result extends { user?: User }>(
+  readResult: () => Promise<Result | null>,
+  onAuthenticated: (user: User) => void,
+  onError: (error: unknown) => void
+): Promise<void> {
+  try {
+    const result = await readResult();
+    if (result?.user) onAuthenticated(result.user);
+  } catch (error) {
+    onError(error);
+  }
+}
+
+export function applyFirebaseAuthState<User>(
+  user: User | null,
+  setUser: (user: User | null) => void,
+  setLoading: (loading: boolean) => void
+): void {
+  setUser(user);
+  setLoading(false);
 }
 
 /**
