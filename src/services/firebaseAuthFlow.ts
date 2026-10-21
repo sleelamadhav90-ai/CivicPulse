@@ -4,12 +4,20 @@ export const SIGN_IN_REDIRECT_TIMEOUT_MESSAGE = 'Google sign-in did not redirect
 
 export function resolveFirebaseAuthDomain(
   configuredDomain: string | undefined,
-  projectId: string | undefined,
-  appHostname?: string
+  projectId: string | undefined
 ): string {
+  return configuredDomain?.trim() || (projectId ? `${projectId}.firebaseapp.com` : '');
+}
+
+/**
+ * Vercel deployments use a same-origin /__/auth proxy. Only a stable alias
+ * configured as authDomain can use that proxy reliably; deployment-specific
+ * hostnames must not silently become Firebase auth domains.
+ */
+export function firebaseAuthDomainMismatch(authDomain: string, appHostname?: string): boolean {
   const hostname = appHostname?.toLowerCase();
-  if (hostname?.endsWith('.vercel.app')) return hostname;
-  return configuredDomain || (projectId ? `${projectId}.firebaseapp.com` : '');
+  if (!hostname || hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1') return false;
+  return authDomain.toLowerCase() !== hostname;
 }
 
 export function firebaseAuthErrorCode(error: unknown): string | null {
@@ -23,7 +31,9 @@ export function firebaseAuthErrorMessage(error: unknown): string {
     case 'auth/popup-blocked':
       return 'Google sign-in was blocked before it started. Refresh CivicPulse and try again. If this continues, the deployed page may still be using an older sign-in build.';
     case 'auth/unauthorized-domain':
-      return 'Google sign-in is not enabled for this CivicPulse domain. The site administrator needs to add the production domain in Firebase Authentication settings.';
+      return 'Google sign-in is not enabled for this CivicPulse domain. The site administrator needs to add the stable site domain in Firebase Authentication settings.';
+    case 'auth/auth-domain-mismatch':
+      return 'Google sign-in is not configured for this deployment URL. Open CivicPulse using its stable Vercel Preview or Production domain.';
     case 'auth/operation-not-allowed':
       return 'Google sign-in is not enabled for this Firebase project.';
     case 'auth/web-storage-unsupported':

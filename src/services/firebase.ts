@@ -14,7 +14,7 @@ import {
   Auth,
   UserCredential,
 } from 'firebase/auth';
-import { createRedirectResultReader, resolveFirebaseAuthDomain, startGoogleRedirectFlow } from './firebaseAuthFlow.js';
+import { createRedirectResultReader, firebaseAuthDomainMismatch, resolveFirebaseAuthDomain, startGoogleRedirectFlow } from './firebaseAuthFlow.js';
 /**
  * Firebase Client Configuration
  * Uses Vite client environment variables (VITE_FIREBASE_*).
@@ -26,8 +26,7 @@ const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || '',
   authDomain: resolveFirebaseAuthDomain(
     env.VITE_FIREBASE_AUTH_DOMAIN,
-    env.VITE_FIREBASE_PROJECT_ID,
-    typeof window !== 'undefined' ? window.location.hostname : undefined
+    env.VITE_FIREBASE_PROJECT_ID
   ),
   projectId: env.VITE_FIREBASE_PROJECT_ID || '',
   storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
@@ -76,6 +75,12 @@ export function getGoogleRedirectResult(): Promise<UserCredential | null> {
 export async function signInWithGoogle(): Promise<void> {
   if (!auth) {
     throw new Error('FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.');
+  }
+
+  if (typeof window !== 'undefined' && firebaseAuthDomainMismatch(firebaseConfig.authDomain, window.location.hostname)) {
+    throw Object.assign(new Error('Firebase authDomain must match the stable site hostname.'), {
+      code: 'auth/auth-domain-mismatch',
+    });
   }
 
   await startGoogleRedirectFlow(
