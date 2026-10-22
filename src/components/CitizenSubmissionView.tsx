@@ -607,7 +607,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       try {
         setIsSigningIn(true);
         await signInWithGoogle();
-        setIsSigningIn(false);
+        // Google redirect sign-in navigates away and restores auth on return.
+        // Do not continue submission until the user returns authenticated.
+        return;
       } catch (err: any) {
         setIsSigningIn(false);
         setAuthError(err?.message || 'Please sign in with Google to authenticate your submission.');
@@ -718,6 +720,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     setIsSubmitting(true);
     try {
       const idToken = await getIdToken();
+      if (isFirebaseConfigured && !idToken) {
+        throw new Error('Your Google sign-in is still being verified. Please wait a moment and try again.');
+      }
       const savedRequest = await submitCitizenRequest(newRequest, idToken);
 
       // Update local dashboard state and show the receipt only after the server
