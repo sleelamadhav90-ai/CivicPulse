@@ -13,7 +13,8 @@ import {
   Search,
   CheckCircle2,
   LogIn,
-  LogOut
+  LogOut,
+  AlertTriangle
 } from 'lucide-react';
 import { CountryCode } from '../types';
 import { NavTab } from './Sidebar';
@@ -49,7 +50,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
   const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
-  const { user, isFirebaseConfigured, signInWithGoogle, signOut } = useAuth();
+  const { user, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = useAuth();
 
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
@@ -316,6 +317,36 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </button>
         </div>
       </div>
+
+      {/* AUTHENTICATION ERROR OVERLAY */}
+      {authError && (
+        <div className="bg-red-600 text-white text-[10px] sm:text-xs py-1.5 px-3 flex items-center justify-between animate-in slide-in-from-top duration-300">
+          <div className="flex items-center gap-2 overflow-hidden">
+            <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+            <span className="font-sans font-medium truncate text-white">
+              {authError}
+            </span>
+            {authError.includes('Domain Unauthorized') && (
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(window.location.hostname);
+                  alert(`Copied to clipboard: ${window.location.hostname}`);
+                }}
+                className="ml-2 px-1.5 py-0.5 bg-white/20 hover:bg-white/30 rounded-xs font-mono text-[9px] uppercase font-bold shrink-0 text-white border border-white/40"
+              >
+                Copy Domain
+              </button>
+            )}
+          </div>
+          <button 
+            onClick={clearAuthError}
+            className="ml-4 p-1 hover:bg-white/10 rounded-full shrink-0 text-white"
+            aria-label="Clear error"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {/* SCALABILITY BY DESIGN MODAL */}
       {scalabilityModalOpen && (

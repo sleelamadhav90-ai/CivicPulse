@@ -77,8 +77,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await firebaseSignIn();
     } catch (err: any) {
-      const msg = err?.message || 'Authentication failed';
-      console.warn('[CivicPulse Auth Error]:', msg);
+      let msg = err?.message || 'Authentication failed';
+      const code = err?.code || '';
+
+      if (code === 'auth/unauthorized-domain') {
+        msg = `Domain Unauthorized: Please add "${window.location.hostname}" to your Firebase Console → Authentication → Settings → Authorized domains.`;
+      } else if (code === 'auth/popup-closed-by-user') {
+        msg = 'Sign-in window closed before completion.';
+      } else if (code === 'auth/popup-blocked') {
+        msg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+      }
+
+      console.warn('[CivicPulse Auth Error]:', code, msg);
       setError(msg);
       throw err;
     }

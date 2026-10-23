@@ -1547,8 +1547,22 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                   Authentication helps CivicPulse associate submissions with an authenticated account and reduce anonymous abuse. Your authentication identity is used for submission ownership; CivicPulse does not require government ID verification.
                 </p>
                 {authError && (
-                  <div className="text-[11px] font-mono font-bold text-red-700 bg-red-50 p-2 border border-red-300">
-                    ⚠️ {authError}
+                  <div className="text-[11px] font-mono font-bold text-red-700 bg-red-50 p-2 border border-red-300 flex flex-col gap-2">
+                    <div className="flex items-center gap-2">
+                      <AlertTriangle className="w-3.5 h-3.5" />
+                      <span>{authError}</span>
+                    </div>
+                    {authError.includes('Domain Unauthorized') && (
+                      <button 
+                        onClick={() => {
+                          navigator.clipboard.writeText(window.location.hostname);
+                          alert(`Copied: ${window.location.hostname}`);
+                        }}
+                        className="self-start px-2 py-1 bg-red-100 hover:bg-red-200 text-red-800 border border-red-300 rounded-xs text-[10px] uppercase font-bold transition-colors cursor-pointer"
+                      >
+                        Copy Current Domain for Whitelisting
+                      </button>
+                    )}
                   </div>
                 )}
               </div>

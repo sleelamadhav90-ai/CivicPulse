@@ -20,12 +20,12 @@ import {
 const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
-  apiKey: env.VITE_FIREBASE_API_KEY || '',
-  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || '',
-  projectId: env.VITE_FIREBASE_PROJECT_ID || '',
-  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || '',
-  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '',
-  appId: env.VITE_FIREBASE_APP_ID || '',
+  apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyD3s6Gl7Js5kA5cA_N3cYGqmDwp1Ld25bk',
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || 'civicpulse-13c03.firebaseapp.com',
+  projectId: env.VITE_FIREBASE_PROJECT_ID || 'civicpulse-13c03',
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || 'civicpulse-13c03.firebasestorage.app',
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || '352885978716',
+  appId: env.VITE_FIREBASE_APP_ID || '1:352885978716:web:7a6d575fe3a2b356889899',
 };
 
 export const isFirebaseConfigured = Boolean(
