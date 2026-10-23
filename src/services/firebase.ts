@@ -1,13 +1,16 @@
 /// <reference types="vite/client" />
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { 
-  getAuth, 
-  signInWithRedirect, 
-  GoogleAuthProvider, 
-  signOut, 
-  onAuthStateChanged, 
-  User, 
-  Auth 
+import {
+  getAuth,
+  signInWithRedirect,
+  GoogleAuthProvider,
+  signOut,
+  onAuthStateChanged,
+  browserLocalPersistence,
+  setPersistence,
+  getRedirectResult,
+  User,
+  Auth
 } from 'firebase/auth';
 /**
  * Firebase Client Configuration
@@ -54,13 +57,31 @@ export { auth };
  */
 export async function signInWithGoogle(): Promise<void> {
   if (!auth) {
-    throw new Error('FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.');
+    throw new Error(
+      'FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.'
+    );
   }
 
+  await setPersistence(auth, browserLocalPersistence);
   await signInWithRedirect(auth, googleProvider);
-  
 }
+/**
+ * Process a pending Google sign-in redirect.
+ */
+export async function processGoogleRedirect(): Promise<void> {
+  if (!auth) return;
 
+  try {
+    await setPersistence(auth, browserLocalPersistence);
+    await getRedirectResult(auth);
+  } catch (err) {
+    console.error(
+      '[CivicPulse] Google redirect processing failed:',
+      err
+    );
+    throw err;
+  }
+}
 /**
  * Sign out current authenticated user.
  */
