@@ -1,10 +1,10 @@
-/// <reference types="vite/client" />
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import {
-  getAuth,
+import { 
+  getAuth, 
+  signInWithPopup,
   signInWithRedirect,
-  GoogleAuthProvider,
-  signOut,
+  GoogleAuthProvider, 
+  signOut, 
   onAuthStateChanged,
   browserLocalPersistence,
   setPersistence,
@@ -12,12 +12,8 @@ import {
   User,
   Auth
 } from 'firebase/auth';
-/**
- * Firebase Client Configuration
- * Uses Vite client environment variables (VITE_FIREBASE_*).
- * Strictly avoids hardcoded credentials.
- */
-const env = (import.meta as any).env || {};
+
+const env = import.meta.env || {};
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyD3s6Gl7Js5kA5cA_N3cYGqmDwp1Ld25bk',
@@ -44,63 +40,67 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
+    // Ensure persistence is set immediately
+    void setPersistence(auth, browserLocalPersistence);
   } catch (err) {
-    console.warn('[CivicPulse Firebase] Client initialization failed:', err);
+    console.warn('[CivicPulse Firebase] Initialization notice:', err);
   }
 }
 
 export { auth };
 
 /**
- * Sign in with Google using redirect.
- * Firebase's auth state listener detects the signed-in user after redirect.
+ * Sign in with Google.
+ * Uses Popup by default for smoother UX on Vercel/Desktop.
+ * Falls back to Redirect only if explicitly required or if popup is blocked (handled in UI).
  */
-export async function signInWithGoogle(): Promise<void> {
+export async function signInWithGoogle(): Promise<User | null> {
   if (!auth) {
-    throw new Error(
-      'FIREBASE_NOT_CONFIGURED: Firebase Authentication is not configured with client credentials.'
-    );
+    throw new Error('FIREBASE_NOT_CONFIGURED: Missing client credentials.');
   }
 
-  await setPersistence(auth, browserLocalPersistence);
-  await signInWithRedirect(auth, googleProvider);
-}
-/**
- * Process a pending Google sign-in redirect.
- */
-export async function processGoogleRedirect(): Promise<void> {
-  if (!auth) return;
-
+  console.log('[CivicPulse Auth] Initiating Google Sign-In...');
   try {
     await setPersistence(auth, browserLocalPersistence);
-    await getRedirectResult(auth);
-  } catch (err) {
-    console.error(
-      '[CivicPulse] Google redirect processing failed:',
-      err
-    );
+    const result = await signInWithPopup(auth, googleProvider);
+    console.log('[CivicPulse Auth] Sign-in successful:', result.user.email);
+    return result.user;
+  } catch (err: any) {
+    console.error('[CivicPulse Auth] Sign-in failed:', err.code, err.message);
     throw err;
   }
 }
+
 /**
- * Sign out current authenticated user.
+ * Process a pending Google sign-in redirect result.
  */
+export async function processGoogleRedirect(): Promise<User | null> {
+  if (!auth) return null;
+
+  try {
+    const result = await getRedirectResult(auth);
+    if (result) {
+      console.log('[CivicPulse Auth] Redirect result processed:', result.user.email);
+      return result.user;
+    }
+    return null;
+  } catch (err: any) {
+    console.error('[CivicPulse Auth] Redirect processing failed:', err.code, err.message);
+    throw err;
+  }
+}
+
 export async function signOutUser(): Promise<void> {
   if (!auth) return;
+  console.log('[CivicPulse Auth] Signing out...');
   await signOut(auth);
 }
 
-/**
- * Retrieves the current Firebase ID token (force refresh if needed).
- */
 export async function getCurrentIdToken(forceRefresh = false): Promise<string | null> {
   if (!auth || !auth.currentUser) return null;
   return auth.currentUser.getIdToken(forceRefresh);
 }
 
-/**
- * Subscribe to authentication state changes.
- */
 export function onAuthChange(callback: (user: User | null) => void): () => void {
   if (!auth) {
     callback(null);

@@ -50,7 +50,7 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
   const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
-  const { user, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = useAuth();
+  const { user, loading, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = useAuth();
 
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
@@ -159,7 +159,12 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           </div>
 
           {/* AUTHENTICATION STATUS / ACTION */}
-          {user ? (
+          {loading ? (
+            <div className="flex items-center gap-1.5 px-3 py-1 text-slate-400 text-[10px] font-mono animate-pulse">
+              <div className="w-2 h-2 rounded-full bg-slate-500 animate-bounce" />
+              Checking...
+            </div>
+          ) : user ? (
             <>
               {/* Desktop view (md and up): expanded clean badge */}
               <div className="hidden md:flex items-center gap-1.5 bg-[#285943]/60 border border-emerald-500/50 text-emerald-200 px-2.5 py-1 rounded-xs text-[11px] shrink-0">

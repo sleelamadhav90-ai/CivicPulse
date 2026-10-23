@@ -7,7 +7,7 @@ import {
   onAuthChange,
   isFirebaseConfigured,
   processGoogleRedirect
-} from '../services/firebase.js';
+} from '../services/firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -36,44 +36,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
- useEffect(() => {
-  if (!isFirebaseConfigured) {
-    setLoading(false);
-    return;
-  }
+  useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setLoading(false);
+      return;
+    }
 
-  let active = true;
+    let isMounted = true;
+    let authListenerFired = false;
+    let redirectCheckComplete = false;
 
-  const unsubscribe = onAuthChange((firebaseUser) => {
-    if (!active) return;
+    // Conclude loading only after both Firebase initialization signals are received
+    const finalizeInit = () => {
+      if (isMounted && authListenerFired && redirectCheckComplete) {
+        setLoading(false);
+        console.log('[CivicPulse Auth] Initialization complete.');
+      }
+    };
 
-    setUser(firebaseUser);
-    setLoading(false);
-  });
+    const unsubscribe = onAuthChange((firebaseUser) => {
+      if (!isMounted) return;
+      console.log('[CivicPulse Auth] State detected:', firebaseUser?.email || 'Anonymous');
+      setUser(firebaseUser);
+      authListenerFired = true;
+      finalizeInit();
+    });
 
-  void processGoogleRedirect().catch((err) => {
-    if (!active) return;
+    // Check for redirect result (standard Firebase initialization step)
+    void (async () => {
+      try {
+        await processGoogleRedirect();
+      } catch (err: any) {
+        if (isMounted) {
+          console.error('[CivicPulse Auth] Redirect processing failed:', err);
+          setError(err?.message || 'Authentication redirect failed');
+        }
+      } finally {
+        if (isMounted) {
+          redirectCheckComplete = true;
+          finalizeInit();
+        }
+      }
+    })();
 
-    console.error(
-      '[CivicPulse] Redirect recovery failed:',
-      err
-    );
-
-    setError(
-      err instanceof Error
-        ? err.message
-        : 'Google redirect recovery failed'
-    );
-  });
-
-  return () => {
-    active = false;
-    unsubscribe();
-  };
-}, []);
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
+  }, []);
 
   const handleSignIn = async () => {
     setError(null);
+    console.log('[CivicPulse Auth] Sign-in requested');
     try {
       await firebaseSignIn();
     } catch (err: any) {
@@ -85,7 +99,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (code === 'auth/popup-closed-by-user') {
         msg = 'Sign-in window closed before completion.';
       } else if (code === 'auth/popup-blocked') {
-        msg = 'Sign-in popup was blocked by your browser. Please allow popups for this site.';
+        msg = 'The sign-in popup was blocked by your browser. Please allow popups and try again.';
+      } else if (code === 'auth/operation-not-allowed') {
+        msg = 'Google Sign-In is not enabled in the Firebase Console.';
       }
 
       console.warn('[CivicPulse Auth Error]:', code, msg);
