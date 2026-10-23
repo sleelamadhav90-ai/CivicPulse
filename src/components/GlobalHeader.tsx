@@ -50,7 +50,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   const [accountMenuOpen, setAccountMenuOpen] = useState(false);
   const [scalabilityModalOpen, setScalabilityModalOpen] = useState(false);
   const { language, setLanguage, supportedLanguages, currentLanguageConfig, t } = useLanguage();
-  const { user, loading, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = useAuth();
+  const auth = useAuth();
+  const { user, isFirebaseConfigured, signInWithGoogle, signOut, error: authError, clearError: clearAuthError } = auth;
+  // Defensive check for loading state to prevent ReferenceErrors if hook returns partially
+  const loading = auth?.loading ?? true;
 
   const mainNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },

@@ -315,6 +315,9 @@ export interface CitizenRequest {
   affected_infrastructure?: string;
   estimated_impact?: 'Low' | 'Medium' | 'High' | 'Critical';
   recommended_action?: string;
+  illustration_url?: string;
+  is_ai_generated?: boolean;
+  is_demo_photo?: boolean;
   ai_analysis?: AIAnalysisResult;
 }
 

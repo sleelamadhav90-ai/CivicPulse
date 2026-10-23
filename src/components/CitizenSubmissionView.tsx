@@ -55,46 +55,47 @@ interface AIUnderstandingResult {
   recommended_action?: string;
 }
 
+// 100% Local Reliable SVG Baselines for 0-Cost Demo
 export const DEMO_SAMPLE_PHOTOS: Record<string, { url: string; name: string; label: string }> = {
   Water: {
-    url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f7?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_water_pipeline_fracture.jpg',
-    label: 'Water Pipeline & Supply Infrastructure (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTQwMCAyMDBjLTUwIDAtOTAgNDAtOTAgOTBzNDAgOTAgOTAgOTAgOTAtNDAgOTAtOTAtNDAtOTAtOTAtOTB6bTAgMTUwbC0zMC0zMGg2MGwtMzAgMzB6IiBmaWxsPSIjREU1QTM0Ii8+PHRleHQgeD0iNDAwIiB5PSI0NTAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMTcxNzE3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5XQVRFUiBJTlZFU1RJR0FUSU9OIFJFRkVSRU5DRTwvdGV4dD48L3N2Zz4=',
+    name: 'ref_water_baseline.svg',
+    label: 'Water Infrastructure Baseline (Local Reference)',
   },
   Roads: {
-    url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_pothole_asphalt_damage.jpg',
-    label: 'Road Surface & Pavement Damage (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTIwMCAzMDBoNDAwTTIwMCAyMDBoNDAwTTIwMCA0MDBoNDAwIiBzdHJva2U9IiMxNzE3MTciIHN0cm9rZS13aWR0aD0iMiIvPjxjaXJjbGUgY3g9IjQwMCIgY3k9IjMwMCIgcj0iNDAiIGZpbGw9IiNERTVBMzQiLz48dGV4dCB4PSI0MDAiIHk9IjQ1MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMxNzE3MTciIHRleHQtYW5jaG9yPSJtaWRkbGUiPlJPQUQgSEFaQVJEIFJFRkVSRU5DRTwvdGV4dD48L3N2Zz4=',
+    name: 'ref_road_baseline.svg',
+    label: 'Road Infrastructure Baseline (Local Reference)',
   },
   Health: {
-    url: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_rural_health_clinic.jpg',
-    label: 'Public Health Facility & Clinic (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTM1MCAyMDBoMTAwdjEwMGgxMDB2MTAwaC0xMDB2MTAwaC0xMDB2LTEwMGgtMTAwdi0xMDBoMTAwek"BmaWxsPSIjREU1QTM0Ii8+PHRleHQgeD0iNDAwIiB5PSI0NTAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMTcxNzE3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5IRUFMVEhDQVJFIElOVkVTVElHQVRJT04gUkVGRVJFTkNlPC90ZXh0Pjwvc3ZnPg==',
+    name: 'ref_health_baseline.svg',
+    label: 'Healthcare Facility Baseline (Local Reference)',
   },
   Electricity: {
-    url: 'https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_power_line_grid_fault.jpg',
-    label: 'Power Distribution & Lighting Grid (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTQwMCAxMDBsLTEwMCAyMDBoMjAwbC0xMDAgMjAweiIgZmlsbD0iI0RFNUEzNCIvPjx0ZXh0IHg9IjQwMCIgeT0iNDUwIiBmb250LWZhbWlseT0ic2Fucy1zZXJpZiIgZm9udC1zaXplPSIyNCIgZmlsbD0iIzE3MTcxNyIgdGV4dC1hbmNob3I9Im1pZGRsZSI+UE9XRVIgR1JJRCBSRUZFUkVOQ0U8L3RleHQ+PC9zdmc+',
+    name: 'ref_power_baseline.svg',
+    label: 'Power Grid Infrastructure Baseline (Local Reference)',
   },
   Drainage: {
-    url: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_drainage_overflow_conduit.jpg',
-    label: 'Stormwater Conduit & Drainage Canal (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTEwMCAzMDBzNTAgNTAgMTAwIDBzNTAgLTUwIDEwMCAwczUwIDUwIDEwMCAwczUwIDUwIDEwMCAwczUwIC01MCAxMDAgMHM1MCA1MCAxMDAgMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjREU1QTM0IiBzdHJva2Utd2lkdGg9IjgiLz48dGV4dCB4PSI0MDAiIHk9IjQ1MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMxNzE3MTciIHRleHQtYW5jaG9yPSJtaWRkbGUiPkRSQUlOQUdFIElOVkVTVElHQVRJT04gUkVGRVJFTkNlPC90ZXh0Pjwvc3ZnPg==',
+    name: 'ref_drainage_baseline.svg',
+    label: 'Drainage Conduit Baseline (Local Reference)',
   },
   Sanitation: {
-    url: 'https://images.unsplash.com/photo-1605600659908-0ef719419d41?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_solid_waste_accumulation.jpg',
-    label: 'Municipal Solid Waste & Cleanliness (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTMwMCAyMDBoMjAwdiAzMDBoLTIwMHoiIGZpbGw9IiNERTVBMzQiLz48cGF0aCBkPSJNMjgwIDE4MGgyNDB2MjBoLTI0MHoiIGZpbGw9IiMxNzE3MTciLz48dGV4dCB4PSI0MDAiIHk9IjQ1MCIgZm9udC1mYW1pbHk9InNhbnMtc2VyaWYiIGZvbnQtc2l6ZT0iMjQiIGZpbGw9IiMxNzE3MTciIHRleHQtYW5jaG9yPSJtaWRkbGUiPlNBTklUQVRJT04gSU5WRVNUSUdBVElPTiBSRUZFUkVOQ0U8L3RleHQ+PC9zdmc+',
+    name: 'ref_waste_baseline.svg',
+    label: 'Waste Management Baseline (Local Reference)',
   },
   Education: {
-    url: 'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_school_building_facility.jpg',
-    label: 'Public School Building & Classroom (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHBhdGggZD0iTTQwMCAxNTBMMjAwIDMwMGgyMDB2MTVIMjAwTDIwMCA0NTBoNDAwTDIwMCAzMDB6IiBmaWxsPSIjREU1QTM0Ii8+PHRleHQgeD0iNDAwIiB5PSI0NTAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMTcxNzE3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5FRFVDQVRJT04gRkFDSUxJVFkgUkVGRVJFTkNlPC90ZXh0Pjwvc3ZnPg==',
+    name: 'ref_school_baseline.svg',
+    label: 'Education Facility Baseline (Local Reference)',
   },
   General: {
-    url: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
-    name: 'demo_civic_infrastructure_damage.jpg',
-    label: 'Civic Infrastructure Asset (Demo Sample)',
+    url: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iODAwIiBoZWlnaHQ9IjYwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjRjBGOEY5Ii8+PHJlY3QgeD0iMzAwIiB5PSIyMDAiIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIiBmaWxsPSIjREU1QTM0Ii8+PHRleHQgeD0iNDAwIiB5PSI0NTAiIGZvbnQtZmFtaWx5PSJzYW5zLXNlcmlmIiBmb250LXNpemU9IjI0IiBmaWxsPSIjMTcxNzE3IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj5DSVZJQyBJTlZFU1RJR0FUSU9OIFJFRkVSRU5DRTwvdGV4dD48L3N2Zz4=',
+    name: 'ref_civic_baseline.svg',
+    label: 'Civic Infrastructure Baseline (Local Reference)',
   }
 };
 
@@ -153,6 +154,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
   // AI Extraction Result State
   const [aiResult, setAiResult] = useState<AIUnderstandingResult | null>(null);
+  const [isGeneratingIllustration, setIsGeneratingIllustration] = useState<boolean>(false);
+  const [illustrationUrl, setIllustrationUrl] = useState<string | null>(null);
+  const [illustrationError, setIllustrationError] = useState<string | null>(null);
   const [isEditingAiResult, setIsEditingAiResult] = useState<boolean>(false);
   const [editedSummary, setEditedSummary] = useState<string>('');
   const [editedCategory, setEditedCategory] = useState<InfrastructureCategory>('Water');
@@ -262,9 +266,17 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       const reader = new FileReader();
       reader.onloadend = () => {
         setAttachedPhoto(reader.result as string);
+        setIllustrationUrl(null); // Clear AI illustration if user provides photo
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const handleClearPhoto = () => {
+    setAttachedPhoto(null);
+    setPhotoName(null);
+    setIsDemoPhoto(false);
+    setIllustrationUrl(null);
   };
 
   // Select sample photo with category-specific selection
@@ -518,6 +530,35 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         setEditedLocation(result.location);
         setEditedSeverity(result.severity);
         setStage('review');
+
+        // Trigger AI Illustration generation if no photo was attached
+        if (!attachedPhoto) {
+          setIsGeneratingIllustration(true);
+          setIllustrationError(null);
+          try {
+            const illuRes = await fetch('/api/generate-issue-illustration', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                summary: result.issue_summary,
+                category: result.category,
+                location: result.location
+              }),
+            });
+            const illuData = await illuRes.json();
+            if (illuData.success && illuData.imageUrl) {
+              setIllustrationUrl(illuData.imageUrl);
+            } else {
+              setIllustrationError(illuData.error || 'AI Generation unavailable');
+              console.warn('AI Illustration generation error:', illuData.error);
+            }
+          } catch (err: any) {
+            setIllustrationError('Connection error during AI generation');
+            console.warn('AI Illustration generation failed:', err);
+          } finally {
+            setIsGeneratingIllustration(false);
+          }
+        }
       } else {
         throw new Error('Could not process with AI');
       }
@@ -592,6 +633,34 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       setEditedLocation(fallbackResult.location);
       setEditedSeverity(fallbackResult.severity);
       setStage('review');
+    }
+  };
+
+  // Retry AI Illustration generation manually
+  const handleRetryIllustration = async () => {
+    if (!aiResult) return;
+    setIsGeneratingIllustration(true);
+    setIllustrationError(null);
+    try {
+      const illuRes = await fetch('/api/generate-issue-illustration', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          summary: editedSummary || aiResult.issue_summary,
+          category: editedCategory || aiResult.category,
+          location: editedLocation || aiResult.location
+        }),
+      });
+      const illuData = await illuRes.json();
+      if (illuData.success && illuData.imageUrl) {
+        setIllustrationUrl(illuData.imageUrl);
+      } else {
+        setIllustrationError(illuData.error || 'AI Generation unavailable');
+      }
+    } catch (err: any) {
+      setIllustrationError('Connection error during AI generation');
+    } finally {
+      setIsGeneratingIllustration(false);
     }
   };
 
@@ -677,6 +746,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       source_origin: 'CIVICPULSE_USER',
       status: 'Received' as RequestStatus,
       photo_url: attachedPhoto || undefined,
+      illustration_url: illustrationUrl || undefined,
+      is_ai_generated: !!illustrationUrl && !attachedPhoto,
+      is_demo_photo: isDemoPhoto,
       timeline: [
         {
           date: todayStr,
@@ -753,6 +825,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     setAudioBase64(null);
     setAttachedPhoto(null);
     setPhotoName(null);
+    setIllustrationUrl(null);
     setAiResult(null);
     setIsEditingAiResult(false);
     setSubmittedReceipt(null);
@@ -1208,7 +1281,14 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             {attachedPhoto && (
               <div className="flex items-center justify-between p-3 bg-[#F7F5EF] border border-[#171717] gap-3">
                 <div className="flex items-center space-x-3 min-w-0">
-                  <img src={attachedPhoto} alt="Evidence" className="w-14 h-14 object-cover border border-[#171717] shrink-0" />
+                  <div className="relative">
+                    <img src={attachedPhoto} alt="Evidence" className="w-14 h-14 object-cover border border-[#171717] shrink-0" />
+                    {isDemoPhoto && (
+                      <div className="absolute -top-1 -right-1 bg-amber-500 text-white rounded-full p-0.5 shadow-sm border border-white">
+                        <Info className="w-2.5 h-2.5" />
+                      </div>
+                    )}
+                  </div>
                   <div className="min-w-0 space-y-0.5">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase tracking-wider ${
@@ -1216,23 +1296,23 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                           ? 'bg-amber-100 text-amber-900 border-amber-300'
                           : 'bg-emerald-100 text-emerald-900 border-emerald-300'
                       }`}>
-                        {isDemoPhoto ? '🧪 Demo Sample Image (Synthetic)' : '📷 Authentic Citizen Photo Upload'}
+                        {isDemoPhoto ? '🧪 Demo Reference (Synthetic)' : '📷 Authentic Device Upload'}
                       </span>
                     </div>
                     <span className="text-xs font-mono text-[#171717] font-bold truncate block max-w-xs sm:max-w-md">
-                      {photoName || (isDemoPhoto ? 'demo_sample_evidence.jpg' : 'citizen_photo_evidence.jpg')}
+                      {photoName || (isDemoPhoto ? 'reference_baseline.svg' : 'citizen_evidence.jpg')}
                     </span>
+                    {isDemoPhoto && (
+                      <p className="text-[9px] text-amber-700 italic leading-none">“Illustrative image — not actual evidence.”</p>
+                    )}
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => {
-                    setAttachedPhoto(null);
-                    setPhotoName(null);
-                    setIsDemoPhoto(false);
-                  }}
-                  className="text-xs font-mono text-red-700 hover:underline cursor-pointer shrink-0 font-bold"
+                  onClick={handleClearPhoto}
+                  className="text-xs font-mono text-red-700 hover:underline cursor-pointer shrink-0 font-bold flex items-center gap-1"
                 >
+                  <X className="w-3 h-3" />
                   Remove
                 </button>
               </div>
@@ -1458,40 +1538,92 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
               </div>
             </div>
 
-            {/* Attached Photo Verification Card */}
-            {attachedPhoto && (
+            {/* 4. Visual Evidence Section */}
+            {attachedPhoto || illustrationUrl ? (
               <div className="p-3.5 bg-white border border-[#171717] space-y-2">
                 <div className="flex items-center justify-between">
                   <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
-                    Attached Photographic Evidence
+                    {attachedPhoto ? 'Attached Visual Evidence' : 'Problem Baseline Reference'}
                   </span>
-                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 border rounded-xs uppercase tracking-wider ${
-                    isDemoPhoto
-                      ? 'bg-amber-100 text-amber-900 border-amber-300'
-                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                  }`}>
-                    {isDemoPhoto ? '🧪 Demo Sample Image (Synthetic)' : '📷 Authentic Citizen Photo Evidence'}
-                  </span>
+                  <div className="flex items-center gap-2">
+                    {!attachedPhoto && illustrationUrl && (
+                      <button
+                        type="button"
+                        onClick={handleRetryIllustration}
+                        className="p-1 hover:bg-slate-100 rounded-xs text-[#78716C] hover:text-[#171717] cursor-pointer"
+                        title="Regenerate"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <span className={`text-[10px] font-mono font-bold px-2 py-0.5 border rounded-xs uppercase tracking-wider ${
+                      isDemoPhoto || illustrationUrl
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    }`}>
+                      {isDemoPhoto || illustrationUrl ? '🧪 Illustrative Reference (Synthetic)' : '📷 Authentic Citizen Photo'}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <img 
-                    src={attachedPhoto} 
-                    alt="Evidence Preview" 
-                    className="w-20 h-20 object-cover border border-[#171717] shadow-xs shrink-0" 
-                  />
-                  <div className="text-xs space-y-1">
+                <div className="flex items-start gap-4">
+                  <div className="relative group">
+                    <img 
+                      src={attachedPhoto || illustrationUrl || ''} 
+                      alt="Evidence Preview" 
+                      className="w-24 h-24 sm:w-32 sm:h-24 object-cover border border-[#171717] shadow-xs shrink-0" 
+                      referrerPolicy="no-referrer"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button
+                        onClick={handleClearPhoto}
+                        className="bg-white text-red-600 p-1.5 rounded-full shadow-lg"
+                        title="Remove Visual"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                  <div className="text-xs space-y-1.5 pt-1">
                     <p className="font-bold text-[#171717] font-mono">
-                      {photoName || (isDemoPhoto ? 'demo_sample_evidence.jpg' : 'citizen_photo_evidence.jpg')}
+                      {photoName || (isDemoPhoto || illustrationUrl ? 'baseline_reference.svg' : 'citizen_evidence.jpg')}
                     </p>
-                    <p className="text-[11px] text-slate-600">
-                      {isDemoPhoto 
-                        ? 'Illustrative synthetic reference image attached via prototype demo selector.'
-                        : 'Authentic citizen camera/device photo uploaded directly to CivicPulse.'}
-                    </p>
+                    {(isDemoPhoto || illustrationUrl) ? (
+                      <div className="bg-amber-50 p-2 border border-amber-100 rounded-xs space-y-1 max-w-sm">
+                        <p className="text-[10px] font-bold text-amber-900 leading-none">MANDATORY DISCLOSURE</p>
+                        <p className="text-[11px] text-amber-800 italic leading-snug">“Illustrative image — not actual evidence.”</p>
+                        <p className="text-[9px] text-amber-700 leading-tight">This image is a categorical baseline reference for visual classification only. It is not a photo of the actual incident site.</p>
+                      </div>
+                    ) : (
+                      <p className="text-[11px] text-slate-600 leading-relaxed">
+                        Authentic citizen photo uploaded directly to CivicPulse for official site investigation.
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>
-            )}
+            ) : isGeneratingIllustration ? (
+              <div className="p-6 bg-slate-50 border border-dashed border-[#171717]/30 flex flex-col items-center justify-center gap-3 animate-pulse">
+                <Sparkles className="w-6 h-6 text-[#D65A3A] animate-spin" />
+                <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">
+                  Fetching Problem Baseline...
+                </span>
+              </div>
+            ) : illustrationError ? (
+              <div className="p-4 bg-red-50 border border-red-200 flex flex-col items-center justify-center gap-3">
+                <div className="flex items-center gap-2 text-red-700 font-mono text-xs font-bold">
+                  <AlertTriangle className="w-4 h-4" />
+                  <span>Reference Failed: {illustrationError}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRetryIllustration}
+                  className="px-3 py-1.5 bg-[#171717] text-white text-[10px] font-bold uppercase rounded-xs hover:bg-[#34322D] transition-colors flex items-center gap-1.5 cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Retry Reference Fetch</span>
+                </button>
+              </div>
+            ) : null}
 
             {/* AI Recommended Immediate Intervention */}
             {aiResult.recommended_action && (
@@ -1677,27 +1809,38 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             </div>
 
             {/* Attached Photo in Receipt */}
-            {submittedReceipt.photo_url && (
-              <div className="pt-2 border-t border-[#171717]/10 flex items-center gap-3">
-                <img 
-                  src={submittedReceipt.photo_url} 
-                  alt="Lodged Evidence" 
-                  className="w-14 h-14 object-cover border border-[#171717] shadow-xs shrink-0" 
-                />
-                <div className="text-xs space-y-0.5">
-                  <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase tracking-wider inline-block ${
-                    submittedReceipt.photo_url.startsWith('http')
-                      ? 'bg-amber-100 text-amber-900 border-amber-300'
-                      : 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                  }`}>
-                    {submittedReceipt.photo_url.startsWith('http') 
-                      ? '🧪 Demo Sample Image (Synthetic Reference)'
-                      : '📷 Authentic Citizen Photo Evidence'}
-                  </span>
-                  <p className="text-[11px] font-mono text-slate-600">
-                    Photographic evidence recorded with intake package.
-                  </p>
+            {(submittedReceipt.photo_url || submittedReceipt.illustration_url) && (
+              <div className="pt-3 border-t border-[#171717]/10 space-y-3">
+                <div className="flex items-start gap-4">
+                  <img 
+                    src={submittedReceipt.photo_url || submittedReceipt.illustration_url} 
+                    alt="Lodged Evidence" 
+                    className="w-16 h-16 object-cover border-2 border-[#171717] shadow-xs shrink-0" 
+                  />
+                  <div className="text-xs space-y-1">
+                    <span className={`text-[10px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase tracking-wider inline-block ${
+                      submittedReceipt.is_demo_photo || submittedReceipt.is_ai_generated
+                        ? 'bg-amber-100 text-amber-900 border-amber-300'
+                        : 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                    }`}>
+                      {submittedReceipt.is_demo_photo || submittedReceipt.is_ai_generated 
+                        ? '🧪 Illustrative Reference (Synthetic)'
+                        : '📷 Authentic Citizen Photo Evidence'}
+                    </span>
+                    <p className="text-[11px] font-mono text-slate-600 leading-tight">
+                      Visual evidence package attached to tracking credential.
+                    </p>
+                  </div>
                 </div>
+
+                {(submittedReceipt.is_demo_photo || submittedReceipt.is_ai_generated) && (
+                  <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-xs flex items-start gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <div className="text-[10px] text-amber-800 leading-snug">
+                      <strong>Synthetic Disclosure:</strong> This is an illustrative reference baseline used for internal classification. It is not an actual site photograph.
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

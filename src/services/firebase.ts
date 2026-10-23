@@ -13,7 +13,7 @@ import {
   Auth
 } from 'firebase/auth';
 
-const env = import.meta.env || {};
+const env = (import.meta as any).env || {};
 
 const firebaseConfig = {
   apiKey: env.VITE_FIREBASE_API_KEY || 'AIzaSyD3s6Gl7Js5kA5cA_N3cYGqmDwp1Ld25bk',
@@ -59,14 +59,29 @@ export async function signInWithGoogle(): Promise<User | null> {
     throw new Error('FIREBASE_NOT_CONFIGURED: Missing client credentials.');
   }
 
-  console.log('[CivicPulse Auth] Initiating Google Sign-In...');
+  console.log('[CivicPulse Auth] Initiating Google Sign-In (Popup)...');
   try {
     await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, googleProvider);
-    console.log('[CivicPulse Auth] Sign-in successful:', result.user.email);
+    console.log('[CivicPulse Auth] Popup sign-in successful:', result.user.email);
     return result.user;
   } catch (err: any) {
-    console.error('[CivicPulse Auth] Sign-in failed:', err.code, err.message);
+    const code = err?.code || '';
+    console.warn('[CivicPulse Auth] Popup sign-in failed/blocked:', code, err.message);
+    
+    // If popup is blocked or closed, or we are in a restrictive environment, fallback to redirect
+    if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+      console.log('[CivicPulse Auth] Falling back to Redirect mode...');
+      try {
+        await signInWithRedirect(auth, googleProvider);
+        // Execution stops here as the page redirects
+        return null;
+      } catch (redirectErr: any) {
+        console.error('[CivicPulse Auth] Redirect initiation failed:', redirectErr.code, redirectErr.message);
+        throw redirectErr;
+      }
+    }
+    
     throw err;
   }
 }

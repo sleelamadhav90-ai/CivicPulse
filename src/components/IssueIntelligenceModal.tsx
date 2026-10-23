@@ -301,6 +301,42 @@ export const IssueIntelligenceModal: React.FC<IssueIntelligenceModalProps> = ({
             </div>
           </div>
 
+          {/* SECTION: REPRESENTATIVE VISUAL EVIDENCE */}
+          {(() => {
+            const reqWithImage = requests.find(r => r.photo_url || r.illustration_url);
+            if (!reqWithImage) return null;
+            const isAi = !reqWithImage.photo_url && !!reqWithImage.illustration_url;
+            return (
+              <div className="space-y-2">
+                <h3 className="text-xs font-bold font-mono text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Play className="w-4 h-4 text-emerald-600" />
+                  5. Representative Visual Evidence
+                </h3>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center gap-4">
+                  <img 
+                    src={reqWithImage.photo_url || reqWithImage.illustration_url} 
+                    alt="Evidence" 
+                    className="w-20 h-20 object-cover border border-slate-300 rounded-lg shadow-sm"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="space-y-1">
+                    <span className={`px-2 py-0.5 rounded text-[9px] font-mono font-bold uppercase ${
+                      isAi ? 'bg-purple-100 text-purple-800 border border-purple-200' : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
+                    }`}>
+                      {isAi ? '🤖 AI Illustration' : '📷 Citizen Photo'}
+                    </span>
+                    <p className="text-[11px] text-slate-700 font-medium italic">
+                      "{reqWithImage.summary_en || reqWithImage.original_text.substring(0, 80)}..."
+                    </p>
+                    <p className="text-[9px] text-slate-500 font-mono">
+                      Request ID: {reqWithImage.id} · Locality: {reqWithImage.location}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+
           {/* SECTION 6: RECOMMENDED ACTION & ACTION QUEUE */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1.5">

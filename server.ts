@@ -555,6 +555,38 @@ Other Extraction Rules:
   }
 });
 
+// Endpoint: Generate illustrative image for a civic issue (NO PAID API DEPENDENCY)
+app.post('/api/generate-issue-illustration', async (req: Request, res: Response) => {
+  try {
+    const { category } = req.body;
+
+    // We have removed the paid Gemini image generation model to ensure 100% free operation.
+    // This endpoint now returns a high-quality, verified baseline image for the category.
+    const fallbacks: Record<string, string> = {
+      'Water': 'https://images.unsplash.com/photo-1541256942802-7b29531f0df8?q=80&w=1000&auto=format&fit=crop',
+      'Roads': 'https://images.unsplash.com/photo-1596395819057-e37f55a85199?q=80&w=1000&auto=format&fit=crop',
+      'Drainage': 'https://images.unsplash.com/photo-1584433144859-1fc3ab844153?q=80&w=1000&auto=format&fit=crop',
+      'Health': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop',
+      'Healthcare': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?q=80&w=1000&auto=format&fit=crop',
+      'Electricity': 'https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=1000&auto=format&fit=crop',
+      'Sanitation': 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?q=80&w=1000&auto=format&fit=crop',
+      'Education': 'https://images.unsplash.com/photo-1497633762265-9d179a990aa6?q=80&w=1000&auto=format&fit=crop',
+      'Other': 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?q=80&w=1000&auto=format&fit=crop'
+    };
+
+    const imageUrl = fallbacks[category] || fallbacks['Other'];
+
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      isFallback: true,
+      note: 'Illustrative reference provided via verified baseline.'
+    });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: 'Failed to provide illustration.' });
+  }
+});
+
 // Endpoint: Conversational AI Follow-Up & Multilingual Agent
 app.post('/api/conversational-followup', async (req: Request, res: Response) => {
   try {

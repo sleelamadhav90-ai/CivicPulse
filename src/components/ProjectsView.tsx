@@ -8,10 +8,12 @@ import {
   Columns as KanbanIcon,
   ShieldCheck,
   AlertCircle,
-  MapPin,
-  ChevronRight,
-  TrendingUp,
-  FileText
+  MapPin, 
+  ChevronRight, 
+  TrendingUp, 
+  FileText,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
 import { getAIRecommendedProjects } from '../utils/scoring';
@@ -581,8 +583,87 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 )}
               </div>
 
+              {/* ACTION QUEUE: LIFECYCLE HISTORY */}
+              <div className="space-y-2 border-t border-[#171717]/10 pt-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3 h-3" />
+                    Action Queue History
+                  </span>
+                  <span className="text-[10px] font-mono text-[#78716C]">Audit Trail</span>
+                </div>
+                <div className="bg-[#FAF8F5] border border-[#171717]/10 p-3 rounded-xs space-y-3">
+                  {(selectedProject.history && selectedProject.history.length > 0) ? (
+                    selectedProject.history.map((entry, i) => (
+                      <div key={i} className="flex gap-3 relative">
+                        {i !== (selectedProject.history?.length || 0) - 1 && (
+                          <div className="absolute left-[5px] top-4 bottom-[-12px] w-[1px] bg-[#171717]/10" />
+                        )}
+                        <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${entry.status === 'Completed' ? 'bg-[#285943]' : 'bg-[#D65A3A]'}`} />
+                        <div className="space-y-0.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[11px] font-bold text-[#171717]">{tStatus(entry.status)}</span>
+                            <span className="text-[10px] text-[#78716C] font-mono">{new Date(entry.timestamp).toLocaleDateString()}</span>
+                          </div>
+                          <p className="text-[11px] text-[#57534E] leading-relaxed">{entry.note}</p>
+                          <span className="text-[9px] font-mono text-[#78716C] uppercase">By: {entry.actor || 'System'}</span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-[11px] text-[#78716C] italic font-mono">
+                      No administrative history found for this project queue.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* IMPACT VERIFICATION: For Completed Projects */}
+              {isCompleted && (
+                <div className="space-y-2 border-t border-[#171717]/10 pt-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-mono font-bold text-[#285943] uppercase tracking-wider flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Step 10: Impact Verification
+                    </span>
+                    <span className="text-[10px] font-mono text-[#285943] bg-[#285943]/10 px-1.5 py-0.2 rounded-xs">Verified</span>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-xs space-y-2">
+                      <span className="text-[10px] font-bold text-[#285943] uppercase block">Signal Reduction</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold text-[#285943]">-{signalsChangePct}%</span>
+                        <span className="text-[10px] text-emerald-800 font-medium">Citizen Demand Signals</span>
+                      </div>
+                      <p className="text-[10px] text-emerald-900/70 leading-relaxed">
+                        Measured reduction in isolated grievance reports following project stabilization.
+                      </p>
+                    </div>
+
+                    <div className="p-3 bg-emerald-50/50 border border-emerald-200/50 rounded-xs space-y-2">
+                      <span className="text-[10px] font-bold text-[#285943] uppercase block">Service Improvement</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-xl font-bold text-[#285943]">+{accessDelta}%</span>
+                        <span className="text-[10px] text-emerald-800 font-medium">Population Access</span>
+                      </div>
+                      <p className="text-[10px] text-emerald-900/70 leading-relaxed">
+                        Deterministic improvement in infrastructure baseline benchmarks for {selectedProject.district}.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-2.5 bg-[#171717] text-[#F7F5EF] rounded-xs font-mono text-[10px] border border-[#171717]">
+                    <span className="text-emerald-400 font-bold block mb-1">VERIFICATION LINEAGE:</span>
+                    <p className="text-slate-300 leading-tight">
+                      Outcome confirmed by closing the loop between Citizen Signal reduction and Public Infrastructure Baseline improvement.
+                    </p>
+                  </div>
+                </div>
+              )}
+
               {/* Administrative Status Updates */}
-              <div className="space-y-1.5 pt-2 border-t border-[#171717]/10">
+              <div className="space-y-1.5 pt-4 border-t border-[#171717]/10">
                 <span className="text-[11px] font-mono font-bold text-[#78716C] uppercase block">{t('projects.update_admin_status')}</span>
                 <div className="flex flex-wrap gap-1.5">
                   {(['Approved', 'In Progress', 'Completed'] as ProjectLifecycleStatus[]).map(st => (

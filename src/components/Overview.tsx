@@ -586,6 +586,40 @@ export const Overview: React.FC<OverviewProps> = ({
                 </div>
               )}
 
+              {/* 2.5 Representative Visual Evidence */}
+              {(() => {
+                const reqWithImage = requests.find(r => 
+                  r.category === activeDrawerIssue.category && 
+                  (activeDrawerIssue.location.includes(r.location) || activeDrawerIssue.location.includes(r.district || '')) &&
+                  (r.photo_url || r.illustration_url)
+                );
+                if (!reqWithImage) return null;
+                const isAi = !reqWithImage.photo_url && !!reqWithImage.illustration_url;
+                return (
+                  <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 uppercase">Representative Evidence</span>
+                      <span className={`text-[9px] font-mono font-bold px-1.5 py-0.5 border rounded-xs uppercase ${
+                        isAi ? 'bg-purple-50 text-purple-800 border-purple-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                      }`}>
+                        {isAi ? '🤖 AI Illustration' : '📷 Citizen Photo'}
+                      </span>
+                    </div>
+                    <div className="flex gap-3">
+                      <img 
+                        src={reqWithImage.photo_url || reqWithImage.illustration_url} 
+                        alt="Evidence" 
+                        className="w-16 h-16 object-cover border border-[#171717]/15 rounded-xs"
+                        referrerPolicy="no-referrer"
+                      />
+                      <p className="text-[11px] text-slate-600 leading-tight italic">
+                        "{reqWithImage.summary_en || reqWithImage.original_text.substring(0, 60)}..."
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* 3. Recommended Action */}
               {activeDrawerIssue.recommendedAction && (
                 <div className="bg-[#FAF0E6] p-4 border border-[#D65A3A]/30 rounded-xs space-y-1">
