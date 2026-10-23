@@ -22,6 +22,7 @@ import { District, CitizenRequest, InfrastructureCategory } from '../types';
 import { NavTab } from './Sidebar';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
 import { getCityDemandHotspot } from '../utils/demandAggregation';
+import { matchesDistrict } from '../utils/districtMatcher';
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState } from './IndiaMapCanvas';
 import { getPublicDataForDistrict } from '../data/publicDataService';
 import { useLanguage } from '../context/LanguageContext';
@@ -79,10 +80,7 @@ export const Overview: React.FC<OverviewProps> = ({
       const demandCount = demandHotspot.totalCitizenRequests;
 
       const matchedRequests = requests.filter(
-        r => (r.district && r.district.toLowerCase() === district.name.toLowerCase()) ||
-             r.location.toLowerCase().includes(district.name.toLowerCase()) || 
-             district.name.toLowerCase().includes(r.location.toLowerCase()) ||
-             r.location.toLowerCase().includes(district.state.toLowerCase())
+        r => matchesDistrict(r, district)
       );
 
       const avgSeverity = matchedRequests.length > 0

@@ -7,6 +7,7 @@ import {
   getScoreComponentContributions
 } from './scoring';
 import { District } from '../types';
+import { matchesDistrict } from './districtMatcher';
 
 function assert(condition: boolean, message: string) {
   if (!condition) {
@@ -205,12 +206,67 @@ assert(!!sensitivity.dominantPillar, 'Sensitivity analysis must return a dominan
 assert(sensitivity.dominantPercentage > 0, 'Dominant percentage must be positive');
 
 // -------------------------------------------------------------
-// Test 10 — Zero Citizen Signals Yields Exactly Zero Demand Score
+// Test 11 — Specific Regression Tests for Code for Communities 2.0 Audit
 // -------------------------------------------------------------
-console.log('\n[Test 10] Zero Demand Pillar Contribution Verification');
-const zeroDemandResult = calculatePriorityScore(baseDistrict, 'Water', 6, 0);
-assert(zeroDemandResult.demand_score === 0, '0 signals must result in 0 demand score');
-assert(zeroDemandResult.scoreTrace!.demand.contribution === 0, '0 signals must result in 0 demand contribution');
+console.log('\n[Test 11] Code for Communities 2.0 Audit Regression Requirements');
+
+// 1. Zero reports produce zero demand
+const r0 = calculatePriorityScore(baseDistrict, 'Water', 5, 0);
+assert(r0.demand_score === 0, 'Audit Requirement 1: Zero reports produce zero demand');
+
+// 2. One report produces a demand score of approximately 15.25 before weighting (22 * ln(2) = 15.24925)
+const r1 = calculatePriorityScore(baseDistrict, 'Water', 5, 1);
+const expectedOneReportDemand = Number((22 * Math.log(2)).toFixed(2));
+assert(
+  Math.abs(r1.demand_score - expectedOneReportDemand) <= 0.1,
+  `Audit Requirement 2: One report yields demand score ~15.25 (got ${r1.demand_score})`
+);
+
+// 3. Increasing report counts increase demand monotonically
+const r10 = calculatePriorityScore(baseDistrict, 'Water', 5, 10);
+const r100 = calculatePriorityScore(baseDistrict, 'Water', 5, 100);
+assert(r10.demand_score > r1.demand_score && r100.demand_score > r10.demand_score, 'Audit Requirement 3: Increasing report counts increase demand monotonically');
+
+// 4. Each pillar's weighted contribution is correct
+const traceTest = calculateScoreTrace(baseDistrict, 'Water', 7, 10);
+assert(Math.abs(traceTest.demand.contribution - Number((traceTest.demand.normalized * traceTest.demand.weight).toFixed(2))) < 0.01, 'Audit Requirement 4: Demand weighted contribution correct');
+assert(Math.abs(traceTest.gap.contribution - Number((traceTest.gap.normalized * traceTest.gap.weight).toFixed(2))) < 0.01, 'Audit Requirement 4: Gap weighted contribution correct');
+
+// 5. Displayed total equals sum of five weighted contributions
+const sumContributions = Number((
+  traceTest.demand.contribution +
+  traceTest.gap.contribution +
+  traceTest.populationImpact.contribution +
+  traceTest.urgency.contribution +
+  traceTest.governmentPriority.contribution
+).toFixed(1));
+assert(Math.abs(sumContributions - traceTest.finalScore) <= 0.2, 'Audit Requirement 5: Displayed total equals sum of weighted contributions');
+
+// 6. Genuinely higher total ranks above lower total
+const lowScoreResult = calculatePriorityScore(baseDistrict, 'Water', 2, 0, 95);
+const highScoreResult = calculatePriorityScore(baseDistrict, 'Water', 9, 500, 10);
+assert(highScoreResult.total_score > lowScoreResult.total_score, 'Audit Requirement 6: Genuinely higher total ranks above lower total');
+
+// 7. Missing data is not silently treated as verified favorable data (e.g. 0 access deficit or missing capex defaults honestly)
+const missingCapexDistrict = { ...baseDistrict, planned_investment: 0 };
+const missingCapexTrace = calculateScoreTrace(missingCapexDistrict, 'Water', 5, 5);
+assert(missingCapexTrace.governmentPriority.normalized === SCORING_CONFIG.governmentPriority.unbudgetedCapexScore, 'Audit Requirement 7: Missing capex is honestly represented as unbudgeted gap rather than active capex');
+
+// 8. Reports from similarly named districts are not cross-assigned (Patna vs Bhawanipatna)
+const patnaDist = { id: 'patna', name: 'Patna', state: 'Bihar', lat: 25.59, lon: 85.13, population: 5800000, poverty_index: 0.35, water_access: 45, health_access: 50, road_quality: 50, education_access: 50, planned_investment: 0, existing_facilities: { phc_clinics: 5, water_plants: 2, schools: 10, paved_roads_km: 50 }, zone: 'East' };
+const sampleReportForBhawanipatna = { district: 'Bhawanipatna', location: 'Bhawanipatna, Odisha' };
+assert(!matchesDistrict(sampleReportForBhawanipatna, patnaDist), 'Audit Requirement 8: Bhawanipatna report must NOT match Patna district');
+
+// 9. Repeated rendering or refreshing does not change scores when underlying data is unchanged (purity/idempotency)
+const scoreRun1 = calculatePriorityScore(baseDistrict, 'Water', 6, 20);
+const scoreRun2 = calculatePriorityScore(baseDistrict, 'Water', 6, 20);
+assert(scoreRun1.total_score === scoreRun2.total_score, 'Audit Requirement 9: Scoring function is pure and idempotent');
+
+// 10. Hardcoded UI values cannot contradict the authoritative scoring breakdown
+const auditBreakdown = calculatePriorityScore(baseDistrict, 'Water', 6, 20);
+const authoritativeSum = getScoreComponentContributions(auditBreakdown);
+assert(authoritativeSum.totalScore === auditBreakdown.total_score, 'Audit Requirement 10: Authoritative score breakdown matches total score');
 
 console.log('\n🎉 ALL PRIORITY SCORING ENGINE TESTS PASSED SUCCESSFULLY!\n');
+
 

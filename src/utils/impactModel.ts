@@ -1,5 +1,6 @@
 import { District, InfrastructureCategory, CitizenRequest } from '../types';
 import { calculatePriorityScore, getCategoryAccess } from './scoring';
+import { matchesDistrict } from './districtMatcher';
 
 /**
  * ============================================================================
@@ -195,8 +196,7 @@ export function computeBaselineImpact(
   
   // Count matching citizen signals if present, otherwise default to baseline representative count
   const matchingRequests = requests.filter(r => {
-    const matchDist = (r.district && r.district.toLowerCase() === district.name.toLowerCase()) ||
-                      (r.location && r.location.toLowerCase().includes(district.name.toLowerCase()));
+    const matchDist = matchesDistrict(r, district);
     const matchCat = r.category === category;
     return matchDist && matchCat;
   });

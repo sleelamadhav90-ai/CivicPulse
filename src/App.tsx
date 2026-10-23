@@ -645,6 +645,7 @@ export default function App() {
             <ProjectsView
               districts={districts}
               projects={governmentProjects}
+              requests={requests}
               onUpdateProjectStatus={handleUpdateProjectStatus}
               onNavigateToImpact={handleNavigateToImpact}
               onNavigateToPolicyLab={(districtId, category) => {

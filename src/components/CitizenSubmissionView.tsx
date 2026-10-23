@@ -581,34 +581,79 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       let sevLabel: 'Low' | 'Medium' | 'High' | 'Critical' = 'Medium';
       let urgLabel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
 
-      if (lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || lower.includes('electrocution') || lower.includes('collapsed bridge')) {
+      if (
+        lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
+        lower.includes('dying') || lower.includes('electrocution') || lower.includes('collapsed bridge') ||
+        lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('ప్రాణాపాయం')
+      ) {
         sevNum = 10;
         sevLabel = 'Critical';
         urgLabel = 'CRITICAL';
-      } else if (lower.includes('ambulance') || lower.includes('hospital') || lower.includes('outbreak') || lower.includes('contamination') || lower.includes('severe hazard')) {
+      } else if (
+        lower.includes('ambulance') || lower.includes('hospital') || lower.includes('outbreak') || 
+        lower.includes('contamination') || lower.includes('severe hazard') || lower.includes('epidemic') || lower.includes('poison')
+      ) {
         sevNum = 9;
         sevLabel = 'Critical';
         urgLabel = 'CRITICAL';
-      } else if (lower.includes('2 week') || lower.includes('two week') || lower.includes('month') || lower.includes('no water for') || lower.includes('entire village')) {
+      } else if (
+        lower.includes('2 week') || lower.includes('two week') || lower.includes('month') || 
+        lower.includes('no water for') || lower.includes('entire village') || lower.includes('blackout') || lower.includes('pipeline burst')
+      ) {
         sevNum = 8;
         sevLabel = 'High';
         urgLabel = 'HIGH';
-      } else if (lower.includes('overturn') || lower.includes('crater') || lower.includes('shortage') || lower.includes('overflow') || lower.includes('flood')) {
+      } else if (
+        lower.includes('prevalent') || lower.includes('widespread') || lower.includes('acute') || 
+        lower.includes('severe') || lower.includes('overturn') || lower.includes('crater') || 
+        lower.includes('shortage') || lower.includes('drainage overflow') || lower.includes('sewage')
+      ) {
         sevNum = 7;
         sevLabel = 'High';
         urgLabel = 'HIGH';
-      } else if (lower.includes('muddy') || lower.includes('low pressure') || lower.includes('garbage') || lower.includes('pothole')) {
+      } else if (
+        lower.includes('muddy') || lower.includes('low pressure') || lower.includes('garbage') || 
+        lower.includes('pothole') || lower.includes('overflow') || lower.includes('leakage') || lower.includes('flooding')
+      ) {
         sevNum = 6;
         sevLabel = 'Medium';
         urgLabel = 'MEDIUM';
-      } else if (lower.includes('single') || lower.includes('flicker') || lower.includes('minor') || lower.includes('lane')) {
+      } else if (
+        lower.includes('dust') || lower.includes('pollution') || lower.includes('litter') || 
+        lower.includes('smell') || lower.includes('noise') || lower.includes('small pothole') || 
+        lower.includes('flicker') || lower.includes('streetlight') || lower.includes('street light')
+      ) {
         sevNum = 4;
         sevLabel = 'Low';
         urgLabel = 'LOW';
-      } else if (lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard')) {
-        sevNum = 2;
+      } else if (
+        lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
+        lower.includes('poster') || lower.includes('minor') || lower.includes('cleanliness')
+      ) {
+        sevNum = 3;
         sevLabel = 'Low';
         urgLabel = 'LOW';
+      } else if (
+        lower.includes('water problem') || lower.includes('water issue') || lower.includes('road problem') || 
+        lower.includes('road issue') || lower.includes('drainage problem') || lower.includes('delay') || 
+        lower.includes('irregular') || lower.includes('broken')
+      ) {
+        sevNum = 5;
+        sevLabel = 'Medium';
+        urgLabel = 'MEDIUM';
+      } else {
+        // Dynamic fallback score based on category & character variance
+        let baseScore = 5;
+        const catStr: string = cat;
+        if (catStr === 'Health' || catStr === 'Water') baseScore = 6;
+        else if (catStr === 'Roads' || catStr === 'Drainage') baseScore = 5;
+        else if (catStr === 'Sanitation' || catStr === 'Electricity') baseScore = 4;
+
+        const charSum = lower.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const offset = (charSum % 3) - 1; // -1, 0, or +1
+        sevNum = Math.max(3, Math.min(8, baseScore + offset));
+        sevLabel = sevNum >= 9 ? 'Critical' : sevNum >= 7 ? 'High' : sevNum >= 5 ? 'Medium' : 'Low';
+        urgLabel = sevNum >= 9 ? 'CRITICAL' : sevNum >= 7 ? 'HIGH' : sevNum >= 5 ? 'MEDIUM' : 'LOW';
       }
 
       const fallbackResult: AIUnderstandingResult = {

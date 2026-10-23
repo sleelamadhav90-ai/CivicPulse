@@ -159,95 +159,108 @@ function evaluateSeverityScore(text: string, category?: string, duration?: strin
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
   urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 } {
-  const lower = (text || '').toLowerCase();
+  const lower = (text || '').toLowerCase().trim();
   
-  // Level 10: Immediate life-threatening emergency, fatal accident hazard, imminent collapse, active electrocution
-  const isLevel10 = 
+  // 1. Critical / Life-threatening (Level 9-10)
+  if (
     lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
     lower.includes('dying') || lower.includes('electrocution') || lower.includes('collapsed bridge') ||
-    lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('प्राణ') ||
-    lower.includes('చనిపో') || lower.includes('ప్రాణాపాయం') || lower.includes('உயிர் ஆபத்து');
-
-  if (isLevel10) {
+    lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('ప్రాణాపాయం') ||
+    lower.includes('చనిపో') || lower.includes('உயிர் ஆபத்து')
+  ) {
     return { severity_number: 10, severity: 'Critical', urgency: 'CRITICAL' };
   }
 
-  // Level 9: Critical issue involving major public safety, health outbreak, essential-service failure, severe infrastructure rupture
-  const isLevel9 = 
+  if (
     lower.includes('ambulance') || lower.includes('hospital outage') || lower.includes('contamination') ||
     lower.includes('epidemic') || lower.includes('severe flood') || lower.includes('poison') ||
     lower.includes('rupture') || lower.includes('major accident') || lower.includes('severe hazard') ||
-    lower.includes('ఆసుపత్రి') || lower.includes('కలుషిత') || lower.includes('విష') || lower.includes('మహమ్మారి');
-
-  if (isLevel9) {
+    lower.includes('ఆసుపత్రి') || lower.includes('కలుషిత') || lower.includes('మహమ్మారి')
+  ) {
     return { severity_number: 9, severity: 'Critical', urgency: 'CRITICAL' };
   }
 
-  // Level 8: Serious issue affecting many people or essential public service with long duration
-  const isLevel8 = 
+  // 2. High Severity / Major Infrastructure Deficit (Level 7-8)
+  if (
     lower.includes('no water for') || lower.includes('2 week') || lower.includes('two week') ||
     lower.includes('1 month') || lower.includes('one month') || lower.includes('complete blackout') ||
     lower.includes('entire village') || lower.includes('whole ward') || lower.includes('arterial road') ||
-    lower.includes('గత రెండు వారాలు') || lower.includes('రెండు వారాలు') || lower.includes('మొత్తం గ్రామం') ||
-    lower.includes('दो हफ्ते') || lower.includes('पूरे गांव') || (duration && (duration.includes('week') || duration.includes('month')));
-
-  if (isLevel8) {
+    lower.includes('no drinking water') || lower.includes('outage') || lower.includes('pipeline burst') ||
+    lower.includes('గత రెండు వారాలు') || lower.includes('మొత్తం గ్రామం') || lower.includes('दो हफ्ते') ||
+    (duration && (duration.includes('week') || duration.includes('month')))
+  ) {
     return { severity_number: 8, severity: 'High', urgency: 'HIGH' };
   }
 
-  // Level 7: Serious issue affecting many people or an essential public service
-  const isLevel7 = 
-    lower.includes('medicine shortage') || lower.includes('doctor shortage') || lower.includes('deep crater') ||
-    lower.includes('toxic backflow') || lower.includes('drainage overflow') || lower.includes('sewage entering') ||
-    lower.includes('large pothole') || lower.includes('auto overturn') || lower.includes('no drinking water') ||
-    lower.includes('ట్రాఫిక్') || lower.includes('వరద') || lower.includes('నాళా') || lower.includes('गड्ढे');
-
-  if (isLevel7) {
+  if (
+    lower.includes('prevalent') || lower.includes('widespread') || lower.includes('acute') ||
+    lower.includes('severe') || lower.includes('medicine shortage') || lower.includes('doctor shortage') ||
+    lower.includes('deep crater') || lower.includes('toxic backflow') || lower.includes('drainage overflow') ||
+    lower.includes('sewage entering') || lower.includes('large pothole') || lower.includes('auto overturn') ||
+    lower.includes('మొత్తం') || lower.includes('తీవ్రమైన') || lower.includes('గંભీరం')
+  ) {
     return { severity_number: 7, severity: 'High', urgency: 'HIGH' };
   }
 
-  // Level 1-2: Minor cosmetic issue or minor inconvenience
-  const isLevel1or2 = 
-    lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
-    lower.includes('faded') || lower.includes('aesthetic') || lower.includes('poster') || lower.includes('weed');
-
-  if (isLevel1or2) {
-    return { severity_number: 2, severity: 'Low', urgency: 'LOW' };
-  }
-
-  // Level 3-4: Localized issue affecting a small number of people, with limited consequences
-  const isLevel3or4 = 
-    lower.includes('single') || lower.includes('flicker') || lower.includes('one lamp') || 
-    lower.includes('streetlight') || lower.includes('small pothole') || lower.includes('minor crack') || 
-    lower.includes('individual pipe leak') || lower.includes('lane') || lower.includes('alley') ||
-    lower.includes('గల్లీ') || lower.includes('చిన్న');
-
-  if (isLevel3or4) {
+  // 3. Minor / Nuisance / Localized Issues (Level 3-4)
+  if (
+    lower.includes('dust') || lower.includes('pollution') || lower.includes('litter') ||
+    lower.includes('smell') || lower.includes('odour') || lower.includes('noise') ||
+    lower.includes('small pothole') || lower.includes('minor crack') || lower.includes('single') ||
+    lower.includes('flicker') || lower.includes('one lamp') || lower.includes('streetlight') ||
+    lower.includes('street light') || lower.includes('గల్లీ') || lower.includes('ధూళి') || lower.includes('చిన్న')
+  ) {
     return { severity_number: 4, severity: 'Low', urgency: 'LOW' };
   }
 
-  // Level 6: Significant service problem affecting daily life (e.g. garbage collection delay, low pressure, muddy water)
-  const isLevel6 = 
-    lower.includes('garbage') || lower.includes('waste') || lower.includes('sanitat') || lower.includes('చెత్త') ||
-    lower.includes('muddy water') || lower.includes('low pressure') || lower.includes('frequent power') ||
-    lower.includes('irregular supply') || lower.includes('five days') || lower.includes('5 day') || lower.includes('several days') ||
-    lower.includes('slow traffic') || lower.includes('stagnant water');
+  if (
+    lower.includes('cosmetic') || lower.includes('paint') || lower.includes('signboard') || 
+    lower.includes('faded') || lower.includes('aesthetic') || lower.includes('poster') || lower.includes('weed') ||
+    lower.includes('cleanliness') || lower.includes('minor')
+  ) {
+    return { severity_number: 3, severity: 'Low', urgency: 'LOW' };
+  }
 
-  if (isLevel6) {
+  // 4. Moderate Severity / Ongoing Disruptions & Environmental/Health Concerns (Level 5-6)
+  if (
+    lower.includes('overflow') || lower.includes('stagnant') || lower.includes('frequent') ||
+    lower.includes('leakage') || lower.includes('flooding') || lower.includes('garbage') ||
+    lower.includes('waste') || lower.includes('muddy water') || lower.includes('low pressure') ||
+    lower.includes('power cut') || lower.includes('dark spot') || lower.includes('unsafe') ||
+    lower.includes('సమస్య') || lower.includes('చెత్త')
+  ) {
     return { severity_number: 6, severity: 'Medium', urgency: 'MEDIUM' };
   }
 
-  // Level 5: Standard significant service/infrastructure disruption
-  const isLevel5 = 
-    lower.includes('water') || lower.includes('road') || lower.includes('power') || 
-    lower.includes('light') || lower.includes('drain') || lower.includes('bus') ||
-    lower.includes('నీరు') || lower.includes('రోడ్డు') || lower.includes('కరెంట్');
-
-  if (isLevel5) {
+  if (
+    lower.includes('water problem') || lower.includes('water issue') || lower.includes('road problem') ||
+    lower.includes('road issue') || lower.includes('drainage problem') || lower.includes('drainage issue') ||
+    lower.includes('delay') || lower.includes('irregular') || lower.includes('broken') ||
+    lower.includes('నీటి సమస్య') || lower.includes('రోడ్డు సమస్య')
+  ) {
     return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
   }
 
-  return { severity_number: 5, severity: 'Medium', urgency: 'MEDIUM' };
+  // 5. Dynamic fallback grading based on category and character variance
+  let score = 5;
+  if (category === 'Health' || category === 'Water') score = 6;
+  else if (category === 'Roads' || category === 'Drainage') score = 5;
+  else if (category === 'Sanitation' || category === 'Electricity') score = 4;
+
+  const charSum = lower.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+  const offset = (charSum % 3) - 1;
+  score = Math.max(3, Math.min(8, score + offset));
+
+  const severityLabel: 'Low' | 'Medium' | 'High' | 'Critical' = 
+    score >= 9 ? 'Critical' : score >= 7 ? 'High' : score >= 5 ? 'Medium' : 'Low';
+  const urgencyLabel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 
+    score >= 9 ? 'CRITICAL' : score >= 7 ? 'HIGH' : score >= 5 ? 'MEDIUM' : 'LOW';
+
+  return {
+    severity_number: score,
+    severity: severityLabel,
+    urgency: urgencyLabel
+  };
 }
 
 // Backward compatible alias

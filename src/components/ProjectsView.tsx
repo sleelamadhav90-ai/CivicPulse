@@ -15,8 +15,9 @@ import {
   Clock,
   CheckCircle2
 } from 'lucide-react';
-import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus } from '../types';
-import { getAIRecommendedProjects } from '../utils/scoring';
+import { District, InfrastructureCategory, GovernmentProject, ProjectLifecycleStatus, CitizenRequest } from '../types';
+import { calculatePriorityScore, getAIRecommendedProjects } from '../utils/scoring';
+import { matchesDistrict } from '../utils/districtMatcher';
 import { useLanguage } from '../context/LanguageContext';
 import { parseSearchIntent } from '../services/humanSearchService';
 import { getImpactNatureBadge, calculatePercentageChange, calculateAbsoluteChange } from '../utils/impactEvidence';
@@ -26,6 +27,7 @@ import { DISTRICTS_REGISTRY } from '../data/districts';
 interface ProjectsViewProps {
   districts: District[];
   projects: GovernmentProject[];
+  requests?: CitizenRequest[];
   onUpdateProjectStatus: (projectId: string, newStatus: ProjectLifecycleStatus, note?: string) => void;
   onNavigateToImpact?: (districtId: string, category: InfrastructureCategory) => void;
   onNavigateToPolicyLab?: (districtId: string, category: InfrastructureCategory) => void;
@@ -45,6 +47,7 @@ type ActionStage = typeof ACTION_STAGES[number];
 export const ProjectsView: React.FC<ProjectsViewProps> = ({
   districts,
   projects,
+  requests = [],
   onUpdateProjectStatus,
   onNavigateToImpact,
   onNavigateToPolicyLab,
@@ -56,39 +59,20 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [selectedProject, setSelectedProject] = useState<GovernmentProject | null>(null);
 
-  // Normalize projects and rank by priority score descending
+  // Normalize projects and rank by priority score descending using authoritative 5-pillar scoring
   const activeProjects = useMemo(() => {
-    const rawList = projects.length > 0 ? projects : getAIRecommendedProjects(districts, []).map((rec, idx) => ({
-      id: `gov-${rec.id}`,
-      title: rec.title,
-      district: rec.districtName,
-      districtId: rec.districtId,
-      state: rec.state,
-      category: rec.category,
-      priorityScore: rec.priorityScore,
-      citizenRequestsCount: rec.citizenRequestsCount,
-      population: rec.targetBeneficiaries,
-      estimatedCostInr: rec.estimatedBudgetInr,
-      status: (idx === 0 ? 'Approved' : idx === 1 ? 'In Progress' : 'Recommended') as ProjectLifecycleStatus,
-      progress: idx === 0 ? 15 : idx === 1 ? 55 : 0,
-      department: rec.category === 'Water' 
-        ? 'Rural Water Supply & Sanitation Department' 
-        : rec.category === 'Health' 
-        ? 'Health & Family Welfare Department' 
-        : rec.category === 'Roads' 
-        ? 'Public Works & Roads Department' 
-        : 'Municipal Administration Department',
-      officerInCharge: 'Chief Project Director',
-      startDate: 'Q1 2026',
-      targetDate: 'Q4 2026',
-      beforeAccess: rec.category === 'Water' ? 38 : 45,
-      afterAccess: idx === 1 ? 82 : undefined as unknown as number,
-      description: rec.aiRecommendation,
-      keyReasoning: rec.keyBulletPoints,
-      aiSummary: rec.summaryReasoning,
-      sourceRecommendationId: rec.id,
-      history: [],
-    }));
+    const initialList = projects.length > 0 ? projects : getAIRecommendedProjects(districts, requests);
+    const rawList = initialList.map(p => {
+      const matchedDist = districts.find(d => d.id === p.districtId || d.name.toLowerCase() === p.district.toLowerCase()) || districts[0];
+      const matchedReqCount = requests.filter(r => matchesDistrict(r, matchedDist) && r.category === p.category).length;
+      const effectiveDemand = matchedReqCount > 0 ? matchedReqCount : (p.citizenRequestsCount || 42);
+      const breakdown = calculatePriorityScore(matchedDist, p.category, 8, effectiveDemand);
+      return {
+        ...p,
+        citizenRequestsCount: effectiveDemand,
+        priorityScore: breakdown.total_score,
+      };
+    });
 
     const localizedList = rawList.map(p => tGovernmentProject(p));
 
@@ -544,6 +528,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   <EvidenceExplanationCard
                     district={matchedDist}
                     category={selectedProject.category}
+                    requests={requests}
                     compact={false}
                   />
                 );

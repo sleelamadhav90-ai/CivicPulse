@@ -57,7 +57,7 @@ export const EvidenceExplanationCard: React.FC<EvidenceExplanationCardProps> = (
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-slate-900 text-xs">{t('evidence.why_prioritized')}</span>
+              <span className="font-bold text-slate-900 text-xs">Scoring Breakdown (5-Pillar Model)</span>
               <span className="px-2 py-0.5 text-[10px] font-mono font-bold uppercase rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
                 {t('evidence.deterministic_engine')}
               </span>

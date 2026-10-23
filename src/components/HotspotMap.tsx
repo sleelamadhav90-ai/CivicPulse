@@ -2,6 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { calculatePriorityScore, getCategoryAccess, getPriorityTier } from '../utils/scoring';
 import { getCityDemandHotspot, filterRequestsByTime, CityDemandHotspot } from '../utils/demandAggregation';
+import { matchesDistrict } from '../utils/districtMatcher';
 import { IndiaMapCanvas, EvaluatedDistrict, MapLayerState, getReportEvidence, ReportEvidence } from './IndiaMapCanvas';
 import { 
   getAvailableStates, 
@@ -225,10 +226,9 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
       const matchedRequests = timeFilteredRequests.filter(
         (r) => {
-          const loc = (r.location || '').toLowerCase();
-          const dist = (r.district || '').toLowerCase();
-          const matchDist = dist === district.name.toLowerCase() || loc.includes(district.name.toLowerCase());
+          const matchDist = matchesDistrict(r, district);
           const matchCat = selectedCategory === 'All' || r.category === selectedCategory;
+          const loc = (r.location || '').toLowerCase();
           const matchLocality = selectedLocality === 'ALL' || (r.locality && r.locality.toLowerCase() === selectedLocality.toLowerCase()) || loc.includes(selectedLocality.toLowerCase());
           return matchDist && matchCat && matchLocality;
         }
