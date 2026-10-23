@@ -12,7 +12,8 @@ import {
   PlusCircle,
   Filter,
   RotateCcw,
-  ChevronDown
+  ChevronDown,
+  AlertTriangle
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory } from '../types';
 import { 
@@ -22,6 +23,7 @@ import {
   filterCitizenRequests 
 } from '../utils/geography';
 import { useLanguage } from '../context/LanguageContext';
+import { checkCriticalSafetyRisk } from '../utils/scoring';
 
 interface CitizenSignalsViewProps {
   requests: CitizenRequest[];
@@ -543,6 +545,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 filteredRequests.map((req, idx) => {
                   const isVoice = req.source_type?.includes('voice') || req.audio_url;
                   const isCitizenSignal = req.source_origin === 'CIVICPULSE_USER';
+                  const safetyEval = checkCriticalSafetyRisk(req);
                   const dateFormatted = req.timestamp 
                     ? new Date(req.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '2 Sep 2026';
@@ -551,15 +554,23 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                     <tr
                       key={`${req.id}-${idx}`}
                       onClick={() => setSelectedRequest(req)}
-                      className="hover:bg-[#FAF8F5] cursor-pointer transition-colors group"
+                      className={`hover:bg-[#FAF8F5] cursor-pointer transition-colors group ${safetyEval.isCriticalSafetyRisk ? 'bg-red-50/40 border-l-2 border-l-red-600' : ''}`}
                     >
                       {/* Issue */}
                       <td className="py-3 px-4 max-w-sm">
                         <div className="font-medium text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug line-clamp-2">
                           {tSignalSummary(req)}
                         </div>
-                        <div className="text-[10px] font-mono text-[#78716C] mt-0.5">
-                          {req.id}
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-[10px] font-mono text-[#78716C]">
+                            {req.id}
+                          </span>
+                          {safetyEval.isCriticalSafetyRisk && (
+                            <span className="inline-flex items-center gap-1 text-[9px] font-mono font-bold text-red-900 bg-red-100 border border-red-300 px-1.5 py-0.2 rounded uppercase">
+                              <AlertTriangle className="w-2.5 h-2.5 text-red-600" />
+                              <span>Critical Safety Risk</span>
+                            </span>
+                          )}
                         </div>
                       </td>
 
@@ -593,15 +604,22 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
                       {/* Severity */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <span className={`inline-flex items-center font-mono text-xs font-semibold ${
-                          (req.severity || 5) >= 8 
-                            ? 'text-[#D65A3A]' 
-                            : (req.severity || 5) >= 6 
-                            ? 'text-amber-800' 
-                            : 'text-[#285943]'
-                        }`}>
-                          {req.severity || 5} / 10
-                        </span>
+                        <div className="flex flex-col">
+                          <span className={`inline-flex items-center font-mono text-xs font-semibold ${
+                            (typeof req.severity === 'number' ? req.severity : 5) >= 8 
+                              ? 'text-[#D65A3A]' 
+                              : (typeof req.severity === 'number' ? req.severity : 5) >= 6 
+                              ? 'text-amber-800' 
+                              : 'text-[#285943]'
+                          }`}>
+                            {typeof req.severity === 'number' ? req.severity : 'N/A'} / 10
+                          </span>
+                          {safetyEval.isCriticalSafetyRisk && (
+                            <span className="text-[9px] font-mono text-red-700 font-bold uppercase">
+                              Hazard Flagged
+                            </span>
+                          )}
+                        </div>
                       </td>
 
                       {/* Source */}
@@ -665,6 +683,26 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <X className="w-5 h-5" />
               </button>
             </div>
+
+            {/* Critical Safety Hazard Callout Banner */}
+            {(() => {
+              const safetyEval = checkCriticalSafetyRisk(selectedRequest);
+              if (!safetyEval.isCriticalSafetyRisk) return null;
+              return (
+                <div className="bg-red-50 border-l-4 border-red-600 p-3.5 rounded-r-xs space-y-1 font-sans">
+                  <div className="flex items-center gap-1.5 font-mono font-bold text-xs text-red-900 uppercase">
+                    <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                    <span>⚡ CRITICAL SAFETY HAZARD ESCALATION</span>
+                  </div>
+                  <p className="text-xs text-red-800 leading-snug font-medium">
+                    {safetyEval.escalationDescription}
+                  </p>
+                  <div className="text-[10px] font-mono font-bold text-red-900 bg-red-100 border border-red-200 px-2 py-0.5 rounded inline-block mt-1 uppercase">
+                    Administrative Status: {safetyEval.escalationStatus}
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Status Timeline */}
             <div className="bg-[#FAF8F5] border border-[#171717]/10 p-3.5 rounded-sm">

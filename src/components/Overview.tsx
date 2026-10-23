@@ -84,7 +84,7 @@ export const Overview: React.FC<OverviewProps> = ({
       );
 
       const avgSeverity = matchedRequests.length > 0
-        ? Math.round(matchedRequests.reduce((acc, r) => acc + (r.severity || 5), 0) / matchedRequests.length)
+        ? Math.round(matchedRequests.reduce((acc, r) => acc + (typeof r.severity === 'number' ? r.severity : 5), 0) / matchedRequests.length)
         : (demandHotspot.urgencyLevel === 'Critical' ? 9 : demandHotspot.urgencyLevel === 'High' ? 7 : 5);
 
       const breakdown = calculatePriorityScore(district, category, avgSeverity, demandCount, accessScore);
@@ -283,7 +283,7 @@ export const Overview: React.FC<OverviewProps> = ({
                 </span>
               </div>
               <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
-                {priorityIssues[0]?.signalCount || totalRequests || 742}
+                {typeof priorityIssues[0]?.signalCount === 'number' ? priorityIssues[0].signalCount : totalRequests}
               </div>
               <p className="text-[11px] text-[#57534E] leading-tight font-sans">
                 {t('overview.synthetic_signals_desc')}

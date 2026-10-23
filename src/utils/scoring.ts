@@ -229,6 +229,67 @@ export function calculateScoreTrace(
   };
 }
 
+export interface SafetyRiskEvaluation {
+  isCriticalSafetyRisk: boolean;
+  severityNumber: number;
+  riskLabel: string;
+  escalationStatus: string;
+  escalationDescription: string;
+}
+
+/**
+ * Independent Safety Escalation Evaluator
+ * Evaluates immediate life-safety risk independently of the 5-pillar composite score.
+ * Does not alter 5-pillar composite weights or scores.
+ */
+export function checkCriticalSafetyRisk(input: {
+  severity?: number;
+  urgency?: string;
+  original_text?: string;
+  translated_text?: string;
+  summary_en?: string;
+  category?: string;
+}): SafetyRiskEvaluation {
+  const sevNum = typeof input.severity === 'number' ? input.severity : 0;
+  const urgStr = (input.urgency || '').toUpperCase();
+  const fullText = `${input.original_text || ''} ${input.translated_text || ''} ${input.summary_en || ''}`.toLowerCase();
+
+  const isLifeThreatKeyword = 
+    fullText.includes('electrocut') ||
+    fullText.includes('electric wire') ||
+    fullText.includes('power cable') ||
+    fullText.includes('live wire') ||
+    fullText.includes('fallen wire') ||
+    fullText.includes('downed wire') ||
+    fullText.includes('cable down') ||
+    fullText.includes('life threat') ||
+    fullText.includes('fatal') ||
+    fullText.includes('collapsed bridge') ||
+    fullText.includes('toxic gas') ||
+    fullText.includes('emergency evacuation') ||
+    fullText.includes('ప్రాణాపాయం');
+
+  const isCritical = sevNum >= 9 || urgStr === 'CRITICAL' || isLifeThreatKeyword;
+
+  if (isCritical) {
+    return {
+      isCriticalSafetyRisk: true,
+      severityNumber: Math.max(sevNum, 9),
+      riskLabel: '⚡ CRITICAL SAFETY HAZARD',
+      escalationStatus: 'Escalated for Priority Administrative Review',
+      escalationDescription: 'Immediate physical hazard detected. Flagged for urgent technical site verification and departmental administrative review.',
+    };
+  }
+
+  return {
+    isCriticalSafetyRisk: false,
+    severityNumber: sevNum,
+    riskLabel: 'Standard Infrastructure Signal',
+    escalationStatus: 'Standard Workflow Queue',
+    escalationDescription: 'Prioritized within standard 5-pillar DPI decision framework.',
+  };
+}
+
 /**
  * Calculates a deterministic sensitivity & relative influence breakdown of a ScoreTrace
  */

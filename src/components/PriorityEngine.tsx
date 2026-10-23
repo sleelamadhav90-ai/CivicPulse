@@ -16,10 +16,11 @@ import {
   ShieldCheck,
   Coins,
   Layers,
-  Info
+  Info,
+  AlertTriangle
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, RecommendedProject, InterventionType } from '../types';
-import { getAIRecommendedProjects } from '../utils/scoring';
+import { getAIRecommendedProjects, checkCriticalSafetyRisk } from '../utils/scoring';
 import { buildEvidenceBundle } from '../utils/evidenceBundleService';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -182,12 +183,19 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
       <div className="space-y-5">
         {filteredProjects.map((proj) => {
           const isQueued = queuedProjectIds.has(proj.id);
-          const priorityScore = Math.round(proj.priorityScore || 85);
+          const priorityScore = Math.round(typeof proj.priorityScore === 'number' ? proj.priorityScore : 0);
+          const safetyEval = checkCriticalSafetyRisk({
+            severity: proj.scoreBreakdown?.urgency_score ? Math.round(proj.scoreBreakdown.urgency_score / 10) : (proj.urgency === 'CRITICAL' ? 10 : 5),
+            urgency: proj.urgency,
+            original_text: `${proj.title} ${proj.justification}`
+          });
 
           return (
             <div
               key={proj.id}
-              className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 sm:p-6 rounded-sm shadow-xs transition-all space-y-4"
+              className={`bg-white border p-5 sm:p-6 rounded-sm shadow-xs transition-all space-y-4 ${
+                safetyEval.isCriticalSafetyRisk ? 'border-red-300 bg-red-50/10' : 'border-[#171717]/15 hover:border-[#171717]/35'
+              }`}
             >
               {/* Card Header: Type Badge, Location, and Priority Score */}
               <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-[#171717]/10 pb-3">
@@ -201,6 +209,13 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                   }`}>
                     {tIntervention(proj.interventionType)}
                   </span>
+
+                  {safetyEval.isCriticalSafetyRisk && (
+                    <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold text-red-900 bg-red-100 border border-red-300 px-2 py-0.5 rounded-xs uppercase">
+                      <AlertTriangle className="w-3 h-3 text-red-600 shrink-0" />
+                      <span>⚡ Critical Safety Risk</span>
+                    </span>
+                  )}
 
                   <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
                     {proj.districtName}, {proj.state}
@@ -334,7 +349,7 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
             <div className="grid grid-cols-3 gap-2 text-xs font-mono">
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                 <span className="text-[10px] text-[#78716C] block">{t('metric.priority_score')}</span>
-                <span className="text-base font-bold text-[#D65A3A]">{Math.round(evidenceProject.priorityScore || 85)} / 100</span>
+                <span className="text-base font-bold text-[#D65A3A]">{Math.round(typeof evidenceProject.priorityScore === 'number' ? evidenceProject.priorityScore : 0)} / 100</span>
               </div>
               <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
                 <span className="text-[10px] text-[#78716C] block">{t('metric.estimated_cost')}</span>

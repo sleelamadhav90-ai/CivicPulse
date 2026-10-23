@@ -572,9 +572,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       const isWater = lower.includes('water') || textToProcess.includes('నీరు') || textToProcess.includes('पानी');
       const isRoad = lower.includes('road') || textToProcess.includes('గడ్డ') || textToProcess.includes('सड़क') || textToProcess.includes('రహదారి');
       const isHealth = lower.includes('health') || lower.includes('hospital') || textToProcess.includes('ఆసుపత్రి') || textToProcess.includes('दवा');
-      const isPower = lower.includes('power') || lower.includes('electric') || textToProcess.includes('కరెంట్') || textToProcess.includes('बिजली');
+      const isPower = lower.includes('power') || lower.includes('electric') || lower.includes('wire') || lower.includes('cable') || lower.includes('electrocut') || textToProcess.includes('కరెంట్') || textToProcess.includes('बिजली');
 
-      const cat: InfrastructureCategory = isWater ? 'Water' : isRoad ? 'Roads' : isHealth ? 'Health' : isPower ? 'Electricity' : 'Water';
+      const cat: InfrastructureCategory = isPower ? 'Electricity' : isWater ? 'Water' : isRoad ? 'Roads' : isHealth ? 'Health' : 'Water';
       
       // Deterministic severity evaluation based on rubric
       let sevNum = 5;
@@ -582,8 +582,10 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       let urgLabel: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL' = 'MEDIUM';
 
       if (
-        lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
-        lower.includes('dying') || lower.includes('electrocution') || lower.includes('collapsed bridge') ||
+        lower.includes('electrocut') || lower.includes('electric wire') || lower.includes('power cable') ||
+        lower.includes('live wire') || lower.includes('fallen wire') || lower.includes('downed wire') ||
+        lower.includes('cable down') || lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
+        lower.includes('dying') || lower.includes('collapsed bridge') ||
         lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('ప్రాణాపాయం')
       ) {
         sevNum = 10;

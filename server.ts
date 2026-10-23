@@ -154,7 +154,7 @@ async function callGeminiWithTimeoutAndRetry(
 }
 
 // Deterministic Severity Evaluator implementing the CivicPulse Severity Scoring Rubric
-function evaluateSeverityScore(text: string, category?: string, duration?: string): {
+export function evaluateSeverityScore(text: string, category?: string, duration?: string): {
   severity_number: number;
   severity: 'Low' | 'Medium' | 'High' | 'Critical';
   urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
@@ -163,8 +163,10 @@ function evaluateSeverityScore(text: string, category?: string, duration?: strin
   
   // 1. Critical / Life-threatening (Level 9-10)
   if (
-    lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
-    lower.includes('dying') || lower.includes('electrocution') || lower.includes('collapsed bridge') ||
+    lower.includes('electrocut') || lower.includes('electric wire') || lower.includes('power cable') ||
+    lower.includes('live wire') || lower.includes('fallen wire') || lower.includes('downed wire') ||
+    lower.includes('cable down') || lower.includes('life threat') || lower.includes('fatal') || lower.includes('death') || 
+    lower.includes('dying') || lower.includes('collapsed bridge') ||
     lower.includes('toxic gas') || lower.includes('emergency evacuation') || lower.includes('ప్రాణాపాయం') ||
     lower.includes('చనిపో') || lower.includes('உயிர் ஆபத்து')
   ) {
@@ -491,7 +493,7 @@ Other Extraction Rules:
     const isWater = textInput.includes('water') || textInput.includes('నీరు') || textInput.includes('पानी') || textInput.includes('pipeline') || textInput.includes('tank');
     const isRoads = textInput.includes('road') || textInput.includes('pothole') || textInput.includes('రోడ్డు') || textInput.includes('सड़क') || textInput.includes('traffic');
     const isHealth = textInput.includes('health') || textInput.includes('hospital') || textInput.includes('doctor') || textInput.includes('ఆసుపత్రి') || textInput.includes('दवा');
-    const isLighting = textInput.includes('light') || textInput.includes('power') || textInput.includes('current') || textInput.includes('దీపం') || textInput.includes('बिजली') || textInput.includes('streetlight');
+    const isLighting = textInput.includes('light') || textInput.includes('power') || textInput.includes('current') || textInput.includes('electric') || textInput.includes('wire') || textInput.includes('cable') || textInput.includes('electrocut') || textInput.includes('దీపం') || textInput.includes('बिजली') || textInput.includes('streetlight');
     const isDrainage = textInput.includes('drain') || textInput.includes('flood') || textInput.includes('వర్షం') || textInput.includes('नाली');
     const isSanitation = textInput.includes('garbage') || textInput.includes('waste') || textInput.includes('sanitat') || textInput.includes('clean') || textInput.includes('చెత్త');
     const isEducation = textInput.includes('school') || textInput.includes('edu') || textInput.includes('teacher') || textInput.includes('బడి');
