@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import type { User } from 'firebase/auth';
-import { 
-  signInWithGoogle as firebaseSignIn, 
-  signOutUser as firebaseSignOut, 
-  getCurrentIdToken, 
+import {
+  signInWithGoogle as firebaseSignIn,
+  signOutUser as firebaseSignOut,
+  getCurrentIdToken,
   onAuthChange,
-  isFirebaseConfigured 
+  isFirebaseConfigured,
+  processGoogleRedirect
 } from '../services/firebase.js';
 
 interface AuthContextType {
@@ -35,19 +36,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!isFirebaseConfigured) {
-      setLoading(false);
-      return;
-    }
+ useEffect(() => {
+  if (!isFirebaseConfigured) {
+    setLoading(false);
+    return;
+  }
 
-    const unsubscribe = onAuthChange((firebaseUser) => {
-      setUser(firebaseUser);
-      setLoading(false);
-    });
+  let active = true;
 
-    return () => unsubscribe();
-  }, []);
+  const unsubscribe = onAuthChange((firebaseUser) => {
+    if (!active) return;
+
+    setUser(firebaseUser);
+    setLoading(false);
+  });
+
+  void processGoogleRedirect().catch((err) => {
+    if (!active) return;
+
+    console.error(
+      '[CivicPulse] Redirect recovery failed:',
+      err
+    );
+
+    setError(
+      err instanceof Error
+        ? err.message
+        : 'Google redirect recovery failed'
+    );
+  });
+
+  return () => {
+    active = false;
+    unsubscribe();
+  };
+}, []);
 
   const handleSignIn = async () => {
     setError(null);
