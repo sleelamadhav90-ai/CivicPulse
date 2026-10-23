@@ -41,8 +41,8 @@ export const SCORING_CONFIG = {
   demand: {
     /** Logarithmic multiplier mapping raw report count to 0-100 scale. Reduces surge dominance. */
     logCoefficient: 22,
-    /** Minimum raw count bound to ensure non-zero valid log evaluation */
-    minSignalCount: 1,
+    /** Minimum raw count bound to ensure non-zero valid log evaluation. Set to 0 so 0 signals = 0 score. */
+    minSignalCount: 0,
     /** Maximum normalized demand pillar score */
     maxDemandScore: 100,
   },
@@ -138,12 +138,14 @@ export function calculateScoreTrace(
 ): ScoreTrace {
   const currentAccess = overrideAccess !== undefined ? overrideAccess : getCategoryAccess(district, category);
   
-  // 1. Citizen Demand
+  // 1. Citizen Demand: strictly 0 if demandCount is 0 or negative
   const safeDemandCount = Math.max(SCORING_CONFIG.demand.minSignalCount, Math.floor(demandCount || 0));
-  const demandNormalized = Math.min(
-    SCORING_CONFIG.demand.maxDemandScore,
-    SCORING_CONFIG.demand.logCoefficient * Math.log1p(safeDemandCount)
-  );
+  const demandNormalized = safeDemandCount === 0
+    ? 0
+    : Math.min(
+        SCORING_CONFIG.demand.maxDemandScore,
+        SCORING_CONFIG.demand.logCoefficient * Math.log1p(safeDemandCount)
+      );
   const demandWeight = SCORING_CONFIG.weights.citizenDemand;
   const demandContribution = Number((demandNormalized * demandWeight).toFixed(2));
 
@@ -357,11 +359,14 @@ export function getIssueEvidenceExplanation(
   requests: CitizenRequest[],
   breakdown?: ScoreBreakdown
 ) {
-  const effectiveBreakdown = breakdown || calculatePriorityScore(district, category, 6, Math.max(1, requests.length));
-  const contributions = getScoreComponentContributions(effectiveBreakdown);
-  const bundle = buildEvidenceBundle(district, category, requests);
-
   const matchingSignals = requests.filter(r => matchesDistrict(r, district) && r.category === category);
+  const avgSev = matchingSignals.length > 0 
+    ? Math.round(matchingSignals.reduce((acc, r) => acc + (r.severity || 5), 0) / matchingSignals.length) 
+    : 5;
+  const effectiveBreakdown = breakdown || calculatePriorityScore(district, category, avgSev, matchingSignals.length);
+  const contributions = getScoreComponentContributions(effectiveBreakdown);
+  const bundle = buildEvidenceBundle(district.id, category, requests);
+
   const sampleSignalExcerpts = matchingSignals.slice(0, 3).map(r => r.summary_en || r.translated_text || r.original_text || r.description || `Grievance signal regarding ${category} in ${r.locality || district.name}`);
 
   return {
@@ -448,7 +453,7 @@ export function calculatePriorityScoreFromBundle(
 
   const effectiveDemandCount = overrideDemandCount !== undefined 
     ? overrideDemandCount 
-    : Math.max(1, bundle.citizenDemand.totalSignals);
+    : bundle.citizenDemand.totalSignals;
 
   const overrideAccess = bundle.infrastructure.baselineAccess?.value;
 
@@ -549,13 +554,13 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       else if (cat === 'Drainage') deficitPct = Math.max(10, Math.min(95, Math.round((100 - district.water_access) * 1.1)));
       else if (cat === 'Electricity') deficitPct = Math.max(10, Math.min(95, Math.round((100 - district.road_quality) * 0.9 + 15)));
 
-      // Calculate demand signals based on real request count or baseline demographic density
-      const demandSignals = reqCount > 0 ? reqCount : Math.max(1, Math.round(district.population * 0.00015 * (0.8 + district.poverty_index)));
+      // Calculate demand signals based purely on verified citizen requests. No population-based hallucination.
+      const demandSignals = reqCount;
       const avgSeverity = catRequests.length > 0
         ? Math.round(catRequests.reduce((acc, r) => acc + (r.severity || 5), 0) / catRequests.length)
-        : 6;
+        : 5;
 
-      const breakdown = calculatePriorityScore(district, cat, avgSeverity, Math.max(1, demandSignals));
+      const breakdown = calculatePriorityScore(district, cat, avgSeverity, demandSignals);
       const priorityScore = breakdown.total_score;
 
       let title = '';
@@ -665,9 +670,11 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       score: item.breakdown.demand_score,
       weight: SCORING_WEIGHTS.citizenDemand,
       weightedScore: Number((item.breakdown.demand_score * SCORING_WEIGHTS.citizenDemand).toFixed(1)),
-      bulletText: `${item.citizenRequestsCount.toLocaleString()} citizen requests`,
+      bulletText: item.citizenRequestsCount === 0 ? '0 citizen requests logged' : `${item.citizenRequestsCount.toLocaleString()} citizen requests`,
       metricValue: `${item.citizenRequestsCount.toLocaleString()} signals`,
-      description: `Aggregated voice, SMS, and digital citizen reports from ${item.districtName}.`,
+      description: item.citizenRequestsCount === 0 
+        ? `No citizen complaints recorded for ${item.category} in ${item.districtName}.`
+        : `Aggregated voice, SMS, and digital citizen reports from ${item.districtName}.`,
       badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
     };
 
@@ -715,189 +722,188 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
       badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     };
 
-      // Generate Demographic & Equity Profile ("Who is Affected?")
-      // Note: These are representative socioeconomic baselines from national sector averages
-      const DEMOGRAPHIC_DISCLAIMER = 'Representative demographic profile based on national sector baselines. District-specific census stratification being integrated.';
-      let demographics: DemographicProfile;
-      if (item.category === 'Water') {
-        demographics = {
-          ruralPct: 72,
-          urbanPct: 28,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Women & Primary Caregivers', percentage: 46, impactNote: 'Spend 2.5 hrs/day fetching drinking water from distant pumps', iconEmoji: '👩' },
-            { groupName: 'Children & Students', percentage: 31, impactNote: 'School attendance drops due to waterborne illnesses', iconEmoji: '🎒' },
-            { groupName: 'Elderly Residents (60+)', percentage: 23, impactNote: 'High physical strain carrying heavy water containers', iconEmoji: '👵' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 74, middleIncomePct: 22, highIncomePct: 4 },
-          vulnerabilityIndicators: [
-            { label: 'High Rural Poverty', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
-            { label: 'Severe Ground Water Salinity', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
-          ],
-          equityAssessment: `Disproportionately impacts 12 rural villages where 78% of households lack indoor piped water.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      } else if (item.category === 'Roads') {
-        demographics = {
-          ruralPct: 62,
-          urbanPct: 38,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Students & Bus Commuters', percentage: 42, impactNote: 'Missed school buses and unsafe bicycle transit through potholes', iconEmoji: '🎒' },
-            { groupName: 'Farmers & Daily-Wage Laborers', percentage: 35, impactNote: 'Agricultural crop spoilage during transit delays', iconEmoji: '🌾' },
-            { groupName: 'Elderly Patients & Ambulances', percentage: 23, impactNote: '2.4x delay in emergency medical transit to regional hospital', iconEmoji: '🚑' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 68, middleIncomePct: 26, highIncomePct: 6 },
-          vulnerabilityIndicators: [
-            { label: 'Public Transit Dependent', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
-            { label: 'Single Access Route Corridor', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
-          ],
-          equityAssessment: `High impact on students and elderly residents relying on public bus routes across ${item.affectedAreasCount} underserved villages.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      } else if (item.category === 'Health' || item.category === 'Healthcare') {
-        demographics = {
-          ruralPct: 80,
-          urbanPct: 20,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Maternal & Infant Patients', percentage: 38, impactNote: 'Stockout of essential prenatal supplements & pediatric vaccines', iconEmoji: '👶' },
-            { groupName: 'Elderly Chronic Care Patients', percentage: 34, impactNote: 'Unable to secure monthly diabetes & hypertension medication', iconEmoji: '👵' },
-            { groupName: 'Agricultural Daily Laborers', percentage: 28, impactNote: 'Untreated occupational injuries due to doctor absence', iconEmoji: '👨‍🌾' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 82, middleIncomePct: 15, highIncomePct: 3 },
-          vulnerabilityIndicators: [
-            { label: 'Zero Private Care Alternatives', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
-            { label: 'High BPL Population Concentration', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
-          ],
-          equityAssessment: `Critical health deficit in low-income rural blocks where 82% rely exclusively on public primary health centers.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      } else if (item.category === 'Drainage') {
-        demographics = {
-          ruralPct: 30,
-          urbanPct: 70,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Low-Income Ward Residents', percentage: 52, impactNote: 'Flash monsoon flooding & sewage water entering informal housing', iconEmoji: '🏘️' },
-            { groupName: 'Small Marketplace Vendors', percentage: 28, impactNote: 'Stagnant waterlogging causing market closures and stock loss', iconEmoji: '🏪' },
-            { groupName: 'Schoolchildren & Pedestrians', percentage: 20, impactNote: 'Hazardous walking paths due to open sewer overflow', iconEmoji: '🎒' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 71, middleIncomePct: 24, highIncomePct: 5 },
-          vulnerabilityIndicators: [
-            { label: 'High Urban Density Slums', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
-            { label: 'Monsoon Outfall Hazard', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
-          ],
-          equityAssessment: `Concentrated in dense low-income urban wards lacking automated stormwater outfalls.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      } else if (item.category === 'Electricity') {
-        demographics = {
-          ruralPct: 65,
-          urbanPct: 35,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Smallholder Farmers', percentage: 45, impactNote: 'Transformer coil burnout causing pump motor failure & crop drying', iconEmoji: '⚡' },
-            { groupName: 'Students Preparing for Exams', percentage: 30, impactNote: 'Unannounced feeder outages during evening study hours', iconEmoji: '📚' },
-            { groupName: 'Women & Night Pedestrians', percentage: 25, impactNote: 'Unlit highway bypass corridors raising public safety risks', iconEmoji: '🌙' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 62, middleIncomePct: 32, highIncomePct: 6 },
-          vulnerabilityIndicators: [
-            { label: 'Feeder Overload Deficit', badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
-            { label: 'Agricultural Power Spike Hazard', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
-          ],
-          equityAssessment: `High agricultural impact on smallholder farmers suffering pump motor burnouts.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      } else {
-        demographics = {
-          ruralPct: 78,
-          urbanPct: 22,
-          provenanceLabel: 'Illustrative Equity Profile',
-          isIllustrativeBaseline: true,
-          affectedGroups: [
-            { groupName: 'Female Students (Ages 10-16)', percentage: 48, impactNote: 'Absence of dedicated sanitation facilities leads to high dropout rates', iconEmoji: '👧' },
-            { groupName: 'First-Generation Learners', percentage: 32, impactNote: 'Lack of digital classroom displays and evening lighting', iconEmoji: '📚' },
-            { groupName: 'Primary Educators', percentage: 20, impactNote: 'Inadequate basic infrastructure for quality classroom instruction', iconEmoji: '👩‍🏫' },
-          ],
-          incomeTierBreakdown: { lowIncomePct: 79, middleIncomePct: 18, highIncomePct: 3 },
-          vulnerabilityIndicators: [
-            { label: 'Female Student Retention Risk', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
-            { label: 'Rural Digital Divide', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
-          ],
-          equityAssessment: `Addressing sanitation and digital gaps directly improves female student retention and rural literacy.`,
-          piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
-        };
-      }
+    // Generate Demographic & Equity Profile ("Who is Affected?")
+    const DEMOGRAPHIC_DISCLAIMER = 'Representative demographic profile based on national sector baselines. District-specific census stratification being integrated.';
+    let demographics: DemographicProfile;
+    if (item.category === 'Water') {
+      demographics = {
+        ruralPct: 72,
+        urbanPct: 28,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Women & Primary Caregivers', percentage: 46, impactNote: 'Spend 2.5 hrs/day fetching drinking water from distant pumps', iconEmoji: '👩' },
+          { groupName: 'Children & Students', percentage: 31, impactNote: 'School attendance drops due to waterborne illnesses', iconEmoji: '🎒' },
+          { groupName: 'Elderly Residents (60+)', percentage: 23, impactNote: 'High physical strain carrying heavy water containers', iconEmoji: '👵' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 74, middleIncomePct: 22, highIncomePct: 4 },
+        vulnerabilityIndicators: [
+          { label: 'High Rural Poverty', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+          { label: 'Severe Ground Water Salinity', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+        ],
+        equityAssessment: `Disproportionately impacts 12 rural villages where 78% of households lack indoor piped water.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    } else if (item.category === 'Roads') {
+      demographics = {
+        ruralPct: 62,
+        urbanPct: 38,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Students & Bus Commuters', percentage: 42, impactNote: 'Missed school buses and unsafe bicycle transit through potholes', iconEmoji: '🎒' },
+          { groupName: 'Farmers & Daily-Wage Laborers', percentage: 35, impactNote: 'Agricultural crop spoilage during transit delays', iconEmoji: '🌾' },
+          { groupName: 'Elderly Patients & Ambulances', percentage: 23, impactNote: '2.4x delay in emergency medical transit to regional hospital', iconEmoji: '🚑' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 68, middleIncomePct: 26, highIncomePct: 6 },
+        vulnerabilityIndicators: [
+          { label: 'Public Transit Dependent', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
+          { label: 'Single Access Route Corridor', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
+        ],
+        equityAssessment: `High impact on students and elderly residents relying on public bus routes across ${item.affectedAreasCount} underserved villages.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    } else if (item.category === 'Health' || item.category === 'Healthcare') {
+      demographics = {
+        ruralPct: 80,
+        urbanPct: 20,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Maternal & Infant Patients', percentage: 38, impactNote: 'Stockout of essential prenatal supplements & pediatric vaccines', iconEmoji: '👶' },
+          { groupName: 'Elderly Chronic Care Patients', percentage: 34, impactNote: 'Unable to secure monthly diabetes & hypertension medication', iconEmoji: '👵' },
+          { groupName: 'Agricultural Daily Laborers', percentage: 28, impactNote: 'Untreated occupational injuries due to doctor absence', iconEmoji: '👨‍🌾' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 82, middleIncomePct: 15, highIncomePct: 3 },
+        vulnerabilityIndicators: [
+          { label: 'Zero Private Care Alternatives', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+          { label: 'High BPL Population Concentration', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+        ],
+        equityAssessment: `Critical health deficit in low-income rural blocks where 82% rely exclusively on public primary health centers.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    } else if (item.category === 'Drainage') {
+      demographics = {
+        ruralPct: 30,
+        urbanPct: 70,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Low-Income Ward Residents', percentage: 52, impactNote: 'Flash monsoon flooding & sewage water entering informal housing', iconEmoji: '🏘️' },
+          { groupName: 'Small Marketplace Vendors', percentage: 28, impactNote: 'Stagnant waterlogging causing market closures and stock loss', iconEmoji: '🏪' },
+          { groupName: 'Schoolchildren & Pedestrians', percentage: 20, impactNote: 'Hazardous walking paths due to open sewer overflow', iconEmoji: '🎒' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 71, middleIncomePct: 24, highIncomePct: 5 },
+        vulnerabilityIndicators: [
+          { label: 'High Urban Density Slums', badgeColor: 'bg-amber-100 text-amber-800 border-amber-300' },
+          { label: 'Monsoon Outfall Hazard', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+        ],
+        equityAssessment: `Concentrated in dense low-income urban wards lacking automated stormwater outfalls.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    } else if (item.category === 'Electricity') {
+      demographics = {
+        ruralPct: 65,
+        urbanPct: 35,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Smallholder Farmers', percentage: 45, impactNote: 'Transformer coil burnout causing pump motor failure & crop drying', iconEmoji: '⚡' },
+          { groupName: 'Students Preparing for Exams', percentage: 30, impactNote: 'Unannounced feeder outages during evening study hours', iconEmoji: '📚' },
+          { groupName: 'Women & Night Pedestrians', percentage: 25, impactNote: 'Unlit highway bypass corridors raising public safety risks', iconEmoji: '🌙' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 62, middleIncomePct: 32, highIncomePct: 6 },
+        vulnerabilityIndicators: [
+          { label: 'Feeder Overload Deficit', badgeColor: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+          { label: 'Agricultural Power Spike Hazard', badgeColor: 'bg-purple-100 text-purple-800 border-purple-300' },
+        ],
+        equityAssessment: `High agricultural impact on smallholder farmers suffering pump motor burnouts.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    } else {
+      demographics = {
+        ruralPct: 78,
+        urbanPct: 22,
+        provenanceLabel: 'Illustrative Equity Profile',
+        isIllustrativeBaseline: true,
+        affectedGroups: [
+          { groupName: 'Female Students (Ages 10-16)', percentage: 48, impactNote: 'Absence of dedicated sanitation facilities leads to high dropout rates', iconEmoji: '👧' },
+          { groupName: 'First-Generation Learners', percentage: 32, impactNote: 'Lack of digital classroom displays and evening lighting', iconEmoji: '📚' },
+          { groupName: 'Primary Educators', percentage: 20, impactNote: 'Inadequate basic infrastructure for quality classroom instruction', iconEmoji: '👩‍🏫' },
+        ],
+        incomeTierBreakdown: { lowIncomePct: 79, middleIncomePct: 18, highIncomePct: 3 },
+        vulnerabilityIndicators: [
+          { label: 'Female Student Retention Risk', badgeColor: 'bg-rose-100 text-rose-800 border-rose-300' },
+          { label: 'Rural Digital Divide', badgeColor: 'bg-blue-100 text-blue-800 border-blue-300' },
+        ],
+        equityAssessment: `Addressing sanitation and digital gaps directly improves female student retention and rural literacy.`,
+        piiProtectionNote: DEMOGRAPHIC_DISCLAIMER
+      };
+    }
 
-      // Generate Infrastructure Audit ("What exists? What condition/capacity?")
-      let infrastructureAudit: InfrastructureAudit;
-      if (item.interventionType === 'BUILD') {
-        infrastructureAudit = {
-          assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Centre (PHC)' : item.category === 'Water' ? 'Water Pumping & Storage Hub' : item.category === 'Roads' ? 'Paved Access Road' : 'Community Infrastructure Facility',
-          assetCategory: item.category,
-          location: `${item.districtName} Rural Belt (Sector 4)`,
-          capacity: item.category === 'Healthcare' || item.category === 'Health' ? '0 local beds' : item.category === 'Water' ? '0 piped connections' : '0 paved km',
-          condition: '❌ Non-functional',
-          utilizationPct: 0,
-          nearestFacilityDistanceKm: 18.2,
-          travelTimeMinutes: 45,
-          servedPopulation: item.beneficiaries,
-          auditFinding: `Nearest facility is 18.2 km away (~45 min transit time) serving ${item.beneficiaries.toLocaleString()} residents without local coverage.`,
-          interventionRationale: `NO LOCAL INFRASTRUCTURE → 🏗 BUILD: New facility required because ${item.beneficiaries.toLocaleString()} residents have zero local access within a 15 km radius, while regional facilities operate at capacity.`,
-          interventionType: 'BUILD'
-        };
-      } else if (item.interventionType === 'FIX') {
-        infrastructureAudit = {
-          assetName: item.category === 'Roads' ? 'MDR-44 Hospital Transit Route' : item.category === 'Water' ? 'RO Filtration Plant #2' : 'Substation Feeder Line',
-          assetCategory: item.category,
-          location: `${item.districtName} Ward Corridor`,
-          capacity: item.category === 'Roads' ? '8 km stretch' : '50,000 L/day',
-          condition: '⚠️ Damaged',
-          utilizationPct: 95,
-          nearestFacilityDistanceKm: 0,
-          travelTimeMinutes: 28,
-          servedPopulation: item.beneficiaries,
-          auditFinding: `Infrastructure exists but is severely damaged with 48+ major structural defects causing 2.4x transit delays and emergency hazards.`,
-          interventionRationale: `INFRASTRUCTURE BROKEN → 🔧 FIX: Structural overhaul required to repair heavy monsoon damage, restore safety compliance, and eliminate emergency transit bottlenecks.`,
-          interventionType: 'FIX'
-        };
-      } else if (item.interventionType === 'UPGRADE') {
-        infrastructureAudit = {
-          assetName: item.category === 'Water' ? 'Overhead Water Reservoir Tank' : item.category === 'Electricity' ? '33/11kV Substation' : 'Government Primary School',
-          assetCategory: item.category,
-          location: `${item.districtName} Sector 9`,
-          capacity: item.category === 'Water' ? '100,000 L design limit' : '12 MVA capacity',
-          condition: '🔴 Critical',
-          utilizationPct: 115,
-          nearestFacilityDistanceKm: 3.5,
-          travelTimeMinutes: 10,
-          servedPopulation: item.beneficiaries,
-          auditFinding: `Facility is operating at 115% capacity overload with severe demand outpacing original design specifications.`,
-          interventionRationale: `CAPACITY EXCEEDED → ⬆ UPGRADE: Capacity expansion required to expand throughput by 40% and prevent structural/feeder failure under peak load.`,
-          interventionType: 'UPGRADE'
-        };
-      } else { // POLICY
-        infrastructureAudit = {
-          assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Center (30 beds)' : 'Public Utility & Distribution Center',
-          assetCategory: item.category,
-          location: `${item.districtName} Sector 2`,
-          capacity: '30 beds (Good Physical Condition)',
-          condition: '🟢 Good',
-          utilizationPct: 78,
-          nearestFacilityDistanceKm: 2.1,
-          travelTimeMinutes: 8,
-          servedPopulation: item.beneficiaries,
-          auditFinding: `Physical facility condition and bed capacity are good (78% utilization), but 2 Medical Officers are missing and vaccine stockouts disrupt patient care.`,
-          interventionRationale: `INFRASTRUCTURE ADEQUATE BUT SERVICE FAILING → 📋 POLICY: Operational policy overhaul, staffing deployment, and inventory supply chain reform required without CapEx construction.`,
-          interventionType: 'POLICY'
-        };
-      }
+    // Generate Infrastructure Audit ("What exists? What condition/capacity?")
+    let infrastructureAudit: InfrastructureAudit;
+    if (item.interventionType === 'BUILD') {
+      infrastructureAudit = {
+        assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Centre (PHC)' : item.category === 'Water' ? 'Water Pumping & Storage Hub' : item.category === 'Roads' ? 'Paved Access Road' : 'Community Infrastructure Facility',
+        assetCategory: item.category,
+        location: `${item.districtName} Rural Belt (Sector 4)`,
+        capacity: item.category === 'Healthcare' || item.category === 'Health' ? '0 local beds' : item.category === 'Water' ? '0 piped connections' : '0 paved km',
+        condition: '❌ Non-functional',
+        utilizationPct: 0,
+        nearestFacilityDistanceKm: 18.2,
+        travelTimeMinutes: 45,
+        servedPopulation: item.beneficiaries,
+        auditFinding: `Nearest facility is 18.2 km away (~45 min transit time) serving ${item.beneficiaries.toLocaleString()} residents without local coverage.`,
+        interventionRationale: `NO LOCAL INFRASTRUCTURE → 🏗 BUILD: New facility required because ${item.beneficiaries.toLocaleString()} residents have zero local access within a 15 km radius, while regional facilities operate at capacity.`,
+        interventionType: 'BUILD'
+      };
+    } else if (item.interventionType === 'FIX') {
+      infrastructureAudit = {
+        assetName: item.category === 'Roads' ? 'MDR-44 Hospital Transit Route' : item.category === 'Water' ? 'RO Filtration Plant #2' : 'Substation Feeder Line',
+        assetCategory: item.category,
+        location: `${item.districtName} Ward Corridor`,
+        capacity: item.category === 'Roads' ? '8 km stretch' : '50,000 L/day',
+        condition: '⚠️ Damaged',
+        utilizationPct: 95,
+        nearestFacilityDistanceKm: 0,
+        travelTimeMinutes: 28,
+        servedPopulation: item.beneficiaries,
+        auditFinding: `Infrastructure exists but is severely damaged with 48+ major structural defects causing 2.4x transit delays and emergency hazards.`,
+        interventionRationale: `INFRASTRUCTURE BROKEN → 🔧 FIX: Structural overhaul required to repair heavy monsoon damage, restore safety compliance, and eliminate emergency transit bottlenecks.`,
+        interventionType: 'FIX'
+      };
+    } else if (item.interventionType === 'UPGRADE') {
+      infrastructureAudit = {
+        assetName: item.category === 'Water' ? 'Overhead Water Reservoir Tank' : item.category === 'Electricity' ? '33/11kV Substation' : 'Government Primary School',
+        assetCategory: item.category,
+        location: `${item.districtName} Sector 9`,
+        capacity: item.category === 'Water' ? '100,000 L design limit' : '12 MVA capacity',
+        condition: '🔴 Critical',
+        utilizationPct: 115,
+        nearestFacilityDistanceKm: 3.5,
+        travelTimeMinutes: 10,
+        servedPopulation: item.beneficiaries,
+        auditFinding: `Facility is operating at 115% capacity overload with severe demand outpacing original design specifications.`,
+        interventionRationale: `CAPACITY EXCEEDED → ⬆ UPGRADE: Capacity expansion required to expand throughput by 40% and prevent structural/feeder failure under peak load.`,
+        interventionType: 'UPGRADE'
+      };
+    } else { // POLICY
+      infrastructureAudit = {
+        assetName: item.category === 'Healthcare' || item.category === 'Health' ? 'Primary Health Center (30 beds)' : 'Public Utility & Distribution Center',
+        assetCategory: item.category,
+        location: `${item.districtName} Sector 2`,
+        capacity: '30 beds (Good Physical Condition)',
+        condition: '🟢 Good',
+        utilizationPct: 78,
+        nearestFacilityDistanceKm: 2.1,
+        travelTimeMinutes: 8,
+        servedPopulation: item.beneficiaries,
+        auditFinding: `Physical facility condition and bed capacity are good (78% utilization), but 2 Medical Officers are missing and vaccine stockouts disrupt patient care.`,
+        interventionRationale: `INFRASTRUCTURE ADEQUATE BUT SERVICE FAILING → 📋 POLICY: Operational policy overhaul, staffing deployment, and inventory supply chain reform required without CapEx construction.`,
+        interventionType: 'POLICY'
+      };
+    }
 
     return {
       id: item.id,
@@ -962,4 +968,3 @@ export function getAIRecommendedProjects(districts: District[], requests: Citize
     };
   });
 }
-

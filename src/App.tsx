@@ -146,11 +146,14 @@ export default function App() {
     const seenIds = new Set<string>();
     const sanitized: CitizenRequest[] = [];
 
-    // 1. Process custom requests, ensuring no collision with default seed IDs or duplicate entries
+    // 1. Process custom requests, ensuring no duplicate entries and no collision with default seed IDs
     for (const cr of activeCustomRequests) {
       if (!cr || !cr.id) continue;
+      // If we have already seen this custom request, discard duplicate
+      if (seenIds.has(cr.id)) continue;
+
       let uniqueId = cr.id;
-      if (defaultIds.has(uniqueId) || seenIds.has(uniqueId)) {
+      if (defaultIds.has(uniqueId)) {
         let counter = 1;
         while (defaultIds.has(`${cr.id}-USER-${counter}`) || seenIds.has(`${cr.id}-USER-${counter}`)) {
           counter++;

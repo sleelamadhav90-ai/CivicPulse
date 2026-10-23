@@ -192,7 +192,8 @@ assert(
 console.log('\n[Test 9] Out-of-Bounds & Malformed Input Handling');
 const negativeDemandResult = calculatePriorityScore(baseDistrict, 'Roads', -10, -50);
 assert(!isNaN(negativeDemandResult.total_score), 'Negative demand must not produce NaN');
-assert(negativeDemandResult.demand_count >= 1, 'Negative demand must clamp to minimum bound');
+assert(negativeDemandResult.demand_count >= 0, 'Negative demand must clamp to minimum bound of 0');
+assert(negativeDemandResult.demand_score === 0, 'Negative or 0 demand must produce exactly 0 demand score');
 
 const overUrgencyResult = calculatePriorityScore(baseDistrict, 'Roads', 999, 10);
 assert(!isNaN(overUrgencyResult.total_score), 'Excessive urgency must not produce NaN');
@@ -203,4 +204,13 @@ const sensitivity = calculateScoreSensitivity(trace);
 assert(!!sensitivity.dominantPillar, 'Sensitivity analysis must return a dominant pillar factor');
 assert(sensitivity.dominantPercentage > 0, 'Dominant percentage must be positive');
 
-console.log('\n🎉 ALL 9 PRIORITY SCORING ENGINE TESTS PASSED SUCCESSFULLY!\n');
+// -------------------------------------------------------------
+// Test 10 — Zero Citizen Signals Yields Exactly Zero Demand Score
+// -------------------------------------------------------------
+console.log('\n[Test 10] Zero Demand Pillar Contribution Verification');
+const zeroDemandResult = calculatePriorityScore(baseDistrict, 'Water', 6, 0);
+assert(zeroDemandResult.demand_score === 0, '0 signals must result in 0 demand score');
+assert(zeroDemandResult.scoreTrace!.demand.contribution === 0, '0 signals must result in 0 demand contribution');
+
+console.log('\n🎉 ALL PRIORITY SCORING ENGINE TESTS PASSED SUCCESSFULLY!\n');
+

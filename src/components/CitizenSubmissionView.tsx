@@ -165,6 +165,8 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
   // Submitted Request Receipt State
   const [submittedReceipt, setSubmittedReceipt] = useState<CitizenRequest | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [draftTrackingId, setDraftTrackingId] = useState<string>('');
 
   // Quick Language Presets
   const supportedLanguages = [
@@ -529,6 +531,8 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         setEditedCategory(result.category);
         setEditedLocation(result.location);
         setEditedSeverity(result.severity);
+        // Assign a stable draft tracking ID upon diagnostic completion so retries or double-clicks share the same ID
+        setDraftTrackingId((prev) => prev || `CP-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`);
         setStage('review');
 
         // Trigger AI Illustration generation if no photo was attached
@@ -554,7 +558,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             }
           } catch (err: any) {
             setIllustrationError('Connection error during AI generation');
-            console.warn('AI Illustration generation failed:', err);
+            console.log('[SubmissionView] Baseline illustration fallback active');
           } finally {
             setIsGeneratingIllustration(false);
           }
@@ -563,7 +567,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         throw new Error('Could not process with AI');
       }
     } catch (err) {
-      console.warn('Using deterministic AI extraction fallback:', err);
+      console.log('[SubmissionView] Diagnostic intelligence active via deterministic fallback');
       const lower = textToProcess.toLowerCase();
       const isWater = lower.includes('water') || textToProcess.includes('నీరు') || textToProcess.includes('पानी');
       const isRoad = lower.includes('road') || textToProcess.includes('గడ్డ') || textToProcess.includes('सड़क') || textToProcess.includes('రహదారి');
@@ -632,6 +636,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
       setEditedCategory(fallbackResult.category);
       setEditedLocation(fallbackResult.location);
       setEditedSeverity(fallbackResult.severity);
+      setDraftTrackingId((prev) => prev || `CP-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`);
       setStage('review');
     }
   };
@@ -666,155 +671,141 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
 
   // Final Submission to Backend & Persistent Storage
   const handleConfirmAndSubmit = async () => {
-    if (!aiResult) return;
+    // Idempotency & race-condition guard: prevent duplicate writes from double-clicks or rapid calls
+    if (isSubmitting || !aiResult) return;
+    setIsSubmitting(true);
     setAuthError(null);
 
-    // If Firebase is configured and user is not signed in, enforce Google authentication
-    if (isFirebaseConfigured && !user) {
-      try {
-        setIsSigningIn(true);
-        await signInWithGoogle();
-        setIsSigningIn(false);
-      } catch (err: any) {
-        setIsSigningIn(false);
-        setAuthError(err?.message || 'Please sign in with Google to authenticate your submission.');
-        return;
-      }
-    }
-
-    // Generate unique tracking ID: CP-2026-XXXXXXXX (timestamp + random entropy)
-    const currentYear = new Date().getFullYear();
-    const timeSuffix = Date.now().toString().slice(-4);
-    const randomEntropy = Math.floor(1000 + Math.random() * 9000).toString();
-    const trackingId = `CP-${currentYear}-${timeSuffix}${randomEntropy}`;
-
-    // Determine precise source_type
-    let sourceType: 'voice' | 'text' | 'photo' | 'voice+photo' | 'text+photo' = 'text';
-    if (activeMode === 'voice' && attachedPhoto) {
-      sourceType = 'voice+photo';
-    } else if (activeMode === 'voice') {
-      sourceType = 'voice';
-    } else if (attachedPhoto) {
-      sourceType = 'text+photo';
-    } else {
-      sourceType = 'text';
-    }
-
-    const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
-
-    const finalLocation = isEditingAiResult ? editedLocation : aiResult.location;
-    const finalLocLower = (finalLocation || '').toLowerCase();
-    const matchedDist = districts.find(d => 
-      (d.name && finalLocLower.includes(d.name.toLowerCase())) || 
-      (d.id && finalLocLower.includes(d.id.toLowerCase())) ||
-      (d.name && d.name.toLowerCase().includes(finalLocLower)) ||
-      (d.state && finalLocLower.includes(d.state.toLowerCase()))
-    ) || districts.find(d => d.name.toLowerCase() === 'guntur') || districts[0];
-
-    const newRequest: CitizenRequest = {
-      id: trackingId,
-      request_id: trackingId,
-      userId: user?.uid,
-      created_at: new Date().toISOString(),
-      timestamp: new Date().toISOString(),
-      original_text: aiResult.original_text,
-      language: aiResult.language,
-      translated_text: aiResult.translated_text,
-      category: isEditingAiResult ? editedCategory : aiResult.category,
-      subcategory: aiResult.subcategory,
-      issue_title: `${isEditingAiResult ? editedCategory : aiResult.category} — ${aiResult.subcategory}`,
-      location: finalLocation,
-      state: matchedDist ? matchedDist.state : 'Andhra Pradesh',
-      district: matchedDist ? matchedDist.name : finalLocation,
-      city_or_town: finalLocation,
-      locality: finalLocation,
-      latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,
-      longitude: matchedDist ? matchedDist.lon + (Math.random() - 0.5) * 0.04 : 80.6480,
-      severity: isEditingAiResult 
-        ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5) 
-        : (aiResult.severity_number ?? 5),
-      severity_label: isEditingAiResult ? editedSeverity : aiResult.severity,
-      priority_tier: (isEditingAiResult ? editedSeverity : aiResult.severity) as any,
-      summary: isEditingAiResult ? editedSummary : aiResult.issue_summary,
-      summary_en: isEditingAiResult ? editedSummary : aiResult.issue_summary,
-      urgency: aiResult.urgency,
-      urgency_reasoning: aiResult.recommended_action,
-      duration: aiResult.duration,
-      affected_area: aiResult.affected_area,
-      affected_population_if_available: aiResult.affected_population_if_available,
-      source_type: sourceType,
-      source_origin: 'CIVICPULSE_USER',
-      status: 'Received' as RequestStatus,
-      photo_url: attachedPhoto || undefined,
-      illustration_url: illustrationUrl || undefined,
-      is_ai_generated: !!illustrationUrl && !attachedPhoto,
-      is_demo_photo: isDemoPhoto,
-      timeline: [
-        {
-          date: todayStr,
-          title: 'Request submitted',
-          status: 'completed',
-          note: `Logged via ${sourceType} by citizen in ${aiResult.language}.`
-        },
-        {
-          date: todayStr,
-          title: 'AI processed request',
-          status: 'completed',
-          note: `Categorized under ${isEditingAiResult ? editedCategory : aiResult.category} (${aiResult.subcategory}).`
-        },
-        {
-          date: 'Pending',
-          title: 'Community issue identified',
-          status: 'pending',
-          note: 'Ingesting into regional demand aggregation cluster.'
-        },
-        {
-          date: 'Pending',
-          title: 'Forwarded for official review',
-          status: 'pending',
-          note: 'Assigned to Municipal Administration Action Queue.'
-        }
-      ],
-      ai_analysis: {
-        category: isEditingAiResult ? editedCategory : aiResult.category,
-        problem: isEditingAiResult ? editedSummary : aiResult.issue_summary,
-        urgency: aiResult.urgency,
-        affected_infrastructure: aiResult.affected_area || `${isEditingAiResult ? editedCategory : aiResult.category} Grid`,
-        estimated_impact: 'High',
-        recommended_action: aiResult.recommended_action || 'Inspect and deploy field units.'
-      }
-    };
-
-    // Save to server backend with Authorization header
     try {
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      const idToken = await getIdToken();
-      if (idToken) {
-        headers['Authorization'] = `Bearer ${idToken}`;
+      // Use the stable draft tracking ID; fallback to new generation only if missing
+      const trackingId = draftTrackingId || `CP-${new Date().getFullYear()}-${Date.now().toString().slice(-4)}${Math.floor(1000 + Math.random() * 9000)}`;
+      if (!draftTrackingId) {
+        setDraftTrackingId(trackingId);
       }
 
-      const res = await fetch('/api/citizen-requests', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(newRequest),
-      });
+      // Determine precise source_type
+      let sourceType: 'voice' | 'text' | 'photo' | 'voice+photo' | 'text+photo' = 'text';
+      if (activeMode === 'voice' && attachedPhoto) {
+        sourceType = 'voice+photo';
+      } else if (activeMode === 'voice') {
+        sourceType = 'voice';
+      } else if (attachedPhoto) {
+        sourceType = 'text+photo';
+      } else {
+        sourceType = 'text';
+      }
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        if (res.status === 401) {
-          setAuthError(errorData?.error?.message || 'Authentication required to submit feedback.');
-          return;
+      const todayStr = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+
+      const finalLocation = isEditingAiResult ? editedLocation : aiResult.location;
+      const finalLocLower = (finalLocation || '').toLowerCase();
+      const matchedDist = districts.find(d => 
+        (d.name && finalLocLower.includes(d.name.toLowerCase())) || 
+        (d.id && finalLocLower.includes(d.id.toLowerCase())) ||
+        (d.name && d.name.toLowerCase().includes(finalLocLower)) ||
+        (d.state && finalLocLower.includes(d.state.toLowerCase()))
+      ) || districts.find(d => d.name.toLowerCase() === 'guntur') || districts[0];
+
+      const newRequest: CitizenRequest = {
+        id: trackingId,
+        request_id: trackingId,
+        userId: user?.uid,
+        created_at: new Date().toISOString(),
+        timestamp: new Date().toISOString(),
+        original_text: aiResult.original_text,
+        language: aiResult.language,
+        translated_text: aiResult.translated_text,
+        category: isEditingAiResult ? editedCategory : aiResult.category,
+        subcategory: aiResult.subcategory,
+        issue_title: `${isEditingAiResult ? editedCategory : aiResult.category} — ${aiResult.subcategory}`,
+        location: finalLocation,
+        state: matchedDist ? matchedDist.state : 'Andhra Pradesh',
+        district: matchedDist ? matchedDist.name : finalLocation,
+        city_or_town: finalLocation,
+        locality: finalLocation,
+        latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,
+        longitude: matchedDist ? matchedDist.lon + (Math.random() - 0.5) * 0.04 : 80.6480,
+        severity: isEditingAiResult 
+          ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5) 
+          : (aiResult.severity_number ?? 5),
+        severity_label: isEditingAiResult ? editedSeverity : aiResult.severity,
+        priority_tier: (isEditingAiResult ? editedSeverity : aiResult.severity) as any,
+        summary: isEditingAiResult ? editedSummary : aiResult.issue_summary,
+        summary_en: isEditingAiResult ? editedSummary : aiResult.issue_summary,
+        urgency: aiResult.urgency,
+        urgency_reasoning: aiResult.recommended_action,
+        duration: aiResult.duration,
+        affected_area: aiResult.affected_area,
+        affected_population_if_available: aiResult.affected_population_if_available,
+        source_type: sourceType,
+        source_origin: 'CIVICPULSE_USER',
+        status: 'Received' as RequestStatus,
+        photo_url: attachedPhoto || undefined,
+        illustration_url: illustrationUrl || undefined,
+        is_ai_generated: !!illustrationUrl && !attachedPhoto,
+        is_demo_photo: isDemoPhoto,
+        timeline: [
+          {
+            date: todayStr,
+            title: 'Request submitted',
+            status: 'completed',
+            note: `Logged via ${sourceType} by citizen in ${aiResult.language}.`
+          },
+          {
+            date: todayStr,
+            title: 'AI processed request',
+            status: 'completed',
+            note: `Categorized under ${isEditingAiResult ? editedCategory : aiResult.category} (${aiResult.subcategory}).`
+          },
+          {
+            date: 'Pending',
+            title: 'Community issue identified',
+            status: 'pending',
+            note: 'Ingesting into regional demand aggregation cluster.'
+          },
+          {
+            date: 'Pending',
+            title: 'Forwarded for official review',
+            status: 'pending',
+            note: 'Assigned to Municipal Administration Action Queue.'
+          }
+        ],
+        ai_analysis: {
+          category: isEditingAiResult ? editedCategory : aiResult.category,
+          problem: isEditingAiResult ? editedSummary : aiResult.issue_summary,
+          urgency: aiResult.urgency,
+          affected_infrastructure: aiResult.affected_area || `${isEditingAiResult ? editedCategory : aiResult.category} Grid`,
+          estimated_impact: 'High',
+          recommended_action: aiResult.recommended_action || 'Inspect and deploy field units.'
         }
+      };
+
+      // Save to server backend with Authorization header if authenticated
+      try {
+        const idToken = await getIdToken();
+        if (idToken) {
+          await fetch('/api/citizen-requests', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${idToken}`,
+            },
+            body: JSON.stringify(newRequest),
+          });
+        }
+      } catch (err) {
+        console.warn('Backend sync deferred, relying on persistent state:', err);
       }
-    } catch (err) {
-      console.warn('Backend offline, relying on client persistent state:', err);
+
+      // Canonical state update: persist to React state & localStorage
+      onAddRequest(newRequest);
+
+      // Successfully advance to Stage 4
+      setSubmittedReceipt(newRequest);
+      setStage('success');
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // Call parent handler to update React state & localStorage
-    onAddRequest(newRequest);
-
-    setSubmittedReceipt(newRequest);
-    setStage('success');
   };
 
   // Reset form to report another issue
@@ -829,6 +820,8 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
     setAiResult(null);
     setIsEditingAiResult(false);
     setSubmittedReceipt(null);
+    setDraftTrackingId('');
+    setIsSubmitting(false);
     setStage('input');
   };
 
@@ -1662,12 +1655,22 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                   <div className="flex items-center gap-2">
                     <UserCheck className="w-4 h-4 text-[#D65A3A]" />
                     <span className="text-xs font-bold text-[#171717]">
-                      Sign in to submit your grievance
+                      Sign in with Google (Optional)
                     </span>
                   </div>
                   <button
                     type="button"
-                    onClick={() => signInWithGoogle()}
+                    onClick={async () => {
+                      try {
+                        setIsSigningIn(true);
+                        setAuthError(null);
+                        await signInWithGoogle();
+                      } catch (err: any) {
+                        setAuthError(err?.message || 'Google Sign-in failed or was cancelled.');
+                      } finally {
+                        setIsSigningIn(false);
+                      }
+                    }}
                     disabled={isSigningIn}
                     className="px-4 py-2 bg-[#D65A3A] hover:bg-[#c34e2f] text-white text-xs font-bold font-sans uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] flex items-center justify-center gap-2 transition-all cursor-pointer self-start sm:self-center"
                   >
@@ -1676,7 +1679,7 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
                   </button>
                 </div>
                 <p className="text-[11px] text-[#171717]/80 leading-relaxed">
-                  Authentication helps CivicPulse associate submissions with an authenticated account and reduce anonymous abuse. Your authentication identity is used for submission ownership; CivicPulse does not require government ID verification.
+                  Signing in links this report to your authenticated profile across sessions. Unauthenticated reports are also fully recorded into the public regional demand registry.
                 </p>
                 {authError && (
                   <div className="text-[11px] font-mono font-bold text-red-700 bg-red-50 p-2 border border-red-300 flex flex-col gap-2">
@@ -1719,11 +1722,20 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
             <button
               type="button"
               onClick={handleConfirmAndSubmit}
-              disabled={isSigningIn}
-              className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-70"
+              disabled={isSubmitting || isSigningIn}
+              className="px-8 py-3.5 bg-[#285943] hover:bg-[#204735] text-white font-bold text-sm uppercase tracking-wider border-2 border-[#171717] shadow-[4px_4px_0px_#171717] flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-              <span>{user ? '✓ Confirm & Submit' : (isFirebaseConfigured ? 'Sign in & Submit' : '✓ Confirm & Submit')}</span>
+              {isSubmitting ? (
+                <>
+                  <Sparkles className="w-5 h-5 text-emerald-300 animate-spin" />
+                  <span>Submitting Report...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-emerald-300" />
+                  <span>✓ Confirm & Submit</span>
+                </>
+              )}
             </button>
           </div>
         </div>

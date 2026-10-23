@@ -222,8 +222,6 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
       const demandHotspot = getCityDemandHotspot(district, timeFilteredRequests, selectedCategory);
       const currentAccess = getCategoryAccess(district, targetCategory);
       const demandCount = selectedCategory === 'All' ? demandHotspot.totalCitizenRequests : demandHotspot.categoryRequests;
-      
-      const breakdown = calculatePriorityScore(district, targetCategory, demandCount, currentAccess);
 
       const matchedRequests = timeFilteredRequests.filter(
         (r) => {
@@ -235,6 +233,12 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
           return matchDist && matchCat && matchLocality;
         }
       );
+
+      const avgSeverity = matchedRequests.length > 0
+        ? Math.round(matchedRequests.reduce((acc, r) => acc + (r.severity || 5), 0) / matchedRequests.length)
+        : (demandHotspot.urgencyLevel === 'Critical' ? 9 : demandHotspot.urgencyLevel === 'High' ? 7 : 5);
+
+      const breakdown = calculatePriorityScore(district, targetCategory, avgSeverity, demandCount, currentAccess);
 
       return {
         district,

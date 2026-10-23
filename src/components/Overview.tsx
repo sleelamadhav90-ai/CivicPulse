@@ -77,8 +77,6 @@ export const Overview: React.FC<OverviewProps> = ({
       const demandHotspot = getCityDemandHotspot(district, requests);
       const accessScore = getCategoryAccess(district, category);
       const demandCount = demandHotspot.totalCitizenRequests;
-      const breakdown = calculatePriorityScore(district, category, demandCount, accessScore);
-      const tier = getPriorityTier(breakdown.total_score);
 
       const matchedRequests = requests.filter(
         r => (r.district && r.district.toLowerCase() === district.name.toLowerCase()) ||
@@ -86,6 +84,13 @@ export const Overview: React.FC<OverviewProps> = ({
              district.name.toLowerCase().includes(r.location.toLowerCase()) ||
              r.location.toLowerCase().includes(district.state.toLowerCase())
       );
+
+      const avgSeverity = matchedRequests.length > 0
+        ? Math.round(matchedRequests.reduce((acc, r) => acc + (r.severity || 5), 0) / matchedRequests.length)
+        : (demandHotspot.urgencyLevel === 'Critical' ? 9 : demandHotspot.urgencyLevel === 'High' ? 7 : 5);
+
+      const breakdown = calculatePriorityScore(district, category, avgSeverity, demandCount, accessScore);
+      const tier = getPriorityTier(breakdown.total_score);
 
       return {
         district,
