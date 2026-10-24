@@ -13,6 +13,7 @@ import {
   MessageSquare, 
   Camera, 
   ChevronRight, 
+  ChevronDown,
   TrendingUp, 
   Languages,
   Check,
@@ -91,7 +92,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   // Dynamic India-wide Location Selection State
   const [selectedState, setSelectedState] = useState<string>('Andhra Pradesh');
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Guntur');
-  const [landmark, setLandmark] = useState<string>('Near Primary School, Ward 12');
+  const [landmark, setLandmark] = useState<string>('');
 
   const [inputText, setInputText] = useState<string>('');
   
@@ -544,6 +545,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     setStep(1);
     setSubmissionReceipt(null);
     setInputText('Potholes and broken streetlights near the school corridor.');
+    setLandmark('');
     handleRemovePhoto();
     setRecordedVoice(false);
   };
@@ -660,14 +662,14 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             </nav>
           </div>
 
-          {/* STEP 1: WHAT DO YOU NEED? (FIX 1) */}
+          {/* STEP 1: WHAT DO YOU NEED? */}
           {step === 1 && (
-            <div className="space-y-6">
+            <div className="bg-[#FBF9F5] p-5 sm:p-6 rounded-xl border border-slate-200/80 space-y-6">
               <div>
-                <h2 className="text-xl font-serif font-bold text-[#171717]">
+                <h2 className="text-xl font-serif font-bold text-slate-900">
                   Step 1: What service or infrastructure do you need?
                 </h2>
-                <p className="text-xs text-[#171717]/70 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   Select from our 13 public service categories below:
                 </p>
               </div>
@@ -691,13 +693,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                         setSelectedCategory(cat.id);
                         setSelectedCategoryName(cat.name);
                       }}
-                      className={`p-3.5 border-2 text-left flex items-start space-x-3.5 transition-all cursor-pointer rounded-sm group relative h-full min-h-[84px] ${
+                      className={`p-3.5 border text-left flex items-start space-x-3.5 transition-all cursor-pointer rounded-lg group relative h-full min-h-[84px] ${
                         isSelected
-                          ? 'bg-orange-50/80 border-[#D65A3A] shadow-[3px_3px_0px_#171717] ring-1 ring-[#D65A3A]/40'
-                          : 'bg-white border-[#171717]/30 hover:border-[#171717] hover:bg-[#FAF8F5] hover:shadow-xs'
+                          ? 'bg-white border-[#D65A3A] shadow-md ring-2 ring-[#D65A3A]/20'
+                          : 'bg-white border-slate-200 hover:border-slate-400 hover:shadow-xs'
                       }`}
                     >
-                      {/* Icon Container: 48-56px, rounded corners, pale-tinted theme background */}
+                      {/* Icon Container */}
                       <div 
                         className={`w-12 h-12 sm:w-14 sm:h-14 rounded-lg border flex items-center justify-center shrink-0 shadow-xs transition-transform duration-150 ${cat.bgClass} ${cat.borderClass} ${
                           isSelected ? 'scale-105 shadow-sm' : 'group-hover:scale-102'
@@ -726,7 +728,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                           )}
                         </div>
                         <div>
-                          <span className="bg-amber-50 text-amber-700 rounded px-2 py-0.5 text-[10px] font-bold font-sans inline-block border border-amber-200/60">
+                          <span className="bg-amber-50 text-amber-800 rounded px-2 py-0.5 text-[10px] font-bold font-sans inline-block border border-amber-200/70">
                             {cat.id}
                           </span>
                         </div>
@@ -738,8 +740,9 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
 
               <div className="pt-4 flex justify-end">
                 <button
+                  type="button"
                   onClick={handleNextStep}
-                  className="px-6 py-3 bg-[#D65A3A] text-white font-bold text-xs uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] hover:bg-[#c34e2f] transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <span>Next: Location Details</span>
                   <ArrowRight className="w-4 h-4" />
@@ -748,84 +751,117 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             </div>
           )}
 
-          {/* STEP 2: WHERE IS IT? (FIX 2) */}
+          {/* STEP 2: WHERE IS IT? */}
           {step === 2 && (
-            <div className="space-y-6">
+            <div className="bg-[#FBF9F5] p-5 sm:p-6 rounded-xl border border-slate-200/80 space-y-6">
               <div>
-                <h2 className="text-xl font-serif font-bold text-[#171717]">
+                <h2 className="text-xl font-serif font-bold text-slate-900">
                   Step 2: Where is this issue located?
                 </h2>
-                <p className="text-xs text-[#171717]/70 mt-1">
+                <p className="text-xs text-slate-600 mt-1">
                   Select your State/UT and District from across India:
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono font-bold uppercase text-[#171717]/80">
+                  <label className="block text-xs font-semibold text-slate-700">
                     State / Union Territory
                   </label>
-                  <select
-                    value={selectedState}
-                    onChange={(e) => handleStateChange(e.target.value)}
-                    className="w-full p-3 bg-white border-2 border-[#171717] text-xs font-bold text-[#171717] focus:outline-none shadow-xs"
-                  >
-                    {INDIA_STATES_DISTRICTS.map((st) => (
-                      <option key={st.state} value={st.state}>
-                        {st.state} ({st.type === 'Union Territory' ? 'UT' : 'State'})
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedState}
+                      onChange={(e) => handleStateChange(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all appearance-none pr-9 cursor-pointer"
+                    >
+                      {INDIA_STATES_DISTRICTS.map((st) => (
+                        <option key={st.state} value={st.state}>
+                          {st.state} ({st.type === 'Union Territory' ? 'UT' : 'State'})
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-mono font-bold uppercase text-[#171717]/80">
+                  <label className="block text-xs font-semibold text-slate-700">
                     District
                   </label>
-                  <select
-                    value={selectedDistrict}
-                    onChange={(e) => setSelectedDistrict(e.target.value)}
-                    className="w-full p-3 bg-white border-2 border-[#171717] text-xs font-bold text-[#171717] focus:outline-none shadow-xs"
-                  >
-                    {currentDistricts.map((dist) => (
-                      <option key={dist} value={dist}>
-                        {dist} District
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={selectedDistrict}
+                      onChange={(e) => setSelectedDistrict(e.target.value)}
+                      className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-semibold text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all appearance-none pr-9 cursor-pointer"
+                    >
+                      {currentDistricts.map((dist) => (
+                        <option key={dist} value={dist}>
+                          {dist} District
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-mono font-bold uppercase text-[#171717]/80">
+                <label className="block text-xs font-semibold text-slate-700">
                   Village / Ward / Landmark Address
                 </label>
                 <input
                   type="text"
                   value={landmark}
                   onChange={(e) => setLandmark(e.target.value)}
-                  placeholder="e.g. Near ZP High School, Ward 14, Main Road"
-                  className="w-full p-3 bg-white border border-[#171717] text-xs font-sans text-[#171717] focus:outline-none"
+                  placeholder="e.g., Near Primary School, Ward 12 or Main Road Junction"
+                  className="w-full px-3.5 py-2.5 bg-white border border-slate-300 rounded-lg text-xs font-sans text-slate-800 focus:outline-none focus:border-orange-500 focus:ring-1 focus:ring-orange-500 transition-all placeholder:text-slate-400"
                 />
               </div>
 
-              <div className="p-3 bg-[#F7F5EF] border border-[#171717]/20 rounded-xs text-xs font-mono">
-                <span className="text-slate-500 block text-[10px] uppercase font-bold">Selected Target Location:</span>
-                <span className="font-bold text-[#171717]">
-                  {landmark ? `${landmark}, ` : ''}{selectedDistrict}, {selectedState}
-                </span>
+              {/* Refined Dark Summary Card with Dynamic State Image */}
+              <div className="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between gap-4 overflow-hidden relative">
+                <div className="flex items-start gap-3.5 relative z-10">
+                  <div className="w-9 h-9 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <MapPin className="w-4 h-4 text-orange-400" />
+                  </div>
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <p className="text-[10px] font-bold tracking-wider uppercase text-orange-400">
+                      Selected Target Location
+                    </p>
+                    <p className="text-sm font-semibold text-white leading-snug break-words">
+                      {landmark ? `${landmark}, ` : ''}{selectedDistrict || 'Select District'}, {selectedState || 'Select State'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Decorative State-based Landmark Image */}
+                <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-32 z-0 opacity-40 transition-opacity duration-300">
+                  <img 
+                    src={
+                      selectedState === 'Andhra Pradesh' ? '/assets/aistudio/image_425b7538.png' :
+                      selectedState === 'Rajasthan' ? '/assets/aistudio/image_6c0073af.png' :
+                      selectedState === 'Uttar Pradesh' ? '/assets/aistudio/image_99010a83.png' :
+                      '/assets/aistudio/image_cc1738cf.png'
+                    }
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-l from-slate-900 via-slate-900/60 to-transparent" />
+                </div>
               </div>
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-between pt-2">
                 <button
+                  type="button"
                   onClick={handlePrevStep}
-                  className="px-5 py-2.5 bg-slate-100 text-[#171717] font-bold text-xs uppercase border border-[#171717] hover:bg-slate-200 transition-colors cursor-pointer"
+                  className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-700 font-semibold text-xs rounded-lg border border-slate-300 transition-colors cursor-pointer"
                 >
                   ← Back
                 </button>
                 <button
+                  type="button"
                   onClick={handleNextStep}
-                  className="px-6 py-3 bg-[#D65A3A] text-white font-bold text-xs uppercase tracking-wider border border-[#171717] shadow-[2px_2px_0px_#171717] hover:bg-[#c34e2f] transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-3 bg-[#D65A3A] hover:bg-[#c34e2f] text-white font-bold text-xs uppercase tracking-wider rounded-lg shadow-sm hover:shadow transition-all flex items-center gap-2 cursor-pointer"
                 >
                   <span>Next: Describe Issue</span>
                   <ArrowRight className="w-4 h-4" />
