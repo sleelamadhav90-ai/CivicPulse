@@ -1125,32 +1125,20 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       </div>
 
                       {/* 5 Pillars Contribution Grid */}
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[10px] font-mono">
-                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
-                          <span className="text-slate-500 block">1. Demand (30%)</span>
-                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.demand_score} pts</span>
-                          <span className="text-[9px] text-slate-400 block">{matchingDemandCount + 1} signals</span>
-                        </div>
-                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
-                          <span className="text-slate-500 block">2. Gap (25%)</span>
-                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.gap_score} pts</span>
-                          <span className="text-[9px] text-slate-400 block">{activeScoreBreakdown.gap_percentage}% deficit</span>
-                        </div>
-                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
-                          <span className="text-slate-500 block">3. Vulnerability (20%)</span>
-                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.vuln_score} pts</span>
-                          <span className="text-[9px] text-slate-400 block">MPI / Census</span>
-                        </div>
-                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
-                          <span className="text-slate-500 block">4. Urgency (15%)</span>
-                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.sev_score} pts</span>
-                          <span className="text-[9px] text-slate-400 block">Sev: {evaluatedSeverity}/10</span>
-                        </div>
-                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
-                          <span className="text-slate-500 block">5. CapEx (10%)</span>
-                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.align_score} pts</span>
-                          <span className="text-[9px] text-slate-400 block">Budget signal</span>
-                        </div>
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 text-xs">
+                        {[
+                          { label: 'Demand', score: activeScoreBreakdown.demand_score, sub: `${matchingDemandCount + 1} signals` },
+                          { label: 'Gap', score: activeScoreBreakdown.gap_score, sub: `${activeScoreBreakdown.gap_percentage}% deficit` },
+                          { label: 'Vulnerability', score: activeScoreBreakdown.vuln_score, sub: 'MPI / Census' },
+                          { label: 'Urgency', score: activeScoreBreakdown.sev_score, sub: `Sev: ${evaluatedSeverity}/10` },
+                          { label: 'CapEx', score: activeScoreBreakdown.align_score, sub: 'Budget signal' }
+                        ].map((pillar, i) => (
+                          <div key={i} className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+                            <span className="text-slate-500 font-medium block">{pillar.label}</span>
+                            <span className="font-bold text-slate-900 block">{pillar.score} pts</span>
+                            <span className="text-[10px] text-slate-400 block mt-0.5">{pillar.sub}</span>
+                          </div>
+                        ))}
                       </div>
                     </div>
 
@@ -1192,12 +1180,12 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                     </div>
                   </div>
 
-                  <div className="p-3 bg-white border border-[#171717]/20 text-xs">
-                    <span className="font-mono font-bold text-[10px] text-slate-500 uppercase block mb-1">
-                      Citizen Raw Input:
+                  <div className="p-4 bg-white border border-slate-200 rounded-xl text-sm">
+                    <span className="font-semibold text-slate-800 mb-2 block">
+                      Citizen Input:
                     </span>
-                    <p className="italic text-slate-800">
-                      "{inputText}"
+                    <p className="text-slate-600 leading-relaxed italic">
+                      {inputText && inputText.trim().length > 0 ? `"${inputText}"` : 'No citizen input provided'}
                     </p>
                   </div>
 
@@ -1214,20 +1202,20 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 </div>
               )}
 
-              <div className="flex justify-between pt-4">
+              <div className="flex justify-end gap-3 pt-6 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="px-5 py-2.5 bg-slate-100 text-[#171717] font-bold text-xs uppercase border border-[#171717] hover:bg-slate-200 transition-colors cursor-pointer"
+                  className="px-6 py-2.5 text-slate-700 font-semibold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
                 >
-                  ← Edit Details
+                  Edit Details
                 </button>
                 <button
                   type="button"
                   onClick={handleFinalSubmit}
-                  className="px-6 py-3.5 bg-[#285943] hover:bg-[#1e4433] text-white font-bold text-xs uppercase tracking-wider border border-[#171717] shadow-[3px_3px_0px_#171717] transition-all flex items-center gap-2 cursor-pointer"
+                  className="px-6 py-2.5 bg-[#1e4630] hover:bg-[#163524] text-white font-semibold text-sm rounded-xl shadow-sm border border-emerald-900/20 transition-all flex items-center gap-2 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-5 h-5 text-amber-200" />
+                  <CheckCircle2 className="w-4 h-4 text-amber-200" />
                   <span>Submit Request Officially</span>
                 </button>
               </div>
