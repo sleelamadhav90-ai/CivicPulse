@@ -826,7 +826,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 style={{
                   backgroundColor: '#0f172a',
                   backgroundImage: `
-                    linear-gradient(to right, #0f172a 35%, rgba(15, 23, 42, 0.75) 70%, rgba(15, 23, 42, 0.4) 100%),
+                    linear-gradient(to right, #0f172a 45%, rgba(15, 23, 42, 0.8) 70%, rgba(15, 23, 42, 0.3) 100%),
                     url('${
                       selectedState === 'Andhra Pradesh' ? '/assets/aistudio/image_425b7538.png' :
                       selectedState === 'Rajasthan' ? '/assets/aistudio/image_6c0073af.png' :
@@ -834,7 +834,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       '/assets/aistudio/image_e622b1fa.png'
                     }')
                   `,
-                  backgroundPosition: 'right bottom',
+                  backgroundPosition: 'right center',
                   backgroundRepeat: 'no-repeat',
                   backgroundSize: 'cover'
                 }}
