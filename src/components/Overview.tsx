@@ -609,8 +609,7 @@ export const Overview: React.FC<OverviewProps> = ({
               {/* 2.5 Representative Visual Evidence */}
               {(() => {
                 const reqWithImage = requests.find(r => 
-                  r.category === activeDrawerIssue.category && 
-                  (activeDrawerIssue.location.includes(r.location) || activeDrawerIssue.location.includes(r.district || '')) &&
+                  r.request_id === activeDrawerIssue.id && 
                   (r.photo_url || r.illustration_url)
                 );
                 if (!reqWithImage) return null;
