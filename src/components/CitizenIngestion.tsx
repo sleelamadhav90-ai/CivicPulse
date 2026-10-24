@@ -896,7 +896,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
               />
 
               {/* Voice Recording Assistant Card */}
-              <div className="p-5 bg-[#F7F5EF] border-2 border-[#171717] space-y-3">
+              <div className="p-5 bg-[#F7F5EF] border border-slate-200 rounded-2xl shadow-sm space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <div className="p-2 bg-orange-100 rounded-full">
@@ -1018,53 +1018,33 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 )}
 
                 {attachedPhoto ? (
-                  <div className="p-4 bg-slate-50 border-2 border-[#171717] rounded-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div className="flex items-center space-x-4">
                       <img 
                         src={attachedPhoto} 
                         alt="Attached Evidence" 
-                        className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-xs border-2 border-[#171717] shadow-xs shrink-0" 
+                        className="w-16 h-16 object-cover rounded-lg border border-slate-200 shadow-sm shrink-0" 
                       />
                       <div className="space-y-1">
-                        <div className="flex items-center space-x-2 text-xs font-bold text-emerald-800">
+                        <div className="flex items-center space-x-2 text-xs font-semibold text-emerald-800">
                           <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                           <span>Photo Evidence Attached</span>
                         </div>
-                        <p className="text-xs font-mono text-slate-700 truncate max-w-xs">{photoName || 'evidence_photo.jpg'}</p>
-                        {photoSize && <p className="text-[10px] font-mono text-slate-500">{photoSize}</p>}
+                        <div className="text-[10px] text-slate-500">
+                          {photoName} • {photoSize}
+                        </div>
                       </div>
                     </div>
-
-                    <div className="flex items-center space-x-2">
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="px-3 py-1.5 bg-white hover:bg-slate-100 text-[#171717] text-xs font-bold border border-[#171717] flex items-center gap-1 cursor-pointer"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span>Change</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRemovePhoto}
-                        className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold border border-red-300 flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                        <span>Remove</span>
-                      </button>
-                    </div>
+                    <button 
+                      onClick={handleRemovePhoto}
+                      className="px-3 py-1.5 text-[11px] font-semibold text-red-600 bg-red-50 hover:bg-red-100 rounded-full border border-red-100 transition-colors"
+                    >
+                      Remove
+                    </button>
                   </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="px-5 py-3 bg-slate-50 hover:bg-slate-100 text-[#171717] text-xs font-bold border-2 border-dashed border-[#171717]/40 hover:border-[#171717] flex items-center gap-2 cursor-pointer transition-all w-full justify-center"
-                  >
-                    <Camera className="w-5 h-5 text-[#D65A3A]" />
-                    <span>Attach Photo File (Click to Browse)</span>
-                  </button>
-                )}
+                ) : null}
               </div>
+
 
               <div className="flex justify-between pt-4">
                 <button
