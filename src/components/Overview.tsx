@@ -329,8 +329,8 @@ export const Overview: React.FC<OverviewProps> = ({
                   {metric.type === 'demo' ? t('overview.demo_signal') : metric.type === 'data' ? t('overview.public_data') : t('overview.curated_plan')}
                 </span>
               </div>
-              <div className="text-2xl font-mono font-bold text-[#171717] tracking-tight">
-                {metric.value}
+              <div className="text-xl sm:text-2xl font-bold text-[#171717] tracking-tight font-sans">
+                {metric.value} {metric.type === 'demo' ? 'Citizen Signals' : ''}
               </div>
               <p className="text-[10px] text-[#57534E] leading-tight font-sans">
                 {metric.desc}
@@ -467,11 +467,15 @@ export const Overview: React.FC<OverviewProps> = ({
             };
             return priorityIssues.map((issue, idx) => {
               const Icon = categoryIcons[issue.category] || AlertCircle;
+              const isCritical = issue.severity === 'Critical';
+              const isHigh = issue.severity === 'High';
               return (
                 <div
                   key={issue.title}
                   onClick={() => setActiveDrawerIssue(issue)}
-                  className="bg-white border border-[#171717]/15 hover:border-[#171717]/40 p-4 rounded-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
+                  className={`bg-white border border-[#171717]/15 hover:border-[#171717]/40 hover:shadow-xs p-4 rounded-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group ${
+                    isCritical ? 'border-l-4 border-l-rose-500' : isHigh ? 'border-l-4 border-l-amber-500' : ''
+                  }`}
                 >
                   <div className="flex items-start space-x-4 flex-1 min-w-0">
                     <span className="font-mono text-sm font-bold text-[#78716C] pt-0.5 shrink-0 w-6">
@@ -489,6 +493,14 @@ export const Overview: React.FC<OverviewProps> = ({
                         <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
                           {issue.location}
                         </span>
+                        <span className="text-[#171717]/30 text-xs">·</span>
+                        <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                          isCritical ? 'bg-rose-50 text-rose-800 border border-rose-200' :
+                          isHigh ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                          'bg-blue-50 text-blue-800 border border-blue-200'
+                        }`}>
+                          {tStatus(issue.severity)}
+                        </span>
                       </div>
                       <div className="text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
                         {issue.title}
@@ -499,12 +511,12 @@ export const Overview: React.FC<OverviewProps> = ({
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between md:justify-end gap-6 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10 shrink-0">
-                    <div className="text-left md:text-right">
-                      <span className="text-xs font-mono font-bold text-[#171717] block whitespace-nowrap">
-                        {issue.signalCount} <span className="text-[#78716C] font-normal">citizen feedback signals</span>
+                  <div className="flex items-center justify-between md:justify-end gap-5 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10 shrink-0">
+                    <div className="text-left md:text-right space-y-1">
+                      <span className="text-sm font-bold text-[#171717] block whitespace-nowrap font-sans">
+                        {issue.signalCount} <span className="text-xs font-normal text-[#57534E]">Citizen Signals</span>
                       </span>
-                      <span className="text-[11px] text-[#D65A3A] font-medium block font-mono whitespace-nowrap">
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 whitespace-nowrap">
                         {issue.trend}
                       </span>
                     </div>
@@ -514,9 +526,9 @@ export const Overview: React.FC<OverviewProps> = ({
                         e.stopPropagation();
                         setActiveDrawerIssue(issue);
                       }}
-                      className="px-3.5 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
+                      className="px-3 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#D65A3A]"
                     >
-                      {t('action.inspect')} →
+                      View details →
                     </button>
                   </div>
                 </div>

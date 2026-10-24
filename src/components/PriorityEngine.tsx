@@ -212,12 +212,14 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
 
                   <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-xs border uppercase tracking-wider whitespace-nowrap ${
                     priorityScore >= 80 
-                      ? 'bg-amber-50 text-amber-900 border-amber-300' 
-                      : priorityScore >= 60 
-                      ? 'bg-blue-50 text-blue-900 border-blue-300' 
-                      : 'bg-stone-100 text-stone-800 border-stone-300'
+                      ? 'bg-rose-50 text-rose-800 border-rose-200' 
+                      : priorityScore >= 65 
+                      ? 'bg-amber-50 text-amber-800 border-amber-200' 
+                      : priorityScore >= 45 
+                      ? 'bg-blue-50 text-blue-800 border-blue-200'
+                      : 'bg-slate-100 text-slate-700 border-slate-200'
                   }`}>
-                    {priorityScore >= 80 ? 'High Priority' : priorityScore >= 60 ? 'Moderate Priority' : 'Standard Priority'}
+                    {priorityScore >= 80 ? 'Critical Priority' : priorityScore >= 65 ? 'High Priority' : priorityScore >= 45 ? 'Moderate Priority' : 'Stable Priority'}
                   </span>
 
                   {safetyEval.isCriticalSafetyRisk && (

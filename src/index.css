@@ -8,7 +8,11 @@
 }
 
 /* Base styles for the atlas layout */
-body {
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
   background-color: #F7F5EF;
   color: #171717;
   font-family: var(--font-sans);

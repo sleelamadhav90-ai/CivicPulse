@@ -298,7 +298,9 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                 <div
                   key={p.id}
                   onClick={() => setSelectedProject(p)}
-                  className="p-4 lg:py-3.5 lg:px-4 hover:bg-[#FAF8F5] cursor-pointer transition-colors group border-b border-[#171717]/10 min-h-[72px] grid grid-cols-1 md:grid-cols-12 lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-3 lg:gap-4 items-center"
+                  className={`p-4 lg:py-3.5 lg:px-4 hover:bg-[#FAF8F5] cursor-pointer transition-colors group border-b border-[#171717]/10 min-h-[72px] grid grid-cols-1 md:grid-cols-12 lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-3 lg:gap-4 items-center ${
+                    p.severityLabel === 'CRITICAL' ? 'border-l-4 border-l-rose-500' : p.severityLabel === 'HIGH' ? 'border-l-4 border-l-amber-500' : ''
+                  }`}
                 >
                   {/* Column 1: Rank, Project Title, Location, Department (Desktop: 42%, Tablet: 7/12 cols) */}
                   <div className="flex items-start gap-3 min-w-0 md:col-span-7 lg:col-span-1">
@@ -330,8 +332,10 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                         </span>
                         <span className="text-xs text-[#78716C]">/ 100</span>
                       </div>
-                      <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
-                        p.severityLabel === 'CRITICAL' ? 'text-[#D65A3A]' : p.severityLabel === 'HIGH' ? 'text-amber-700' : 'text-[#78716C]'
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                        p.severityLabel === 'CRITICAL' ? 'bg-rose-50 text-rose-800 border border-rose-200' :
+                        p.severityLabel === 'HIGH' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                        'bg-blue-50 text-blue-800 border border-blue-200'
                       }`}>
                         {p.severityLabel}
                       </span>

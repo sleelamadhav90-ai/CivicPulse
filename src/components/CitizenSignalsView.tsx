@@ -646,16 +646,21 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                     : '2 Sep 2026';
 
                   const tierColor = 
-                    priorityData.tier === 'Critical' ? 'text-red-700 bg-red-50 border-red-200' :
-                    priorityData.tier === 'High' ? 'text-orange-700 bg-orange-50 border-orange-200' :
-                    priorityData.tier === 'Medium' ? 'text-amber-800 bg-amber-50 border-amber-200' :
-                    'text-emerald-800 bg-emerald-50 border-emerald-200';
+                    priorityData.tier === 'Critical' ? 'text-rose-800 bg-rose-50 border-rose-200' :
+                    priorityData.tier === 'High' ? 'text-amber-800 bg-amber-50 border-amber-200' :
+                    priorityData.tier === 'Medium' ? 'text-blue-800 bg-blue-50 border-blue-200' :
+                    'text-slate-700 bg-slate-100 border-slate-200';
+
+                  const isCriticalRow = priorityData.tier === 'Critical' || safetyEval.isCriticalSafetyRisk;
+                  const isHighRow = priorityData.tier === 'High';
 
                   return (
                     <tr
                       key={`${req.id}-${idx}`}
                       onClick={() => setSelectedRequest(req)}
-                      className={`hover:bg-[#FAF8F5] cursor-pointer transition-colors group ${safetyEval.isCriticalSafetyRisk ? 'bg-red-50/40 border-l-2 border-l-red-600' : ''}`}
+                      className={`hover:bg-[#FAF8F5] cursor-pointer transition-colors group ${
+                        isCriticalRow ? 'border-l-4 border-l-rose-500' : isHighRow ? 'border-l-4 border-l-amber-500' : ''
+                      }`}
                     >
                       {/* Issue */}
                       <td className="py-3 px-4 max-w-sm">

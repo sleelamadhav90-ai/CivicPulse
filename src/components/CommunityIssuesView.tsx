@@ -434,59 +434,67 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
       {/* 3. CLEAN RANKED LIST */}
       <div className="space-y-3">
-        {filteredIssues.map((issue) => (
-          <div
-            key={issue.id}
-            className="bg-white border border-[#171717]/15 hover:border-[#171717]/35 p-5 rounded-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
-          >
-            <div className="flex items-start space-x-4 flex-1 min-w-0">
-              <span className="font-mono text-base font-bold text-[#78716C] shrink-0 pt-0.5">
-                {issue.rank}
-              </span>
+        {filteredIssues.map((issue) => {
+          const isCritical = issue.severity === 'Critical';
+          const isHigh = issue.severity === 'High';
+          return (
+            <div
+              key={issue.id}
+              className={`bg-white border border-[#171717]/15 hover:border-[#171717]/35 hover:shadow-xs p-5 rounded-sm transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 ${
+                isCritical ? 'border-l-4 border-l-rose-500' : isHigh ? 'border-l-4 border-l-amber-500' : ''
+              }`}
+            >
+              <div className="flex items-start space-x-4 flex-1 min-w-0">
+                <span className="font-mono text-base font-bold text-[#78716C] shrink-0 pt-0.5">
+                  {issue.rank}
+                </span>
 
-              <div className="space-y-1 min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
-                    {tCategory(issue.category)}
-                  </span>
-                  <span className="text-[#171717]/30 text-xs">·</span>
-                  <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
-                    {issue.location}
-                  </span>
-                </div>
+                <div className="space-y-1 min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
+                      {tCategory(issue.category)}
+                    </span>
+                    <span className="text-[#171717]/30 text-xs">·</span>
+                    <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
+                      {issue.location}
+                    </span>
+                  </div>
 
-                <h3 className="text-base font-serif font-bold text-[#171717] leading-snug break-words">
-                  {issue.title}
-                </h3>
+                  <h3 className="text-base font-serif font-bold text-[#171717] leading-snug break-words">
+                    {issue.title}
+                  </h3>
 
-                <div className="flex flex-wrap items-center gap-3 text-xs text-[#57534E] pt-0.5">
-                  <span className="font-mono font-semibold text-[#171717] whitespace-nowrap">
-                    {issue.requestCount} {t('issues.related_requests')}
-                  </span>
-                  <span className="text-[#171717]/30 hidden sm:inline">·</span>
-                  <span className={`font-medium whitespace-nowrap ${
-                    issue.severity === 'Critical' ? 'text-[#D65A3A]' : 'text-amber-800'
-                  }`}>
-                    {tStatus(issue.severity)}
-                  </span>
-                  <span className="text-[#171717]/30 hidden sm:inline">·</span>
-                  <span className="text-emerald-800 font-mono text-[11px] whitespace-nowrap">
-                    {issue.trend}
-                  </span>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[#57534E] pt-1">
+                    <span className="font-bold text-[#171717] whitespace-nowrap">
+                      {issue.requestCount} Citizen Signals
+                    </span>
+                    <span className="text-[#171717]/30 hidden sm:inline">·</span>
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      isCritical ? 'bg-rose-50 text-rose-800 border border-rose-200' :
+                      isHigh ? 'bg-amber-50 text-amber-800 border border-amber-200' :
+                      'bg-blue-50 text-blue-800 border border-blue-200'
+                    }`}>
+                      {tStatus(issue.severity)}
+                    </span>
+                    <span className="text-[#171717]/30 hidden sm:inline">·</span>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200/80 whitespace-nowrap">
+                      {issue.trend}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex items-center space-x-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10">
-              <button
-                onClick={() => setActiveIssueModal(issue)}
-                className="px-3.5 py-1.5 text-xs font-semibold bg-[#FAF8F5] hover:bg-[#F0ECE1] text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
-              >
-                {t('action.inspect')}
-              </button>
+              <div className="flex items-center space-x-3 shrink-0 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10">
+                <button
+                  onClick={() => setActiveIssueModal(issue)}
+                  className="px-3.5 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap focus-visible:outline-2 focus-visible:outline-[#D65A3A]"
+                >
+                  View details →
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Unified Issue Intelligence Modal */}
