@@ -169,13 +169,13 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             </div>
           ) : user ? (
             <>
-              {/* Desktop view (md and up): expanded clean badge */}
-              <div className="hidden md:flex items-center gap-1.5 bg-[#285943]/60 border border-emerald-500/50 text-emerald-200 px-2.5 py-1 rounded-xs text-[11px] shrink-0">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                <span className="font-sans font-medium text-white">Authenticated Citizen</span>
+              {/* Desktop view (md and up): restrained charcoal profile pill */}
+              <div className="hidden md:flex items-center gap-1.5 bg-[#2A2926] border border-[#3D3A33] text-[#E8E6DF] px-2.5 py-1 rounded-xs text-[11px] shrink-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Authenticated session active" />
+                <span className="font-sans font-medium text-[#E8E6DF]">Authenticated Citizen</span>
                 <button
                   onClick={() => signOut()}
-                  className="text-[10px] text-emerald-300 hover:text-white underline ml-1 cursor-pointer font-mono shrink-0"
+                  className="text-[10px] text-slate-400 hover:text-white underline ml-1 cursor-pointer font-mono shrink-0"
                   title="Sign out of account"
                 >
                   Sign out
@@ -189,16 +189,16 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                     setAccountMenuOpen(!accountMenuOpen);
                     setLangDropdownOpen(false);
                   }}
-                  className="flex items-center gap-1 px-1.5 py-1 bg-[#285943]/70 hover:bg-[#285943] border border-emerald-500/50 text-emerald-200 rounded-xs text-[11px] transition-colors cursor-pointer shrink-0"
+                  className="flex items-center gap-1 px-1.5 py-1 bg-[#2A2926] hover:bg-[#34322D] border border-[#3D3A33] text-[#E8E6DF] rounded-xs text-[11px] transition-colors cursor-pointer shrink-0"
                   title="Account options"
                   aria-label="Account options"
                   aria-expanded={accountMenuOpen}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                  <span className="text-[10px] font-sans font-medium text-white max-w-[48px] sm:max-w-[70px] truncate">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-[10px] font-sans font-medium text-[#E8E6DF] max-w-[48px] sm:max-w-[70px] truncate">
                     {user.displayName ? user.displayName.split(' ')[0] : 'Citizen'}
                   </span>
-                  <ChevronDown className="w-2.5 h-2.5 text-emerald-300 shrink-0" />
+                  <ChevronDown className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                 </button>
 
                 {accountMenuOpen && (

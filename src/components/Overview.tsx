@@ -322,9 +322,9 @@ export const Overview: React.FC<OverviewProps> = ({
                   {metric.label}
                 </span>
                 <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-sm font-semibold uppercase ${
-                  metric.type === 'demo' ? 'bg-amber-50 text-amber-900 border border-amber-200' :
-                  metric.type === 'data' ? 'bg-sky-50 text-sky-900 border border-sky-200' :
-                  'bg-stone-50 text-stone-700 border border-stone-200'
+                  metric.type === 'demo' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
+                  metric.type === 'data' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
+                  'bg-violet-100 text-violet-900 border border-violet-200'
                 }`}>
                   {metric.type === 'demo' ? t('overview.demo_signal') : metric.type === 'data' ? t('overview.public_data') : t('overview.curated_plan')}
                 </span>

@@ -231,8 +231,8 @@ export const PriorityEngine: React.FC<PriorityEngineProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1.5 shrink-0">
-                  <span className="text-[10px] font-mono text-[#78716C] bg-[#FAF8F5] border border-[#171717]/15 px-2 py-0.5 rounded-xs flex items-center gap-1">
-                    <Info className="w-3 h-3 text-[#78716C]" />
+                  <span className="text-[10px] font-mono text-amber-900 bg-amber-100 border border-amber-200 px-2 py-0.5 rounded-xs flex items-center gap-1 font-semibold">
+                    <Info className="w-3 h-3 text-amber-700" />
                     <span>Demonstration scenario</span>
                   </span>
                 </div>

@@ -705,11 +705,11 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                       {/* Origin */}
                       <td className="py-3 px-3 whitespace-nowrap">
                         {isCitizenSignal ? (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-50 text-emerald-800 border border-emerald-300">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-emerald-100 text-emerald-900 border border-emerald-200">
                             Citizen Signal
                           </span>
                         ) : (
-                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-stone-100 text-stone-700 border border-stone-300">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-mono font-semibold bg-amber-100 text-amber-900 border border-amber-200">
                             CivicPulse Demo Signal
                           </span>
                         )}
