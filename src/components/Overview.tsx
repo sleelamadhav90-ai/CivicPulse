@@ -171,53 +171,64 @@ export const Overview: React.FC<OverviewProps> = ({
   }, [rawPriorityIssues, tOverviewPriorityIssue]);
 
   return (
-    <div className="space-y-10 font-sans text-[#171717] pb-16 w-full max-w-7xl mx-auto">
+    <div className="space-y-6 sm:space-y-8 font-sans text-[#171717] pb-12 w-full max-w-7xl mx-auto">
       
-      {/* 1. CITIZEN INTAKE BAR: Clean, compact, flexible for all languages */}
-      <section className="bg-[#FAF8F5] border border-[#171717]/15 p-4 sm:p-5 rounded-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-        <div className="flex-1 min-w-0 space-y-1">
-          <div className="flex items-center space-x-2 text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] shrink-0"></span>
-            <span className="truncate">{t('brand.name')} · {t('overview.intake_title')}</span>
+      {/* 1. CITIZEN INTAKE HERO SECTION WITH UPLOADED INDIAN PARLIAMENT BACKGROUND */}
+      <section 
+        className="relative border border-[#171717]/30 rounded-xs overflow-hidden shadow-sm transition-all bg-cover bg-center"
+        style={{ 
+          backgroundImage: `url('/assets/aistudio/image_6c0073af.png')`, 
+          backgroundPosition: 'center 38%' 
+        }}
+      >
+        {/* High-contrast public-sector dark overlay to guarantee WCAG AA text legibility */}
+        <div className="absolute inset-0 bg-gradient-to-r from-[#171717]/95 via-[#1F1E1B]/88 to-[#171717]/72" />
+
+        <div className="relative z-10 py-5 px-5 sm:py-6 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex-1 min-w-0 space-y-1">
+            <div className="flex items-center space-x-2 text-[10px] font-mono font-bold text-[#FF8A65] uppercase tracking-wider">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] shrink-0"></span>
+              <span className="truncate">{t('brand.name')} · {t('overview.intake_title')}</span>
+            </div>
+            <h2 className="text-base sm:text-lg font-serif font-bold text-white leading-snug drop-shadow-xs">
+              {t('overview.intake_title')}
+            </h2>
+            <p className="text-xs sm:text-sm text-[#E8E6DF] leading-relaxed max-w-2xl font-sans">
+              {t('overview.intake_desc')}
+            </p>
           </div>
-          <h2 className="text-base sm:text-lg font-serif font-bold text-[#171717] leading-snug">
-            {t('overview.intake_title')}
-          </h2>
-          <p className="text-xs sm:text-sm text-[#57534E] leading-relaxed">
-            {t('overview.intake_desc')}
-          </p>
-        </div>
 
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-1 lg:pt-0">
-          <button
-            onClick={() => onStartVoiceSubmission ? onStartVoiceSubmission() : onNavigate('submit')}
-            className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
-          >
-            <Mic className="w-3.5 h-3.5 shrink-0" />
-            <span>{t('action.speak_issue')}</span>
-          </button>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-1 lg:pt-0">
+            <button
+              onClick={() => onStartVoiceSubmission ? onStartVoiceSubmission() : onNavigate('submit')}
+              className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              <Mic className="w-3.5 h-3.5 shrink-0" />
+              <span>{t('action.speak_issue')}</span>
+            </button>
 
-          <button
-            onClick={() => onStartWriteSubmission ? onStartWriteSubmission() : onNavigate('submit')}
-            className="px-3.5 py-2 bg-white hover:bg-[#F7F5EF] text-[#171717] border border-[#171717]/25 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer whitespace-nowrap"
-          >
-            <FileEdit className="w-3.5 h-3.5 text-[#57534E] shrink-0" />
-            <span>{t('action.write_issue')}</span>
-          </button>
+            <button
+              onClick={() => onStartWriteSubmission ? onStartWriteSubmission() : onNavigate('submit')}
+              className="px-3.5 py-2 bg-white hover:bg-[#FAF8F5] text-[#171717] border border-white/80 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+            >
+              <FileEdit className="w-3.5 h-3.5 text-[#57534E] shrink-0" />
+              <span>{t('action.write_issue')}</span>
+            </button>
 
-          <button
-            onClick={() => onNavigate('signals')}
-            className="px-3 py-2 text-[#57534E] hover:text-[#171717] text-xs font-medium transition-colors cursor-pointer underline whitespace-nowrap"
-          >
-            {t('nav.my_requests')}
-          </button>
+            <button
+              onClick={() => onNavigate('signals')}
+              className="px-3 py-2 text-white/90 hover:text-white text-xs font-medium transition-colors cursor-pointer underline whitespace-nowrap"
+            >
+              {t('nav.my_requests')}
+            </button>
+          </div>
         </div>
       </section>
 
       {/* 2. PRIMARY EXECUTIVE CONCLUSION / GOVERNMENT DECISION-SUPPORT PANEL */}
-      <section className="bg-white border border-[#171717]/20 p-5 sm:p-6 rounded-xs shadow-xs space-y-4">
+      <section className="bg-white border border-[#171717]/20 p-4 sm:p-5 rounded-xs shadow-xs space-y-3.5">
         {/* Top Metadata Line & Compact Decision Header (Two-Zone Layout) */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3.5 border-b border-[#171717]/15">
+        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-[#171717]/15">
           {/* Top Left: Location, Category & Finding Statement */}
           <div className="space-y-1.5 max-w-2xl">
             <div className="flex flex-wrap items-center gap-2">
