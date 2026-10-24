@@ -25,9 +25,10 @@ import {
   Bus,
   GraduationCap,
   Trees,
-  Landmark
+  Landmark,
+  ClipboardList
 } from 'lucide-react';
-import { CitizenRequest, InfrastructureCategory } from '../types';
+import { CitizenRequest, InfrastructureCategory, District } from '../types';
 import { 
   getAvailableStates, 
   getDistrictsForState, 
@@ -35,10 +36,11 @@ import {
   filterCitizenRequests 
 } from '../utils/geography';
 import { useLanguage } from '../context/LanguageContext';
-import { checkCriticalSafetyRisk } from '../utils/scoring';
+import { checkCriticalSafetyRisk, calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 
 interface CitizenSignalsViewProps {
   requests: CitizenRequest[];
+  districts?: District[];
   onNavigateToIssues?: () => void;
   onNavigateToSubmit?: () => void;
   selectedLanguage?: string;
@@ -47,6 +49,7 @@ interface CitizenSignalsViewProps {
 
 export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   requests,
+  districts = [],
   onNavigateToIssues,
   onNavigateToSubmit,
   selectedRequestId
@@ -63,7 +66,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
 
   const categories: InfrastructureCategory[] = [
-    'Water', 'Roads', 'Fire', 'Electricity', 'Sanitation', 'Drainage', 'Health', 'Environment', 'Transport', 'Education', 'Parks', 'Government'
+    'Water', 'Roads', 'Fire', 'Electricity', 'Sanitation', 'Drainage', 'Health', 'Environment', 'Transport', 'Education', 'Parks', 'Government', 'Other'
   ];
 
   const getCategoryIconMeta = (catStr: string) => {
@@ -80,7 +83,69 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     if (c.includes('educat') || c.includes('school')) return { icon: GraduationCap, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' };
     if (c.includes('park') || c.includes('tree') || c.includes('garden')) return { icon: Trees, color: 'text-lime-700', bg: 'bg-lime-50 border-lime-200' };
     if (c.includes('gov') || c.includes('civic') || c.includes('build')) return { icon: Landmark, color: 'text-blue-900', bg: 'bg-blue-50 border-blue-200' };
+    if (c.includes('other') || c.includes('general') || c.includes('misc') || c.includes('clipboard')) {
+      return { icon: ClipboardList, color: 'text-purple-600', bg: 'bg-purple-50 border-purple-200' };
+    }
     return { icon: Landmark, color: 'text-slate-700', bg: 'bg-slate-100 border-slate-200' };
+  };
+
+  const getRequestScore = (req: CitizenRequest) => {
+    const toTierString = (score: number): 'Low' | 'Medium' | 'High' | 'Critical' => {
+      const t = getPriorityTier(score);
+      if (t.label === 'Critical') return 'Critical';
+      if (t.label === 'High') return 'High';
+      if (t.label === 'Moderate') return 'Medium';
+      return 'Low';
+    };
+
+    if (typeof req.priority_score === 'number' && req.priority_score > 0) {
+      const tier = req.priority_tier || toTierString(req.priority_score);
+      return {
+        score: req.priority_score,
+        tier,
+        breakdown: req.score_breakdown,
+        severity: typeof req.severity === 'number' ? req.severity : 5,
+      };
+    }
+
+    const reqDistrictName = (req.district || req.location || '').toLowerCase();
+    const matchedDistrict = (districts || []).find(d => 
+      d.name.toLowerCase() === reqDistrictName || 
+      reqDistrictName.includes(d.name.toLowerCase()) || 
+      d.name.toLowerCase().includes(reqDistrictName)
+    ) || districts?.[0] || {
+      id: 'default',
+      name: req.district || req.location || 'Central District',
+      state: req.state || 'National',
+      population: 450000,
+      poverty_index: 0.28,
+      water_access: 65,
+      road_quality: 58,
+      health_access: 62,
+      education_access: 70,
+      planned_investment: 12000000
+    };
+
+    const matchingDemandCount = requests.filter(r => 
+      r.category === req.category && 
+      (r.district === req.district || r.state === req.state)
+    ).length || 1;
+
+    const breakdown = calculatePriorityScore(
+      matchedDistrict,
+      req.category,
+      typeof req.severity === 'number' ? req.severity : 5,
+      matchingDemandCount
+    );
+
+    const score = breakdown.total_score;
+    const tier = req.priority_tier || toTierString(score);
+    return {
+      score,
+      tier,
+      breakdown,
+      severity: typeof req.severity === 'number' ? req.severity : 5,
+    };
   };
 
   // Automatically open modal if requested
@@ -544,7 +609,7 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <th className="py-2.5 px-3 font-semibold">{t('table.location')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.category')}</th>
                 <th className="py-2.5 px-3 font-semibold">Origin</th>
-                <th className="py-2.5 px-3 font-semibold">{t('table.severity')}</th>
+                <th className="py-2.5 px-3 font-semibold">{t('metric.priority_score') || 'Priority Score'}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.source')}</th>
                 <th className="py-2.5 px-3 font-semibold">{t('table.date')}</th>
                 <th className="py-2.5 px-4 font-semibold text-right">{t('table.status')}</th>
@@ -575,9 +640,16 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                   const isVoice = req.source_type?.includes('voice') || req.audio_url;
                   const isCitizenSignal = req.source_origin === 'CIVICPULSE_USER';
                   const safetyEval = checkCriticalSafetyRisk(req);
+                  const priorityData = getRequestScore(req);
                   const dateFormatted = req.timestamp 
                     ? new Date(req.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
                     : '2 Sep 2026';
+
+                  const tierColor = 
+                    priorityData.tier === 'Critical' ? 'text-red-700 bg-red-50 border-red-200' :
+                    priorityData.tier === 'High' ? 'text-orange-700 bg-orange-50 border-orange-200' :
+                    priorityData.tier === 'Medium' ? 'text-amber-800 bg-amber-50 border-amber-200' :
+                    'text-emerald-800 bg-emerald-50 border-emerald-200';
 
                   return (
                     <tr
@@ -638,23 +710,26 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                         )}
                       </td>
 
-                      {/* Severity */}
+                      {/* Priority Score & Hazard Severity */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className={`inline-flex items-center font-mono text-xs font-semibold ${
-                            (typeof req.severity === 'number' ? req.severity : 5) >= 8 
-                              ? 'text-[#D65A3A]' 
-                              : (typeof req.severity === 'number' ? req.severity : 5) >= 6 
-                              ? 'text-amber-800' 
-                              : 'text-[#285943]'
-                          }`}>
-                            {typeof req.severity === 'number' ? req.severity : 'N/A'} / 10
-                          </span>
-                          {safetyEval.isCriticalSafetyRisk && (
-                            <span className="text-[9px] font-mono text-red-700 font-bold uppercase">
-                              Hazard Flagged
+                        <div className="flex flex-col space-y-0.5">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs font-bold text-[#171717]">
+                              {priorityData.score}
+                              <span className="text-[10px] font-normal text-[#78716C]">/100</span>
                             </span>
-                          )}
+                            <span className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded border uppercase ${tierColor}`}>
+                              {priorityData.tier}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1 text-[10px] font-mono text-[#78716C]">
+                            <span>Sev: {priorityData.severity}/10</span>
+                            {safetyEval.isCriticalSafetyRisk && (
+                              <span className="text-[9px] font-bold text-red-600 uppercase">
+                                · Flagged
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </td>
 
@@ -794,21 +869,82 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               </div>
             </div>
 
-            {/* Key Diagnostic Attributes */}
-            <div className="grid grid-cols-2 gap-2 text-xs font-mono pt-1">
-              <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">{t('signals.severity_score')}</span>
-                <span className="text-sm font-bold text-[#D65A3A]">
-                  {selectedRequest.severity || 6} / 10
-                </span>
-              </div>
-              <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                <span className="text-[10px] text-[#78716C] block">{t('signals.reported_infra')}</span>
-                <span className="text-xs font-bold text-[#171717]">
-                  {selectedRequest.affected_infrastructure || `${tCategory(selectedRequest.category)} Utility Asset`}
-                </span>
-              </div>
-            </div>
+            {/* 5-Pillar Priority Score & Diagnostic Attributes */}
+            {(() => {
+              const priorityData = getRequestScore(selectedRequest);
+              const tierBadgeClass = 
+                priorityData.tier === 'Critical' ? 'bg-red-100 text-red-900 border-red-300' :
+                priorityData.tier === 'High' ? 'bg-orange-100 text-orange-900 border-orange-300' :
+                priorityData.tier === 'Medium' ? 'bg-amber-100 text-amber-900 border-amber-300' :
+                'bg-emerald-100 text-emerald-900 border-emerald-300';
+
+              return (
+                <div className="space-y-2">
+                  <div className="p-3 bg-[#FAF8F5] border border-[#171717]/15 rounded-xs space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-[#78716C] font-semibold block">
+                          5-Pillar Composite Priority Score
+                        </span>
+                        <div className="flex items-center gap-2 mt-0.5">
+                          <span className="text-2xl font-serif font-bold text-[#D65A3A]">
+                            {priorityData.score} <span className="text-sm font-sans text-[#78716C]">/ 100</span>
+                          </span>
+                          <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border uppercase ${tierBadgeClass}`}>
+                            {priorityData.tier} Priority
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-mono uppercase text-[#78716C] font-semibold block">
+                          Hazard Severity
+                        </span>
+                        <span className="text-sm font-mono font-bold text-[#171717]">
+                          {priorityData.severity} / 10
+                        </span>
+                      </div>
+                    </div>
+
+                    {priorityData.breakdown && (
+                      <div className="pt-2 border-t border-[#171717]/10">
+                        <span className="text-[9px] font-mono uppercase text-[#78716C] font-semibold block mb-1.5">
+                          Formula Lineage (Demand 30% + Gap 25% + Vulnerability 20% + Urgency 15% + CapEx 10%)
+                        </span>
+                        <div className="grid grid-cols-5 gap-1.5 text-[9px] font-mono text-center">
+                          <div className="bg-white p-1.5 border border-[#171717]/10 rounded-xs">
+                            <span className="text-[#78716C] block">Demand</span>
+                            <span className="font-bold text-[#171717]">{priorityData.breakdown.demand_score}</span>
+                          </div>
+                          <div className="bg-white p-1.5 border border-[#171717]/10 rounded-xs">
+                            <span className="text-[#78716C] block">Gap</span>
+                            <span className="font-bold text-[#171717]">{priorityData.breakdown.gap_score}</span>
+                          </div>
+                          <div className="bg-white p-1.5 border border-[#171717]/10 rounded-xs">
+                            <span className="text-[#78716C] block">Vuln</span>
+                            <span className="font-bold text-[#171717]">{priorityData.breakdown.vuln_score}</span>
+                          </div>
+                          <div className="bg-white p-1.5 border border-[#171717]/10 rounded-xs">
+                            <span className="text-[#78716C] block">Urgency</span>
+                            <span className="font-bold text-[#171717]">{priorityData.breakdown.sev_score}</span>
+                          </div>
+                          <div className="bg-white p-1.5 border border-[#171717]/10 rounded-xs">
+                            <span className="text-[#78716C] block">CapEx</span>
+                            <span className="font-bold text-[#171717]">{priorityData.breakdown.align_score}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
+                    <span className="text-[10px] text-[#78716C] block">{t('signals.reported_infra')}</span>
+                    <span className="text-xs font-bold text-[#171717]">
+                      {selectedRequest.affected_infrastructure || (selectedRequest.category === 'Other' ? 'Community Civic Infrastructure' : `${tCategory(selectedRequest.category)} Utility Asset`)}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
 
             {/* Photographic Evidence OR AI Illustration */}
             {selectedRequest.photo_url ? (

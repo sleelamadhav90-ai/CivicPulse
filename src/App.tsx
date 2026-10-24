@@ -495,6 +495,7 @@ export default function App() {
           {activeTab === 'signals' && (
             <CitizenSignalsView
               requests={requests}
+              districts={districts}
               selectedLanguage={selectedLanguage}
               selectedRequestId={focusedRequestId}
               onNavigateToIssues={() => setActiveTab('issues')}

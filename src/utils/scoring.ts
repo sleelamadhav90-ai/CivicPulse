@@ -118,6 +118,16 @@ export function getCategoryAccess(district: District, category: InfrastructureCa
         ((district.water_access + district.road_quality) / 2) *
           SCORING_CONFIG.infrastructure.drainageSanitationDerivativeFactor
       );
+    case 'Fire':
+      return 55;
+    case 'Environment':
+      return 52;
+    case 'Transport':
+      return district.road_quality ? Math.min(100, Math.round(district.road_quality * 0.9)) : 55;
+    case 'Parks':
+      return 58;
+    case 'Government':
+      return 62;
     case 'Other':
       return SCORING_CONFIG.infrastructure.defaultOtherAccess;
     default:
@@ -262,6 +272,13 @@ export function checkCriticalSafetyRisk(input: {
     fullText.includes('fallen wire') ||
     fullText.includes('downed wire') ||
     fullText.includes('cable down') ||
+    fullText.includes('live electrical') ||
+    fullText.includes('electrical cable') ||
+    fullText.includes('live cable') ||
+    fullText.includes('exposed wire') ||
+    fullText.includes('power line') ||
+    fullText.includes('sparking') ||
+    fullText.includes('hanging wire') ||
     fullText.includes('life threat') ||
     fullText.includes('fatal') ||
     fullText.includes('collapsed bridge') ||
@@ -521,14 +538,21 @@ export function calculatePriorityScoreFromBundle(
   return calculatePriorityScore(districtObj, bundle.category, effectiveSeverity, effectiveDemandCount, overrideAccess);
 }
 
-export function getPriorityTier(score: number): {
+export function getPriorityTier(score: number, severity?: number): {
   label: 'Critical' | 'High' | 'Moderate' | 'Stable';
   color: string;
   badgeBg: string;
   badgeText: string;
   borderColor: string;
 } {
-  if (score >= 80) {
+  let effectiveScore = score;
+  if (severity !== undefined && severity >= 9 && effectiveScore < 65) {
+    effectiveScore = 65;
+  }
+  if (severity !== undefined && severity >= 10 && effectiveScore < 80) {
+    effectiveScore = 80;
+  }
+  if (effectiveScore >= 80) {
     return {
       label: 'Critical',
       color: '#f43f5e',
@@ -537,7 +561,7 @@ export function getPriorityTier(score: number): {
       borderColor: 'border-rose-300',
     };
   }
-  if (score >= 65) {
+  if (effectiveScore >= 65) {
     return {
       label: 'High',
       color: '#f97316',
@@ -546,7 +570,7 @@ export function getPriorityTier(score: number): {
       borderColor: 'border-amber-300',
     };
   }
-  if (score >= 45) {
+  if (effectiveScore >= 45) {
     return {
       label: 'Moderate',
       color: '#eab308',

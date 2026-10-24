@@ -51,6 +51,14 @@ export function translateCategory(category: string, lang: SupportedLanguageCode)
   if (c.includes('educat') || c.includes('school')) {
     return dict['category.education'] || 'Education';
   }
+  if (c.includes('fire')) return 'Fire hazards';
+  if (c.includes('environ') || c.includes('dust') || c.includes('air')) return 'Dust and air pollution';
+  if (c.includes('transp') || c.includes('bus')) return 'Public transport';
+  if (c.includes('park') || c.includes('tree')) return 'Parks and public spaces';
+  if (c.includes('gov')) return 'Government buildings';
+  if (c === 'other' || c.includes('other')) {
+    return dict['category.other'] || 'Other civic issue';
+  }
   return category;
 }
 

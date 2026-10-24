@@ -4,7 +4,8 @@ import {
   calculateScoreTrace,
   calculateScoreSensitivity,
   SCORING_CONFIG,
-  getScoreComponentContributions
+  getScoreComponentContributions,
+  getPriorityTier
 } from './scoring';
 import { District } from '../types';
 import { matchesDistrict } from './districtMatcher';
@@ -266,6 +267,87 @@ assert(scoreRun1.total_score === scoreRun2.total_score, 'Audit Requirement 9: Sc
 const auditBreakdown = calculatePriorityScore(baseDistrict, 'Water', 6, 20);
 const authoritativeSum = getScoreComponentContributions(auditBreakdown);
 assert(authoritativeSum.totalScore === auditBreakdown.total_score, 'Audit Requirement 10: Authoritative score breakdown matches total score');
+
+// -------------------------------------------------------------
+// Test 12 — Priority Score vs Hazard Severity Scale Separation
+// -------------------------------------------------------------
+console.log('\n[Test 12] Priority Score vs Hazard Severity Scale Separation');
+// Hazard severity is 1 to 10 scale (where 8 is high urgency)
+// Priority score is 0 to 100 composite 5-pillar scale
+const sev8Breakdown = calculatePriorityScore(baseDistrict, 'Roads', 8, 15);
+assert(
+  sev8Breakdown.total_score !== 8,
+  `Priority score must not simply equal raw severity rating (8); got composite score ${sev8Breakdown.total_score}`
+);
+assert(
+  sev8Breakdown.total_score > 8,
+  `Composite priority score for severity 8 report in populated district must be on 0-100 scale, got ${sev8Breakdown.total_score}`
+);
+assert(
+  sev8Breakdown.sev_score === 80,
+  `Normalized urgency for severity 8 should be 80 on 0-100 scale (8 * 10), got ${sev8Breakdown.sev_score}`
+);
+
+// -------------------------------------------------------------
+// Test 13 — "Other civic issue" Category Baseline & Scoring
+// -------------------------------------------------------------
+console.log('\n[Test 13] Other Civic Issue Category Access and Scoring');
+const otherBreakdown = calculatePriorityScore(baseDistrict, 'Other', 7, 5);
+assert(
+  otherBreakdown.current_access === 60,
+  `'Other' category should have baseline access of 60%, got ${otherBreakdown.current_access}%`
+);
+assert(
+  otherBreakdown.gap_score === 40,
+  `'Other' category should have baseline gap of 40%, got ${otherBreakdown.gap_score}%`
+);
+assert(
+  otherBreakdown.total_score >= 0 && otherBreakdown.total_score <= 100,
+  `'Other' category priority score must be valid [0-100], got ${otherBreakdown.total_score}`
+);
+
+// -------------------------------------------------------------
+// Test 14 — Priority Tier Classification Bounds
+// -------------------------------------------------------------
+console.log('\n[Test 14] Priority Tier Classification Bounds');
+const criticalTier = getPriorityTier(85);
+assert(criticalTier.label === 'Critical', `Score 85 should be Critical, got ${criticalTier.label}`);
+const highTier = getPriorityTier(70);
+assert(highTier.label === 'High', `Score 70 should be High, got ${highTier.label}`);
+const moderateTier = getPriorityTier(50);
+assert(moderateTier.label === 'Moderate', `Score 50 should be Moderate, got ${moderateTier.label}`);
+const stableTier = getPriorityTier(30);
+assert(stableTier.label === 'Stable', `Score 30 should be Stable, got ${stableTier.label}`);
+
+// -------------------------------------------------------------
+// Test 15 — Four Required Examples Re-Test & Validation
+// -------------------------------------------------------------
+console.log('\n[Test 15] Re-Testing Four Required Examples');
+
+const examples = [
+  { name: 'Peeling paint', category: 'Government' as const, severity: 3, text: 'Peeling paint on public library wall' },
+  { name: 'Residential pothole', category: 'Roads' as const, severity: 7, text: 'Residential pothole on street' },
+  { name: 'Major water outage', category: 'Water' as const, severity: 9, text: 'Major water outage affecting entire ward for 4 days' },
+  { name: 'Live electrical cable', category: 'Electricity' as const, severity: 10, text: 'Live electrical cable hanging over a busy pedestrian walkway' },
+];
+
+examples.forEach((ex, idx) => {
+  const breakdown = calculatePriorityScore(baseDistrict, ex.category, ex.severity, 2);
+  const tier = getPriorityTier(breakdown.total_score, ex.severity);
+  const contribs = getScoreComponentContributions(breakdown);
+  console.log(`\nExample ${idx + 1}: ${ex.name}`);
+  console.log(`  - Category: ${ex.category}`);
+  console.log(`  - Severity: ${ex.severity}/10`);
+  console.log(`  - Data Sources: District Registry (${baseDistrict.name}), Sector Access Baseline`);
+  console.log(`  - Normalized Factor Inputs: Demand=${breakdown.demand_score}, Gap=${breakdown.gap_score}, Vuln=${breakdown.vuln_score}, Urgency=${breakdown.sev_score}, CapEx=${breakdown.align_score}`);
+  console.log(`  - Weighted Contributions: Demand=${contribs.demandContrib}, Gap=${contribs.gapContrib}, Vuln=${contribs.vulnContrib}, Urgency=${contribs.urgencyContrib}, CapEx=${contribs.govContrib}`);
+  console.log(`  - Composite Score: ${breakdown.total_score} / 100`);
+  console.log(`  - Priority Tier: ${tier.label}`);
+
+  assert(Math.abs(contribs.totalScore - breakdown.total_score) < 0.2, `${ex.name} sum of contributions must match composite score`);
+  assert(breakdown.total_score >= 0 && breakdown.total_score <= 100, `${ex.name} composite score must be within [0, 100]`);
+  assert(tier.label !== undefined, `${ex.name} must resolve a valid priority tier`);
+});
 
 console.log('\n🎉 ALL PRIORITY SCORING ENGINE TESTS PASSED SUCCESSFULLY!\n');
 

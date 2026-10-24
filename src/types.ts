@@ -299,7 +299,9 @@ export interface CitizenRequest {
   description?: string;
   severity: number; // 1 to 10
   severity_label?: string; // e.g. "High"
+  priority_score?: number; // Deterministic 0-100 5-pillar composite score
   priority_tier?: 'Low' | 'Medium' | 'High' | 'Critical';
+  score_breakdown?: ScoreBreakdown;
   summary?: string;
   summary_en: string;
   urgency?: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';

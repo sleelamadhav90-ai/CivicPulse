@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Mic, 
   Send, 
@@ -40,10 +40,11 @@ import {
   GraduationCap,
   Trees,
   Landmark,
+  ClipboardList,
   type LucideIcon
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
-import { calculatePriorityScore } from '../utils/scoring';
+import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { useAuth } from '../context/AuthContext';
 import { INDIA_STATES_DISTRICTS, getDistrictsByStateName } from '../data/indiaLocations';
 
@@ -71,6 +72,7 @@ export interface ServiceCategoryItem {
 
 export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   districts,
+  requests = [],
   onAddRequest,
   onNavigateToHotspots,
   onNavigateToSignals,
@@ -112,12 +114,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     urgency: string;
     issueTitle: string;
     timestamp: string;
+    priorityScore: number;
+    priorityTier: string;
+    severity: number;
+    scoreBreakdown?: ScoreBreakdown;
   } | null>(null);
 
   // Multilingual Assistant State
   const [selectedLanguage, setSelectedLanguage] = useState<string>('Telugu');
 
-  // All 12 categories mapped to consistent, colorful category icons
+  // All 13 categories mapped to consistent, colorful category icons
   const categories: ServiceCategoryItem[] = [
     { 
       id: 'Water', 
@@ -239,6 +245,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       badgeClass: 'text-blue-900 bg-blue-100/70 border-blue-200',
       image: '/images/categories/Government buildings.jpg' 
     },
+    { 
+      id: 'Other', 
+      name: 'Other civic issue', 
+      icon: ClipboardList, 
+      colorClass: 'text-purple-600', 
+      bgClass: 'bg-purple-50', 
+      borderClass: 'border-purple-200', 
+      badgeClass: 'text-purple-700 bg-purple-100/70 border-purple-200',
+      image: '/images/categories/General.jpg' 
+    },
   ];
 
   useEffect(() => {
@@ -316,6 +332,127 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     setStep((prev) => Math.max(prev - 1, 1));
   };
 
+  // Helper to find district or construct standard baseline from selected State & District
+  const activeDistrictObj = useMemo<District>(() => {
+    const matched = districts.find(
+      (d) => d.name.toLowerCase() === selectedDistrict.toLowerCase() ||
+             selectedDistrict.toLowerCase().includes(d.name.toLowerCase()) ||
+             d.name.toLowerCase().includes(selectedDistrict.toLowerCase())
+    );
+    if (matched) return matched;
+    // Standard baseline for any of India's 700+ districts from dynamic selector
+    return {
+      id: selectedDistrict.toLowerCase().replace(/\s+/g, '-'),
+      name: selectedDistrict,
+      state: selectedState,
+      population: 1850000,
+      poverty_index: 0.28,
+      water_access: 62,
+      health_access: 58,
+      road_quality: 54,
+      education_access: 66,
+      planned_investment: 15,
+      citizen_reports_count: 8,
+      zone: 'Central'
+    };
+  }, [districts, selectedDistrict, selectedState]);
+
+  // Evaluate text for hazard severity (1-10) and urgency transparently
+  const evaluatedSeverity = useMemo(() => {
+    const lower = (inputText || '').toLowerCase();
+    if (!lower.trim()) return 6;
+    if (
+      lower.includes('electrocut') || lower.includes('electric wire') || lower.includes('live wire') ||
+      lower.includes('downed wire') || lower.includes('fatal') || lower.includes('collapse') || 
+      lower.includes('death') || lower.includes('gas leak') || lower.includes('explosion') || lower.includes('fire') ||
+      lower.includes('live electrical') || lower.includes('electrical cable') || lower.includes('live cable') ||
+      lower.includes('exposed wire') || lower.includes('power line') || lower.includes('sparking') || lower.includes('hanging wire')
+    ) {
+      return 10;
+    }
+    if (
+      lower.includes('ambulance') || lower.includes('hospital') || lower.includes('contamination') || 
+      lower.includes('poison') || lower.includes('epidemic') || lower.includes('burst') || lower.includes('no water for')
+    ) {
+      return 9;
+    }
+    if (
+      lower.includes('acute') || lower.includes('severe') || lower.includes('2 week') || 
+      lower.includes('two week') || lower.includes('sewage flood') || lower.includes('blackout')
+    ) {
+      return 8;
+    }
+    if (
+      lower.includes('pothole') || lower.includes('shortage') || lower.includes('overflow') || 
+      lower.includes('leakage') || lower.includes('broken') || lower.includes('drainage')
+    ) {
+      return 7;
+    }
+    if (
+      lower.includes('dust') || lower.includes('garbage') || lower.includes('street light') || 
+      lower.includes('streetlight') || lower.includes('smell') || lower.includes('flicker')
+    ) {
+      return 5;
+    }
+    if (lower.includes('minor') || lower.includes('clean') || lower.includes('paint') || lower.includes('cosmetic')) {
+      return 3;
+    }
+    return 6;
+  }, [inputText]);
+
+  // Current demand count for this district and category from active request database
+  const matchingDemandCount = useMemo(() => {
+    return requests.filter((r) => {
+      const matchDist = (r.district || r.location || '').toLowerCase().includes(selectedDistrict.toLowerCase());
+      const matchCat = r.category === selectedCategory;
+      return matchDist && matchCat;
+    }).length;
+  }, [requests, selectedDistrict, selectedCategory]);
+
+  // Authoritative 5-pillar composite Priority Score calculated strictly using SCORING_CONFIG (0-100)
+  const activeScoreBreakdown = useMemo(() => {
+    const effectiveDemand = matchingDemandCount + 1;
+    return calculatePriorityScore(
+      activeDistrictObj,
+      selectedCategory,
+      evaluatedSeverity,
+      effectiveDemand
+    );
+  }, [activeDistrictObj, selectedCategory, evaluatedSeverity, matchingDemandCount]);
+
+  const activePriorityTier = useMemo<'Low' | 'Medium' | 'High' | 'Critical'>(() => {
+    const tier = getPriorityTier(activeScoreBreakdown.total_score);
+    if (tier.label === 'Critical') return 'Critical';
+    if (tier.label === 'High') return 'High';
+    if (tier.label === 'Moderate') return 'Medium';
+    return 'Low';
+  }, [activeScoreBreakdown]);
+
+  // AI Classification suggestion for "Other civic issue" without silently misrepresenting citizen selection
+  const aiSuggestedCategory = useMemo<{ suggestedName: string; suggestedId: InfrastructureCategory } | null>(() => {
+    if (selectedCategory !== 'Other') return null;
+    const lower = (inputText || '').toLowerCase();
+    if (lower.includes('water') || lower.includes('pipe') || lower.includes('tap') || lower.includes('borewell')) {
+      return { suggestedId: 'Water', suggestedName: 'Water supply' };
+    }
+    if (lower.includes('road') || lower.includes('pothole') || lower.includes('tar') || lower.includes('asphalt')) {
+      return { suggestedId: 'Roads', suggestedName: 'Roads and potholes' };
+    }
+    if (lower.includes('power') || lower.includes('electric') || lower.includes('transformer') || lower.includes('wire')) {
+      return { suggestedId: 'Electricity', suggestedName: 'Electricity and transformers' };
+    }
+    if (lower.includes('garbage') || lower.includes('waste') || lower.includes('trash') || lower.includes('dump')) {
+      return { suggestedId: 'Sanitation', suggestedName: 'Waste and garbage' };
+    }
+    if (lower.includes('drain') || lower.includes('sewage') || lower.includes('gutter') || lower.includes('flood')) {
+      return { suggestedId: 'Drainage', suggestedName: 'Sewage and drainage' };
+    }
+    if (lower.includes('hospital') || lower.includes('clinic') || lower.includes('health') || lower.includes('doctor')) {
+      return { suggestedId: 'Health', suggestedName: 'Public health' };
+    }
+    return null;
+  }, [selectedCategory, inputText]);
+
   const handleFinalSubmit = async () => {
     const trackingId = `CP-IN-${new Date().getFullYear()}-${Math.floor(10000 + Math.random() * 90000)}`;
     const fullLocation = `${landmark ? landmark + ', ' : ''}${selectedDistrict}, ${selectedState}`;
@@ -325,13 +462,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     else if (recordedVoice) sourceType = 'voice';
     else if (attachedPhoto) sourceType = 'text+photo';
 
+    const severityLabel = evaluatedSeverity >= 9 ? 'Critical' : evaluatedSeverity >= 7 ? 'High' : evaluatedSeverity >= 5 ? 'Medium' : 'Low';
+    const urgencyLabel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = evaluatedSeverity >= 9 ? 'CRITICAL' : evaluatedSeverity >= 7 ? 'HIGH' : evaluatedSeverity >= 5 ? 'MEDIUM' : 'LOW';
+
     const newReq: CitizenRequest = {
       id: trackingId,
       request_id: trackingId,
       userId: user?.uid,
       timestamp: new Date().toISOString(),
       created_at: new Date().toISOString(),
-      original_text: inputText || 'Voice report submitted via CivicPulse Service',
+      original_text: inputText || 'Civic report submitted via CivicPulse Service',
       language: selectedLanguage,
       category: selectedCategory,
       issue_title: `${selectedCategoryName || selectedCategory} Request — ${selectedDistrict}`,
@@ -340,24 +480,27 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       district: selectedDistrict,
       city_or_town: selectedDistrict,
       locality: landmark,
-      severity: 8,
-      priority_tier: 'High',
+      severity: evaluatedSeverity,
+      severity_label: severityLabel,
+      priority_score: activeScoreBreakdown.total_score,
+      priority_tier: activePriorityTier,
+      score_breakdown: activeScoreBreakdown,
       summary_en: `${selectedCategoryName || selectedCategory} report at ${fullLocation}.`,
       source_type: sourceType,
       source_origin: 'CIVICPULSE_USER',
       status: 'Submitted',
       photo_url: attachedPhoto || undefined,
-      problem: inputText || 'Infrastructure deficit reported',
-      urgency: 'HIGH',
-      affected_infrastructure: `${selectedCategoryName || selectedCategory} Public Network`,
-      estimated_impact: 'High',
+      problem: inputText || 'Civic deficit reported',
+      urgency: urgencyLabel,
+      affected_infrastructure: selectedCategory === 'Other' ? 'Community Civic Infrastructure' : `${selectedCategoryName || selectedCategory} Public Network`,
+      estimated_impact: activePriorityTier,
       recommended_action: `Dispatch regional response team to ${selectedDistrict}, ${selectedState} for ${selectedCategoryName || selectedCategory} inspection.`,
       ai_analysis: {
         category: selectedCategory,
         problem: inputText || 'Deficit',
-        urgency: 'HIGH',
-        affected_infrastructure: `${selectedCategory} Public Grid`,
-        estimated_impact: 'High',
+        urgency: urgencyLabel,
+        affected_infrastructure: selectedCategory === 'Other' ? 'Community Civic Grid' : `${selectedCategory} Public Grid`,
+        estimated_impact: activePriorityTier,
         recommended_action: `Inspect and resolve ${selectedCategory} deficit.`
       }
     };
@@ -383,9 +526,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       id: trackingId,
       category: selectedCategory,
       location: fullLocation,
-      urgency: 'HIGH 🔴',
+      urgency: `${urgencyLabel} ${evaluatedSeverity >= 8 ? '🔴' : '🟡'}`,
       issueTitle: `${selectedCategoryName || selectedCategory} Request`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      priorityScore: activeScoreBreakdown.total_score,
+      priorityTier: activePriorityTier,
+      severity: evaluatedSeverity,
+      scoreBreakdown: activeScoreBreakdown
     });
 
     setStep(5);
@@ -481,7 +628,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   Step 1: What service or infrastructure do you need?
                 </h2>
                 <p className="text-xs text-[#171717]/70 mt-1">
-                  Select from our 12 public service categories below:
+                  Select from our 13 public service categories below:
                 </p>
               </div>
 
@@ -843,9 +990,83 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+                    {/* 5-Pillar Priority Score */}
+                    <div className="bg-white p-3.5 border-2 border-[#171717] shadow-xs sm:col-span-2 space-y-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#171717]/15 pb-2">
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-[#D65A3A] font-bold block">
+                            Deterministic Priority Score (0–100 Scale)
+                          </span>
+                          <div className="flex items-baseline gap-2 mt-0.5">
+                            <span className="font-serif font-bold text-2xl text-[#171717]">
+                              {activeScoreBreakdown.total_score}
+                            </span>
+                            <span className="text-xs text-slate-500 font-mono">/ 100</span>
+                            <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold uppercase tracking-wider ${
+                              activePriorityTier === 'Critical' ? 'bg-red-100 text-red-900 border border-red-300' :
+                              activePriorityTier === 'High' ? 'bg-orange-100 text-orange-900 border border-orange-300' :
+                              activePriorityTier === 'Medium' ? 'bg-amber-100 text-amber-900 border border-amber-300' :
+                              'bg-emerald-100 text-emerald-900 border border-emerald-300'
+                            }`}>
+                              {activePriorityTier} Priority
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-mono text-slate-500">
+                          Weighted 5-Pillar Decision Model
+                        </span>
+                      </div>
+
+                      {/* 5 Pillars Contribution Grid */}
+                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-[10px] font-mono">
+                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
+                          <span className="text-slate-500 block">1. Demand (30%)</span>
+                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.demand_score} pts</span>
+                          <span className="text-[9px] text-slate-400 block">{matchingDemandCount + 1} signals</span>
+                        </div>
+                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
+                          <span className="text-slate-500 block">2. Gap (25%)</span>
+                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.gap_score} pts</span>
+                          <span className="text-[9px] text-slate-400 block">{activeScoreBreakdown.gap_percentage}% deficit</span>
+                        </div>
+                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
+                          <span className="text-slate-500 block">3. Vulnerability (20%)</span>
+                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.vuln_score} pts</span>
+                          <span className="text-[9px] text-slate-400 block">MPI / Census</span>
+                        </div>
+                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
+                          <span className="text-slate-500 block">4. Urgency (15%)</span>
+                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.sev_score} pts</span>
+                          <span className="text-[9px] text-slate-400 block">Sev: {evaluatedSeverity}/10</span>
+                        </div>
+                        <div className="bg-[#FAF8F5] p-2 rounded-xs border border-[#171717]/10">
+                          <span className="text-slate-500 block">5. CapEx (10%)</span>
+                          <span className="font-bold text-[#171717]">{activeScoreBreakdown.align_score} pts</span>
+                          <span className="text-[9px] text-slate-400 block">Budget signal</span>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="bg-white p-3 border border-[#171717]/20">
                       <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Inferred Sector</span>
                       <span className="font-bold text-base text-[#171717]">{selectedCategoryName || selectedCategory}</span>
+                      {aiSuggestedCategory && (
+                        <div className="mt-2 p-2 bg-purple-50 border border-purple-200 text-[11px] text-purple-900 rounded-xs">
+                          <p className="font-medium">
+                            <span className="font-bold">AI Observation:</span> Issue text suggests alignment with <strong>{aiSuggestedCategory.suggestedName}</strong>. Citizen selection is strictly maintained as <em>Other civic issue</em>.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedCategory(aiSuggestedCategory.suggestedId);
+                              setSelectedCategoryName(aiSuggestedCategory.suggestedName);
+                            }}
+                            className="mt-1 text-[10px] text-purple-800 underline font-bold cursor-pointer hover:text-purple-950"
+                          >
+                            Switch to {aiSuggestedCategory.suggestedName} →
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="bg-white p-3 border border-[#171717]/20">
@@ -854,13 +1075,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                     </div>
 
                     <div className="bg-white p-3 border border-[#171717]/20">
-                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Severity / Urgency</span>
-                      <span className="font-bold text-base text-red-700">High Priority (Urgency Score: 8/10)</span>
+                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Hazard Severity Rating</span>
+                      <span className="font-bold text-base text-red-700">{evaluatedSeverity} / 10 ({evaluatedSeverity >= 9 ? 'Critical Hazard' : evaluatedSeverity >= 7 ? 'High Urgency' : evaluatedSeverity >= 5 ? 'Moderate Deficit' : 'Minor Deficit'})</span>
                     </div>
 
                     <div className="bg-white p-3 border border-[#171717]/20">
                       <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Affected Infrastructure</span>
-                      <span className="font-bold text-base text-[#171717]">{selectedCategoryName || selectedCategory} Local Network</span>
+                      <span className="font-bold text-base text-[#171717]">{selectedCategory === 'Other' ? 'Community Civic Infrastructure' : `${selectedCategoryName || selectedCategory} Local Network`}</span>
                     </div>
                   </div>
 
@@ -938,6 +1159,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   <div className="flex justify-between border-b border-[#171717]/20 pb-1">
                     <span className="text-slate-500">Location:</span>
                     <span className="font-bold">{submissionReceipt.location}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
+                    <span className="text-slate-500">Priority Score:</span>
+                    <span className="font-bold text-[#D65A3A]">
+                      {submissionReceipt.priorityScore} / 100 ({submissionReceipt.priorityTier} Priority)
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
+                    <span className="text-slate-500">Hazard Severity:</span>
+                    <span className="font-bold">{submissionReceipt.severity} / 10</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">Status:</span>
