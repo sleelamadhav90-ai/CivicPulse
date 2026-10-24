@@ -616,55 +616,57 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       </div>
 
       {activeMode === 'wizard' && (
-        <div className="bg-white border-2 border-[#171717] p-6 sm:p-8 shadow-[6px_6px_0px_#171717] space-y-8">
+        <div className="bg-[#F1F3F5] border-2 border-[#171717] p-6 sm:p-8 shadow-[6px_6px_0px_#171717] space-y-8">
           
           {/* STEP PROGRESS TRACKER */}
-          <div className="border-b border-slate-200 pb-6 overflow-x-auto">
-            <nav className="flex items-center gap-2 min-w-max sm:min-w-0 sm:grid sm:grid-cols-5 font-sans font-semibold text-xs" aria-label="Submission Progress">
-              {[
-                { s: 1, label: 'Service Category' },
-                { s: 2, label: 'Location' },
-                { s: 3, label: 'Details & Voice' },
-                { s: 4, label: 'AI Review' },
-                { s: 5, label: 'Confirmation' },
-              ].map((item) => {
-                const isActive = step === item.s;
-                const isCompleted = step > item.s;
+          <div className="bg-white border border-slate-200/80 rounded-xl p-3 shadow-sm mb-6">
+            <div className="border-b border-slate-200 pb-3 overflow-x-auto">
+              <nav className="flex items-center gap-2 min-w-max sm:min-w-0 sm:grid sm:grid-cols-5 font-sans font-semibold text-xs" aria-label="Submission Progress">
+                {[
+                  { s: 1, label: 'Service Category' },
+                  { s: 2, label: 'Location' },
+                  { s: 3, label: 'Details & Voice' },
+                  { s: 4, label: 'AI Review' },
+                  { s: 5, label: 'Confirmation' },
+                ].map((item) => {
+                  const isActive = step === item.s;
+                  const isCompleted = step > item.s;
 
-                return (
-                  <div
-                    key={item.s}
-                    className={`flex items-center gap-2 py-2 px-3 border rounded-xs transition-all cursor-default ${
-                      isActive
-                        ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
-                        : isCompleted
-                        ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
-                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-200'
-                    }`}
-                  >
-                    <span
-                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                  return (
+                    <div
+                      key={item.s}
+                      className={`flex items-center gap-2 py-2 px-3 border rounded-xs transition-all cursor-default ${
                         isActive
-                          ? 'bg-white/20 text-white'
+                          ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
                           : isCompleted
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-slate-100 text-slate-700'
+                          ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                          : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-200'
                       }`}
                     >
-                      {isCompleted ? '✓' : item.s}
-                    </span>
-                    <span className="truncate leading-tight text-xs">
-                      {item.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </nav>
+                      <span
+                        className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                          isActive
+                            ? 'bg-white/20 text-white'
+                            : isCompleted
+                            ? 'bg-emerald-600 text-white'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        {isCompleted ? '✓' : item.s}
+                      </span>
+                      <span className="truncate leading-tight text-xs">
+                        {item.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </nav>
+            </div>
           </div>
 
           {/* STEP 1: WHAT DO YOU NEED? */}
           {step === 1 && (
-            <div className="bg-[#FBF9F5] p-5 sm:p-6 rounded-xl border border-slate-200/80 space-y-6">
+            <div className="bg-white p-5 sm:p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
               <div>
                 <h2 className="text-xl font-serif font-bold text-slate-900">
                   Step 1: What service or infrastructure do you need?
