@@ -555,18 +555,16 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       
       {/* Top Hero Banner & Mode Selector */}
       <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-md transition-all">
-        {/* Subtle Indian Architectural Watermark (10-15% Opacity) */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-15 grayscale"
-          style={{ 
-            backgroundImage: `url('/assets/aistudio/image_6c0073af.png')`,
-            backgroundPosition: 'center 38%' 
-          }}
+        {/* Architectural Background Watermark Image (Sansad Bhavan) */}
+        <img 
+          src="/assets/aistudio/image_6c0073af.png"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-[center_38%] pointer-events-none opacity-15 grayscale select-none"
           aria-hidden="true"
         />
-        {/* Dark Linear Gradient Overlay */}
+        {/* Gradient Overlay for Legibility */}
         <div 
-          className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/90 to-slate-900/80 pointer-events-none" 
+          className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-slate-900/40 pointer-events-none" 
           aria-hidden="true"
         />
 
