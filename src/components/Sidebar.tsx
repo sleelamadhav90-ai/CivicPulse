@@ -126,36 +126,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="overflow-y-auto flex-1 min-h-0 py-5 px-3 space-y-5">
-          {/* Platform Header */}
+          {/* Quick citizen submission CTA */}
           <div className="px-2 pb-3 border-b border-[#2D2B26]">
-            <div className="flex items-center space-x-2.5">
-              <div className="w-7 h-7 bg-[#D65A3A] text-white font-mono font-bold text-xs flex items-center justify-center rounded-xs shrink-0">
-                CP
-              </div>
-              <div>
-                <span className="text-lg font-serif font-bold tracking-tight text-white block leading-none">
-                  {t('brand.name')}
-                </span>
-                <span className="text-[11px] text-[#A6A296] font-sans block mt-1">
-                  {t('brand.tagline')}
-                </span>
-              </div>
-            </div>
-
-            {/* Quick citizen submission CTA */}
-            <div className="mt-4">
-              <button
-                onClick={() => handleTabClick('submit')}
-                className={`w-full py-2 px-3 flex items-center justify-center space-x-2 text-xs font-medium rounded-xs border transition-all cursor-pointer ${
-                  activeTab === 'submit'
-                    ? 'bg-[#D65A3A] text-white border-[#D65A3A]'
-                    : 'bg-[#292824] hover:bg-[#34322D] text-[#FAF8F5] border-[#3D3A33]'
-                }`}
-              >
-                <PlusCircle className="w-3.5 h-3.5 text-[#D65A3A]" />
-                <span>{t('nav.report_issue')}</span>
-              </button>
-            </div>
+            <button
+              onClick={() => handleTabClick('submit')}
+              className={`w-full py-2.5 px-3 flex items-center justify-center space-x-2 text-xs font-bold rounded-xs border transition-all cursor-pointer ${
+                activeTab === 'submit'
+                  ? 'bg-[#D65A3A] text-white border-[#D65A3A]'
+                  : 'bg-[#292824] hover:bg-[#34322D] text-[#FAF8F5] border-[#3D3A33]'
+              }`}
+            >
+              <PlusCircle className="w-4 h-4 text-[#D65A3A]" />
+              <span>{t('nav.report_issue')}</span>
+            </button>
           </div>
 
           {/* Top-level Overview link */}

@@ -349,6 +349,12 @@ examples.forEach((ex, idx) => {
   assert(tier.label !== undefined, `${ex.name} must resolve a valid priority tier`);
 });
 
+// Specific Regression Check: Major water outage scenario receives severity 9 and High priority tier
+const waterOutageBreakdown = calculatePriorityScore(baseDistrict, 'Water', 9, 2);
+const waterOutageTier = getPriorityTier(waterOutageBreakdown.total_score, 9);
+assert(waterOutageBreakdown.sev_score === 90, 'Major water outage severity score must normalize to 90');
+assert(waterOutageTier.label === 'High' || waterOutageTier.label === 'Critical', 'Major water outage with severity 9 must be at least High priority tier');
+
 console.log('\n🎉 ALL PRIORITY SCORING ENGINE TESTS PASSED SUCCESSFULLY!\n');
 
 

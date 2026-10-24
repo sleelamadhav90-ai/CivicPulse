@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { X, Calculator, ShieldCheck, Scale, Cpu, Layers } from 'lucide-react';
 import { ScoreBreakdown, District, InfrastructureCategory } from '../types';
 import { getPriorityTier } from '../utils/scoring';
 import { useLanguage } from '../context/LanguageContext';
+import { EvidenceLineageModal } from './EvidenceLineageModal';
 
 interface ScoreBreakdownModalProps {
   isOpen: boolean;
@@ -20,6 +21,7 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
   category = 'Water',
 }) => {
   const { t, tCategory } = useLanguage();
+  const [evidenceLineageOpen, setEvidenceLineageOpen] = useState(false);
   if (!isOpen || !breakdown || !district) return null;
 
   const tier = getPriorityTier(breakdown.total_score);
@@ -220,7 +222,15 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+          <button
+            onClick={() => setEvidenceLineageOpen(true)}
+            className="px-4 py-2 text-xs font-bold text-white bg-[#D65A3A] hover:bg-[#c34e2f] rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>View Evidence Lineage</span>
+          </button>
+
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-lg transition-colors cursor-pointer shadow-xs"
@@ -229,6 +239,14 @@ export const ScoreBreakdownModal: React.FC<ScoreBreakdownModalProps> = ({
           </button>
         </div>
       </div>
+
+      <EvidenceLineageModal
+        isOpen={evidenceLineageOpen}
+        onClose={() => setEvidenceLineageOpen(false)}
+        breakdown={breakdown}
+        district={district}
+        category={category}
+      />
     </div>
   );
 };

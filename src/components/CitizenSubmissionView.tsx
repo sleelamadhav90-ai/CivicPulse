@@ -609,7 +609,9 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         urgLabel = 'CRITICAL';
       } else if (
         lower.includes('ambulance') || lower.includes('hospital') || lower.includes('outbreak') || 
-        lower.includes('contamination') || lower.includes('severe hazard') || lower.includes('epidemic') || lower.includes('poison')
+        lower.includes('contamination') || lower.includes('severe hazard') || lower.includes('epidemic') || lower.includes('poison') ||
+        lower.includes('major water outage') || lower.includes('complete water supply outage') || lower.includes('water supply outage') ||
+        (lower.includes('water') && (lower.includes('outage') || lower.includes('failure')) && (lower.includes('entire') || lower.includes('whole') || lower.includes('days') || lower.includes('residential area') || lower.includes('ward')))
       ) {
         sevNum = 9;
         sevLabel = 'Critical';

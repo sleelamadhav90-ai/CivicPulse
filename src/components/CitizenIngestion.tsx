@@ -93,7 +93,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   const [selectedDistrict, setSelectedDistrict] = useState<string>('Guntur');
   const [landmark, setLandmark] = useState<string>('Near Primary School, Ward 12');
 
-  const [inputText, setInputText] = useState<string>('Potholes and broken streetlights near the school corridor.');
+  const [inputText, setInputText] = useState<string>('');
   
   // Photo Upload State
   const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -372,7 +372,9 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     }
     if (
       lower.includes('ambulance') || lower.includes('hospital') || lower.includes('contamination') || 
-      lower.includes('poison') || lower.includes('epidemic') || lower.includes('burst') || lower.includes('no water for')
+      lower.includes('poison') || lower.includes('epidemic') || lower.includes('burst') || lower.includes('no water for') ||
+      lower.includes('major water outage') || lower.includes('complete water supply outage') || lower.includes('water supply outage') ||
+      (lower.includes('water') && (lower.includes('outage') || lower.includes('failure')) && (lower.includes('entire') || lower.includes('whole') || lower.includes('days') || lower.includes('residential area') || lower.includes('ward')))
     ) {
       return 9;
     }
@@ -863,14 +865,51 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-mono font-bold uppercase text-[#171717]/80">
-                  Description / Transcribed Text
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono font-bold uppercase text-[#171717]/80">
+                    Description / Transcribed Text
+                  </label>
+                  <span className="text-[10px] font-mono text-purple-700 bg-purple-50 border border-purple-200 px-2 py-0.5 rounded-xs flex items-center gap-1 font-semibold">
+                    <Sparkles className="w-3 h-3 text-purple-600" />
+                    Powered by Google Gemini (gemini-3.8-flash | 8 Indian Languages)
+                  </span>
+                </div>
+
+                {/* One-click demo samples */}
+                <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xs space-y-1.5">
+                  <span className="text-[10px] font-mono font-bold uppercase text-slate-500 block">
+                    Quick Demo Samples (Click to Populate):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setInputText("మా ఊరిలో తాగునీటి పైపులైన్ పగిలిపోయి నీరు వృధా అవుతోంది.")}
+                      className="px-2.5 py-1 bg-white hover:bg-amber-50 text-slate-800 text-[11px] font-sans border border-slate-300 rounded-xs transition-colors cursor-pointer"
+                    >
+                      💧 Telugu Water Leak (Guntur)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText("वाराणसी मुख्य मार्ग पर बड़े गड्ढे होने के कारण रोज दुर्घटनाएं हो रही हैं।")}
+                      className="px-2.5 py-1 bg-white hover:bg-amber-50 text-slate-800 text-[11px] font-sans border border-slate-300 rounded-xs transition-colors cursor-pointer"
+                    >
+                      🚧 Hindi Pothole (Varanasi)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInputText("Major water outage affecting entire ward for 4 days")}
+                      className="px-2.5 py-1 bg-white hover:bg-amber-50 text-slate-800 text-[11px] font-sans border border-slate-300 rounded-xs transition-colors cursor-pointer"
+                    >
+                      🌊 Major Water Outage
+                    </button>
+                  </div>
+                </div>
+
                 <textarea
                   rows={4}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
-                  placeholder="Describe the issue in detail..."
+                  placeholder=""
                   className="w-full p-3 bg-white border border-[#171717] text-xs font-sans text-[#171717] focus:outline-none leading-relaxed"
                 />
               </div>
