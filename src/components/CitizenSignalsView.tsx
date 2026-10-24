@@ -13,7 +13,19 @@ import {
   Filter,
   RotateCcw,
   ChevronDown,
-  AlertTriangle
+  AlertTriangle,
+  Droplets,
+  Construction,
+  Flame,
+  Zap,
+  Trash2,
+  Waves,
+  HeartPulse,
+  Wind,
+  Bus,
+  GraduationCap,
+  Trees,
+  Landmark
 } from 'lucide-react';
 import { CitizenRequest, InfrastructureCategory } from '../types';
 import { 
@@ -51,8 +63,25 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
   const [selectedRequest, setSelectedRequest] = useState<CitizenRequest | null>(null);
 
   const categories: InfrastructureCategory[] = [
-    'Water', 'Health', 'Roads', 'Electricity', 'Education', 'Drainage', 'Sanitation'
+    'Water', 'Roads', 'Fire', 'Electricity', 'Sanitation', 'Drainage', 'Health', 'Environment', 'Transport', 'Education', 'Parks', 'Government'
   ];
+
+  const getCategoryIconMeta = (catStr: string) => {
+    const c = (catStr || '').toLowerCase();
+    if (c.includes('water')) return { icon: Droplets, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' };
+    if (c.includes('road') || c.includes('pothole')) return { icon: Construction, color: 'text-slate-700', bg: 'bg-slate-100 border-slate-300' };
+    if (c.includes('fire')) return { icon: Flame, color: 'text-orange-600', bg: 'bg-orange-50 border-orange-200' };
+    if (c.includes('electr') || c.includes('power')) return { icon: Zap, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' };
+    if (c.includes('sanit') || c.includes('waste') || c.includes('garbage')) return { icon: Trash2, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' };
+    if (c.includes('drain') || c.includes('sew') || c.includes('flood')) return { icon: Waves, color: 'text-teal-600', bg: 'bg-teal-50 border-teal-200' };
+    if (c.includes('health') || c.includes('clinic') || c.includes('hospital')) return { icon: HeartPulse, color: 'text-green-600', bg: 'bg-green-50 border-green-200' };
+    if (c.includes('environ') || c.includes('dust') || c.includes('air') || c.includes('pollut')) return { icon: Wind, color: 'text-slate-600', bg: 'bg-slate-100 border-slate-300' };
+    if (c.includes('transp') || c.includes('bus')) return { icon: Bus, color: 'text-sky-600', bg: 'bg-sky-50 border-sky-200' };
+    if (c.includes('educat') || c.includes('school')) return { icon: GraduationCap, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' };
+    if (c.includes('park') || c.includes('tree') || c.includes('garden')) return { icon: Trees, color: 'text-lime-700', bg: 'bg-lime-50 border-lime-200' };
+    if (c.includes('gov') || c.includes('civic') || c.includes('build')) return { icon: Landmark, color: 'text-blue-900', bg: 'bg-blue-50 border-blue-200' };
+    return { icon: Landmark, color: 'text-slate-700', bg: 'bg-slate-100 border-slate-200' };
+  };
 
   // Automatically open modal if requested
   useEffect(() => {
@@ -584,9 +613,16 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
 
                       {/* Category */}
                       <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="font-mono text-[11px] text-[#171717] bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#171717]/10">
-                          {tCategory(req.category)}
-                        </span>
+                        {(() => {
+                          const meta = getCategoryIconMeta(req.category);
+                          const CatIcon = meta.icon;
+                          return (
+                            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[#171717] bg-[#F7F5EF] px-2 py-0.5 rounded border border-[#171717]/10">
+                              <CatIcon className={`w-3.5 h-3.5 ${meta.color}`} />
+                              <span>{tCategory(req.category)}</span>
+                            </span>
+                          );
+                        })()}
                       </td>
 
                       {/* Origin */}
@@ -671,9 +707,21 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
                 <h2 className="text-xl font-serif font-bold text-[#171717] mt-0.5">
                   {selectedRequest.id}
                 </h2>
-                <span className="text-xs text-[#57534E] mt-0.5 block">
-                  {selectedRequest.location} · {t('table.category')}: <strong className="text-[#171717]">{tCategory(selectedRequest.category)}</strong>
-                </span>
+                <div className="text-xs text-[#57534E] mt-0.5 flex flex-wrap items-center gap-1.5">
+                  <span>{selectedRequest.location}</span>
+                  <span>·</span>
+                  <span>{t('table.category')}:</span>
+                  {(() => {
+                    const meta = getCategoryIconMeta(selectedRequest.category);
+                    const CatIcon = meta.icon;
+                    return (
+                      <span className="inline-flex items-center gap-1 font-semibold text-[#171717] bg-[#F7F5EF] px-1.5 py-0.5 rounded border border-[#171717]/10">
+                        <CatIcon className={`w-3.5 h-3.5 ${meta.color}`} />
+                        <span>{tCategory(selectedRequest.category)}</span>
+                      </span>
+                    );
+                  })()}
+                </div>
               </div>
 
               <button

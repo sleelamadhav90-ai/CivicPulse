@@ -167,6 +167,22 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
   const [submittedReceipt, setSubmittedReceipt] = useState<CitizenRequest | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [draftTrackingId, setDraftTrackingId] = useState<string>('');
+  const [selectedReportCategory, setSelectedReportCategory] = useState<string>(initialCategory || 'Water supply');
+
+  const submissionCategories = [
+    { id: 'Water', name: 'Water supply', image: '/images/categories/water.jpg' },
+    { id: 'Roads', name: 'Roads and potholes', image: '/images/categories/potholes.jpg' },
+    { id: 'Health', name: 'Public health', image: '/images/categories/Public health.jpg' },
+    { id: 'Education', name: 'Schools and public facilities', image: '/images/categories/Schools and public facilities.jpg' },
+    { id: 'Electricity', name: 'Electricity and transformers', image: '/images/categories/electricity and transformer.jpg' },
+    { id: 'Sanitation', name: 'Waste and garbage', image: '/images/categories/Waste and garbage.jpg' },
+    { id: 'Drainage', name: 'Sewage and drainage', image: '/images/categories/Sewage and drainage.jpg' },
+    { id: 'Fire', name: 'Fire hazards', image: '/images/categories/fire.jpg' },
+    { id: 'Environment', name: 'Dust and air pollution', image: '/images/categories/Dust and air pollution.png' },
+    { id: 'Transport', name: 'Public transport', image: '/images/categories/Public transport.jpg' },
+    { id: 'Parks', name: 'Parks and public spaces', image: '/images/categories/Parks and public spaces.jpg' },
+    { id: 'Government', name: 'Government buildings', image: '/images/categories/Government buildings.jpg' },
+  ];
 
   // Quick Language Presets
   const supportedLanguages = [
@@ -1059,6 +1075,53 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
           {/* WRITE FLOW INTERFACE */}
           {activeMode === 'write' && (
             <div className="space-y-5">
+              {/* CATEGORY SELECTION CARDS */}
+              <div className="space-y-2 pb-1 border-b border-[#171717]/10">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-mono font-bold uppercase tracking-wider text-[#171717]">
+                    Select Category
+                  </label>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    Active: <strong className="text-[#D65A3A]">{selectedReportCategory}</strong>
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2.5">
+                  {submissionCategories.map((cat) => {
+                    const isSelected = selectedReportCategory === cat.name || selectedReportCategory === cat.id;
+                    return (
+                      <button
+                        key={cat.name}
+                        type="button"
+                        onClick={() => {
+                          setSelectedReportCategory(cat.name);
+                          setEditedCategory(cat.id as InfrastructureCategory);
+                        }}
+                        className={`p-2.5 border-2 text-left flex items-center space-x-2.5 transition-all cursor-pointer rounded-xs ${
+                          isSelected
+                            ? 'bg-orange-50 border-[#D65A3A] shadow-[2px_2px_0px_#171717] font-bold text-[#D65A3A]'
+                            : 'bg-white border-[#171717]/30 hover:border-[#171717] hover:bg-[#FAF8F5]'
+                        }`}
+                      >
+                        <img 
+                          src={cat.image} 
+                          alt={cat.name} 
+                          className="w-12 h-12 object-cover rounded-xs border border-[#171717]/20 shrink-0 shadow-xs" 
+                          loading="lazy"
+                        />
+                        <div className="min-w-0 flex-1">
+                          <span className={`text-xs font-sans block truncate leading-tight ${isSelected ? 'text-[#D65A3A] font-bold' : 'text-[#171717] font-medium'}`}>
+                            {cat.name}
+                          </span>
+                          <span className="text-[9px] font-mono text-slate-500 uppercase block mt-0.5">
+                            {cat.id}
+                          </span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <label className="text-sm font-serif font-bold text-[#171717] flex items-center gap-2">
                   <span>What would you like to report?</span>

@@ -96,6 +96,11 @@ export type InfrastructureCategory =
   | 'Health'
   | 'Sanitation' 
   | 'Education' 
+  | 'Fire'
+  | 'Environment'
+  | 'Transport'
+  | 'Parks'
+  | 'Government'
   | 'Other';
 
 export type AssetCondition = '🟢 Good' | '⚠️ Poor' | '⚠️ Damaged' | '🔴 Critical' | '❌ Non-functional';

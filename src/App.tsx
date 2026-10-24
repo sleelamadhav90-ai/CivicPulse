@@ -477,15 +477,18 @@ export default function App() {
           )}
 
           {activeTab === 'submit' && (
-            <CitizenSubmissionView
+            <CitizenIngestion
               districts={districts}
-              initialMode={submissionInitialMode}
+              requests={requests}
               initialCategory={submissionInitialCategory}
               onAddRequest={handleAddRequest}
-              onViewRequest={(reqId) => {
-                setFocusedRequestId(reqId);
+              onOpenScoreModal={handleOpenScoreModal}
+              onNavigateToHotspots={() => setActiveTab('map')}
+              onNavigateToSignals={(requestId) => {
+                if (requestId) setFocusedRequestId(requestId);
                 setActiveTab('signals');
               }}
+              onNavigateToPatterns={() => setActiveTab('patterns')}
             />
           )}
 
