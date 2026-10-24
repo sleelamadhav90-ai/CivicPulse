@@ -820,35 +820,37 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 />
               </div>
 
-              {/* Refined Dark Summary Card with Dynamic State Image */}
-              <div className="bg-slate-900 text-white p-4 rounded-xl border border-slate-800 shadow-sm flex items-center justify-between gap-4 overflow-hidden relative">
-                <div className="flex items-start gap-3.5 relative z-10">
-                  <div className="w-9 h-9 rounded-lg bg-orange-500/20 text-orange-400 border border-orange-500/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <MapPin className="w-4 h-4 text-orange-400" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="text-[10px] font-bold tracking-wider uppercase text-orange-400">
-                      Selected Target Location
-                    </p>
-                    <p className="text-sm font-semibold text-white leading-snug break-words">
-                      {landmark ? `${landmark}, ` : ''}{selectedDistrict || 'Select District'}, {selectedState || 'Select State'}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Decorative State-based Landmark Image */}
-                <div className="absolute right-0 top-0 bottom-0 w-24 sm:w-32 z-0 opacity-40 transition-opacity duration-300">
-                  <img 
-                    src={
+              {/* Refined Dark Summary Card with Gradient Mask */}
+              <div 
+                className="relative overflow-hidden rounded-xl border border-slate-800 shadow-md p-5 text-white transition-all duration-300"
+                style={{
+                  backgroundColor: '#0f172a',
+                  backgroundImage: `
+                    linear-gradient(to right, #0f172a 35%, rgba(15, 23, 42, 0.75) 70%, rgba(15, 23, 42, 0.4) 100%),
+                    url('${
                       selectedState === 'Andhra Pradesh' ? '/assets/aistudio/image_425b7538.png' :
                       selectedState === 'Rajasthan' ? '/assets/aistudio/image_6c0073af.png' :
                       selectedState === 'Uttar Pradesh' ? '/assets/aistudio/image_99010a83.png' :
-                      '/assets/aistudio/image_cc1738cf.png'
-                    }
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-l from-slate-900 via-slate-900/60 to-transparent" />
+                      '/assets/aistudio/image_e622b1fa.png'
+                    }')
+                  `,
+                  backgroundPosition: 'right bottom',
+                  backgroundRepeat: 'no-repeat',
+                  backgroundSize: 'cover'
+                }}
+              >
+                <div className="relative z-10 flex items-center gap-4">
+                  <div className="flex items-center justify-center w-11 h-11 bg-orange-500/20 border border-orange-500/40 rounded-lg text-orange-400 font-bold shadow-sm">
+                    <MapPin className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-bold tracking-widest uppercase text-orange-400">
+                      Selected Target Location
+                    </p>
+                    <p className="text-lg font-semibold text-slate-100">
+                      {landmark ? `${landmark}, ` : ''}{selectedDistrict || 'Select District'}, {selectedState || 'Select State'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
