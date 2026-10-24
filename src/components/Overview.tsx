@@ -227,153 +227,99 @@ export const Overview: React.FC<OverviewProps> = ({
 
       {/* 2. PRIMARY EXECUTIVE CONCLUSION / GOVERNMENT DECISION-SUPPORT PANEL */}
       <section className="bg-white border border-[#171717]/20 p-4 sm:p-5 rounded-xs shadow-xs space-y-3.5">
-        {/* Top Metadata Line & Compact Decision Header (Two-Zone Layout) */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-[#171717]/15">
-          {/* Top Left: Location, Category & Finding Statement */}
-          <div className="space-y-1.5 max-w-2xl">
+        {/* Top Metadata Line & Decision Header */}
+        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-[#171717]/15">
+          {/* Header Area */}
+          <div className="space-y-2 flex-1 min-w-0">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[11px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#78716C] bg-[#FAF8F5] px-1.5 py-0.5 rounded-sm">
                 {conclusion.district} · {conclusion.state}
               </span>
-              <span className="text-[#171717]/20 select-none">•</span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] bg-[#FEF2F0] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-[#D65A3A]" />
                 {t('overview.urgent_action_title')}
               </span>
             </div>
 
-            <div className="space-y-0.5 pt-0.5">
-              <div className="text-xs font-mono font-bold text-[#171717] tracking-wider uppercase">
+            <div className="space-y-1">
+              <div className="text-[11px] font-mono font-bold text-[#171717] tracking-wider uppercase">
                 {t('overview.water_infrastructure')}
               </div>
-              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#171717] leading-tight break-words">
+              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#171717] leading-tight">
                 {t('overview.high_priority_need')}
               </h1>
             </div>
 
-            <p className="text-xs sm:text-[13px] text-[#57534E] leading-relaxed font-sans pt-0.5 max-w-xl">
+            <p className="text-sm text-[#57534E] leading-relaxed max-w-2xl font-sans">
               {conclusion.whyMatters}
             </p>
           </div>
 
-          {/* Top Right: Compact Priority Decision Marker */}
-          <div className="sm:text-right shrink-0 bg-[#FAF8F5] sm:bg-transparent p-2.5 sm:p-0 rounded-xs sm:rounded-none border sm:border-0 border-[#171717]/10 flex sm:flex-col items-center sm:items-end justify-between sm:justify-start gap-1.5">
-            <div className="flex items-baseline gap-1 font-mono">
-              <span className="text-[10px] uppercase tracking-wider text-[#78716C] font-semibold sm:inline-block">
-                {t('overview.priority')}
-              </span>
-              <span className="text-2xl sm:text-3xl font-bold text-[#171717] tracking-tight ml-1">
-                91
-              </span>
-              <span className="text-sm text-[#78716C] font-normal">
-                / 100
-              </span>
+          {/* Compact Priority Score */}
+          <div className="flex items-center gap-3 bg-[#FAF8F5] border border-[#171717]/15 px-3 py-1.5 rounded-sm shrink-0 self-start">
+            <div className="flex items-baseline gap-1.5">
+              <span className="text-[10px] font-bold text-[#78716C] uppercase">{t('overview.priority')}</span>
+              <span className="text-sm font-bold text-[#171717]">91/100</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-[9px] font-mono px-1.5 py-0.2 bg-indigo-50 text-indigo-800 border border-indigo-200 rounded font-semibold uppercase">
-                {t('overview.model_estimate')}
-              </span>
-              <div className="inline-flex items-center gap-1 text-[11px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] inline-block"></span>
-                <span>{t('status.critical')}</span>
-              </div>
+            <div className="text-[10px] font-bold text-[#D65A3A] bg-[#FEF2F0] px-1.5 py-0.5 rounded-xs border border-[#D65A3A]/10">
+              {t('status.critical')}
             </div>
           </div>
         </div>
 
-        {/* Compact Evidence Row (Three Columns with Thin Separators) */}
-        <div className="pt-0.5 pb-3 border-b border-[#171717]/15 space-y-2.5">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 md:divide-x md:divide-[#171717]/15">
-            {/* Column 1: Demand */}
-            <div className="space-y-0.5 md:pr-4">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  {t('overview.demand')}
+        {/* Metric Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+          {[
+            { label: t('overview.demand'), value: typeof priorityIssues[0]?.signalCount === 'number' ? priorityIssues[0].signalCount : totalRequests, desc: t('overview.synthetic_signals_desc'), type: 'demo' },
+            { label: t('overview.service_gap'), value: '31.6%', desc: t('overview.jjm_benchmark_desc'), type: 'data' },
+            { label: t('overview.investment'), value: '₹6.50 Cr', desc: t('overview.planned_capital_desc'), type: 'plan' },
+          ].map((metric) => (
+            <div key={metric.label} className="bg-[#FAF8F5] p-4 rounded-sm border border-[#171717]/5 space-y-1">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
+                  {metric.label}
                 </span>
-                <span className="text-[9px] font-mono px-1 py-0.2 bg-amber-100 text-amber-900 border border-amber-300 rounded font-semibold uppercase">
-                  {t('overview.demo_signal')}
+                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-sm font-semibold uppercase ${
+                  metric.type === 'demo' ? 'bg-amber-50 text-amber-900 border border-amber-200' :
+                  metric.type === 'data' ? 'bg-sky-50 text-sky-900 border border-sky-200' :
+                  'bg-stone-50 text-stone-700 border border-stone-200'
+                }`}>
+                  {metric.type === 'demo' ? t('overview.demo_signal') : metric.type === 'data' ? t('overview.public_data') : t('overview.curated_plan')}
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
-                {typeof priorityIssues[0]?.signalCount === 'number' ? priorityIssues[0].signalCount : totalRequests}
+              <div className="text-2xl font-mono font-bold text-[#171717] tracking-tight">
+                {metric.value}
               </div>
-              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                {t('overview.synthetic_signals_desc')}
+              <p className="text-[10px] text-[#57534E] leading-tight font-sans">
+                {metric.desc}
               </p>
             </div>
-
-            {/* Column 2: Service Gap */}
-            <div className="space-y-0.5 md:px-6">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  {t('overview.service_gap')}
-                </span>
-                <span className="text-[9px] font-mono px-1 py-0.2 bg-sky-100 text-sky-900 border border-sky-300 rounded font-semibold uppercase">
-                  {t('overview.public_data')}
-                </span>
-              </div>
-              <div className="text-xl sm:text-2xl font-mono font-bold text-[#171717] tracking-tight">
-                31.6%
-              </div>
-              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                {t('overview.jjm_benchmark_desc')}
-              </p>
-            </div>
-
-            {/* Column 3: Investment */}
-            <div className="space-y-0.5 md:pl-6">
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider block">
-                  {t('overview.investment')}
-                </span>
-                <span className="text-[9px] font-mono px-1 py-0.2 bg-stone-100 text-stone-700 border border-stone-300 rounded font-semibold uppercase">
-                  {t('overview.curated_plan')}
-                </span>
-              </div>
-              <div className="text-xl sm:text-2xl font-mono font-bold text-[#285943] tracking-tight">
-                ₹6.50 Cr
-              </div>
-              <p className="text-[11px] text-[#57534E] leading-tight font-sans">
-                {t('overview.planned_capital_desc')}
-              </p>
-            </div>
-          </div>
-
-          {/* Short Evidence Interpretation */}
-          <div className="pt-2 border-t border-[#171717]/10 flex flex-wrap items-baseline gap-1.5">
-            <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
-              {t('overview.why_prioritized_label')}
-            </span>
-            <p className="text-xs text-[#57534E] font-sans">
-              {t('overview.why_prioritized_text')}
-            </p>
-          </div>
+          ))}
         </div>
 
-        {/* Recommended Intervention Section */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-0.5">
-          <div className="space-y-0.5 max-w-2xl">
+        {/* Action Row */}
+        <div className="border-t border-[#171717]/10 pt-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="space-y-1">
             <span className="text-[10px] font-mono font-bold text-[#285943] uppercase tracking-wider block">
               {t('overview.recommended_intervention')}
             </span>
-            <p className="text-xs sm:text-sm font-medium text-[#171717]">
+            <p className="text-sm font-medium text-[#171717] max-w-2xl">
               {t('overview.recommended_intervention_text')}
             </p>
           </div>
 
-          <div className="flex items-center shrink-0 pt-1 sm:pt-0">
-            <button
-              onClick={() => {
-                if (onSelectDistrictForPolicy) {
-                  onSelectDistrictForPolicy('guntur', 'Water');
-                }
-                onNavigate('recommendations');
-              }}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-mono font-semibold rounded-xs transition-colors cursor-pointer whitespace-nowrap shadow-xs"
-            >
-              <span>{t('overview.view_evidence_dossier')}</span>
-              <span>→</span>
-            </button>
-          </div>
+          <button
+            onClick={() => {
+              if (onSelectDistrictForPolicy) {
+                onSelectDistrictForPolicy('guntur', 'Water');
+              }
+              onNavigate('recommendations');
+            }}
+            className="inline-flex items-center gap-1.5 px-5 py-2.5 bg-[#171717] hover:bg-[#34322D] text-white text-xs font-mono font-semibold rounded-sm transition-colors cursor-pointer whitespace-nowrap shadow-sm"
+          >
+            <span>{t('overview.view_evidence_dossier')}</span>
+            <span>→</span>
+          </button>
         </div>
       </section>
 
