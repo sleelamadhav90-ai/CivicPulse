@@ -126,20 +126,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ${isOpenMobile ? 'translate-x-0' : '-translate-x-full'}
       `}>
         <div className="overflow-y-auto flex-1 min-h-0 py-5 px-3 space-y-5">
-          {/* Quick citizen submission CTA */}
-          <div className="px-2 pb-3 border-b border-[#2D2B26]">
-            <button
-              onClick={() => handleTabClick('submit')}
-              className={`w-full py-2.5 px-3 flex items-center justify-center space-x-2 text-xs font-bold rounded-xs border transition-all cursor-pointer ${
-                activeTab === 'submit'
-                  ? 'bg-[#D65A3A] text-white border-[#D65A3A]'
-                  : 'bg-[#292824] hover:bg-[#34322D] text-[#FAF8F5] border-[#3D3A33]'
-              }`}
-            >
-              <PlusCircle className="w-4 h-4 text-[#D65A3A]" />
-              <span>{t('nav.report_issue')}</span>
-            </button>
-          </div>
+          {/* Quick citizen submission CTA (Hidden when already on report-intake view) */}
+          {activeTab !== 'submit' && (
+            <div className="px-2 pb-3 border-b border-[#2D2B26]">
+              <button
+                onClick={() => handleTabClick('submit')}
+                className="w-full py-2.5 px-3 flex items-center justify-center space-x-2 text-xs font-bold rounded-xs border transition-all cursor-pointer bg-[#292824] hover:bg-[#34322D] text-[#FAF8F5] border-[#3D3A33]"
+              >
+                <PlusCircle className="w-4 h-4 text-[#D65A3A]" />
+                <span>{t('nav.report_issue')}</span>
+              </button>
+            </div>
+          )}
 
           {/* Top-level Overview link */}
           <div className="px-1">

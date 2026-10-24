@@ -553,42 +553,66 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   return (
     <div className="space-y-8 max-w-4xl mx-auto font-sans text-[#171717] pb-16">
       
-      {/* Top Banner & Mode Selector */}
-      <div className="bg-white border-2 border-[#171717] p-6 shadow-[4px_4px_0px_#171717] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center space-x-2 text-xs font-mono font-bold text-[#D65A3A] uppercase tracking-wider mb-1">
-            <ShieldCheck className="w-4 h-4 text-[#D65A3A]" />
-            <span>OFFICIAL PUBLIC SERVICE PORTAL</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-serif font-bold text-[#171717]">
-            Submit a Civic Request
-          </h1>
-          <p className="text-xs text-[#171717]/70 mt-0.5">
-            Follow our 5-step reporting wizard or speak in your regional language.
-          </p>
-        </div>
+      {/* Top Hero Banner & Mode Selector */}
+      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-md transition-all">
+        {/* Subtle Indian Architectural Watermark (10-15% Opacity) */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center pointer-events-none opacity-15 grayscale"
+          style={{ 
+            backgroundImage: `url('/assets/aistudio/image_6c0073af.png')`,
+            backgroundPosition: 'center 38%' 
+          }}
+          aria-hidden="true"
+        />
+        {/* Dark Linear Gradient Overlay */}
+        <div 
+          className="absolute inset-0 bg-gradient-to-r from-slate-900/95 via-slate-900/90 to-slate-900/80 pointer-events-none" 
+          aria-hidden="true"
+        />
 
-        <div className="flex items-center gap-2 bg-[#F7F5EF] p-1 border border-[#171717]/30 shrink-0">
-          <button
-            onClick={() => setActiveMode('wizard')}
-            className={`px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-              activeMode === 'wizard'
-                ? 'bg-[#D65A3A] text-white border border-[#171717] shadow-[1px_1px_0px_#171717]'
-                : 'text-[#171717]/70 hover:text-[#171717]'
-            }`}
-          >
-            📋 5-Step Wizard
-          </button>
-          <button
-            onClick={() => setActiveMode('assistant')}
-            className={`px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
-              activeMode === 'assistant'
-                ? 'bg-[#D65A3A] text-white border border-[#171717] shadow-[1px_1px_0px_#171717]'
-                : 'text-[#171717]/70 hover:text-[#171717]'
-            }`}
-          >
-            🗣️ Dialect AI Assistant
-          </button>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center space-x-2 text-xs font-mono font-bold text-orange-500 uppercase tracking-wider mb-1.5">
+              <ShieldCheck className="w-4 h-4 text-orange-500 shrink-0" />
+              <span>OFFICIAL PUBLIC SERVICE PORTAL</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight leading-tight">
+              Submit a Civic Request
+            </h1>
+            <p className="text-xs sm:text-sm text-slate-300 font-sans mt-1.5 leading-relaxed max-w-xl">
+              Follow our 5-step reporting wizard or speak in your regional language.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0 max-w-full">
+            <button
+              type="button"
+              onClick={() => setActiveMode('wizard')}
+              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border shadow-xs whitespace-nowrap ${
+                activeMode === 'wizard'
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white border-orange-500/50 ring-2 ring-orange-500/30'
+                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700'
+              }`}
+            >
+              <span>📋 5-Step Wizard</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveMode('assistant')}
+              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 text-left border shadow-xs max-w-full flex-wrap leading-tight ${
+                activeMode === 'assistant'
+                  ? 'bg-purple-900 text-white border-purple-700 ring-2 ring-purple-500/30'
+                  : 'bg-purple-950/80 hover:bg-purple-900/90 text-purple-200 border-purple-800/60'
+              }`}
+              title="Switch to Regional Dialect AI Assistant"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              <span className="break-words">
+                ✦ Powered by Google Gemini 3.8 Flash — Voice in 8 Regional Languages
+              </span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -596,30 +620,47 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
         <div className="bg-white border-2 border-[#171717] p-6 sm:p-8 shadow-[6px_6px_0px_#171717] space-y-8">
           
           {/* STEP PROGRESS TRACKER */}
-          <div className="border-b border-[#171717]/20 pb-6">
-            <div className="grid grid-cols-5 gap-1.5 sm:gap-2 text-center text-xs font-mono font-bold">
+          <div className="border-b border-slate-200 pb-6 overflow-x-auto">
+            <nav className="flex items-center gap-2 min-w-max sm:min-w-0 sm:grid sm:grid-cols-5 font-sans font-semibold text-xs" aria-label="Submission Progress">
               {[
-                { s: 1, name: '1. Service Category' },
-                { s: 2, name: '2. Location' },
-                { s: 3, name: '3. Details & Voice' },
-                { s: 4, name: '4. AI Review' },
-                { s: 5, name: '5. Confirmation' },
-              ].map((item) => (
-                <div
-                  key={item.s}
-                  className={`py-2 px-1 border transition-all ${
-                    step === item.s
-                      ? 'bg-[#D65A3A] text-white border-[#171717] shadow-[2px_2px_0px_#171717]'
-                      : step > item.s
-                      ? 'bg-[#285943] text-white border-[#171717]'
-                      : 'bg-slate-50 text-slate-400 border-slate-200'
-                  }`}
-                >
-                  <span className="hidden sm:inline">{item.name}</span>
-                  <span className="sm:hidden">{item.s}</span>
-                </div>
-              ))}
-            </div>
+                { s: 1, label: 'Service Category' },
+                { s: 2, label: 'Location' },
+                { s: 3, label: 'Details & Voice' },
+                { s: 4, label: 'AI Review' },
+                { s: 5, label: 'Confirmation' },
+              ].map((item) => {
+                const isActive = step === item.s;
+                const isCompleted = step > item.s;
+
+                return (
+                  <div
+                    key={item.s}
+                    className={`flex items-center gap-2 py-2 px-3 border rounded-xs transition-all cursor-default ${
+                      isActive
+                        ? 'bg-orange-600 text-white border-orange-600 shadow-sm'
+                        : isCompleted
+                        ? 'bg-emerald-50 text-emerald-900 border-emerald-200'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-200'
+                    }`}
+                  >
+                    <span
+                      className={`w-5 h-5 rounded-full flex items-center justify-center text-[11px] font-bold shrink-0 ${
+                        isActive
+                          ? 'bg-white/20 text-white'
+                          : isCompleted
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {isCompleted ? '✓' : item.s}
+                    </span>
+                    <span className="truncate leading-tight text-xs">
+                      {item.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </nav>
           </div>
 
           {/* STEP 1: WHAT DO YOU NEED? (FIX 1) */}
@@ -653,7 +694,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                         setSelectedCategory(cat.id);
                         setSelectedCategoryName(cat.name);
                       }}
-                      className={`p-3.5 border-2 text-left flex items-center space-x-3.5 transition-all cursor-pointer rounded-sm group relative ${
+                      className={`p-3.5 border-2 text-left flex items-start space-x-3.5 transition-all cursor-pointer rounded-sm group relative h-full min-h-[84px] ${
                         isSelected
                           ? 'bg-orange-50/80 border-[#D65A3A] shadow-[3px_3px_0px_#171717] ring-1 ring-[#D65A3A]/40'
                           : 'bg-white border-[#171717]/30 hover:border-[#171717] hover:bg-[#FAF8F5] hover:shadow-xs'
@@ -672,24 +713,24 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       </div>
 
                       {/* Label & Sector Metadata */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center justify-between gap-1">
+                      <div className="min-w-0 flex-1 space-y-1.5">
+                        <div className="flex items-start justify-between gap-1.5">
                           <span 
-                            className={`text-sm font-sans block leading-snug truncate ${
-                              isSelected ? 'text-[#D65A3A] font-bold' : 'text-[#171717] font-semibold group-hover:text-black'
+                            className={`text-sm font-semibold leading-tight block break-words ${
+                              isSelected ? 'text-[#D65A3A]' : 'text-slate-900 group-hover:text-black'
                             }`}
                           >
                             {cat.name}
                           </span>
                           {isSelected && (
-                            <span className="w-5 h-5 rounded-full bg-[#D65A3A] text-white flex items-center justify-center shrink-0 shadow-xs">
+                            <span className="w-5 h-5 rounded-full bg-[#D65A3A] text-white flex items-center justify-center shrink-0 shadow-xs mt-0.5">
                               <Check className="w-3 h-3 text-white stroke-[3]" aria-hidden="true" />
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-1.5 mt-1">
-                          <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">
-                            Sector: {cat.id}
+                        <div>
+                          <span className="bg-amber-50 text-amber-700 rounded px-2 py-0.5 text-[10px] font-bold font-sans inline-block border border-amber-200/60">
+                            {cat.id}
                           </span>
                         </div>
                       </div>

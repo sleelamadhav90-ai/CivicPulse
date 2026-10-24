@@ -55,13 +55,15 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
   // Defensive check for loading state to prevent ReferenceErrors if hook returns partially
   const loading = auth?.loading ?? true;
 
-  const mainNavItems: { id: NavTab; labelKey: string }[] = [
+  const rawNavItems: { id: NavTab; labelKey: string }[] = [
     { id: 'overview', labelKey: 'nav.home' },
     { id: 'submit', labelKey: 'nav.report_issue' },
     { id: 'map', labelKey: 'nav.explore' },
     { id: 'signals', labelKey: 'nav.my_requests' },
     { id: 'recommendations', labelKey: 'nav.government_dashboard' },
   ];
+
+  const mainNavItems = rawNavItems.filter(item => !(item.id === 'submit' && activeTab === 'submit'));
 
   return (
     <header className="sticky top-0 z-40 w-full bg-[#171717] text-[#F7F5EF] border-b border-[#171717]/40 font-mono text-xs shadow-xs shrink-0">
@@ -99,8 +101,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
           >
             CP
           </button>
-          <div className="cursor-pointer min-w-0 max-w-[110px] sm:max-w-none truncate" onClick={() => onNavigate?.('overview')}>
-            <span className="font-serif font-bold text-xs sm:text-base tracking-wide text-white uppercase truncate block">
+          <div className="cursor-pointer shrink-0 min-w-max" onClick={() => onNavigate?.('overview')}>
+            <span className="font-serif font-bold text-xs sm:text-base tracking-wide text-white uppercase whitespace-nowrap block">
               {t('brand.name')}
             </span>
           </div>
