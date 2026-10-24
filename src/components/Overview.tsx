@@ -16,7 +16,10 @@ import {
   X,
   FileText,
   Volume2,
-  Database
+  Database,
+  Flame,
+  Wind,
+  Trash2
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory } from '../types';
 import { NavTab } from './Sidebar';
@@ -116,12 +119,12 @@ export const Overview: React.FC<OverviewProps> = ({
 
   // 3-4 Top Priority issues with progressive disclosure
   const rawPriorityIssues = useMemo(() => [
-    {
+      {
       category: 'Water' as InfrastructureCategory,
-      title: 'Water access deficit & pipeline pressure collapse',
+      title: 'Water shortages and low pipeline pressure',
       location: 'Guntur, Andhra Pradesh',
       districtId: 'guntur',
-      statusNote: 'High and rising citizen demand in peri-urban wards',
+      statusNote: 'Citizen reports of water shortages in peri-urban areas are increasing.',
       signalCount: 742,
       trend: '+22% this month',
       severity: 'Critical',
@@ -130,10 +133,10 @@ export const Overview: React.FC<OverviewProps> = ({
     },
     {
       category: 'Roads' as InfrastructureCategory,
-      title: 'Arterial hospital corridor craters & flood washout',
+      title: 'Damaged roads near hospital routes',
       location: 'Patna, Bihar',
       districtId: 'dist-01',
-      statusNote: 'Emergency transit bottleneck affecting ambulance access',
+      statusNote: 'Road damage is causing delays for ambulances in this area.',
       signalCount: 512,
       trend: '+18% this month',
       severity: 'High',
@@ -145,7 +148,7 @@ export const Overview: React.FC<OverviewProps> = ({
       title: 'Primary health sub-centre staffing & cold chain shortfalls',
       location: 'Nashik, Maharashtra',
       districtId: 'dist-04',
-      statusNote: 'Patient grievances concentrated in tribal blocks',
+      statusNote: 'Patient reports highlight staffing issues and vaccine storage concerns in tribal blocks.',
       signalCount: 389,
       trend: '+15% this month',
       severity: 'High',
@@ -154,10 +157,10 @@ export const Overview: React.FC<OverviewProps> = ({
     },
     {
       category: 'Electricity' as InfrastructureCategory,
-      title: 'Agricultural power transformer breakdown cycle',
+      title: 'Repeated transformer failures affecting agricultural power',
       location: 'Gaya, Bihar',
       districtId: 'dist-01',
-      statusNote: 'Recurring outage pattern during irrigation cycles',
+      statusNote: 'Frequent transformer outages are disrupting irrigation.',
       signalCount: 294,
       trend: '+29% this month',
       severity: 'Moderate',
@@ -165,6 +168,45 @@ export const Overview: React.FC<OverviewProps> = ({
       recommendedAction: 'Replace overloaded 63 kVA transformers with 100 kVA units under RDSS scheme.',
     },
   ], []);
+
+  const WaterIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M12 2C7 2 3 6 3 11c0 4 3 8 9 10 6-2 9-6 9-10 0-5-4-9-9-9z" fill="#3B82F6" /><path d="M12 4c-3 0-5 3-5 7 0 2 1 4 2 5" fill="#60A5FA" /></svg>
+  );
+  const FireIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M12 2c-3 4-7 5-7 10 0 4 3 7 7 7s7-3 7-7c0-5-4-6-7-10z" fill="#EF4444" /><path d="M12 5c-2 3-5 4-5 8 0 3 2 5 5 5s5-2 5-5c0-4-3-5-5-8z" fill="#F59E0B" /></svg>
+  );
+  const RoadIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><rect x="4" y="2" width="16" height="20" rx="2" fill="#6B7280" /><rect x="11" y="4" width="2" height="4" fill="#FFFFFF" /><rect x="11" y="10" width="2" height="4" fill="#FFFFFF" /><rect x="11" y="16" width="2" height="4" fill="#FFFFFF" /></svg>
+  );
+  const ElectricityIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#F59E0B" /></svg>
+  );
+  const PollutionIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M19 12a3 3 0 0 0-3-3H9a3 3 0 0 0 0 6h10" fill="#9CA3AF" /><circle cx="8" cy="15" r="1" fill="#4B5563" /><circle cx="12" cy="18" r="1" fill="#4B5563" /><circle cx="16" cy="15" r="1" fill="#4B5563" /></svg>
+  );
+  const HealthIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><rect x="6" y="6" width="12" height="12" rx="2" fill="#10B981" /><rect x="10" y="8" width="4" height="8" fill="#FFFFFF" /><rect x="8" y="10" width="8" height="4" fill="#FFFFFF" /></svg>
+  );
+  const WasteIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M5 7h14l-1 14H6L5 7z" fill="#4B5563" /><path d="M8 4h8v2H8V4z" fill="#6B7280" /></svg>
+  );
+  const SewageIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><path d="M12 2C6 2 2 6 2 12s4 10 10 10 10-4 10-10S18 2 12 2zm0 18c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z" fill="#0D9488" /><path d="M12 6v6l4 4" fill="none" stroke="#0D9488" strokeWidth="2" /></svg>
+  );
+  const DefaultIcon = () => (
+    <svg viewBox="0 0 24 24" className="w-6 h-6"><circle cx="12" cy="12" r="10" fill="#D1D5DB" /></svg>
+  );
+
+  const categoryIcons: Record<string, any> = {
+    Water: WaterIcon,
+    Roads: RoadIcon,
+    Health: HealthIcon,
+    Electricity: ElectricityIcon,
+    Fire: FireIcon,
+    'Air Pollution': PollutionIcon,
+    Waste: WasteIcon,
+    Sewage: SewageIcon,
+  };
 
   const priorityIssues = useMemo(() => {
     return rawPriorityIssues.map(issue => tOverviewPriorityIssue(issue));
@@ -399,7 +441,7 @@ export const Overview: React.FC<OverviewProps> = ({
               {t('overview.priority_list_title')}
             </h2>
             <p className="text-xs text-[#78716C] mt-0.5">
-              {t('overview.priority_list_desc')}
+              Community issues that may need attention first, based on citizen reports, service gaps and urgency.
             </p>
           </div>
           <button
@@ -412,57 +454,75 @@ export const Overview: React.FC<OverviewProps> = ({
         </div>
 
         <div className="space-y-2.5">
-          {priorityIssues.map((issue, idx) => (
-            <div
-              key={issue.title}
-              onClick={() => setActiveDrawerIssue(issue)}
-              className="bg-white border border-[#171717]/15 hover:border-[#171717]/40 p-4 rounded-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
-            >
-              <div className="flex items-start space-x-3.5 flex-1 min-w-0">
-                <span className="font-mono text-sm font-bold text-[#78716C] pt-0.5 shrink-0">
-                  0{idx + 1}
-                </span>
-                <div className="space-y-1 min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
-                      {tCategory(issue.category)}
-                    </span>
-                    <span className="text-[#171717]/30 text-xs">·</span>
-                    <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
-                      {issue.location}
-                    </span>
-                  </div>
-                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
-                    {issue.title}
-                  </div>
-                  <div className="text-xs text-[#78716C] leading-relaxed break-words">
-                    {issue.statusNote}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-between md:justify-end gap-4 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10 shrink-0">
-                <div className="text-left md:text-right">
-                  <span className="text-xs font-mono font-bold text-[#171717] block whitespace-nowrap">
-                    {issue.signalCount} {t('metric.demand_signals')}
-                  </span>
-                  <span className="text-[11px] text-[#D65A3A] font-medium block font-mono whitespace-nowrap">
-                    {issue.trend}
-                  </span>
-                </div>
-
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveDrawerIssue(issue);
-                  }}
-                  className="px-3.5 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
+          {(() => {
+            const categoryIcons: Record<string, any> = {
+              Water: Droplets,
+              Roads: Route,
+              Health: HeartPulse,
+              Electricity: Zap,
+              Fire: Flame,
+              'Air Pollution': Wind,
+              Waste: Trash2,
+              Sewage: Droplets,
+            };
+            return priorityIssues.map((issue, idx) => {
+              const Icon = categoryIcons[issue.category] || AlertCircle;
+              return (
+                <div
+                  key={issue.title}
+                  onClick={() => setActiveDrawerIssue(issue)}
+                  className="bg-white border border-[#171717]/15 hover:border-[#171717]/40 p-4 rounded-xs transition-all flex flex-col md:flex-row md:items-center justify-between gap-4 cursor-pointer group"
                 >
-                  {t('action.inspect')} →
-                </button>
-              </div>
-            </div>
-          ))}
+                  <div className="flex items-start space-x-4 flex-1 min-w-0">
+                    <span className="font-mono text-sm font-bold text-[#78716C] pt-0.5 shrink-0 w-6">
+                      0{idx + 1}
+                    </span>
+                    <div className="w-8 h-8 rounded-xs bg-[#FAF8F5] flex items-center justify-center shrink-0 border border-[#171717]/5">
+                      <Icon />
+                    </div>
+                    <div className="space-y-1 min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
+                          {tCategory(issue.category)}
+                        </span>
+                        <span className="text-[#171717]/30 text-xs">·</span>
+                        <span className="text-xs font-medium text-[#57534E] whitespace-nowrap">
+                          {issue.location}
+                        </span>
+                      </div>
+                      <div className="text-sm font-semibold text-[#171717] group-hover:text-[#D65A3A] transition-colors leading-snug break-words">
+                        {issue.title}
+                      </div>
+                      <div className="text-xs text-[#78716C] leading-relaxed break-words">
+                        {issue.statusNote}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between md:justify-end gap-6 pt-2 md:pt-0 border-t md:border-t-0 border-[#171717]/10 shrink-0">
+                    <div className="text-left md:text-right">
+                      <span className="text-xs font-mono font-bold text-[#171717] block whitespace-nowrap">
+                        {issue.signalCount} <span className="text-[#78716C] font-normal">citizen feedback signals</span>
+                      </span>
+                      <span className="text-[11px] text-[#D65A3A] font-medium block font-mono whitespace-nowrap">
+                        {issue.trend}
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveDrawerIssue(issue);
+                      }}
+                      className="px-3.5 py-1.5 text-xs font-medium bg-[#FAF8F5] hover:bg-[#171717] hover:text-white text-[#171717] border border-[#171717]/20 rounded-xs transition-colors cursor-pointer whitespace-nowrap"
+                    >
+                      {t('action.inspect')} →
+                    </button>
+                  </div>
+                </div>
+              );
+            });
+          })()}
         </div>
       </section>
 
