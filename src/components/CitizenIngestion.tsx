@@ -597,7 +597,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <button
               type="button"
               onClick={() => setActiveMode('assistant')}
-              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 text-left border shadow-sm max-w-full flex-wrap leading-tight ${
+              className={`px-2.5 py-1.5 text-[10px] sm:text-xs font-medium rounded-lg transition-all cursor-pointer flex items-center gap-1.5 text-left border shadow-sm max-w-full leading-tight ${
                 activeMode === 'assistant'
                   ? 'bg-purple-900 text-white border-purple-600 ring-2 ring-purple-500/40'
                   : 'bg-purple-950/90 hover:bg-purple-900/90 text-purple-100 border-purple-800/80'
@@ -605,8 +605,8 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
               title="Switch to Regional Dialect AI Assistant"
             >
               <Sparkles className="w-3.5 h-3.5 text-purple-300 shrink-0" />
-              <span className="break-words">
-                ✦ Powered by Google Gemini 3.8 Flash — Voice in 8 Regional Languages
+              <span className="sm:whitespace-nowrap break-words">
+                ✦ Gemini 3.8 Flash · 8 Regional Languages
               </span>
             </button>
           </div>
