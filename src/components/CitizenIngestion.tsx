@@ -554,30 +554,29 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     <div className="space-y-8 max-w-4xl mx-auto font-sans text-[#171717] pb-16">
       
       {/* Top Hero Banner & Mode Selector */}
-      <div className="relative overflow-hidden rounded-xl border border-slate-800 bg-slate-900 p-6 sm:p-7 shadow-md transition-all">
-        {/* Architectural Background Watermark Image (Sansad Bhavan) */}
+      <div className="relative overflow-hidden rounded-xl border border-slate-700 bg-slate-900 p-6 sm:p-7 shadow-lg transition-all">
+        {/* Full Color Indian Government Building Architecture Background Image */}
         <img 
-          src="/assets/aistudio/image_6c0073af.png"
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover object-[center_38%] pointer-events-none opacity-15 grayscale select-none"
-          aria-hidden="true"
+          src="/assets/aistudio/image_14f68c63.png"
+          alt="Rashtrapati Bhavan Official Portal"
+          className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none opacity-85 select-none"
         />
-        {/* Gradient Overlay for Legibility */}
+        {/* Soft Linear Gradient Overlay for Perfect Contrast & Legibility */}
         <div 
-          className="absolute inset-0 bg-gradient-to-r from-slate-900/85 via-slate-900/60 to-slate-900/40 pointer-events-none" 
+          className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/60 to-slate-900/30 pointer-events-none" 
           aria-hidden="true"
         />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-5">
           <div className="flex-1 min-w-0">
-            <div className="flex items-center space-x-2 text-xs font-mono font-bold text-orange-500 uppercase tracking-wider mb-1.5">
-              <ShieldCheck className="w-4 h-4 text-orange-500 shrink-0" />
+            <div className="flex items-center space-x-2 text-xs font-mono font-bold text-orange-400 uppercase tracking-wider mb-1.5 drop-shadow-xs">
+              <ShieldCheck className="w-4 h-4 text-orange-400 shrink-0" />
               <span>OFFICIAL PUBLIC SERVICE PORTAL</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-serif font-bold text-white tracking-tight leading-tight drop-shadow-sm">
               Submit a Civic Request
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 font-sans mt-1.5 leading-relaxed max-w-xl">
+            <p className="text-xs sm:text-sm text-slate-100 font-sans mt-1.5 leading-relaxed max-w-xl drop-shadow-xs">
               Follow our 5-step reporting wizard or speak in your regional language.
             </p>
           </div>
@@ -586,10 +585,10 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <button
               type="button"
               onClick={() => setActiveMode('wizard')}
-              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border shadow-xs whitespace-nowrap ${
+              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center justify-center gap-1.5 border shadow-sm whitespace-nowrap ${
                 activeMode === 'wizard'
-                  ? 'bg-orange-600 hover:bg-orange-700 text-white border-orange-500/50 ring-2 ring-orange-500/30'
-                  : 'bg-slate-800/80 hover:bg-slate-800 text-slate-300 border-slate-700'
+                  ? 'bg-orange-600 hover:bg-orange-700 text-white border-orange-400/60 ring-2 ring-orange-500/40'
+                  : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border-slate-700'
               }`}
             >
               <span>📋 5-Step Wizard</span>
@@ -598,14 +597,14 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
             <button
               type="button"
               onClick={() => setActiveMode('assistant')}
-              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 text-left border shadow-xs max-w-full flex-wrap leading-tight ${
+              className={`px-3.5 py-2.5 text-xs font-semibold rounded-lg transition-all cursor-pointer flex items-center gap-2 text-left border shadow-sm max-w-full flex-wrap leading-tight ${
                 activeMode === 'assistant'
-                  ? 'bg-purple-900 text-white border-purple-700 ring-2 ring-purple-500/30'
-                  : 'bg-purple-950/80 hover:bg-purple-900/90 text-purple-200 border-purple-800/60'
+                  ? 'bg-purple-900 text-white border-purple-600 ring-2 ring-purple-500/40'
+                  : 'bg-purple-950/90 hover:bg-purple-900/90 text-purple-100 border-purple-800/80'
               }`}
               title="Switch to Regional Dialect AI Assistant"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400 shrink-0" />
+              <Sparkles className="w-3.5 h-3.5 text-purple-300 shrink-0" />
               <span className="break-words">
                 ✦ Powered by Google Gemini 3.8 Flash — Voice in 8 Regional Languages
               </span>
