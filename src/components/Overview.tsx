@@ -226,7 +226,7 @@ export const Overview: React.FC<OverviewProps> = ({
       </section>
 
       {/* 2. PRIMARY EXECUTIVE CONCLUSION / GOVERNMENT DECISION-SUPPORT PANEL */}
-      <section className="bg-white border border-[#171717]/20 p-4 sm:p-5 rounded-xs shadow-xs space-y-3.5">
+      <section className="bg-[#F1E9DF] border border-[#171717]/10 p-4 sm:p-5 rounded-xs space-y-3.5">
         {/* Top Metadata Line & Decision Header */}
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-[#171717]/15">
           {/* Header Area */}
@@ -274,7 +274,7 @@ export const Overview: React.FC<OverviewProps> = ({
             { label: t('overview.service_gap'), value: '31.6%', desc: t('overview.jjm_benchmark_desc'), type: 'data' },
             { label: t('overview.investment'), value: '₹6.50 Cr', desc: t('overview.planned_capital_desc'), type: 'plan' },
           ].map((metric) => (
-            <div key={metric.label} className="bg-[#FAF8F5] p-4 rounded-sm border border-[#171717]/5 space-y-1">
+            <div key={metric.label} className="bg-white p-4 rounded-sm border border-[#171717]/10 space-y-1">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
                   {metric.label}
