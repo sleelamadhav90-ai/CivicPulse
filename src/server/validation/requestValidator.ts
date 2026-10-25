@@ -20,6 +20,11 @@ const VALID_CATEGORIES: Set<string> = new Set([
   'Education',
   'Drainage',
   'Sanitation',
+  'Fire',
+  'Environment',
+  'Transport',
+  'Parks',
+  'Government',
   'Other',
 ]);
 

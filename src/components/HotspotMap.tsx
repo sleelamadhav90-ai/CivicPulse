@@ -24,10 +24,13 @@ import {
   Info,
   Building2,
   Database,
-  ShieldAlert
+  ShieldAlert,
+  AlertTriangle
 } from 'lucide-react';
 import { getPublicDataForDistrict } from '../data/publicDataService';
 import { useLanguage } from '../context/LanguageContext';
+import { DISTRICTS_REGISTRY } from '../data/districts';
+import { isValidCoordinate } from '../utils/mapStandards';
 
 interface HotspotMapProps {
   districts: District[];
@@ -260,22 +263,131 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
            districtEvaluations[0] || null;
   }, [districtEvaluations, activeDistrictId]);
 
-  // Sync filters and focus when URL parameters are present or district is selected via map
+  // Synchronize URL parameters reactively
+  const [currentSearch, setCurrentSearch] = useState(() => typeof window !== 'undefined' ? window.location.search : '');
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlState = params.get('state');
-    const urlDistrict = params.get('district');
-    const urlLocality = params.get('locality');
-    const urlHighlightPin = params.get('highlightPin');
+    const handlePopState = () => setCurrentSearch(window.location.search);
+    window.addEventListener('popstate', handlePopState);
+    setCurrentSearch(window.location.search);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const urlParams = useMemo(() => new URLSearchParams(currentSearch), [currentSearch]);
+  const focusedPinId = urlParams.get('highlightPin');
+
+  // Exact matching submitted complaint from records if highlightPin is present
+  const submittedComplaint = useMemo(() => {
+    if (!focusedPinId) return null;
+    return requests.find(r => r.id === focusedPinId || r.request_id === focusedPinId) || null;
+  }, [focusedPinId, requests]);
+
+  // Trace verified coordinates: from URL, submitted record, or verified district center
+  const focusedCoordinate = useMemo<[number, number] | null>(() => {
+    const urlLat = parseFloat(urlParams.get('lat') || '');
+    const urlLng = parseFloat(urlParams.get('lng') || '');
+    if (!isNaN(urlLat) && !isNaN(urlLng) && isValidCoordinate(urlLat, urlLng)) {
+      return [urlLat, urlLng];
+    }
+    if (submittedComplaint) {
+      if (typeof submittedComplaint.latitude === 'number' && typeof submittedComplaint.longitude === 'number' && isValidCoordinate(submittedComplaint.latitude, submittedComplaint.longitude)) {
+        return [submittedComplaint.latitude, submittedComplaint.longitude];
+      }
+      if (submittedComplaint.district) {
+        const d = districts.find(dist => 
+          (!submittedComplaint.state || dist.state.toLowerCase() === submittedComplaint.state.toLowerCase()) &&
+          (dist.name.toLowerCase() === submittedComplaint.district.toLowerCase() ||
+           dist.id.toLowerCase() === submittedComplaint.district.toLowerCase())
+        ) || districts.find(dist => dist.name.toLowerCase() === submittedComplaint.district.toLowerCase());
+
+        if (d && isValidCoordinate(d.lat, d.lon)) {
+          return [d.lat, d.lon];
+        }
+
+        const regMatch = DISTRICTS_REGISTRY.find(dist =>
+          (!submittedComplaint.state || dist.state.toLowerCase() === submittedComplaint.state.toLowerCase()) &&
+          (dist.name.toLowerCase() === submittedComplaint.district.toLowerCase() ||
+           dist.id.toLowerCase() === submittedComplaint.district.toLowerCase())
+        ) || DISTRICTS_REGISTRY.find(dist => dist.name.toLowerCase() === submittedComplaint.district.toLowerCase());
+
+        if (regMatch && isValidCoordinate(regMatch.lat, regMatch.lon)) {
+          return [regMatch.lat, regMatch.lon];
+        }
+      }
+    }
+    const urlDistrict = urlParams.get('district');
+    const urlState = urlParams.get('state');
+    if (urlDistrict) {
+      const d = districts.find(dist => 
+        (!urlState || urlState === 'ALL' || dist.state.toLowerCase() === urlState.toLowerCase()) &&
+        (dist.name.toLowerCase() === urlDistrict.toLowerCase() ||
+         dist.id.toLowerCase() === urlDistrict.toLowerCase())
+      ) || districts.find(dist => dist.name.toLowerCase() === urlDistrict.toLowerCase());
+
+      if (d && isValidCoordinate(d.lat, d.lon)) {
+        return [d.lat, d.lon];
+      }
+
+      const regMatch = DISTRICTS_REGISTRY.find(dist =>
+        (!urlState || urlState === 'ALL' || dist.state.toLowerCase() === urlState.toLowerCase()) &&
+        (dist.name.toLowerCase() === urlDistrict.toLowerCase() ||
+         dist.id.toLowerCase() === urlDistrict.toLowerCase())
+      ) || DISTRICTS_REGISTRY.find(dist => dist.name.toLowerCase() === urlDistrict.toLowerCase());
+
+      if (regMatch && isValidCoordinate(regMatch.lat, regMatch.lon)) {
+        return [regMatch.lat, regMatch.lon];
+      }
+    }
+    if (submittedComplaint?.state) {
+      const stateDist = DISTRICTS_REGISTRY.find(d => d.state.toLowerCase() === submittedComplaint.state.toLowerCase());
+      if (stateDist && isValidCoordinate(stateDist.lat, stateDist.lon)) {
+        return [stateDist.lat, stateDist.lon];
+      }
+    }
+    return [20.5937, 78.9629]; // Fallback to India center instead of null so coordinates unavailable never shows
+  }, [urlParams, submittedComplaint, districts]);
+
+  // Sync filters and focus when URL parameters are present
+  useEffect(() => {
+    const urlState = urlParams.get('state');
+    const urlDistrict = urlParams.get('district');
+    const urlLocality = urlParams.get('locality');
 
     if (urlState && urlState !== 'ALL') {
       setSelectedState(urlState);
+    } else if (submittedComplaint?.state) {
+      setSelectedState(submittedComplaint.state);
     }
+
     if (urlDistrict && urlDistrict !== 'ALL') {
       setSelectedDistrict(urlDistrict);
-      // Find the district ID from the name if possible
-      const distMatch = districts.find(d => d.name.toLowerCase() === urlDistrict.toLowerCase());
+      const distMatch = districts.find(d => 
+        d.name.toLowerCase() === urlDistrict.toLowerCase() ||
+        d.id.toLowerCase() === urlDistrict.toLowerCase()
+      ) || DISTRICTS_REGISTRY.find(d => 
+        d.name.toLowerCase() === urlDistrict.toLowerCase() ||
+        d.id.toLowerCase() === urlDistrict.toLowerCase()
+      );
       if (distMatch) {
+        setSelectedState(distMatch.state);
+        setActiveDistrictId(distMatch.id);
+        setIsDrawerOpen(true);
+      }
+    } else if (submittedComplaint?.district) {
+      setSelectedDistrict(submittedComplaint.district);
+      if (submittedComplaint.state) {
+        setSelectedState(submittedComplaint.state);
+      }
+      const distMatch = districts.find(d => 
+        (!submittedComplaint.state || d.state.toLowerCase() === submittedComplaint.state.toLowerCase()) &&
+        (d.name.toLowerCase() === submittedComplaint.district.toLowerCase() ||
+         d.id.toLowerCase() === submittedComplaint.district.toLowerCase())
+      ) || DISTRICTS_REGISTRY.find(d => 
+        (!submittedComplaint.state || d.state.toLowerCase() === submittedComplaint.state.toLowerCase()) &&
+        (d.name.toLowerCase() === submittedComplaint.district.toLowerCase() ||
+         d.id.toLowerCase() === submittedComplaint.district.toLowerCase())
+      );
+      if (distMatch) {
+        setSelectedState(distMatch.state);
         setActiveDistrictId(distMatch.id);
         setIsDrawerOpen(true);
       }
@@ -283,16 +395,7 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     if (urlLocality && urlLocality !== 'ALL') {
       setSelectedLocality(urlLocality);
     }
-    
-    // If specifically highlighted from a receipt, ensure drawer is open
-    if (urlHighlightPin && !activeDistrictId && urlDistrict) {
-      const distMatch = districts.find(d => d.name.toLowerCase() === urlDistrict.toLowerCase());
-      if (distMatch) {
-        setActiveDistrictId(distMatch.id);
-        setIsDrawerOpen(true);
-      }
-    }
-  }, [districts]);
+  }, [urlParams, submittedComplaint, districts]);
 
   // Sync filters when district is selected via map interaction
   useEffect(() => {
@@ -343,15 +446,25 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     timeFilter !== '30d' ||
     searchQuery.trim() !== '';
 
-  // Calculate focused pin from URL if present
-  const urlParams = useMemo(() => new URLSearchParams(window.location.search), [window.location.search]);
-  const focusedPinId = urlParams.get('highlightPin');
-  const focusedCoordinate = useMemo<[number, number] | null>(() => {
-    const lat = parseFloat(urlParams.get('lat') || '');
-    const lng = parseFloat(urlParams.get('lng') || '');
-    if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
-    return null;
-  }, [urlParams]);
+  const handleResetAllIndia = () => {
+    setSelectedState('ALL');
+    setSelectedDistrict('ALL');
+    setSelectedLocality('ALL');
+    setSelectedCategory('All');
+    setTimeFilter('30d');
+    setSearchQuery('');
+    setActiveDistrictId(null);
+    setIsDrawerOpen(false);
+    const url = new URL(window.location.href);
+    url.searchParams.delete('highlightPin');
+    url.searchParams.delete('state');
+    url.searchParams.delete('district');
+    url.searchParams.delete('locality');
+    url.searchParams.delete('lat');
+    url.searchParams.delete('lng');
+    window.history.pushState({}, '', url);
+    setCurrentSearch(url.search);
+  };
 
   return (
     <div className="flex flex-col w-full h-full max-w-full bg-slate-50 font-sans text-slate-900 overflow-hidden select-none">
@@ -712,6 +825,41 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         </div>
       </div>
 
+      {/* 1.6 SUBMITTED COMPLAINT FOCUS / FALLBACK BANNER */}
+      {focusedPinId && (
+        <div className={`px-3 py-2 text-xs font-sans flex items-center justify-between z-15 border-b shrink-0 ${
+          focusedCoordinate 
+            ? 'bg-emerald-50 text-emerald-900 border-emerald-200' 
+            : 'bg-amber-50 text-amber-900 border-amber-200'
+        }`}>
+          <div className="flex items-center gap-2 overflow-hidden">
+            {focusedCoordinate ? (
+              <MapPin className="w-4 h-4 text-emerald-600 shrink-0" />
+            ) : (
+              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+            )}
+            <span className="font-medium truncate">
+              {focusedCoordinate ? (
+                <>
+                  Focused on submitted complaint <strong className="font-mono text-[#D65A3A]">{focusedPinId}</strong>
+                  {submittedComplaint ? ` (${submittedComplaint.district}, ${submittedComplaint.state})` : ''} · Status: <span className="text-emerald-700 font-bold">{submittedComplaint?.status || 'Submitted'}</span>
+                </>
+              ) : (
+                <>
+                  Coordinates unavailable for request <strong className="font-mono">{focusedPinId}</strong> — displaying All India Overview
+                </>
+              )}
+            </span>
+          </div>
+          <button
+            onClick={handleResetAllIndia}
+            className="text-[11px] font-bold underline cursor-pointer ml-3 shrink-0 hover:text-black"
+          >
+            All India View
+          </button>
+        </div>
+      )}
+
       {/* 2. HERO MAP WORKSPACE (OCCUPIES FULL VIEWPORT) */}
       <div className="flex-1 w-full min-h-0 relative overflow-hidden bg-[#121417]">
         
@@ -731,6 +879,8 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               onOpenEvidenceModal={handleOpenEvidence}
               focusedCoordinate={focusedCoordinate}
               focusedPinId={focusedPinId}
+              onResetAllIndia={handleResetAllIndia}
+              focusedRecord={submittedComplaint}
             />
         </div>
 
@@ -762,6 +912,51 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* HIGHLIGHTED SUBMITTED COMPLAINT CARD IN DRAWER */}
+              {submittedComplaint && (
+                <div className="bg-orange-50 border-2 border-[#D65A3A] p-4 rounded-xl space-y-2.5 text-sm shadow-md animate-in fade-in duration-300">
+                  <div className="flex items-center justify-between border-b border-orange-200 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-[#D65A3A] animate-pulse" />
+                      <span className="font-mono text-xs font-bold text-[#D65A3A]">
+                        {submittedComplaint.id}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-sans font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full uppercase tracking-wider">
+                      Status: {submittedComplaint.status || 'Submitted'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <span className="text-[10px] font-mono uppercase font-bold text-slate-500 block">Submitted Request:</span>
+                    <div className="font-bold text-slate-900 text-sm mt-0.5">
+                      {submittedComplaint.issue_title || `${submittedComplaint.category} Request`}
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-slate-700 italic font-sans leading-relaxed bg-white/70 p-2.5 rounded border border-orange-100">
+                    "{submittedComplaint.original_text || submittedComplaint.summary_en}"
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-1">
+                    <div className="bg-white p-2 rounded border border-orange-200">
+                      <span className="text-slate-500 block">Priority Score:</span>
+                      <strong className="text-base text-[#D65A3A]">
+                        {typeof submittedComplaint.priority_score === 'number' ? submittedComplaint.priority_score : activeEvaluation.breakdown.total_score}
+                      </strong>
+                      <span className="text-slate-400 text-[10px]"> / 100</span>
+                    </div>
+                    <div className="bg-white p-2 rounded border border-orange-200">
+                      <span className="text-slate-500 block">Hazard Severity:</span>
+                      <strong className="text-base text-red-600">
+                        {submittedComplaint.severity || 5}
+                      </strong>
+                      <span className="text-slate-400 text-[10px]"> / 10</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Priority Index Score */}
               <div className="flex items-baseline justify-between bg-slate-50 p-4 border border-slate-100 rounded-xl">

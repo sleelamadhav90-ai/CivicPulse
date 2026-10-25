@@ -171,10 +171,15 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
             </div>
           ) : user ? (
             <>
-              {/* Desktop view (md and up): restrained charcoal profile pill */}
+              {/* Desktop view (md and up): restrained charcoal profile pill showing user's actual email */}
               <div className="hidden md:flex items-center gap-1.5 bg-[#2A2926] border border-[#3D3A33] text-[#E8E6DF] px-2.5 py-1 rounded-xs text-[11px] shrink-0">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" title="Authenticated session active" />
-                <span className="font-sans font-medium text-[#E8E6DF]">Authenticated Citizen</span>
+                <span 
+                  className="font-sans font-medium text-[#E8E6DF] max-w-[150px] lg:max-w-[200px] truncate"
+                  title={user.email || user.displayName || 'Signed in'}
+                >
+                  {user.email || user.displayName || 'Signed in'}
+                </span>
                 <button
                   onClick={() => signOut()}
                   className="text-[10px] text-slate-400 hover:text-white underline ml-1 cursor-pointer font-mono shrink-0"
@@ -348,13 +353,24 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
               </button>
             )}
           </div>
-          <button 
-            onClick={clearAuthError}
-            className="ml-4 p-1 hover:bg-white/10 rounded-full shrink-0 text-white"
-            aria-label="Clear error"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          <div className="flex items-center gap-2 shrink-0 ml-4">
+            <button
+              onClick={() => {
+                clearAuthError();
+                signInWithGoogle();
+              }}
+              className="px-2 py-0.5 bg-white text-red-700 hover:bg-red-50 text-[10px] font-bold rounded-xs cursor-pointer shadow-xs uppercase tracking-wide"
+            >
+              Retry
+            </button>
+            <button 
+              onClick={clearAuthError}
+              className="p-1 hover:bg-white/10 rounded-full shrink-0 text-white cursor-pointer"
+              aria-label="Clear error"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
         </div>
       )}
 

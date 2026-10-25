@@ -73,6 +73,7 @@ interface IndiaMapCanvasProps {
   focusedCoordinate?: [number, number] | null;
   focusedPinId?: string | null;
   onResetAllIndia?: () => void;
+  focusedRecord?: CitizenRequest | null;
 }
 
 
@@ -191,10 +192,11 @@ const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ c
   return null;
 };
 
-// Component to handle fitting bounds when a state is selected
-const StateFocuser: React.FC<{ activeState?: string; geoJsonData: any }> = ({ activeState, geoJsonData }) => {
+// Component to handle fitting bounds when a state is selected (only when no explicit district/coordinate is focused)
+const StateFocuser: React.FC<{ activeState?: string; geoJsonData: any; hasExplicitFocus?: boolean }> = ({ activeState, geoJsonData, hasExplicitFocus }) => {
   const map = useMap();
   useEffect(() => {
+    if (hasExplicitFocus) return;
     if (!geoJsonData || !activeState || activeState === 'ALL') return;
 
     const stateFeature = geoJsonData.features.find((f: any) => {
@@ -208,7 +210,7 @@ const StateFocuser: React.FC<{ activeState?: string; geoJsonData: any }> = ({ ac
         map.flyToBounds(bounds, { padding: [40, 40], duration: 1.5 });
       }
     }
-  }, [activeState, geoJsonData, map]);
+  }, [activeState, geoJsonData, map, hasExplicitFocus]);
   return null;
 };
 
@@ -224,6 +226,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   focusedCoordinate,
   focusedPinId,
   onResetAllIndia,
+  focusedRecord,
 }) => {
   const [showMapSources, setShowMapSources] = useState(false);
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
@@ -463,7 +466,11 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       >
         <ZoomControl position="bottomright" />
         <MapController center={mapCenter} zoom={targetZoom} />
-        <StateFocuser activeState={activeEvaluation?.district?.state} geoJsonData={geoJsonData} />
+        <StateFocuser 
+          activeState={activeEvaluation?.district?.state} 
+          geoJsonData={geoJsonData} 
+          hasExplicitFocus={Boolean(focusedCoordinate || activeDistrictId)}
+        />
         
         {/* BASE SATELLITE TILE LAYERS: WORLD IMAGERY & PLACE LABELS */}
         <TileLayer
@@ -553,6 +560,36 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
             <Tooltip permanent direction="top" offset={[0, -18]} className="bg-[#171717] text-white border border-[#D65A3A] font-mono text-xs rounded shadow-lg">
               <span className="font-bold text-[#D65A3A]">{focusedPinId}</span>
             </Tooltip>
+            <Popup offset={[0, -20]} maxWidth={320}>
+              <div className="p-3 text-slate-900 font-sans space-y-2">
+                <div className="flex items-center justify-between border-b pb-2">
+                  <span className="font-bold text-sm text-[#D65A3A] font-mono">{focusedPinId}</span>
+                  <span className="bg-emerald-100 text-emerald-800 text-[10px] px-2 py-0.5 rounded font-bold">
+                    {focusedRecord?.status || 'Submitted'}
+                  </span>
+                </div>
+                {focusedRecord?.category && (
+                  <div className="text-xs text-slate-600 font-medium">
+                    Sector: <span className="font-bold text-slate-900">{focusedRecord.category}</span>
+                  </div>
+                )}
+                {focusedRecord?.original_text && (
+                  <p className="text-xs italic text-slate-700 bg-slate-50 p-2 rounded border border-slate-200">
+                    "{focusedRecord.original_text}"
+                  </p>
+                )}
+                <div className="grid grid-cols-2 gap-2 text-[11px] pt-1">
+                  <div className="bg-slate-50 p-1.5 rounded">
+                    <span className="text-slate-500 block text-[10px]">Priority Score</span>
+                    <span className="font-bold text-slate-900">{focusedRecord?.priority_score ?? 'N/A'}/100</span>
+                  </div>
+                  <div className="bg-slate-50 p-1.5 rounded">
+                    <span className="text-slate-500 block text-[10px]">Severity</span>
+                    <span className="font-bold text-slate-900">{focusedRecord?.severity ?? 'N/A'}/10</span>
+                  </div>
+                </div>
+              </div>
+            </Popup>
           </Marker>
         )}
 

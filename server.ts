@@ -12,6 +12,7 @@ import { requestIdMiddleware } from './src/server/middleware/requestId.js';
 import { generalApiLimiter, expensiveAiLimiter } from './src/server/middleware/rateLimiter.js';
 import { errorHandler, AppError } from './src/server/middleware/errorHandler.js';
 import { createCitizenRequestRouter } from './src/server/routes/citizenRequestRoutes.js';
+import { isOwnerSecretConfigured } from './src/server/repositories/citizenRecordOwnership.js';
 import {
   policyBriefCache,
   feedbackDiagnosticCache,
@@ -76,6 +77,7 @@ const handleHealthCheck = async (req: Request, res: Response) => {
         persistenceType: getServerConfig().persistenceType,
         rateLimitEnabled: getServerConfig().rateLimitEnabled,
         databaseConfigured: Boolean(getServerConfig().databaseUrl),
+        ownerSecretConfigured: isOwnerSecretConfigured(),
       },
       cache: {
         policyBriefs: policyBriefCache.getStats(),

@@ -3,8 +3,26 @@ import type { CitizenRequest } from '../../types.js';
 
 const OWNER_SIGNATURE_SECRET_ENV = 'CITIZEN_RECORD_OWNER_SECRET';
 
+export function isOwnerSecretConfigured(): boolean {
+  try {
+    getOwnerSecret();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function getOwnerSecret(): string {
-  const secret = process.env[OWNER_SIGNATURE_SECRET_ENV];
+  let secret = process.env[OWNER_SIGNATURE_SECRET_ENV];
+  if (secret) {
+    secret = secret.trim();
+    if (
+      (secret.startsWith('"') && secret.endsWith('"') && secret.length >= 2) ||
+      (secret.startsWith("'") && secret.endsWith("'") && secret.length >= 2)
+    ) {
+      secret = secret.slice(1, -1).trim();
+    }
+  }
   if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
     throw new Error(`${OWNER_SIGNATURE_SECRET_ENV} must be configured with at least 32 bytes.`);
   }

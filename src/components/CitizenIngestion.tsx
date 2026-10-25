@@ -50,6 +50,7 @@ import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { useAuth } from '../context/AuthContext';
 import { INDIA_STATES_DISTRICTS, getDistrictsByStateName } from '../data/indiaLocations';
 import { isValidCoordinate } from '../utils/mapStandards';
+import { DISTRICTS_REGISTRY } from '../data/districts';
 
 interface CitizenIngestionProps {
   districts: District[];
@@ -81,7 +82,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   onNavigateToSignals,
   initialCategory,
 }) => {
-  const { user, getIdToken } = useAuth();
+  const { user, getIdToken, signInWithGoogle, isFirebaseConfigured } = useAuth();
 
   // Mode selection: 'wizard' (5-Step Government Service) or 'assistant' (Multilingual Dialect Assistant)
   const [activeMode, setActiveMode] = useState<'wizard' | 'assistant'>('wizard');
@@ -108,6 +109,8 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
   const [isRecording, setIsRecording] = useState<boolean>(false);
   const [recordedVoice, setRecordedVoice] = useState<boolean>(false);
   const [isProcessingAI, setIsProcessingAI] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [submissionError, setSubmissionError] = useState<string | null>(null);
 
   // Submission Receipt
   const [submissionReceipt, setSubmissionReceipt] = useState<{
@@ -361,10 +364,33 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     };
   }, [districts, selectedDistrict, selectedState]);
 
-  // Evaluate text for hazard severity (1-10) and urgency transparently
+  // Evaluate text for hazard severity (1-10) and urgency dynamically based on the 10-point rubric
   const evaluatedSeverity = useMemo(() => {
-    const lower = (inputText || '').toLowerCase();
-    if (!lower.trim()) return 6;
+    const lower = (inputText || '').toLowerCase().trim();
+    
+    // Sector-specific baseline when text is empty or generic
+    const categoryBaseline: Record<InfrastructureCategory, number> = {
+      Water: 6,
+      Health: 6,
+      Roads: 5,
+      Drainage: 5,
+      Electricity: 5,
+      Sanitation: 4,
+      Environment: 4,
+      Transport: 5,
+      Education: 5,
+      Parks: 3,
+      Government: 4,
+      Other: 4,
+      Healthcare: 6,
+      Fire: 7,
+    };
+
+    if (!lower) {
+      return categoryBaseline[selectedCategory] || 5;
+    }
+
+    // 10: Immediate life threat or emergency disaster
     if (
       lower.includes('electrocut') || lower.includes('electric wire') || lower.includes('live wire') ||
       lower.includes('downed wire') || lower.includes('fatal') || lower.includes('collapse') || 
@@ -374,6 +400,8 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     ) {
       return 10;
     }
+
+    // 9: Major public safety/health hazard or critical service failure
     if (
       lower.includes('ambulance') || lower.includes('hospital') || lower.includes('contamination') || 
       lower.includes('poison') || lower.includes('epidemic') || lower.includes('burst') || lower.includes('no water for') ||
@@ -382,29 +410,55 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     ) {
       return 9;
     }
+
+    // 8: Serious acute deficit affecting substantial community / duration > 2 weeks
     if (
       lower.includes('acute') || lower.includes('severe') || lower.includes('2 week') || 
-      lower.includes('two week') || lower.includes('sewage flood') || lower.includes('blackout')
+      lower.includes('two week') || lower.includes('sewage flood') || lower.includes('blackout') ||
+      lower.includes('1 month') || lower.includes('one month') || lower.includes('entire village') ||
+      lower.includes('whole ward') || lower.includes('arterial')
     ) {
       return 8;
     }
+
+    // 7: Significant physical infrastructure deficit or hazard
     if (
       lower.includes('pothole') || lower.includes('shortage') || lower.includes('overflow') || 
-      lower.includes('leakage') || lower.includes('broken') || lower.includes('drainage')
+      lower.includes('leakage') || lower.includes('broken') || lower.includes('drainage') ||
+      lower.includes('crater') || lower.includes('stagnant') || lower.includes('flooding')
     ) {
       return 7;
     }
+
+    // 5-6: Moderate service deficit or disruption
+    if (
+      lower.includes('frequent') || lower.includes('irregular') || lower.includes('low pressure') ||
+      lower.includes('power cut') || lower.includes('delay') || lower.includes('dirty water') ||
+      lower.includes('muddy') || lower.includes('traffic')
+    ) {
+      return selectedCategory === 'Water' || selectedCategory === 'Health' ? 6 : 5;
+    }
+
+    // 4: Localized nuisance or minor disruption
     if (
       lower.includes('dust') || lower.includes('garbage') || lower.includes('street light') || 
-      lower.includes('streetlight') || lower.includes('smell') || lower.includes('flicker')
+      lower.includes('streetlight') || lower.includes('smell') || lower.includes('flicker') ||
+      lower.includes('single lamp') || lower.includes('noise') || lower.includes('litter')
     ) {
-      return 5;
+      return 4;
     }
-    if (lower.includes('minor') || lower.includes('clean') || lower.includes('paint') || lower.includes('cosmetic')) {
+
+    // 3: Minor cosmetic / aesthetic issue
+    if (
+      lower.includes('minor') || lower.includes('clean') || lower.includes('paint') || 
+      lower.includes('cosmetic') || lower.includes('signboard') || lower.includes('poster')
+    ) {
       return 3;
     }
-    return 6;
-  }, [inputText]);
+
+    // Dynamic category-based baseline for custom descriptions
+    return categoryBaseline[selectedCategory] || 5;
+  }, [inputText, selectedCategory]);
 
   // Current demand count for this district and category from active request database
   const matchingDemandCount = useMemo(() => {
@@ -472,8 +526,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     const urgencyLabel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = evaluatedSeverity >= 9 ? 'CRITICAL' : evaluatedSeverity >= 7 ? 'HIGH' : evaluatedSeverity >= 5 ? 'MEDIUM' : 'LOW';
 
     const targetDistrictObj = districts.find(d => 
-      d.name.toLowerCase() === selectedDistrict.toLowerCase() ||
+      (d.state.toLowerCase() === selectedState.toLowerCase() && d.name.toLowerCase() === selectedDistrict.toLowerCase()) ||
       d.id.toLowerCase() === selectedDistrict.toLowerCase()
+    ) || DISTRICTS_REGISTRY.find(d => 
+      d.state.toLowerCase() === selectedState.toLowerCase() && 
+      d.name.toLowerCase() === selectedDistrict.toLowerCase()
+    ) || DISTRICTS_REGISTRY.find(d => 
+      d.name.toLowerCase() === selectedDistrict.toLowerCase()
     );
 
     const newReq: CitizenRequest = {
@@ -518,19 +577,34 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       }
     };
 
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+    setSubmissionError(null);
+
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const idToken = await getIdToken();
       if (idToken) {
         headers['Authorization'] = `Bearer ${idToken}`;
       }
-      await fetch('/api/citizen-requests', {
+      const response = await fetch('/api/citizen-requests', {
         method: 'POST',
         headers,
         body: JSON.stringify(newReq),
       });
-    } catch (err) {
-      console.warn('Backend sync skipped, preserving local state:', err);
+
+      if (!response.ok) {
+        const errorJson = await response.json().catch(() => ({}));
+        const errMessage = errorJson?.error?.message || `Server submission rejected with HTTP ${response.status}.`;
+        setSubmissionError(errMessage);
+        setIsSubmitting(false);
+        return;
+      }
+    } catch (err: any) {
+      console.error('Submission request network failure:', err);
+      setSubmissionError(err?.message || 'Network failure: unable to connect to server to persist complaint.');
+      setIsSubmitting(false);
+      return;
     }
 
     onAddRequest(newReq);
@@ -549,11 +623,14 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     });
 
     setStep(5);
+    setIsSubmitting(false);
   };
 
   const handleResetForm = () => {
     setStep(1);
     setSubmissionReceipt(null);
+    setSubmissionError(null);
+    setIsSubmitting(false);
     setInputText('Potholes and broken streetlights near the school corridor.');
     setLandmark('');
     handleRemovePhoto();
@@ -1212,6 +1289,67 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       </div>
                     </div>
                   )}
+
+                  {/* Authentication Transparency Block */}
+                  {user ? (
+                    <div className="p-3.5 bg-emerald-50 border border-emerald-300 rounded-xl flex items-center justify-between gap-3 text-xs text-emerald-900 font-sans">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span className="font-semibold">Authenticated Citizen:</span>
+                        <span className="font-mono text-emerald-800">{user.email || user.displayName || 'Signed in'}</span>
+                      </div>
+                      <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold uppercase shrink-0">
+                        Verified
+                      </span>
+                    </div>
+                  ) : isFirebaseConfigured ? (
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-xs text-slate-700 font-sans">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" />
+                        <span>Sign in with Google to record under your citizen account:</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => signInWithGoogle()}
+                        className="px-3 py-1.5 bg-[#D65A3A] hover:bg-[#c34e2f] text-white rounded-lg text-xs font-semibold cursor-pointer shadow-xs flex items-center justify-center gap-1.5 shrink-0"
+                      >
+                        <LogIn className="w-3.5 h-3.5" />
+                        <span>Sign In with Google</span>
+                      </button>
+                    </div>
+                  ) : null}
+
+                  {/* Submission Error Banner */}
+                  {submissionError && (
+                    <div className="p-4 bg-red-50 border-2 border-red-300 rounded-xl space-y-2 text-xs text-red-900 font-sans animate-in fade-in duration-200">
+                      <div className="flex items-center gap-2 font-bold text-red-800">
+                        <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+                        <span>Submission Failed</span>
+                      </div>
+                      <p className="leading-relaxed font-medium">
+                        {submissionError}
+                      </p>
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleFinalSubmit}
+                          disabled={isSubmitting}
+                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg text-xs cursor-pointer shadow-xs transition-colors"
+                        >
+                          Retry Submission
+                        </button>
+                        {!user && isFirebaseConfigured && (
+                          <button
+                            type="button"
+                            onClick={() => signInWithGoogle()}
+                            className="px-3 py-1.5 bg-white border border-red-300 text-red-800 hover:bg-red-50 font-semibold rounded-lg text-xs cursor-pointer shadow-xs transition-colors"
+                          >
+                            Sign In with Google First
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1219,17 +1357,28 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                 <button
                   type="button"
                   onClick={handlePrevStep}
-                  className="px-6 py-2.5 text-slate-700 font-semibold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 text-slate-700 font-semibold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-all cursor-pointer disabled:opacity-50"
                 >
                   Edit Details
                 </button>
                 <button
                   type="button"
                   onClick={handleFinalSubmit}
-                  className="px-6 py-2.5 bg-[#1e4630] hover:bg-[#163524] text-white font-semibold text-sm rounded-xl shadow-sm border border-emerald-900/20 transition-all flex items-center gap-2 cursor-pointer"
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-[#1e4630] hover:bg-[#163524] text-white font-semibold text-sm rounded-xl shadow-sm border border-emerald-900/20 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-amber-200" />
-                  <span>Submit Request Officially</span>
+                  {isSubmitting ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <span>Submitting Request...</span>
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle2 className="w-4 h-4 text-amber-200" />
+                      <span>Submit Request Officially</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>
@@ -1337,8 +1486,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                     type="button"
                     onClick={() => {
                       const distObj = districts.find(d => 
-                        d.name.toLowerCase() === selectedDistrict.toLowerCase() || 
+                        (d.state.toLowerCase() === selectedState.toLowerCase() && d.name.toLowerCase() === selectedDistrict.toLowerCase()) || 
                         d.id.toLowerCase() === selectedDistrict.toLowerCase()
+                      ) || DISTRICTS_REGISTRY.find(d => 
+                        d.state.toLowerCase() === selectedState.toLowerCase() && 
+                        d.name.toLowerCase() === selectedDistrict.toLowerCase()
+                      ) || DISTRICTS_REGISTRY.find(d => 
+                        d.name.toLowerCase() === selectedDistrict.toLowerCase()
                       );
                       const url = new URL(window.location.href);
                       url.searchParams.set('highlightPin', submissionReceipt.id);

@@ -28,6 +28,7 @@ import {
 import { CitizenRequest, InfrastructureCategory, District, RequestStatus } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 import { useAuth } from '../context/AuthContext';
+import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 
 interface CitizenSubmissionViewProps {
   districts: District[];
@@ -771,6 +772,18 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         (d.state && finalLocLower.includes(d.state.toLowerCase()))
       ) || districts.find(d => d.name.toLowerCase() === 'guntur') || districts[0];
 
+      const categoryToUse: InfrastructureCategory = (isEditingAiResult ? editedCategory : aiResult.category) as InfrastructureCategory;
+      const severityNum = isEditingAiResult 
+        ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5) 
+        : (aiResult.severity_number ?? 5);
+
+      const computedBreakdown = matchedDist
+        ? calculatePriorityScore(matchedDist, categoryToUse, severityNum, 1)
+        : undefined;
+
+      const priorityScore = computedBreakdown ? computedBreakdown.total_score : 50;
+      const priorityTier = computedBreakdown ? getPriorityTier(priorityScore).label : 'Medium';
+
       const newRequest: CitizenRequest = {
         id: trackingId,
         request_id: trackingId,
@@ -780,21 +793,21 @@ export const CitizenSubmissionView: React.FC<CitizenSubmissionViewProps> = ({
         original_text: aiResult.original_text,
         language: aiResult.language,
         translated_text: aiResult.translated_text,
-        category: isEditingAiResult ? editedCategory : aiResult.category,
+        category: categoryToUse,
         subcategory: aiResult.subcategory,
-        issue_title: `${isEditingAiResult ? editedCategory : aiResult.category} — ${aiResult.subcategory}`,
+        issue_title: `${categoryToUse} — ${aiResult.subcategory}`,
         location: finalLocation,
         state: matchedDist ? matchedDist.state : 'Andhra Pradesh',
         district: matchedDist ? matchedDist.name : finalLocation,
         city_or_town: finalLocation,
         locality: finalLocation,
-        latitude: matchedDist ? matchedDist.lat + (Math.random() - 0.5) * 0.04 : 16.5062,
-        longitude: matchedDist ? matchedDist.lon + (Math.random() - 0.5) * 0.04 : 80.6480,
-        severity: isEditingAiResult 
-          ? (editedSeverity === 'Critical' ? 9 : editedSeverity === 'High' ? 8 : editedSeverity === 'Low' ? 3 : 5) 
-          : (aiResult.severity_number ?? 5),
+        latitude: matchedDist?.lat,
+        longitude: matchedDist?.lon,
+        severity: severityNum,
         severity_label: isEditingAiResult ? editedSeverity : aiResult.severity,
-        priority_tier: (isEditingAiResult ? editedSeverity : aiResult.severity) as any,
+        priority_score: priorityScore,
+        priority_tier: priorityTier as any,
+        score_breakdown: computedBreakdown,
         summary: isEditingAiResult ? editedSummary : aiResult.issue_summary,
         summary_en: isEditingAiResult ? editedSummary : aiResult.issue_summary,
         urgency: aiResult.urgency,
