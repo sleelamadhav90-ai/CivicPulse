@@ -94,9 +94,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setLoading(true);
     try {
-      await firebaseSignInWithEmail(email, pass);
+      const resultUser = await firebaseSignInWithEmail(email, pass);
+      if (resultUser) {
+        setUser(resultUser);
+      }
     } catch (err: any) {
-      setLoading(false);
       let msg = err?.message || 'Email sign-in failed.';
       const code = err?.code || '';
       if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
@@ -109,6 +111,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('[CivicPulse Auth] Email sign-in failed:', code, msg);
       setError(msg);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,9 +120,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setLoading(true);
     try {
-      await firebaseSignUpWithEmail(email, pass);
+      const createdUser = await firebaseSignUpWithEmail(email, pass);
+      if (createdUser) {
+        setUser(createdUser);
+      }
     } catch (err: any) {
-      setLoading(false);
       let msg = err?.message || 'Account creation failed.';
       const code = err?.code || '';
       if (code === 'auth/email-already-in-use') {
@@ -131,6 +137,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('[CivicPulse Auth] Email sign-up failed:', code, msg);
       setError(msg);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -138,9 +146,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
     setLoading(true);
     try {
-      await firebaseSignInWithGoogle();
+      const googleUser = await firebaseSignInWithGoogle();
+      if (googleUser) {
+        setUser(googleUser);
+      }
     } catch (err: any) {
-      setLoading(false);
       let msg = err?.message || 'Google sign-in failed.';
       const code = err?.code || '';
       if (code === 'auth/unauthorized-domain') {
@@ -153,16 +163,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.warn('[CivicPulse Auth] Google sign-in failed:', code, msg);
       setError(msg);
       throw err;
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignOut = async () => {
     setError(null);
+    setLoading(true);
     try {
       await firebaseSignOut();
       setUser(null);
     } catch (err: any) {
       console.warn('[CivicPulse Auth] Sign out notice:', err);
+    } finally {
+      setLoading(false);
     }
   };
 

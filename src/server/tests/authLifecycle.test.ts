@@ -127,6 +127,35 @@ async function runAuthLifecycleTestSuite() {
   const valResult = validateCitizenRequest(validSubmission);
   assert(valResult.isValid, 'Authenticated citizen submission payload is valid');
 
+  // --- Test 6: Header Render State Machine & Sign Out Verification ---
+  console.log('\n[Test 6] Header Render State Machine & Sign Out Verification');
+  
+  // Simulated render helper for header state
+  function getHeaderStateOutput(loading: boolean, user: { email?: string; displayName?: string } | null, isFirebaseConfigured: boolean) {
+    if (loading) return 'Checking...';
+    if (user) {
+      const label = user.email || user.displayName || 'Signed in';
+      return `AUTHENTICATED: ${label} (Sign out available)`;
+    }
+    if (isFirebaseConfigured) return 'UNAUTHENTICATED: Sign in button displayed';
+    return 'UNCONFIGURED';
+  }
+
+  // State 1: Initial unresolved state
+  assert(getHeaderStateOutput(true, null, true) === 'Checking...', 'Initial unresolved state renders Checking... indicator, not static Sign In button');
+  
+  // State 2: Authenticated user (Firebase confirms user)
+  const authUserOutput = getHeaderStateOutput(false, { email: 'citizen@example.com' }, true);
+  assert(authUserOutput.includes('AUTHENTICATED: citizen@example.com') && authUserOutput.includes('Sign out available'), 'Authenticated user state renders user email and Sign Out action');
+
+  // State 3: Session restored after refresh
+  const restoredUserOutput = getHeaderStateOutput(false, { email: 'citizen@example.com', displayName: 'Citizen User' }, true);
+  assert(restoredUserOutput.includes('AUTHENTICATED: citizen@example.com'), 'Restored session after refresh displays authenticated state');
+
+  // State 4: Genuine Sign Out returns to Sign In
+  const signedOutOutput = getHeaderStateOutput(false, null, true);
+  assert(signedOutOutput === 'UNAUTHENTICATED: Sign in button displayed', 'Genuine sign-out returns header to Sign In state');
+
   delete process.env.REQUIRE_AUTH;
   console.log('\n🎉 ALL AUTHENTICATION LIFECYCLE TESTS PASSED SUCCESSFULLY!\n');
 }

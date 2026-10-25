@@ -94,9 +94,9 @@ export async function signInWithGoogle(): Promise<User | null> {
     const code = err?.code || '';
     console.warn('[CivicPulse Auth] Popup sign-in failed/blocked:', code, err.message);
     
-    // If popup is blocked or closed, fallback to redirect
-    if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
-      console.log('[CivicPulse Auth] Falling back to Redirect mode...');
+    // If popup is strictly blocked by browser policy, fallback to redirect
+    if (code === 'auth/popup-blocked') {
+      console.log('[CivicPulse Auth] Popup blocked, falling back to Redirect mode...');
       try {
         await signInWithRedirect(auth, googleProvider);
         return null;
