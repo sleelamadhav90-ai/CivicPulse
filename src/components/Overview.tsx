@@ -227,39 +227,39 @@ export const Overview: React.FC<OverviewProps> = ({
         <div className="absolute inset-0 bg-gradient-to-r from-[#171717]/95 via-[#1F1E1B]/88 to-[#171717]/72" />
 
         <div className="relative z-10 py-5 px-5 sm:py-6 sm:px-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="flex-1 min-w-0 space-y-1">
-            <div className="flex items-center space-x-2 text-[10px] font-mono font-bold text-[#FF8A65] uppercase tracking-wider">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#D65A3A] shrink-0"></span>
-              <span className="truncate">{t('brand.name')} · {t('overview.intake_title')}</span>
+          <div className="flex-1 min-w-0 space-y-1.5">
+            <div className="flex items-center space-x-2 text-[10px] font-sans font-bold text-orange-400 uppercase tracking-widest">
+              <span className="w-2 h-2 rounded-full bg-orange-500 shrink-0"></span>
+              <span className="truncate">{t('brand.name')} · Official public portal</span>
             </div>
-            <h2 className="text-base sm:text-lg font-serif font-bold text-white leading-snug drop-shadow-xs">
+            <h2 className="text-xl sm:text-2xl font-sans font-bold text-white leading-tight drop-shadow-sm">
               {t('overview.intake_title')}
             </h2>
-            <p className="text-xs sm:text-sm text-[#E8E6DF] leading-relaxed max-w-2xl font-sans">
+            <p className="text-xs sm:text-sm text-slate-100 leading-relaxed max-w-2xl font-sans font-medium">
               {t('overview.intake_desc')}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-1 lg:pt-0">
+          <div className="flex flex-wrap items-center gap-3 shrink-0 pt-2 lg:pt-0">
             <button
               onClick={() => onStartVoiceSubmission ? onStartVoiceSubmission() : onNavigate('submit')}
-              className="px-3.5 py-2 bg-[#D65A3A] hover:bg-[#c24e2f] text-white text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+              className="px-5 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold rounded-xl transition-all flex items-center space-x-2 cursor-pointer shadow-lg shadow-orange-900/20 whitespace-nowrap active:scale-95"
             >
-              <Mic className="w-3.5 h-3.5 shrink-0" />
+              <Mic className="w-4 h-4 shrink-0" />
               <span>{t('action.speak_issue')}</span>
             </button>
 
             <button
               onClick={() => onStartWriteSubmission ? onStartWriteSubmission() : onNavigate('submit')}
-              className="px-3.5 py-2 bg-white hover:bg-[#FAF8F5] text-[#171717] border border-white/80 text-xs font-semibold rounded-xs transition-colors flex items-center space-x-1.5 cursor-pointer shadow-xs whitespace-nowrap"
+              className="px-5 py-2.5 bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 text-xs font-bold rounded-xl transition-all flex items-center space-x-2 cursor-pointer shadow-sm whitespace-nowrap active:scale-95"
             >
-              <FileEdit className="w-3.5 h-3.5 text-[#57534E] shrink-0" />
+              <FileEdit className="w-4 h-4 text-slate-500 shrink-0" />
               <span>{t('action.write_issue')}</span>
             </button>
 
             <button
               onClick={() => onNavigate('signals')}
-              className="px-3 py-2 text-white/90 hover:text-white text-xs font-medium transition-colors cursor-pointer underline whitespace-nowrap"
+              className="px-4 py-2 text-white/80 hover:text-white text-xs font-bold transition-colors cursor-pointer underline decoration-white/30 underline-offset-4 whitespace-nowrap"
             >
               {t('nav.my_requests')}
             </button>
@@ -272,67 +272,67 @@ export const Overview: React.FC<OverviewProps> = ({
         {/* Top Metadata Line & Decision Header */}
         <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4 pb-4 border-b border-[#171717]/15">
           {/* Header Area */}
-          <div className="space-y-2 flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#78716C] bg-[#FAF8F5] px-1.5 py-0.5 rounded-sm">
+          <div className="space-y-2.5 flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-slate-500 bg-white border border-slate-200 px-2 py-0.5 rounded-md">
                 {conclusion.district} · {conclusion.state}
               </span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] bg-[#FEF2F0] px-1.5 py-0.5 rounded-sm flex items-center gap-1">
-                <span className="w-1 h-1 rounded-full bg-[#D65A3A]" />
+              <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-orange-700 bg-orange-100/50 px-2 py-0.5 rounded-md flex items-center gap-1.5 border border-orange-200/50">
+                <span className="w-1.5 h-1.5 rounded-full bg-orange-600 animate-pulse" />
                 {t('overview.urgent_action_title')}
               </span>
             </div>
 
-            <div className="space-y-1">
-              <div className="text-[11px] font-mono font-bold text-[#171717] tracking-wider uppercase">
+            <div className="space-y-1.5">
+              <div className="text-xs font-sans font-bold text-slate-400 tracking-widest uppercase">
                 {t('overview.water_infrastructure')}
               </div>
-              <h1 className="text-xl sm:text-2xl font-serif font-bold tracking-tight text-[#171717] leading-tight">
+              <h1 className="text-2xl sm:text-3xl font-sans font-bold tracking-tight text-slate-900 leading-tight">
                 {t('overview.high_priority_need')}
               </h1>
             </div>
 
-            <p className="text-sm text-[#57534E] leading-relaxed max-w-2xl font-sans">
+            <p className="text-sm text-slate-600 leading-relaxed max-w-2xl font-sans font-medium">
               {conclusion.whyMatters}
             </p>
           </div>
 
           {/* Compact Priority Score */}
-          <div className="flex items-center gap-3 bg-[#FAF8F5] border border-[#171717]/15 px-3 py-1.5 rounded-sm shrink-0 self-start">
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[10px] font-bold text-[#78716C] uppercase">{t('overview.priority')}</span>
-              <span className="text-sm font-bold text-[#171717]">91/100</span>
+          <div className="flex items-center gap-4 bg-white border border-slate-200 px-4 py-2 rounded-xl shrink-0 self-start shadow-sm">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{t('overview.priority')}</span>
+              <span className="text-lg font-bold text-slate-900">91/100</span>
             </div>
-            <div className="text-[10px] font-bold text-[#D65A3A] bg-[#FEF2F0] px-1.5 py-0.5 rounded-xs border border-[#D65A3A]/10">
+            <div className="text-[10px] font-bold text-white bg-red-600 px-2.5 py-1 rounded-full uppercase tracking-wider shadow-sm shadow-red-200">
               {t('status.critical')}
             </div>
           </div>
         </div>
 
         {/* Metric Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 pt-6">
           {[
             { label: t('overview.demand'), value: typeof priorityIssues[0]?.signalCount === 'number' ? priorityIssues[0].signalCount : totalRequests, desc: t('overview.synthetic_signals_desc'), type: 'demo' },
             { label: t('overview.service_gap'), value: '31.6%', desc: t('overview.jjm_benchmark_desc'), type: 'data' },
             { label: t('overview.investment'), value: '₹6.50 Cr', desc: t('overview.planned_capital_desc'), type: 'plan' },
           ].map((metric) => (
-            <div key={metric.label} className="bg-white p-4 rounded-sm border border-[#171717]/10 space-y-1">
+            <div key={metric.label} className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-mono font-bold text-[#78716C] uppercase tracking-wider">
+                <span className="text-[10px] font-sans font-bold text-slate-400 uppercase tracking-widest">
                   {metric.label}
                 </span>
-                <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-sm font-semibold uppercase ${
-                  metric.type === 'demo' ? 'bg-amber-100 text-amber-900 border border-amber-200' :
-                  metric.type === 'data' ? 'bg-blue-100 text-blue-900 border border-blue-200' :
-                  'bg-violet-100 text-violet-900 border border-violet-200'
+                <span className={`text-[9px] font-sans px-2 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
+                  metric.type === 'demo' ? 'bg-orange-50 text-orange-700 border-orange-100' :
+                  metric.type === 'data' ? 'bg-blue-50 text-blue-700 border-blue-100' :
+                  'bg-emerald-50 text-emerald-700 border-emerald-100'
                 }`}>
                   {metric.type === 'demo' ? t('overview.demo_signal') : metric.type === 'data' ? t('overview.public_data') : t('overview.curated_plan')}
                 </span>
               </div>
-              <div className="text-xl sm:text-2xl font-bold text-[#171717] tracking-tight font-sans">
-                {metric.value} {metric.type === 'demo' ? 'Citizen Signals' : ''}
+              <div className="text-2xl font-bold text-slate-900 tracking-tight font-sans">
+                {metric.value} {metric.type === 'demo' ? 'signals' : ''}
               </div>
-              <p className="text-[10px] text-[#57534E] leading-tight font-sans">
+              <p className="text-[11px] text-slate-500 leading-relaxed font-sans font-medium">
                 {metric.desc}
               </p>
             </div>

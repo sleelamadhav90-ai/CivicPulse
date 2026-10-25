@@ -309,12 +309,12 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
       {/* 1. PAGE HEADER & AGGREGATION EXPLANATION */}
       <div className="space-y-6 border-b border-[#171717]/10 pb-8">
         <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+          <div className="flex items-center gap-3">
+            <span className="px-2.5 py-1 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-xs font-semibold rounded-sm">
               {t('issues.page_label') || 'Community Issues'}
             </span>
-            <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
-              Step 2 · Understand
+            <span className="text-xs font-medium text-[#78716C]">
+              Step 2 · Understand Need
             </span>
           </div>
 
@@ -342,53 +342,53 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
         {/* Narrative Flow: Citizen Reports -> Problem Clusters -> Priority Hotspots */}
         <div className="bg-white border border-[#171717]/15 p-5 rounded-sm shadow-xs space-y-3">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 text-center sm:text-left">
             {/* Step 1 */}
             <div className="flex-1">
-              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#171717] block">
+              <span className="text-3xl font-bold text-[#171717] block">
                 {requests.length.toLocaleString()}
               </span>
-              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_requests') || 'Citizen Reports'}
+              <span className="text-xs text-[#57534E] font-semibold block mt-1">
+                {t('issues.flow_requests') || 'Citizen reports'}
               </span>
-              <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_raw_notes') || 'Submitted Reports'}
+              <span className="text-xs text-[#78716C] block">
+                Total reports processed
               </span>
             </div>
 
             <div className="text-[#78716C] px-2 shrink-0">
-              <span className="hidden sm:inline text-lg font-mono">→</span>
+              <span className="hidden sm:inline text-lg">→</span>
               <ArrowDown className="sm:hidden w-4 h-4 text-[#78716C] my-1" />
             </div>
 
             {/* Step 2 */}
             <div className="flex-1">
-              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#D65A3A] block">
+              <span className="text-3xl font-bold text-[#D65A3A] block">
                 327
               </span>
-              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_issues') || 'Community Issues'}
+              <span className="text-xs text-[#57534E] font-semibold block mt-1">
+                {t('issues.flow_issues') || 'Community issues'}
               </span>
-              <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_clustered') || 'Identified Issue Clusters'}
+              <span className="text-xs text-[#78716C] block">
+                Identified problem clusters
               </span>
             </div>
 
             <div className="text-[#78716C] px-2 shrink-0">
-              <span className="hidden sm:inline text-lg font-mono">→</span>
+              <span className="hidden sm:inline text-lg">→</span>
               <ArrowDown className="sm:hidden w-4 h-4 text-[#78716C] my-1" />
             </div>
 
             {/* Step 3 */}
             <div className="flex-1">
-              <span className="text-2xl sm:text-3xl font-mono font-bold text-[#171717] block">
+              <span className="text-3xl font-bold text-[#171717] block">
                 42
               </span>
-              <span className="text-xs text-[#57534E] font-medium block mt-0.5">
-                {t('issues.flow_hotspots') || 'Priority Hotspots'}
+              <span className="text-xs text-[#57534E] font-semibold block mt-1">
+                {t('issues.flow_hotspots') || 'Priority hotspots'}
               </span>
-              <span className="text-[11px] text-[#78716C] block">
-                {t('issues.flow_audits') || 'Analysis Checks'}
+              <span className="text-xs text-[#78716C] block">
+                High-priority areas
               </span>
             </div>
           </div>
@@ -451,7 +451,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
 
                 <div className="space-y-1 min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-[10px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider whitespace-nowrap">
+                    <span className="text-xs font-semibold text-[#D65A3A] whitespace-nowrap">
                       {tCategory(issue.category)}
                     </span>
                     <span className="text-[#171717]/30 text-xs">·</span>
@@ -469,7 +469,7 @@ export const CommunityIssuesView: React.FC<CommunityIssuesViewProps> = ({
                       {issue.requestCount} Citizen Signals
                     </span>
                     <span className="text-[#171717]/30 hidden sm:inline">·</span>
-                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
                       isCritical ? 'bg-rose-50 text-rose-800 border border-rose-200' :
                       isHigh ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                       'bg-blue-50 text-blue-800 border border-blue-200'

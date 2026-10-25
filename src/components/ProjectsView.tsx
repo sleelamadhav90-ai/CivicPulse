@@ -199,11 +199,11 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
       <header className="space-y-1.5 border-b border-[#171717]/15 pb-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
+            <span className="text-[11px] font-bold text-[#D65A3A]">
               {t('projects.priority_projects')}
             </span>
             <span className="text-[#171717]/20 select-none">•</span>
-            <span className="text-[10px] font-mono text-[#78716C] uppercase tracking-wider">
+            <span className="text-[11px] font-medium text-[#78716C]">
               {t('projects.decision_queue')}
             </span>
           </div>
@@ -211,26 +211,26 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           {/* View Toggle */}
           <div className="flex items-center space-x-1 bg-white border border-[#171717]/15 p-0.5 rounded-xs shrink-0">
             <button
-              onClick={() => setViewMode('table')}
-              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+              onClick={viewMode === 'table' ? () => {} : () => setViewMode('table')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-sm flex items-center space-x-2 transition-colors cursor-pointer ${
                 viewMode === 'table'
-                  ? 'bg-[#171717] text-white font-semibold'
-                  : 'text-[#57534E] hover:text-[#171717]'
+                  ? 'bg-[#171717] text-white'
+                  : 'text-[#57534E] hover:text-[#171717] bg-white border border-[#171717]/10'
               }`}
             >
               <TableIcon className="w-3.5 h-3.5" />
-              <span>{t('projects.register')}</span>
+              <span>Register</span>
             </button>
             <button
-              onClick={() => setViewMode('kanban')}
-              className={`px-2.5 py-1 text-xs font-mono font-medium rounded-xs flex items-center space-x-1.5 transition-colors cursor-pointer ${
+              onClick={viewMode === 'kanban' ? () => {} : () => setViewMode('kanban')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-sm flex items-center space-x-2 transition-colors cursor-pointer ${
                 viewMode === 'kanban'
-                  ? 'bg-[#171717] text-white font-semibold'
-                  : 'text-[#57534E] hover:text-[#171717]'
+                  ? 'bg-[#171717] text-white'
+                  : 'text-[#57534E] hover:text-[#171717] bg-white border border-[#171717]/10'
               }`}
             >
               <KanbanIcon className="w-3.5 h-3.5" />
-              <span>{t('projects.stages')}</span>
+              <span>Stages</span>
             </button>
           </div>
         </div>
@@ -258,19 +258,19 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
           />
         </div>
 
-        <div className="flex items-center space-x-1 text-xs overflow-x-auto pb-1 sm:pb-0">
-          <span className="text-[#78716C] text-[10px] font-mono uppercase tracking-wider mr-1 shrink-0">{t('filter.sector')}:</span>
+        <div className="flex items-center space-x-2 text-xs overflow-x-auto pb-1 sm:pb-0">
+          <span className="text-[#78716C] text-[11px] font-semibold whitespace-nowrap">Filter by sector:</span>
           {['All', 'Water', 'Roads', 'Health', 'Electricity'].map(cat => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-2.5 py-1 rounded-xs transition-colors cursor-pointer text-xs font-mono whitespace-nowrap ${
+              className={`px-3 py-1.5 rounded-sm transition-colors cursor-pointer text-xs font-semibold whitespace-nowrap ${
                 selectedCategory === cat
-                  ? 'bg-[#171717] text-white font-semibold'
+                  ? 'bg-[#171717] text-white'
                   : 'bg-white text-[#57534E] border border-[#171717]/15 hover:border-[#171717]/40'
               }`}
             >
-              {cat === 'All' ? 'ALL' : tCategory(cat).toUpperCase()}
+              {cat === 'All' ? 'All sectors' : tCategory(cat)}
             </button>
           ))}
         </div>
@@ -281,7 +281,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
         <div className="bg-white border border-[#171717]/15 rounded-xs overflow-hidden shadow-xs w-full">
           
           {/* Header Row (Desktop Only, lg+) */}
-          <div className="hidden lg:grid lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-4 items-center py-2.5 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-mono uppercase tracking-wider text-[#78716C] font-semibold">
+          <div className="hidden lg:grid lg:grid-cols-[minmax(0,42%)_minmax(0,14%)_minmax(0,14%)_minmax(0,15%)_minmax(0,15%)] gap-4 items-center py-3 px-4 bg-[#FAF8F5] border-b border-[#171717]/15 text-[10px] font-bold text-[#78716C]">
             <div className="min-w-0">{t('projects.header_project')}</div>
             <div className="min-w-0">{t('metric.priority_score')}</div>
             <div className="min-w-0">{t('projects.capital_allocation')}</div>
@@ -325,21 +325,19 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                   {/* Column 2: Priority Score & Severity (Desktop: 14%, Tablet: 5/12 cols) */}
                   <div className="flex flex-row md:flex-col items-center md:items-start justify-between md:justify-center gap-1 min-w-0 pt-1 md:pt-0 md:col-span-5 lg:col-span-1">
                     <span className="text-[10px] font-mono text-[#78716C] uppercase md:hidden">Priority:</span>
-                    <div className="flex flex-col gap-0.5">
-                      <div className="flex items-baseline gap-1 font-mono">
-                        <span className="text-sm sm:text-base font-bold text-[#171717] tracking-tight">
+                      <div className="flex items-baseline gap-1">
+                        <span className="text-base font-bold text-[#171717] tracking-tight">
                           {p.displayPriorityScore}
                         </span>
                         <span className="text-xs text-[#78716C]">/ 100</span>
                       </div>
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold ${
                         p.severityLabel === 'CRITICAL' ? 'bg-rose-50 text-rose-800 border border-rose-200' :
                         p.severityLabel === 'HIGH' ? 'bg-amber-50 text-amber-800 border border-amber-200' :
                         'bg-blue-50 text-blue-800 border border-blue-200'
                       }`}>
                         {p.severityLabel}
                       </span>
-                    </div>
                   </div>
 
                   {/* Column 3: Estimated Outlay (Desktop: 14%, Tablet: 4/12 cols) */}
@@ -478,7 +476,7 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
                       Project Detail
                     </span>
                     <span className="text-[#171717]/20 select-none">•</span>
-                    <span className={`text-[10px] font-mono font-medium px-1.5 py-0.2 rounded border ${natureBadge.badgeClass}`}>
+                    <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded border ${natureBadge.badgeClass}`}>
                       {natureBadge.label}
                     </span>
                   </div>
@@ -504,24 +502,24 @@ export const ProjectsView: React.FC<ProjectsViewProps> = ({
               </div>
 
               {/* Priority Decision & Key Metrics */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-mono">
-                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('metric.priority_score')}</span>
-                  <span className="text-base font-bold text-[#171717] mt-0.5 block">{selectedProject.displayPriorityScore} / 100</span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-sm">
+                  <span className="text-[10px] text-[#78716C] block font-bold">{t('metric.priority_score')}</span>
+                  <span className="text-base font-bold text-[#171717] mt-1 block">{selectedProject.displayPriorityScore} / 100</span>
                 </div>
-                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.capital_allocation')}</span>
-                  <span className="text-base font-bold text-[#285943] mt-0.5 block">{selectedProject.formattedBudget}</span>
+                <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-sm">
+                  <span className="text-[10px] text-[#78716C] block font-bold">{t('projects.capital_allocation')}</span>
+                  <span className="text-base font-bold text-[#285943] mt-1 block">{selectedProject.formattedBudget}</span>
                 </div>
-                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.progress_stage')}</span>
-                  <span className={`text-base font-bold mt-0.5 block ${isCompleted ? 'text-[#285943]' : 'text-[#171717]'}`}>
+                <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-sm">
+                  <span className="text-[10px] text-[#78716C] block font-bold">{t('projects.progress_stage')}</span>
+                  <span className={`text-base font-bold mt-1 block ${isCompleted ? 'text-[#285943]' : 'text-[#171717]'}`}>
                     {selectedProject.progress}%
                   </span>
                 </div>
-                <div className="p-2.5 bg-[#FAF8F5] border border-[#171717]/10 rounded-xs">
-                  <span className="text-[10px] text-[#78716C] block uppercase font-bold">{t('projects.status')}</span>
-                  <span className="text-base font-bold text-[#171717] mt-0.5 block">{tStatus(selectedProject.stage)}</span>
+                <div className="p-3 bg-[#FAF8F5] border border-[#171717]/10 rounded-sm">
+                  <span className="text-[10px] text-[#78716C] block font-bold">{t('projects.status')}</span>
+                  <span className="text-base font-bold text-[#171717] mt-1 block">{tStatus(selectedProject.stage)}</span>
                 </div>
               </div>
 

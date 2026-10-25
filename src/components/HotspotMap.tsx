@@ -260,6 +260,51 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
            districtEvaluations[0] || null;
   }, [districtEvaluations, activeDistrictId]);
 
+  // Sync filters and focus when URL parameters are present or district is selected via map
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlState = params.get('state');
+    const urlDistrict = params.get('district');
+    const urlLocality = params.get('locality');
+    const urlHighlightPin = params.get('highlightPin');
+
+    if (urlState && urlState !== 'ALL') {
+      setSelectedState(urlState);
+    }
+    if (urlDistrict && urlDistrict !== 'ALL') {
+      setSelectedDistrict(urlDistrict);
+      // Find the district ID from the name if possible
+      const distMatch = districts.find(d => d.name.toLowerCase() === urlDistrict.toLowerCase());
+      if (distMatch) {
+        setActiveDistrictId(distMatch.id);
+        setIsDrawerOpen(true);
+      }
+    }
+    if (urlLocality && urlLocality !== 'ALL') {
+      setSelectedLocality(urlLocality);
+    }
+    
+    // If specifically highlighted from a receipt, ensure drawer is open
+    if (urlHighlightPin && !activeDistrictId && urlDistrict) {
+      const distMatch = districts.find(d => d.name.toLowerCase() === urlDistrict.toLowerCase());
+      if (distMatch) {
+        setActiveDistrictId(distMatch.id);
+        setIsDrawerOpen(true);
+      }
+    }
+  }, [districts]);
+
+  // Sync filters when district is selected via map interaction
+  useEffect(() => {
+    if (activeDistrictId) {
+      const dist = districts.find(d => d.id === activeDistrictId);
+      if (dist) {
+        setSelectedState(dist.state);
+        setSelectedDistrict(dist.name);
+      }
+    }
+  }, [activeDistrictId, districts]);
+
   // Search filter list for quick jump
   const searchResults = useMemo(() => {
     if (!searchQuery.trim()) return [];
@@ -298,24 +343,34 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
     timeFilter !== '30d' ||
     searchQuery.trim() !== '';
 
+  // Calculate focused pin from URL if present
+  const urlParams = useMemo(() => new URLSearchParams(window.location.search), [window.location.search]);
+  const focusedPinId = urlParams.get('highlightPin');
+  const focusedCoordinate = useMemo<[number, number] | null>(() => {
+    const lat = parseFloat(urlParams.get('lat') || '');
+    const lng = parseFloat(urlParams.get('lng') || '');
+    if (!isNaN(lat) && !isNaN(lng)) return [lat, lng];
+    return null;
+  }, [urlParams]);
+
   return (
-    <div className="flex flex-col w-full h-full max-w-full bg-[#121417] font-sans text-[#171717] overflow-hidden select-none">
+    <div className="flex flex-col w-full h-full max-w-full bg-slate-50 font-sans text-slate-900 overflow-hidden select-none">
       
       {/* 1. CONSOLIDATED ONE-ROW COMPACT RESPONSIVE MAP TOOLBAR */}
-      <header className="bg-[#FAF8F5] border-b border-[#171717]/15 px-2.5 py-1.5 sm:px-4 sm:py-2 z-20 shrink-0 flex flex-wrap items-center justify-between gap-1.5 sm:gap-2 text-xs font-mono max-w-full">
+      <header className="bg-white border-b border-slate-200 px-3 py-2 sm:px-4 sm:py-3 z-20 shrink-0 flex flex-wrap items-center justify-between gap-2 sm:gap-3 text-sm font-sans max-w-full">
         
         {/* Left: District Inspector Label & Cascading Geographic Dropdowns */}
-        <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 min-w-0 flex-1 py-0.5">
-          <div className="flex items-center gap-1.5 shrink-0">
-            <span className="px-1.5 py-0.5 bg-white text-[#D65A3A] border border-[#D65A3A]/30 text-[9px] font-mono font-bold tracking-wider uppercase rounded-xs">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 flex-1 py-0.5">
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold tracking-tight rounded">
               {t('map.page_label') || 'Civic Map'}
             </span>
-            <span className="font-serif font-bold text-xs sm:text-sm tracking-tight text-[#171717] whitespace-nowrap hidden xs:inline">
+            <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 whitespace-nowrap hidden xs:inline">
               {t('map.question_title') || 'Where is the need concentrated?'}
             </span>
           </div>
 
-          <span className="text-stone-300 hidden md:inline">•</span>
+          <span className="text-slate-300 hidden md:inline">•</span>
 
           {/* 1. STATE DROPDOWN (Strictly States / UTs) */}
           <div className="relative shrink-0">
@@ -325,35 +380,35 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 closeAllDropdowns();
                 setStateDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 hover:border-slate-400 transition-colors cursor-pointer text-slate-700 font-medium"
               title={selectedState === 'ALL' ? t('filter.all_states') : selectedState}
             >
-              <span className="text-stone-500 font-normal hidden sm:inline">{t('state')}:</span>
+              <span className="text-slate-400 font-normal hidden sm:inline">{t('state')}:</span>
               <span className="font-bold truncate max-w-[70px] sm:max-w-[100px] md:max-w-[130px]">{selectedState === 'ALL' ? t('filter.all_states') : selectedState}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {stateDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-slate-200 shadow-xl rounded-xl z-50 py-1 font-sans text-xs">
                 <button
                   onClick={() => handleSelectState('ALL')}
-                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                    selectedState === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                    selectedState === 'ALL' ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                   }`}
                 >
                   <span className="truncate">{t('filter.all_states_uts')}</span>
-                  {selectedState === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  {selectedState === 'ALL' && <span className="text-orange-600 font-bold">✓</span>}
                 </button>
-                <div className="border-t border-stone-100 my-1"></div>
+                <div className="border-t border-slate-100 my-1"></div>
                 {availableStates.map(st => (
                   <button
                     key={st}
                     onClick={() => handleSelectState(st)}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      selectedState === st ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                      selectedState === st ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                     }`}
                   >
                     <span className="truncate">{st}</span>
-                    {selectedState === st && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    {selectedState === st && <span className="text-orange-600 font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -368,35 +423,35 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 closeAllDropdowns();
                 setDistrictDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 hover:border-slate-400 transition-colors cursor-pointer text-slate-700 font-medium"
               title={selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}
             >
-              <span className="text-stone-500 font-normal hidden sm:inline">{t('district')}:</span>
+              <span className="text-slate-400 font-normal hidden sm:inline">{t('district')}:</span>
               <span className="font-bold truncate max-w-[70px] sm:max-w-[100px] md:max-w-[130px]">{selectedDistrict === 'ALL' ? t('filter.all_districts') : selectedDistrict}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {districtDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(240px,calc(100vw-2rem))] max-h-72 overflow-y-auto bg-white border border-slate-200 shadow-xl rounded-xl z-50 py-1 font-sans text-xs">
                 <button
                   onClick={() => handleSelectDistrict('ALL')}
-                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                    selectedDistrict === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                    selectedDistrict === 'ALL' ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                   }`}
                 >
                   <span className="truncate">{selectedState !== 'ALL' ? `${t('filter.all_districts')} (${selectedState})` : t('filter.all_districts')}</span>
-                  {selectedDistrict === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  {selectedDistrict === 'ALL' && <span className="text-orange-600 font-bold">✓</span>}
                 </button>
-                <div className="border-t border-stone-100 my-1"></div>
+                <div className="border-t border-slate-100 my-1"></div>
                 {availableDistricts.map(d => (
                   <button
                     key={d.name}
                     onClick={() => handleSelectDistrict(d.name, d.id)}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      selectedDistrict === d.name ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                      selectedDistrict === d.name ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                     }`}
                   >
                     <span className="truncate">{d.name}</span>
-                    {selectedDistrict === d.name && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    {selectedDistrict === d.name && <span className="text-orange-600 font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -413,39 +468,39 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 setLocalityDropdownOpen(next);
               }}
               disabled={selectedDistrict === 'ALL'}
-              className={`border px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 transition-colors font-medium ${
+              className={`border px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 transition-colors font-medium shadow-sm ${
                 selectedDistrict === 'ALL'
-                  ? 'bg-stone-100 border-stone-200 text-stone-400 cursor-not-allowed'
-                  : 'bg-white border-[#171717]/20 text-[#171717] hover:border-[#171717]/50 cursor-pointer'
+                  ? 'bg-slate-50 border-slate-200 text-slate-400 cursor-not-allowed'
+                  : 'bg-white border-slate-200 text-slate-700 hover:border-slate-400 cursor-pointer'
               }`}
               title={selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}
             >
-              <span className="text-stone-500 font-normal hidden sm:inline">{t('locality')}:</span>
+              <span className="text-slate-400 font-normal hidden sm:inline">{t('locality')}:</span>
               <span className="font-bold truncate max-w-[65px] sm:max-w-[90px] md:max-w-[120px]">{selectedLocality === 'ALL' ? t('filter.all_locations') : selectedLocality}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {localityDropdownOpen && availableLocalities.length > 0 && (
-              <div className="absolute left-0 top-full mt-1 w-[min(220px,calc(100vw-2rem))] max-h-64 overflow-y-auto bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-[min(220px,calc(100vw-2rem))] max-h-64 overflow-y-auto bg-white border border-slate-200 shadow-xl rounded-xl z-50 py-1 font-sans text-xs">
                 <button
                   onClick={() => handleSelectLocality('ALL')}
-                  className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                    selectedLocality === 'ALL' ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                  className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                    selectedLocality === 'ALL' ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                   }`}
                 >
                   <span className="truncate">{t('filter.all_locations_in', { district: selectedDistrict })}</span>
-                  {selectedLocality === 'ALL' && <span className="text-[#D65A3A] font-bold">✓</span>}
+                  {selectedLocality === 'ALL' && <span className="text-orange-600 font-bold">✓</span>}
                 </button>
-                <div className="border-t border-stone-100 my-1"></div>
+                <div className="border-t border-slate-100 my-1"></div>
                 {availableLocalities.map(loc => (
                   <button
                     key={loc}
                     onClick={() => handleSelectLocality(loc)}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      selectedLocality === loc ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                      selectedLocality === loc ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                     }`}
                   >
                     <span className="truncate">{loc}</span>
-                    {selectedLocality === loc && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    {selectedLocality === loc && <span className="text-orange-600 font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -460,13 +515,13 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 closeAllDropdowns();
                 setCategoryDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717] font-medium"
+              className="bg-white border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 hover:border-slate-400 transition-colors cursor-pointer text-slate-700 font-medium shadow-sm"
             >
               <span className="truncate max-w-[80px] sm:max-w-[110px]">{selectedCategory === 'All' ? t('filter.all_issues') : tCategory(selectedCategory)}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {categoryDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-44 bg-white border border-slate-200 shadow-xl rounded-xl z-50 py-1 font-sans text-xs">
                 {CATEGORIES.map(cat => (
                   <button
                     key={cat}
@@ -474,12 +529,12 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       setSelectedCategory(cat); 
                       setCategoryDropdownOpen(false); 
                     }}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      selectedCategory === cat ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                      selectedCategory === cat ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                     }`}
                   >
                     <span className="truncate">{cat === 'All' ? t('filter.all_issues') : tCategory(cat)}</span>
-                    {selectedCategory === cat && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    {selectedCategory === cat && <span className="text-orange-600 font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -494,14 +549,14 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 closeAllDropdowns();
                 setTimeDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+              className="bg-white border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 hover:border-slate-400 transition-colors cursor-pointer text-slate-700 font-medium shadow-sm"
             >
-              <Clock className="w-3 h-3 text-stone-500 shrink-0" />
+              <Clock className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="truncate max-w-[65px] sm:max-w-[85px]">{timeFilter === 'all' ? t('time.all_time') : timeFilter === '7d' ? t('time.7_days') : timeFilter === '30d' ? t('time.30_days') : t('time.90_days')}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {timeDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-36 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 py-1 font-mono text-xs">
+              <div className="absolute left-0 top-full mt-1 w-40 bg-white border border-slate-200 shadow-xl rounded-xl z-50 py-1 font-sans text-xs">
                 {[
                   { id: '7d', label: t('time.7_days') },
                   { id: '30d', label: t('time.30_days') },
@@ -514,12 +569,12 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       setTimeFilter(item.id as TimeFilterRange); 
                       setTimeDropdownOpen(false); 
                     }}
-                    className={`w-full text-left px-3 py-1.5 hover:bg-stone-100 flex items-center justify-between cursor-pointer ${
-                      timeFilter === item.id ? 'bg-orange-50 font-bold text-[#D65A3A]' : 'text-stone-800'
+                    className={`w-full text-left px-3 py-2 hover:bg-slate-50 flex items-center justify-between cursor-pointer ${
+                      timeFilter === item.id ? 'bg-orange-50 font-bold text-orange-600' : 'text-slate-800'
                     }`}
                   >
                     <span>{item.label}</span>
-                    {timeFilter === item.id && <span className="text-[#D65A3A] font-bold">✓</span>}
+                    {timeFilter === item.id && <span className="text-orange-600 font-bold">✓</span>}
                   </button>
                 ))}
               </div>
@@ -534,49 +589,49 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 closeAllDropdowns();
                 setLayersDropdownOpen(next);
               }}
-              className="bg-white border border-[#171717]/20 px-2 sm:px-2.5 py-1 rounded-xs flex items-center space-x-1 sm:space-x-1.5 hover:border-[#171717]/50 transition-colors cursor-pointer text-[#171717]"
+              className="bg-white border border-slate-200 px-2.5 sm:px-3 py-1.5 rounded-lg flex items-center space-x-1.5 sm:space-x-2 hover:border-slate-400 transition-colors cursor-pointer text-slate-700 font-medium shadow-sm"
             >
-              <Layers className="w-3 h-3 text-stone-500 shrink-0" />
+              <Layers className="w-4 h-4 text-slate-400 shrink-0" />
               <span className="hidden sm:inline">{t('layers.title')}</span>
-              <ChevronDown className="w-3 h-3 text-stone-500 shrink-0" />
+              <ChevronDown className="w-3.5 h-3.5 text-slate-400 shrink-0" />
             </button>
             {layersDropdownOpen && (
-              <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-2 font-mono text-xs space-y-1.5">
-                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+              <div className="absolute left-0 top-full mt-1 w-56 bg-white border border-slate-200 shadow-xl rounded-xl z-50 p-2 font-sans text-xs space-y-1.5">
+                <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg">
                   <input 
                     type="checkbox" 
                     checked={activeLayers.citizenDemand} 
                     onChange={() => toggleLayer('citizenDemand')}
-                    className="accent-[#D65A3A]"
+                    className="w-4 h-4 rounded border-slate-300 text-orange-600 focus:ring-orange-500"
                   />
-                  <span className="font-medium text-[#171717]">{t('layers.civic_signals')}</span>
+                  <span className="font-medium text-slate-900">{t('layers.civic_signals')}</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg">
                   <input 
                     type="checkbox" 
                     checked={activeLayers.infrastructure} 
                     onChange={() => toggleLayer('infrastructure')}
-                    className="accent-[#171717]"
+                    className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-500"
                   />
-                  <span className="font-medium text-[#171717]">{t('layers.infrastructure')}</span>
+                  <span className="font-medium text-slate-900">{t('layers.infrastructure')}</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg">
                   <input 
                     type="checkbox" 
                     checked={activeLayers.populationVulnerability} 
                     onChange={() => toggleLayer('populationVulnerability')}
-                    className="accent-[#285943]"
+                    className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
                   />
-                  <span className="font-medium text-[#171717]">{t('layers.vulnerability')}</span>
+                  <span className="font-medium text-slate-900">{t('layers.vulnerability')}</span>
                 </label>
-                <label className="flex items-center space-x-2 cursor-pointer p-1 hover:bg-stone-50 rounded">
+                <label className="flex items-center space-x-2 cursor-pointer p-2 hover:bg-slate-50 rounded-lg">
                   <input 
                     type="checkbox" 
                     checked={activeLayers.governmentProjects} 
                     onChange={() => toggleLayer('governmentProjects')}
-                    className="accent-blue-600"
+                    className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="font-medium text-[#171717]">{t('layers.projects')}</span>
+                  <span className="font-medium text-slate-900">{t('layers.projects')}</span>
                 </label>
               </div>
             )}
@@ -587,9 +642,9 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
             <button
               onClick={handleResetFilters}
               title="Reset all geographic and category filters"
-              className="text-[#D65A3A] hover:text-black transition-colors px-1.5 py-1 text-[11px] font-bold flex items-center gap-1 cursor-pointer shrink-0"
+              className="text-orange-600 hover:text-slate-900 transition-colors px-2 py-1.5 text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="w-3.5 h-3.5" />
               <span>{t('filter.reset')}</span>
             </button>
           )}
@@ -597,35 +652,35 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
         {/* Right: Search Location Input with Dropdown */}
         <div className="relative shrink-0 min-w-0">
-          <div className="flex items-center bg-white border border-[#171717]/20 rounded-xs px-2 py-1 text-xs focus-within:border-[#171717]">
-            <Search className="w-3.5 h-3.5 text-[#78716C] mr-1.5 shrink-0" />
+          <div className="flex items-center bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus-within:border-slate-400 shadow-sm">
+            <Search className="w-4 h-4 text-slate-400 mr-2 shrink-0" />
             <input
               type="text"
               placeholder={t('map.search_placeholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="bg-transparent border-none outline-none text-xs w-24 sm:w-32 md:w-40 text-[#171717] placeholder:text-[#A8A29E]"
+              className="bg-transparent border-none outline-none text-sm w-32 sm:w-40 md:w-48 text-slate-900 placeholder:text-slate-400"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="text-gray-400 hover:text-black cursor-pointer ml-1">
-                <X className="w-3 h-3" />
+              <button onClick={() => setSearchQuery('')} className="text-slate-300 hover:text-slate-600 cursor-pointer ml-1.5">
+                <X className="w-4 h-4" />
               </button>
             )}
           </div>
 
           {searchResults.length > 0 && (
-            <div className="absolute right-0 top-full mt-1 w-[min(260px,calc(100vw-2rem))] bg-white border border-[#171717]/20 shadow-xl rounded-xs z-50 p-1 font-mono text-xs">
+            <div className="absolute right-0 top-full mt-1.5 w-[min(300px,calc(100vw-2rem))] bg-white border border-slate-200 shadow-2xl rounded-xl z-50 p-1.5 font-sans text-sm">
               {searchResults.map(d => (
                 <button
                   key={d.id}
                   onClick={() => handleSelectSearchedDistrict(d.id)}
-                  className="w-full text-left px-3 py-1.5 hover:bg-[#FAF8F5] rounded-xs flex items-center justify-between text-[#171717] cursor-pointer"
+                  className="w-full text-left px-3 py-2 hover:bg-slate-50 rounded-lg flex items-center justify-between text-slate-900 cursor-pointer"
                 >
-                  <div className="min-w-0 pr-1">
+                  <div className="min-w-0 pr-2">
                     <div className="font-bold truncate">{d.name}</div>
-                    <div className="text-[10px] text-[#78716C] truncate">{d.state}</div>
+                    <div className="text-xs text-slate-500 truncate">{d.state}</div>
                   </div>
-                  <span className="text-[10px] text-[#D65A3A] font-bold shrink-0">Inspect →</span>
+                  <span className="text-xs text-orange-600 font-bold shrink-0">Inspect →</span>
                 </button>
               ))}
             </div>
@@ -634,38 +689,26 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
       </header>
 
       {/* 1.5 INDIA GEOGRAPHIC COVERAGE SUB-BAR */}
-      <div className="bg-[#1C1917] text-stone-300 text-[11px] font-mono px-3 py-1.5 sm:px-4 z-15 shrink-0 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5 border-b border-stone-800 w-full max-w-full overflow-hidden">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 min-w-0">
-          <span className="flex items-center gap-1 font-bold text-amber-400 uppercase tracking-wider text-[10px] shrink-0">
-            <MapPin className="w-3 h-3 text-amber-400" />
-            National Coverage:
+      <div className="bg-slate-900 text-slate-300 text-xs font-sans px-3 py-2.5 sm:px-4 z-15 shrink-0 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-800 w-full max-w-full overflow-hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 min-w-0">
+          <span className="flex items-center gap-1.5 font-bold text-amber-400 text-[10px] shrink-0">
+            <MapPin className="w-3.5 h-3.5 text-amber-400" />
+            National coverage
           </span>
-          <span className="bg-amber-950/80 text-amber-300 px-2 py-0.5 rounded-xs font-bold border border-amber-800/80 shrink-0">
-            {coverageStats.representedStatesAndUTs} / {coverageStats.totalStatesAndUTs} States & UTs
+          <span className="bg-slate-800 text-white px-2.5 py-1 rounded font-bold border border-slate-700 shrink-0">
+            {coverageStats.representedStatesAndUTs} / {coverageStats.totalStatesAndUTs} States and union territories
           </span>
-          <span className="text-stone-600 hidden sm:inline">•</span>
-          <span className="text-stone-300 shrink-0 hidden sm:inline">
-            <strong className="text-white">{coverageStats.totalDistricts}</strong> Districts Represented
+          <span className="text-slate-700 hidden sm:inline">•</span>
+          <span className="text-slate-100 shrink-0 hidden sm:inline font-medium">
+            <strong className="text-white">{coverageStats.totalDistricts}</strong> districts with available data
           </span>
-          <span className="text-stone-400 text-[10px] shrink-0 hidden md:inline">
-            • Data depth varies by district
+          <span className="text-slate-400 text-[11px] shrink-0 hidden md:inline">
+            • Data availability varies by district
           </span>
-          <span className="text-stone-600 hidden sm:inline">•</span>
-          <div className="flex flex-wrap items-center gap-1 text-[10px]">
-            <span className="px-1.5 py-0.5 bg-emerald-950/80 text-emerald-300 border border-emerald-800/60 rounded-xs font-medium shrink-0">
-              {coverageStats.deepBaselineCount} Deep Baseline
-            </span>
-            <span className="px-1.5 py-0.5 bg-blue-950/80 text-blue-300 border border-blue-800/60 rounded-xs font-medium shrink-0">
-              {coverageStats.expandedBaselineCount} Expanded
-            </span>
-            <span className="px-1.5 py-0.5 bg-stone-800 text-stone-300 border border-stone-700 rounded-xs font-medium shrink-0">
-              {coverageStats.regionalCoverageCount} Regional Coverage
-            </span>
-          </div>
         </div>
-        <div className="hidden 2xl:flex items-center gap-1.5 text-[10px] text-stone-400 italic shrink-0">
-          <ShieldAlert className="w-3 h-3 text-amber-400 shrink-0" />
-          <span>Geographic representation across all 36 Indian States & UTs with transparent provenance classification.</span>
+        <div className="hidden 2xl:flex items-center gap-2 text-[10px] text-slate-400 shrink-0">
+          <ShieldAlert className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>Geographic representation across all 36 Indian States and UTs with transparent provenance.</span>
         </div>
       </div>
 
@@ -674,36 +717,38 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         
         {/* Full Viewport Canvas */}
         <div className="w-full h-full absolute inset-0">
-          <IndiaMapCanvas
-            evaluations={districtEvaluations}
-            activeDistrictId={activeDistrictId || ''}
-            onSelectDistrict={(id) => {
-              setActiveDistrictId(id);
-              setIsDrawerOpen(true);
-            }}
-            selectedCategory={selectedCategory}
-            layers={mapCanvasLayers}
-            onSelectHotspotForPolicy={onSelectHotspotForPolicy}
-            selectedCountryCode={selectedCountryCode}
-            onOpenEvidenceModal={handleOpenEvidence}
-          />
+            <IndiaMapCanvas
+              evaluations={districtEvaluations}
+              activeDistrictId={activeDistrictId || ''}
+              onSelectDistrict={(id) => {
+                setActiveDistrictId(id);
+                setIsDrawerOpen(true);
+              }}
+              selectedCategory={selectedCategory}
+              layers={mapCanvasLayers}
+              onSelectHotspotForPolicy={onSelectHotspotForPolicy}
+              selectedCountryCode={selectedCountryCode}
+              onOpenEvidenceModal={handleOpenEvidence}
+              focusedCoordinate={focusedCoordinate}
+              focusedPinId={focusedPinId}
+            />
         </div>
 
         {/* 3. PROGRESSIVE CONTEXTUAL DRAWER (OVERLAYS MAP ON HOTSPOT CLICK WITHOUT SQUEEZING CANVAS) */}
         {isDrawerOpen && activeEvaluation && (
-          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[340px] max-w-full bg-[#FAF8F5]/98 backdrop-blur-md border-l border-[#171717]/20 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-150">
-            <div className="p-4 space-y-3.5">
+          <aside className="absolute right-0 top-0 bottom-0 w-full sm:w-[360px] max-w-full bg-white/98 backdrop-blur-md border-l border-slate-200 shadow-2xl z-30 flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-200">
+            <div className="p-5 space-y-5">
               
               {/* Header with Close button */}
-              <div className="flex items-start justify-between border-b border-[#171717]/15 pb-2.5">
+              <div className="flex items-start justify-between border-b border-slate-100 pb-4">
                 <div>
-                  <h2 className="text-xl font-serif font-bold text-[#171717] tracking-tight">
+                  <h2 className="text-2xl font-sans font-bold text-slate-900 tracking-tight">
                     {activeEvaluation.district.name}
                   </h2>
-                  <div className="text-xs text-[#57534E] flex items-center gap-1 mt-0.5 font-mono">
-                    <span>{activeEvaluation.district.state}</span>
-                    <span className="text-stone-300">•</span>
-                    <span>{t('map.pop_lakhs', { count: (activeEvaluation.district.population / 100000).toFixed(1) })}</span>
+                  <div className="text-sm text-slate-500 flex items-center gap-2 mt-1 font-sans">
+                    <span className="font-medium">{activeEvaluation.district.state}</span>
+                    <span className="text-slate-300">•</span>
+                    <span>{t('map.pop_lakhs', { count: (activeEvaluation.district.population / 100000).toFixed(1) })} population</span>
                   </div>
                 </div>
                 <button
@@ -711,61 +756,76 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                     setIsDrawerOpen(false); 
                     setActiveDistrictId(null); 
                   }}
-                  className="p-1 rounded-xs text-[#78716C] hover:text-[#171717] hover:bg-stone-200/60 transition-colors cursor-pointer"
+                  className="p-2 rounded-lg text-slate-400 hover:text-slate-900 hover:bg-slate-100 transition-colors cursor-pointer"
                   title="Close Inspector"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
 
               {/* Priority Index Score */}
-              <div className="flex items-baseline justify-between bg-white p-3 border border-[#171717]/15 rounded-xs">
+              <div className="flex items-baseline justify-between bg-slate-50 p-4 border border-slate-100 rounded-xl">
                 <div>
-                  <span className="text-[10px] font-mono uppercase text-[#78716C] block">{t('map.priority_index')}</span>
-                  <div className="flex items-baseline space-x-1 mt-0.5">
-                    <span className="text-2xl font-serif font-bold text-[#171717]">
+                  <span className="text-[11px] font-bold text-slate-500 block">Priority index</span>
+                  <div className="flex items-baseline space-x-1 mt-1">
+                    <span className="text-3xl font-bold text-slate-900">
                       {activeEvaluation.demandHotspot.categoryScore || activeEvaluation.breakdown.total_score}
                     </span>
-                    <span className="text-xs text-[#78716C] font-mono">/ 100</span>
+                    <span className="text-sm text-slate-400">/ 100</span>
                   </div>
                 </div>
-                <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                <span className={`text-[11px] font-bold px-3 py-1 rounded-full ${
                   activeEvaluation.breakdown.total_score >= 70
-                    ? 'bg-[#ef4444] text-white'
+                    ? 'bg-red-600 text-white shadow-sm shadow-red-200'
                     : activeEvaluation.breakdown.total_score >= 40
-                    ? 'bg-[#f97316] text-white'
-                    : 'bg-[#285943] text-white'
+                    ? 'bg-orange-500 text-white shadow-sm shadow-orange-200'
+                    : 'bg-emerald-600 text-white shadow-sm shadow-emerald-200'
                 }`}>
                   {tPriority(activeEvaluation.priorityTier.label)}
                 </span>
               </div>
 
               {/* Main Issue & Request Volume */}
-              <div className="bg-white p-3 border border-[#171717]/15 rounded-xs space-y-1 text-xs">
-                <div className="font-bold text-[#171717] flex items-center justify-between">
-                  <span>{selectedCategory === 'All' ? tCategory(activeEvaluation.demandHotspot.primaryCategory) : tCategory(selectedCategory)} {t('map.sector')}</span>
-                  <span className="font-mono text-[11px] text-[#D65A3A] font-bold">
-                    {activeEvaluation.demandCount.toLocaleString()} {t('map.signals_unit')}
+              <div className="bg-white p-4 border border-slate-100 rounded-xl shadow-sm space-y-1.5 text-sm">
+                <div className="font-bold text-slate-900 flex items-center justify-between">
+                  <span>{selectedCategory === 'All' ? tCategory(activeEvaluation.demandHotspot.primaryCategory) : tCategory(selectedCategory)} sector</span>
+                  <span className="font-sans text-orange-600 font-bold">
+                    {activeEvaluation.demandCount.toLocaleString()} signals
                   </span>
                 </div>
-                <div className="text-[11px] text-[#57534E] flex items-center gap-1 font-mono">
-                  <span className="text-emerald-700 font-bold">↑ 22%</span>
+                <div className="text-xs text-slate-500 flex items-center gap-2 font-sans">
+                  <span className="text-emerald-600 font-bold">↑ 22% increase</span>
+                  <span className="text-slate-300">•</span>
                   <span>{t('time.this_month')}</span>
-                  <span className="text-stone-300">•</span>
-                  <span>{t('map.gap_label')} {100 - Math.round(activeEvaluation.currentAccess)}%</span>
+                  <span className="text-slate-300">•</span>
+                  <span>Gap: {100 - Math.round(activeEvaluation.currentAccess)}%</span>
                 </div>
               </div>
 
               {/* One Important Evidence Point */}
-              {activeEvaluation.demandHotspot.representativeQuote && (
-                <div className="bg-[#FAF0E6]/70 border border-[#D65A3A]/25 p-2.5 rounded-xs space-y-1 text-xs">
-                  <div className="text-[9px] font-mono font-bold text-[#D65A3A] uppercase tracking-wider flex items-center gap-1">
-                    <Volume2 className="w-3 h-3" />
-                    <span>{t('map.citizen_voice')} ({activeEvaluation.demandHotspot.representativeQuote.language})</span>
-                  </div>
-                  <div className="italic text-[11px] text-[#171717]">
-                    "{activeEvaluation.demandHotspot.representativeQuote.english || activeEvaluation.demandHotspot.representativeQuote.text}"
-                  </div>
+              {activeEvaluation.matchedRequests && activeEvaluation.matchedRequests.length > 0 && (
+                <div className="space-y-3">
+                  <span className="text-[11px] font-sans font-bold uppercase tracking-widest text-slate-500 block">Citizen voice</span>
+                  {activeEvaluation.matchedRequests.slice(0, 3).map((req, idx) => (
+                    <div key={req.id} className="bg-slate-50 border border-slate-200 p-4 rounded-xl space-y-2 text-sm shadow-sm">
+                    <div className="text-[10px] font-bold text-orange-600 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5">
+                        <Volume2 className="w-3.5 h-3.5" />
+                        {req.language} submission
+                      </span>
+                      {req.translated_text && <span className="text-[9px] text-slate-400 lowercase">Translation available</span>}
+                    </div>
+                      <div className="text-slate-900 leading-relaxed font-sans font-medium italic">
+                        "{req.original_text}"
+                      </div>
+                      {req.translated_text && (
+                        <div className="text-xs text-slate-500 font-sans border-t border-slate-200 pt-2 mt-2 leading-relaxed">
+                          <span className="font-bold text-[10px] uppercase text-slate-400 block mb-1">English translation:</span>
+                          {req.translated_text}
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
               )}
 
@@ -776,26 +836,26 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                 if (publicIndicators.length === 0) return null;
                 const primaryInd = publicIndicators[0];
                 return (
-                  <div className="bg-slate-50 border border-slate-300 p-2.5 rounded-xs space-y-1 text-xs font-mono">
-                    <div className="flex items-center justify-between text-[9px] text-slate-500 uppercase tracking-wider font-bold">
-                      <span className="flex items-center gap-1 text-blue-900">
-                        <Database className="w-2.5 h-2.5" />
-                        <span>{t('map.public_context')}</span>
+                  <div className="bg-blue-50/50 border border-blue-100 p-4 rounded-xl space-y-2 text-sm">
+                    <div className="flex items-center justify-between text-[10px] text-blue-600 uppercase tracking-widest font-bold">
+                      <span className="flex items-center gap-1.5">
+                        <Database className="w-3 h-3" />
+                        <span>Public context</span>
                       </span>
-                      <span className="text-slate-600 font-sans">
-                        {t('map.source_label')} {primaryInd.source} ({primaryInd.year})
+                      <span className="font-sans font-normal text-blue-400">
+                        Source: {primaryInd.source} ({primaryInd.year})
                       </span>
                     </div>
-                    <div className="text-[11px] font-bold text-slate-900">
+                    <div className="text-sm font-bold text-blue-900">
                       {primaryInd.indicator}: {primaryInd.value} {primaryInd.unit}
                     </div>
                     {primaryInd.contextSummary && (
-                      <div className="text-[10px] text-slate-600 font-sans leading-tight">
+                      <div className="text-xs text-blue-800/70 font-sans leading-relaxed">
                         {primaryInd.contextSummary}
                       </div>
                     )}
                     {primaryInd.isSyntheticDemo && (
-                      <div className="text-[8px] text-amber-700 italic">
+                      <div className="text-[9px] text-blue-400 italic">
                         *Illustrative demo dataset for non-cataloged metrics
                       </div>
                     )}
@@ -804,17 +864,17 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
               })()}
 
               {/* Primary Action Buttons */}
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-1 gap-2.5 pt-2">
                 <button
                   onClick={() => {
                     if (onNavigateToCommunityIssues) {
                       onNavigateToCommunityIssues(activeEvaluation.district.id, selectedCategory === 'All' ? undefined : selectedCategory);
                     }
                   }}
-                  className="bg-[#171717] hover:bg-[#292824] text-white py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full bg-slate-900 hover:bg-slate-800 text-white py-3 px-4 text-xs font-sans font-bold uppercase tracking-widest transition-all rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
-                  <FileText className="w-3.5 h-3.5 text-[#D65A3A]" />
-                  <span>{t('map.explore_issues')}</span>
+                  <FileText className="w-4 h-4 text-orange-400" />
+                  <span>Explore issues</span>
                 </button>
 
                 <button
@@ -825,37 +885,37 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
                       onSelectHotspotForPolicy(activeEvaluation.district, activeEvaluation.category);
                     }
                   }}
-                  className="bg-white hover:bg-stone-50 text-[#171717] border border-[#171717]/30 py-2 px-2 text-[11px] font-mono font-bold transition-colors rounded-xs flex items-center justify-center gap-1 cursor-pointer"
+                  className="w-full bg-white hover:bg-slate-50 text-slate-900 border border-slate-200 py-3 px-4 text-xs font-sans font-bold uppercase tracking-widest transition-all rounded-xl flex items-center justify-center gap-2 shadow-sm cursor-pointer"
                 >
-                  <span>{t('map.synthesize_project')}</span>
+                  <span>Synthesize project →</span>
                 </button>
               </div>
 
               {/* Progressive Disclosure: Details & Telemetry Toggle */}
-              <div className="pt-2 border-t border-[#171717]/10">
+              <div className="pt-4 border-t border-slate-100">
                 <button
                   onClick={() => setShowDrawerDetails(!showDrawerDetails)}
-                  className="w-full text-left text-[11px] font-mono font-medium text-stone-600 hover:text-black flex items-center justify-between p-1 cursor-pointer"
+                  className="w-full text-left text-xs font-sans font-bold text-slate-500 hover:text-slate-900 flex items-center justify-between p-1 transition-colors cursor-pointer"
                 >
-                  <span>{showDrawerDetails ? t('map.hide_details') : t('map.view_details_telemetry')}</span>
-                  <span>{showDrawerDetails ? '▲' : '▼'}</span>
+                  <span>{showDrawerDetails ? 'Hide technical telemetry' : 'View technical telemetry'}</span>
+                  <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${showDrawerDetails ? 'rotate-180' : ''}`} />
                 </button>
 
                 {showDrawerDetails && (
-                  <div className="mt-2 space-y-2 text-xs font-mono animate-in fade-in duration-100">
-                    <div className="bg-white p-2.5 border border-[#171717]/15 rounded-xs space-y-1">
-                      <div className="text-[10px] text-stone-500 uppercase">{t('map.ai_recommendation')}</div>
-                      <p className="text-[11px] text-stone-800 leading-relaxed font-sans">
+                  <div className="mt-3 space-y-3 text-xs font-sans animate-in fade-in slide-in-from-top-1 duration-200">
+                    <div className="bg-slate-50 p-4 border border-slate-100 rounded-xl space-y-2">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">AI Analysis Summary</div>
+                      <p className="text-sm text-slate-700 leading-relaxed">
                         {activeEvaluation.demandHotspot.aiRecommendation}
                       </p>
                     </div>
 
                     <button
                       onClick={() => handleOpenEvidence(activeEvaluation.district, selectedCategory === 'All' ? 'Water' : selectedCategory, activeEvaluation.demandHotspot)}
-                      className="w-full bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 py-1.5 px-2 rounded-xs text-[10px] font-bold flex items-center justify-center gap-1 cursor-pointer"
+                      className="w-full bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 py-2.5 px-4 rounded-xl text-[11px] font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm"
                     >
-                      <Eye className="w-3 h-3 text-blue-600" />
-                      <span>{t('map.open_evidence_dossier')}</span>
+                      <Eye className="w-4 h-4 text-blue-600" />
+                      <span>Open evidence dossier</span>
                     </button>
                   </div>
                 )}
@@ -869,45 +929,62 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
 
       {/* Field Telemetry Evidence Modal */}
       {evidenceModalData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
-          <div className="bg-[#FAF8F5] border border-[#171717]/20 rounded-xs shadow-2xl max-w-lg w-full p-5 space-y-4 font-mono text-xs text-[#171717]">
-            <div className="flex items-start justify-between border-b border-[#171717]/15 pb-2">
-              <div>
-                <span className="text-[10px] text-[#D65A3A] font-bold uppercase">{t('map.field_evidence_title')}</span>
-                <h3 className="text-lg font-serif font-bold">{evidenceModalData.district.name} ({tCategory(evidenceModalData.category)})</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between bg-slate-50/50">
+              <div className="space-y-1">
+                <span className="text-[10px] text-orange-600 font-bold uppercase tracking-widest block">
+                  {t('map.field_evidence_title')}
+                </span>
+                <h3 className="text-xl font-sans font-bold text-slate-900 leading-tight">
+                  {evidenceModalData.district.name} · {tCategory(evidenceModalData.category)}
+                </h3>
               </div>
               <button 
                 onClick={() => setEvidenceModalData(null)}
-                className="p-1 hover:bg-stone-200 rounded text-stone-600 cursor-pointer"
+                className="p-2 hover:bg-slate-200 rounded-xl text-slate-400 hover:text-slate-900 transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-2 bg-white p-3 border border-[#171717]/15 rounded-xs">
-              <div className="text-xs font-bold">{evidenceModalData.evidence.title}</div>
-              <p className="text-stone-600 text-[11px] font-sans">{evidenceModalData.evidence.sub}</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 text-[11px]">
-              <div className="bg-white p-2 border border-stone-200 rounded">
-                <span className="text-[9px] text-stone-400 uppercase block">{t('evidence.supervisor')}</span>
-                <span className="font-bold">{evidenceModalData.evidence.officer}</span>
+            <div className="p-6 space-y-5">
+              <div className="space-y-2 bg-orange-50/30 p-5 rounded-xl border border-orange-100 shadow-inner">
+                <div className="text-sm font-bold text-slate-900">{evidenceModalData.evidence.title}</div>
+                <p className="text-slate-600 text-sm leading-relaxed italic">
+                  "{evidenceModalData.evidence.sub}"
+                </p>
               </div>
-              <div className="bg-white p-2 border border-stone-200 rounded">
-                <span className="text-[9px] text-stone-400 uppercase block">{t('evidence.department')}</span>
-                <span className="font-bold">{evidenceModalData.evidence.department}</span>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-stone-200">
-              <span className="text-[10px] text-stone-500">{t('evidence.confidence')}: {evidenceModalData.evidence.signalConfidence}%</span>
-              <button
-                onClick={() => setEvidenceModalData(null)}
-                className="bg-[#171717] text-white px-3 py-1 rounded-xs font-bold cursor-pointer hover:bg-stone-800"
-              >
-                {t('map.close_dossier')}
-              </button>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    {t('evidence.supervisor')}
+                  </span>
+                  <span className="font-bold text-slate-800 text-sm">{evidenceModalData.evidence.officer}</span>
+                </div>
+                <div className="bg-slate-50 p-4 rounded-xl border border-slate-100">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider block mb-1">
+                    {t('evidence.department')}
+                  </span>
+                  <span className="font-bold text-slate-800 text-sm truncate">{evidenceModalData.evidence.department}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                  <span className="text-xs font-semibold text-slate-500">
+                    Confidence score: <span className="text-emerald-600">{evidenceModalData.evidence.signalConfidence}%</span>
+                  </span>
+                </div>
+                <button
+                  onClick={() => setEvidenceModalData(null)}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-md shadow-slate-200 cursor-pointer"
+                >
+                  {t('map.close_dossier')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

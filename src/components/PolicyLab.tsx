@@ -120,11 +120,11 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center space-x-2.5">
-              <span className="px-2.5 py-0.5 text-xs font-semibold uppercase tracking-wider rounded bg-blue-50 text-blue-700 border border-blue-200">
-                STEP 3 OF 4
+              <span className="px-2.5 py-1 text-[11px] font-bold rounded bg-blue-50 text-blue-700 border border-blue-200">
+                Step 3 of 4
               </span>
               <h2 className="text-xl font-bold text-slate-900">
-                AI Governance & Policy Recommendation Lab
+                Decision Intelligence & Policy Laboratory
               </h2>
             </div>
             <p className="text-sm text-slate-600 mt-1 max-w-3xl leading-relaxed">
@@ -132,9 +132,9 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
             </p>
           </div>
 
-          <div className="flex items-center space-x-2 bg-slate-50 px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-mono">
+          <div className="flex items-center space-x-2 bg-slate-50 px-3.5 py-2 rounded-lg border border-slate-200">
             <Sparkles className="w-4 h-4 text-blue-600" />
-            <span className="text-slate-500 uppercase tracking-wider text-xs font-semibold">Model:</span>
+            <span className="text-slate-500 text-xs font-semibold">Model:</span>
             <span className="text-slate-800 font-bold text-xs">Gemini 3.7 Flash</span>
           </div>
         </div>
@@ -144,9 +144,9 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
         {/* Left Column: Target Hotspot Dossier & Parameters */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white border border-slate-200 rounded-xl p-6 space-y-5 shadow-xs">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+            <h3 className="text-xs font-bold text-slate-700 flex items-center gap-2">
               <Building className="w-4 h-4 text-blue-600" />
-              Target Hotspot Parameter Dossier
+              Target hotspot parameters
             </h3>
 
             {/* District & Category Selectors */}
@@ -204,9 +204,9 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
             </div>
 
             {/* Evidence Matrix */}
-            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-2.5 text-xs font-mono">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-700 font-sans block">
-                Fused Quantitative Evidence:
+            <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs">
+              <span className="text-xs font-bold text-slate-700 block">
+                Evidence synthesis:
               </span>
 
               <div className="flex justify-between items-center text-xs">
@@ -257,7 +257,7 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
             <button
               onClick={handleGenerateBrief}
               disabled={isGenerating}
-              className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-xs disabled:opacity-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+              className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs disabled:opacity-50 transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               {isGenerating ? (
                 <>
@@ -284,11 +284,11 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
                   <div>
                     <div className="flex items-center space-x-2">
                       <ShieldCheck className="w-4 h-4 text-emerald-600" />
-                      <span className="text-xs font-bold text-slate-900 tracking-wider uppercase">
-                        National Infrastructure Taskforce • Executive Memo
+                      <span className="text-xs font-bold text-slate-900">
+                        Official Infrastructure Memorandum
                       </span>
                     </div>
-                    <p className="text-xs text-slate-500 font-mono mt-0.5">
+                    <p className="text-[10px] text-slate-500 mt-0.5">
                       REF: DPI-{currentDistrict.name.toUpperCase()}-{selectedCategory.toUpperCase()}-{Date.now().toString().slice(-4)}
                     </p>
                   </div>
@@ -326,9 +326,9 @@ export const PolicyLab: React.FC<PolicyLabProps> = ({
 
                   <button
                     onClick={() => onNavigateToImpact(currentDistrict.id, selectedCategory)}
-                    className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs uppercase tracking-wider rounded-lg shadow-xs transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-lg shadow-xs transition-colors flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>Step 4: Simulate Project Impact</span>
+                    <span>Simulate project impact</span>
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>

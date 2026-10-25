@@ -293,10 +293,10 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
       {/* 1. PAGE HEADER (Question-driven with supporting label) */}
       <header id="demographics-header" className="border-b border-[#171717]/10 pb-4 pt-1 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-xs font-semibold rounded-sm">
             {t('demographics.page_label') || 'Population & Vulnerability'}
           </span>
-          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+          <span className="text-xs font-medium text-[#78716C]">
             {t('workflow.step_3')}
           </span>
         </div>
@@ -320,12 +320,12 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
       {/* Connection Formula Context Banner */}
       <div className="bg-[#FAF8F5] border border-[#171717]/15 p-3 sm:p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-0.5">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
-            Why Vulnerability Matters in Capital Sanction
+          <span className="text-[11px] font-bold text-[#D65A3A] block">
+            Vulnerability impact on capital sanction
           </span>
           <p className="text-[#34322D] leading-relaxed">
-            <strong className="font-mono text-[#171717]">VULNERABILITY WEIGHT + CITIZEN DEMAND + INFRASTRUCTURE GAP = PRIORITY NEED.</strong>{' '}
-            Vulnerability factors ensure infrastructure capital reaches marginalized, low-resilience communities rather than only areas with high reporting volume.
+            <strong className="text-[#171717]">VULNERABILITY WEIGHT + CITIZEN DEMAND + INFRASTRUCTURE GAP = PRIORITY NEED.</strong>{' '}
+            Vulnerability factors ensure infrastructure capital reaches marginalized communities rather than only areas with high reporting volume.
           </p>
         </div>
         {onNavigateToRecommendations && (
@@ -345,7 +345,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
           
           {/* Metric 1: Population Covered */}
           <div id="metric-population-covered" className="space-y-1">
-            <span className="text-xs uppercase tracking-wider font-semibold text-[#171717]/60">
+            <span className="text-xs font-bold text-[#171717]/60">
               {t('demographics.metric_pop_covered')}
             </span>
             <div className="font-serif text-2xl md:text-3xl font-bold text-[#171717]">
@@ -358,7 +358,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
 
           {/* Metric 2: Vulnerable Population */}
           <div id="metric-vulnerable-population" className="sm:pl-6 space-y-1">
-            <span className="text-xs uppercase tracking-wider font-semibold text-[#171717]/60">
+            <span className="text-xs font-bold text-[#171717]/60">
               {t('demographics.metric_vuln_pop')}
             </span>
             <div className="font-serif text-2xl md:text-3xl font-bold text-[#ea580c]">
@@ -371,7 +371,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
 
           {/* Metric 3: High-Risk Districts */}
           <div id="metric-high-risk-districts" className="sm:pl-6 space-y-1">
-            <span className="text-xs uppercase tracking-wider font-semibold text-[#171717]/60">
+            <span className="text-xs font-bold text-[#171717]/60">
               {t('demographics.metric_high_risk')}
             </span>
             <div className="font-serif text-2xl md:text-3xl font-bold text-[#b91c1c]">
@@ -501,7 +501,7 @@ export const DemographicsView: React.FC<DemographicsViewProps> = ({
             <div className="flex items-center gap-2">
               <span className="font-serif font-bold text-[#171717]">Vulnerability Spatial Distribution</span>
               <span className="text-[#171717]/40">•</span>
-              <span className="text-[#171717]/60 font-mono">
+              <span className="text-[#171717]/60">
                 {filteredDistricts.length} {filteredDistricts.length === 1 ? 'district' : 'districts'} active
               </span>
             </div>

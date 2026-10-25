@@ -70,6 +70,9 @@ interface IndiaMapCanvasProps {
   onSelectHotspotForPolicy?: (district: District, category: InfrastructureCategory) => void;
   selectedCountryCode?: CountryCode;
   onOpenEvidenceModal?: (district: District, category: string, hotspot: CityDemandHotspot) => void;
+  focusedCoordinate?: [number, number] | null;
+  focusedPinId?: string | null;
+  onResetAllIndia?: () => void;
 }
 
 
@@ -158,14 +161,33 @@ export const getReportEvidence = (district: District, category: string, hotspot:
   };
 };
 
-// Smoothly pans the map when selected district changes
+// Smoothly pans the map when selected district or focused coordinates change
 const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
+  const prevRef = React.useRef<{ lat: number; lng: number; zoom: number } | null>(null);
+
   useEffect(() => {
-    if (isValidCoordinate(center[0], center[1]) && typeof zoom === 'number' && !isNaN(zoom)) {
-      map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 120);
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  useEffect(() => {
+    const [lat, lng] = center;
+    if (!isValidCoordinate(lat, lng) || typeof zoom !== 'number' || isNaN(zoom)) return;
+
+    if (
+      !prevRef.current ||
+      Math.abs(prevRef.current.lat - lat) > 0.0001 ||
+      Math.abs(prevRef.current.lng - lng) > 0.0001 ||
+      prevRef.current.zoom !== zoom
+    ) {
+      prevRef.current = { lat, lng, zoom };
+      map.flyTo([lat, lng], zoom, { duration: 1.2, easeLinearity: 0.25 });
     }
-  }, [center, zoom, map]);
+  }, [center[0], center[1], zoom, map]);
+
   return null;
 };
 
@@ -178,6 +200,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   onSelectHotspotForPolicy,
   selectedCountryCode = 'IN',
   onOpenEvidenceModal,
+  focusedCoordinate,
+  focusedPinId,
+  onResetAllIndia,
 }) => {
   const [showMapSources, setShowMapSources] = useState(false);
   const [geoJsonData, setGeoJsonData] = useState<any>(null);
@@ -219,28 +244,36 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   }, [validEvaluations, selectedCategory]);
 
   const activeEvaluation = useMemo(() => {
+    if (!activeDistrictId) return null;
     return displayedEvaluations.find(e => e.district.id === activeDistrictId) || 
            validEvaluations.find(e => e.district.id === activeDistrictId) || 
-           displayedEvaluations[0];
+           null;
   }, [displayedEvaluations, validEvaluations, activeDistrictId]);
 
-  // Calculate map center based on active district, first displayed evaluation, or country center coordinates
+  // Calculate map center based on focused coordinate, active district, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
+    if (focusedCoordinate && isValidCoordinate(focusedCoordinate[0], focusedCoordinate[1])) {
+      return focusedCoordinate;
+    }
     if (activeEvaluation && isValidCoordinate(activeEvaluation.district.lat, activeEvaluation.district.lon)) {
       return [activeEvaluation.district.lat, activeEvaluation.district.lon];
-    }
-    const firstEval = displayedEvaluations[0];
-    if (firstEval && isValidCoordinate(firstEval.district.lat, firstEval.district.lon)) {
-      return [firstEval.district.lat, firstEval.district.lon];
     }
     if (countryConfig?.coordinates && isValidCoordinate(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
       return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
     }
     return INDIA_MAP_CENTER;
-  }, [activeEvaluation, displayedEvaluations, countryConfig]);
+  }, [focusedCoordinate, activeEvaluation, countryConfig]);
 
   const defaultZoom = countryConfig?.coordinates?.zoom || INDIA_MAP_DEFAULT_ZOOM;
-  const targetZoom = activeDistrictId ? 8 : defaultZoom;
+  const targetZoom = useMemo(() => {
+    if (focusedCoordinate && isValidCoordinate(focusedCoordinate[0], focusedCoordinate[1])) {
+      return 11;
+    }
+    if (activeDistrictId) {
+      return 8;
+    }
+    return defaultZoom;
+  }, [focusedCoordinate, activeDistrictId, defaultZoom]);
 
   const stateStyle = useMemo(() => {
     return getIndiaStateBoundaryStyle(activeEvaluation?.district?.state);
@@ -291,69 +324,103 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
     <div className="w-full h-full relative z-0 bg-[#121417] overflow-hidden">
       
       {/* 1. BREADCRUMB & REGIONAL BADGE (TOP-LEFT OVERLAY) */}
-      <div className="absolute top-3 left-3 z-20 max-w-[calc(100%-130px)] sm:max-w-[calc(100%-180px)] bg-[#171717]/90 border border-white/20 px-2.5 sm:px-3 py-1 sm:py-1.5 shadow-md backdrop-blur-md flex items-center space-x-1.5 sm:space-x-2 font-mono text-[10px] sm:text-[11px] text-white rounded-md overflow-hidden truncate">
-        <span className="text-xs shrink-0">🇮🇳</span>
-        <span className="font-bold tracking-wider uppercase shrink-0">INDIA</span>
-        <span className="text-white/40 shrink-0">/</span>
-        <span className="font-semibold text-[#D65A3A] uppercase truncate">
-          {activeEvaluation?.district.state || 'NATIONAL GIS'}
-        </span>
-        {activeEvaluation && (
+      <div className="absolute top-4 left-4 z-20 max-w-[calc(100%-140px)] sm:max-w-[calc(100%-200px)] bg-slate-900/90 border border-slate-700 px-3.5 py-2 shadow-xl backdrop-blur-md flex items-center space-x-2.5 font-sans text-xs text-white rounded-xl overflow-hidden truncate ring-1 ring-white/10">
+        <span className="text-sm shrink-0">🇮🇳</span>
+        <span className="font-bold tracking-tight shrink-0">India</span>
+        {activeEvaluation ? (
           <>
-            <span className="text-white/40 shrink-0">/</span>
-            <span className="font-bold text-white uppercase truncate">{activeEvaluation.district.name}</span>
+            <span className="text-white/30 shrink-0">/</span>
+            <span className="font-semibold text-orange-400 truncate">
+              {activeEvaluation.district.state}
+            </span>
+            <span className="text-white/30 shrink-0">/</span>
+            <span className="font-bold text-white truncate">{activeEvaluation.district.name}</span>
+          </>
+        ) : (
+          <>
+            <span className="text-white/30 shrink-0">/</span>
+            <span className="font-semibold text-orange-400 truncate">
+              India overview
+            </span>
           </>
         )}
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse ml-1 shrink-0 hidden xs:inline-block"></span>
-        <span className="text-[10px] text-gray-300 font-sans shrink-0 hidden md:inline">
-          {displayedEvaluations.length} Active Hotspots
-        </span>
+        <div className="flex items-center gap-1.5 ml-2 shrink-0 hidden xs:flex border-l border-white/10 pl-2.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span className="text-[10px] text-slate-300 font-medium">
+            {displayedEvaluations.length} Active hotspots
+          </span>
+        </div>
       </div>
 
       {/* 2. SATELLITE BASEMAP BADGE (TOP-RIGHT OVERLAY) */}
-      <div className="absolute top-3 right-3 z-20 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-2 sm:px-2.5 py-1 shadow-md flex items-center gap-1 sm:gap-1.5 font-mono text-[10px] text-white/90 rounded-md shrink-0">
-        <span className="shrink-0">🛰️</span>
-        <span className="font-bold uppercase tracking-wider hidden sm:inline">Satellite Hybrid</span>
-        <span className="font-bold uppercase tracking-wider sm:hidden">Satellite</span>
+      <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+        <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 px-3 py-2 shadow-xl flex items-center gap-2 font-sans text-xs text-white/90 rounded-xl shrink-0 ring-1 ring-white/10">
+          <span className="shrink-0 text-sm">🛰️</span>
+          <span className="font-bold hidden sm:inline">Satellite hybrid</span>
+          <span className="font-bold sm:hidden">Satellite</span>
+        </div>
+        
+        {/* All India Reset Button */}
+        <button 
+          onClick={() => {
+            if (onResetAllIndia) {
+              onResetAllIndia();
+            } else {
+              onSelectDistrict('');
+              const url = new URL(window.location.href);
+              url.searchParams.delete('highlightPin');
+              url.searchParams.delete('state');
+              url.searchParams.delete('district');
+              url.searchParams.delete('locality');
+              url.searchParams.delete('lat');
+              url.searchParams.delete('lng');
+              window.history.pushState({}, '', url);
+            }
+          }}
+          className="bg-white text-slate-900 px-3 py-2 rounded-xl shadow-xl flex items-center justify-center gap-2 font-sans text-xs font-bold transition-all hover:bg-slate-50 border border-slate-200 cursor-pointer active:scale-95"
+        >
+          <span className="text-sm">🌐</span>
+          <span>India view</span>
+        </button>
       </div>
 
       {/* 3. COMPACT FLOATING CIVIC PRIORITY LEGEND (BOTTOM-LEFT OVERLAY) */}
-      <div className="absolute bottom-4 left-3 sm:left-4 z-20 bg-[#171717]/90 text-white border border-white/15 px-2.5 sm:px-3 py-1.5 sm:py-2 shadow-lg backdrop-blur-md font-sans text-[11px] sm:text-xs rounded-md space-y-1 sm:space-y-1.5 min-w-[125px] sm:min-w-[135px]">
-        <div className="flex items-center justify-between text-[10px] font-mono font-bold text-stone-300 uppercase tracking-wider border-b border-white/10 pb-1">
-          <span>Priority</span>
+      <div className="absolute bottom-6 left-4 sm:left-6 z-20 bg-slate-900/95 text-white border border-white/10 px-4 py-3 shadow-2xl backdrop-blur-md font-sans text-xs rounded-2xl space-y-2 min-w-[150px]">
+        <div className="flex items-center justify-between text-[11px] font-bold text-slate-400 border-b border-white/5 pb-2">
+          <span>Priority levels</span>
           <button 
             onClick={() => setShowMapSources(!showMapSources)} 
             title="Data Sources"
-            className="text-stone-400 hover:text-white transition-colors cursor-pointer"
+            className="text-slate-500 hover:text-white transition-colors cursor-pointer"
           >
-            <Info className="w-3 h-3 text-amber-300" />
+            <Info className="w-3.5 h-3.5 text-amber-400/80" />
           </button>
         </div>
         
-        <div className="space-y-1 text-[11px] font-medium text-stone-200">
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#ef4444] border border-white/60 shrink-0"></span>
+        <div className="space-y-1.5 text-[11px] font-semibold text-slate-200">
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] shadow-sm shadow-red-500/50"></span>
             <span>Critical (85+)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#f97316] border border-white/60 shrink-0"></span>
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#f97316] shadow-sm shadow-orange-500/50"></span>
             <span>High (70–84)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#eab308] border border-white/60 shrink-0"></span>
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#eab308] shadow-sm shadow-yellow-500/50"></span>
             <span>Medium (40–69)</span>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#10b981] border border-white/60 shrink-0"></span>
-            <span>Emerging (&lt;40)</span>
+          <div className="flex items-center gap-2.5">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10b981] shadow-sm shadow-emerald-500/50"></span>
+            <span>Low (&lt;40)</span>
           </div>
         </div>
 
         {showMapSources && (
-          <div className="mt-1.5 pt-1.5 border-t border-white/10 text-[9px] font-mono text-stone-300 space-y-0.5">
-            <div className="text-white font-bold">Sources:</div>
-            <div>• Esri Satellite GIS</div>
-            <div>• Ingested Citizen Signals</div>
+          <div className="mt-2.5 pt-2.5 border-t border-white/5 text-[10px] font-sans text-slate-400 space-y-1 animate-in fade-in slide-in-from-bottom-1 duration-200">
+            <div className="text-white/80 font-bold text-[9px]">Data sources</div>
+            <div>• Esri Satellite GIS basemap</div>
+            <div>• Real-time citizen signals</div>
           </div>
         )}
       </div>
@@ -439,6 +506,31 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           </>
         )}
 
+        {/* HIGHLIGHTED FOCUSED PIN (FOR SUBMITTED OR TRACED CITIZEN ISSUE) */}
+        {focusedCoordinate && isValidCoordinate(focusedCoordinate[0], focusedCoordinate[1]) && focusedPinId && (
+          <Marker
+            position={focusedCoordinate}
+            zIndexOffset={1000}
+            icon={L.divIcon({
+              className: 'bg-transparent border-none',
+              html: `
+                <div style="position: relative; display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+                  <div style="position: absolute; width: 34px; height: 34px; border-radius: 50%; background: rgba(214, 90, 58, 0.45); animation: ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+                  <div style="width: 22px; height: 22px; border-radius: 50%; background: #D65A3A; border: 2.5px solid #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; color: white; font-size: 11px;">
+                    📍
+                  </div>
+                </div>
+              `,
+              iconSize: [36, 36],
+              iconAnchor: [18, 18],
+            })}
+          >
+            <Tooltip permanent direction="top" offset={[0, -18]} className="bg-[#171717] text-white border border-[#D65A3A] font-mono text-xs rounded shadow-lg">
+              <span className="font-bold text-[#D65A3A]">{focusedPinId}</span>
+            </Tooltip>
+          </Marker>
+        )}
+
         {/* CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
         {layers.citizen_demand && displayedEvaluations.map((item) => {
           if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
@@ -459,7 +551,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                 <div className="px-3 py-2 text-xs font-mono font-medium flex flex-col gap-1">
                   <div className="flex justify-between items-center gap-3">
                     <span className="font-bold text-sm text-white">{item.district.name}</span>
-                    <span className={`text-[10px] px-1.5 py-0.5 font-bold uppercase rounded ${
+                    <span className={`text-[10px] px-1.5 py-0.5 font-bold rounded ${
                       score >= 70 ? 'bg-[#D65A3A] text-white' : score >= 40 ? 'bg-[#D9A441] text-black' : 'bg-[#285943] text-white'
                     }`}>
                       {score >= 70 ? 'High' : score >= 40 ? 'Medium' : 'Emerging'}
@@ -477,43 +569,53 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
               </Tooltip>
 
               <Popup offset={[0, -20]} className="custom-popup" maxWidth={360} minWidth={300}>
-                <div className="bg-[#F7F5EF] border border-[#171717] shadow-[4px_4px_0px_#171717] overflow-hidden text-[#171717] -m-4">
-                  <div className="p-4 space-y-3 font-mono">
-                    <div className="flex items-center justify-between border-b border-[#171717]/20 pb-2">
-                      <span className="text-xs font-bold text-[#D65A3A] uppercase tracking-wider">
-                        {item.district.name} • {item.district.state}
+                <div className="bg-white border border-slate-200 shadow-2xl overflow-hidden text-slate-900 -m-4 rounded-xl">
+                  <div className="p-4 space-y-4 font-sans">
+                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                      <span className="text-sm font-bold text-slate-900">
+                        {item.district.name} · {item.district.state}
                       </span>
-                      <span className="text-[10px] bg-[#171717] text-white px-2 py-0.5">
+                      <span className="text-[10px] font-bold text-slate-400 tracking-wider">
                         {evidence.reportId}
                       </span>
                     </div>
 
-                    <div className="text-xs bg-white p-2.5 border border-[#171717]/20 space-y-1">
-                      <div className="text-[10px] text-[#171717]/60 uppercase">Field Assessment:</div>
-                      <div className="font-sans text-[#171717] font-semibold">"{evidence.sub}"</div>
+                    <div className="text-sm bg-slate-50 p-3.5 rounded-xl border border-slate-100 space-y-2">
+                      <div className="text-[10px] text-slate-500 font-bold flex items-center gap-1.5">
+                        <Activity className="w-3 h-3 text-orange-500" />
+                        Citizen voice
+                      </div>
+                      <div className="font-sans text-slate-800 font-medium italic leading-relaxed">
+                        "{item.matchedRequests && item.matchedRequests.length > 0 ? item.matchedRequests[0].original_text : evidence.sub}"
+                      </div>
+                      {item.matchedRequests && item.matchedRequests.length > 0 && item.matchedRequests[0].language !== 'English' && (
+                        <div className="text-[10px] text-slate-400 font-medium pt-1 border-t border-slate-200/60 mt-2">
+                          Language: {item.matchedRequests[0].language}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div className="bg-[#F7F5EF] p-2 border border-[#171717]/20">
-                        <span className="text-[#171717]/60 block">CITIZEN DEMAND:</span>
-                        <span className="font-bold text-[#D65A3A]">{item.demandCount} Requests</span>
+                    <div className="grid grid-cols-2 gap-3 text-xs">
+                      <div className="bg-orange-50/50 p-3 rounded-xl border border-orange-100">
+                        <span className="text-orange-800/60 font-bold text-[9px] block mb-1">Citizen demand</span>
+                        <span className="font-bold text-orange-700">{item.demandCount} signals</span>
                       </div>
-                      <div className="bg-[#F7F5EF] p-2 border border-[#171717]/20">
-                        <span className="text-[#171717]/60 block">PRIORITY SCORE:</span>
-                        <span className="font-bold text-[#171717]">{score} / 100</span>
+                      <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <span className="text-slate-500 font-bold text-[9px] block mb-1">Priority index</span>
+                        <span className="font-bold text-slate-900">{score} / 100</span>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 pt-1">
+                    <div className="flex items-center gap-2.5 pt-1">
                       {onOpenEvidenceModal && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
                             onOpenEvidenceModal(item.district, item.category, item.demandHotspot);
                           }}
-                          className="flex-1 bg-white hover:bg-stone-100 text-[#171717] py-2 text-xs font-mono font-bold uppercase transition-colors border border-[#171717] flex items-center justify-center gap-1 cursor-pointer"
+                          className="flex-1 bg-white hover:bg-slate-50 text-slate-900 py-2.5 px-3 text-xs font-bold transition-all border border-slate-200 rounded-lg flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
                         >
-                          <Eye className="w-3.5 h-3.5" />
+                          <Eye className="w-4 h-4 text-blue-600" />
                           <span>Evidence</span>
                         </button>
                       )}
@@ -523,9 +625,9 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
                             e.stopPropagation();
                             onSelectHotspotForPolicy(item.district, item.category);
                           }}
-                          className="flex-1 bg-[#171717] hover:bg-[#D65A3A] text-white py-2 text-xs font-mono font-bold uppercase tracking-wider transition-colors cursor-pointer border border-[#171717] flex items-center justify-center gap-1"
+                          className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 px-3 text-xs font-bold transition-all cursor-pointer rounded-lg flex items-center justify-center gap-1.5 shadow-sm shadow-slate-200"
                         >
-                          <span>Policy Brief →</span>
+                          <span>Policy brief →</span>
                         </button>
                       )}
                     </div>

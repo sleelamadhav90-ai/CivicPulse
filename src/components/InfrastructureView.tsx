@@ -63,10 +63,10 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
       {/* 1. Page Header (Question-driven with supporting label) */}
       <header className="border-b border-[#171717]/10 pb-4 pt-1 space-y-2">
         <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-xs font-semibold rounded-sm">
             {t('infrastructure.page_label') || 'Infrastructure'}
           </span>
-          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+          <span className="text-xs font-medium text-[#78716C]">
             {t('workflow.step_3')}
           </span>
         </div>
@@ -96,7 +96,7 @@ export const InfrastructureView: React.FC<InfrastructureViewProps> = ({
       {/* Narrative Context Banner */}
       <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
         <div className="space-y-0.5">
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
+          <span className="text-[10px] font-bold text-[#D65A3A] block">
             Why Asset Audits Matter
           </span>
           <p className="text-[#34322D] leading-relaxed">

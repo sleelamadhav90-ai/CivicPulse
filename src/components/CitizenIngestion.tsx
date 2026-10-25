@@ -49,6 +49,7 @@ import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from
 import { calculatePriorityScore, getPriorityTier } from '../utils/scoring';
 import { useAuth } from '../context/AuthContext';
 import { INDIA_STATES_DISTRICTS, getDistrictsByStateName } from '../data/indiaLocations';
+import { isValidCoordinate } from '../utils/mapStandards';
 
 interface CitizenIngestionProps {
   districts: District[];
@@ -470,13 +471,18 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     const severityLabel = evaluatedSeverity >= 9 ? 'Critical' : evaluatedSeverity >= 7 ? 'High' : evaluatedSeverity >= 5 ? 'Medium' : 'Low';
     const urgencyLabel: 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW' = evaluatedSeverity >= 9 ? 'CRITICAL' : evaluatedSeverity >= 7 ? 'HIGH' : evaluatedSeverity >= 5 ? 'MEDIUM' : 'LOW';
 
+    const targetDistrictObj = districts.find(d => 
+      d.name.toLowerCase() === selectedDistrict.toLowerCase() ||
+      d.id.toLowerCase() === selectedDistrict.toLowerCase()
+    );
+
     const newReq: CitizenRequest = {
       id: trackingId,
       request_id: trackingId,
       userId: user?.uid,
       timestamp: new Date().toISOString(),
       created_at: new Date().toISOString(),
-      original_text: inputText || 'Civic report submitted via CivicPulse Service',
+      original_text: inputText && inputText.trim().length > 0 ? inputText.trim() : '',
       language: selectedLanguage,
       category: selectedCategory,
       issue_title: `${selectedCategoryName || selectedCategory} Request — ${selectedDistrict}`,
@@ -484,25 +490,27 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
       state: selectedState,
       district: selectedDistrict,
       city_or_town: selectedDistrict,
-      locality: landmark,
+      locality: landmark && landmark.trim().length > 0 ? landmark.trim() : undefined,
+      latitude: targetDistrictObj?.lat,
+      longitude: targetDistrictObj?.lon,
       severity: evaluatedSeverity,
       severity_label: severityLabel,
       priority_score: activeScoreBreakdown.total_score,
       priority_tier: activePriorityTier,
       score_breakdown: activeScoreBreakdown,
-      summary_en: `${selectedCategoryName || selectedCategory} report at ${fullLocation}.`,
+      summary_en: inputText && inputText.trim().length > 0 ? inputText.trim() : `${selectedCategoryName || selectedCategory} request at ${fullLocation}`,
       source_type: sourceType,
       source_origin: 'CIVICPULSE_USER',
       status: 'Submitted',
       photo_url: attachedPhoto || undefined,
-      problem: inputText || 'Civic deficit reported',
+      problem: inputText && inputText.trim().length > 0 ? inputText.trim() : 'Civic deficit reported',
       urgency: urgencyLabel,
       affected_infrastructure: selectedCategory === 'Other' ? 'Community Civic Infrastructure' : `${selectedCategoryName || selectedCategory} Public Network`,
       estimated_impact: activePriorityTier,
       recommended_action: `Dispatch regional response team to ${selectedDistrict}, ${selectedState} for ${selectedCategoryName || selectedCategory} inspection.`,
       ai_analysis: {
         category: selectedCategory,
-        problem: inputText || 'Deficit',
+        problem: inputText && inputText.trim().length > 0 ? inputText.trim() : 'Deficit',
         urgency: urgencyLabel,
         affected_infrastructure: selectedCategory === 'Other' ? 'Community Civic Grid' : `${selectedCategory} Public Grid`,
         estimated_impact: activePriorityTier,
@@ -1144,13 +1152,13 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       </div>
                     </div>
 
-                    <div className="bg-white p-3 border border-[#171717]/20">
-                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Inferred Sector</span>
-                      <span className="font-bold text-base text-[#171717]">{selectedCategoryName || selectedCategory}</span>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-slate-400 block mb-1">Inferred sector</span>
+                      <span className="font-bold text-base text-slate-900">{selectedCategoryName || selectedCategory}</span>
                       {aiSuggestedCategory && (
-                        <div className="mt-2 p-2 bg-purple-50 border border-purple-200 text-[11px] text-purple-900 rounded-xs">
+                        <div className="mt-3 p-3 bg-purple-50 border border-purple-100 text-xs text-purple-900 rounded-lg">
                           <p className="font-medium">
-                            <span className="font-bold">AI Observation:</span> Issue text suggests alignment with <strong>{aiSuggestedCategory.suggestedName}</strong>. Citizen selection is strictly maintained as <em>Other civic issue</em>.
+                            <span className="font-bold">AI observation:</span> Issue text suggests alignment with <strong>{aiSuggestedCategory.suggestedName}</strong>. Citizen selection is strictly maintained as <em>Other civic issue</em>.
                           </p>
                           <button
                             type="button"
@@ -1158,7 +1166,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                               setSelectedCategory(aiSuggestedCategory.suggestedId);
                               setSelectedCategoryName(aiSuggestedCategory.suggestedName);
                             }}
-                            className="mt-1 text-[10px] text-purple-800 underline font-bold cursor-pointer hover:text-purple-950"
+                            className="mt-2 text-xs text-purple-700 underline font-bold cursor-pointer hover:text-purple-900 flex items-center gap-1"
                           >
                             Switch to {aiSuggestedCategory.suggestedName} →
                           </button>
@@ -1166,19 +1174,22 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                       )}
                     </div>
 
-                    <div className="bg-white p-3 border border-[#171717]/20">
-                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Location</span>
-                      <span className="font-bold text-base text-[#171717]">{landmark ? `${landmark}, ` : ''}{selectedDistrict}, {selectedState}</span>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-slate-400 block mb-1">Location</span>
+                      <span className="font-bold text-base text-slate-900">{landmark ? `${landmark}, ` : ''}{selectedDistrict}, {selectedState}</span>
                     </div>
 
-                    <div className="bg-white p-3 border border-[#171717]/20">
-                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Hazard Severity Rating</span>
-                      <span className="font-bold text-base text-red-700">{evaluatedSeverity} / 10 ({evaluatedSeverity >= 9 ? 'Critical Hazard' : evaluatedSeverity >= 7 ? 'High Urgency' : evaluatedSeverity >= 5 ? 'Moderate Deficit' : 'Minor Deficit'})</span>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-slate-400 block mb-1">Hazard severity rating</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-lg text-red-600">{evaluatedSeverity} / 10</span>
+                        <span className="text-xs font-bold text-slate-400">({evaluatedSeverity >= 9 ? 'Critical Hazard' : evaluatedSeverity >= 7 ? 'High Urgency' : evaluatedSeverity >= 5 ? 'Moderate Deficit' : 'Minor Deficit'})</span>
+                      </div>
                     </div>
 
-                    <div className="bg-white p-3 border border-[#171717]/20">
-                      <span className="text-[10px] font-mono uppercase text-slate-500 font-bold block">Affected Infrastructure</span>
-                      <span className="font-bold text-base text-[#171717]">{selectedCategory === 'Other' ? 'Community Civic Infrastructure' : `${selectedCategoryName || selectedCategory} Local Network`}</span>
+                    <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                      <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-slate-400 block mb-1">Affected infrastructure</span>
+                      <span className="font-bold text-base text-slate-900">{selectedCategory === 'Other' ? 'Community Civic Infrastructure' : `${selectedCategoryName || selectedCategory} Local Network`}</span>
                     </div>
                   </div>
 
@@ -1325,9 +1336,23 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(submissionReceipt.location)}`;
-                        window.open(mapsUrl, '_blank', 'noopener,noreferrer');
-                        if (onNavigateToHotspots) onNavigateToHotspots();
+                      const distObj = districts.find(d => 
+                        d.name.toLowerCase() === selectedDistrict.toLowerCase() || 
+                        d.id.toLowerCase() === selectedDistrict.toLowerCase()
+                      );
+                      const url = new URL(window.location.href);
+                      url.searchParams.set('highlightPin', submissionReceipt.id);
+                      url.searchParams.set('state', selectedState);
+                      url.searchParams.set('district', selectedDistrict);
+                      if (landmark && landmark.trim().length > 0) {
+                        url.searchParams.set('locality', landmark.trim());
+                      }
+                      if (distObj && isValidCoordinate(distObj.lat, distObj.lon)) {
+                        url.searchParams.set('lat', String(distObj.lat));
+                        url.searchParams.set('lng', String(distObj.lon));
+                      }
+                      window.history.pushState({}, '', url);
+                      if (onNavigateToHotspots) onNavigateToHotspots();
                     }}
                     className="w-full sm:w-auto border border-slate-300 hover:border-slate-400 bg-white text-slate-800 font-semibold rounded-xl px-5 py-3 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >

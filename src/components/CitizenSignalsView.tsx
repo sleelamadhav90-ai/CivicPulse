@@ -269,12 +269,12 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
     <div className="space-y-8 font-sans text-[#171717] pb-16 max-w-6xl mx-auto">
       
       {/* Page Header (Question-driven with supporting label) */}
-      <div className="space-y-2 border-b border-[#171717]/10 pb-5">
-        <div className="flex items-center gap-2">
-          <span className="px-2 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+      <div className="space-y-2.5 border-b border-slate-200 pb-6">
+        <div className="flex items-center gap-3">
+          <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-sans font-bold tracking-wide uppercase rounded-md">
             {t('signals.page_label') || 'Citizen Signals'}
           </span>
-          <span className="text-[11px] font-mono text-[#78716C] uppercase tracking-wider">
+          <span className="text-[11px] font-sans font-bold text-slate-400 uppercase tracking-widest">
             {t('workflow.step_1')}
           </span>
         </div>
@@ -313,26 +313,26 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
       </div>
 
       {/* "So What?" Context Banner */}
-      <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-        <div className="space-y-0.5">
+      <div className="bg-slate-50 border border-slate-200 p-5 rounded-xl flex flex-col lg:flex-row lg:items-center justify-between gap-4 text-sm shadow-inner">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A]">
-              Why This Matters
+            <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-orange-600">
+              Why this matters
             </span>
           </div>
-          <p className="text-[#34322D] leading-relaxed text-xs">
-            Citizen reports are the frontline sensor of public delivery. These signals reveal where infrastructure is failing or falling behind community needs before official audits notice.
+          <p className="text-slate-600 leading-relaxed text-sm font-medium">
+            Citizen reports are the frontline sensor of public delivery. These signals reveal where infrastructure is failing or falling behind community needs.
           </p>
         </div>
-        <div className="flex items-center gap-2 shrink-0 font-mono text-[11px]">
-          <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-300">
-            Citizen Signals: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER').length}
+        <div className="flex flex-wrap items-center gap-2 shrink-0 font-sans text-[11px]">
+          <span className="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100 font-bold">
+            Verified: {requests.filter(r => r.source_origin === 'CIVICPULSE_USER').length}
           </span>
-          <span className="px-2 py-0.5 rounded bg-stone-100 text-stone-700 border border-stone-300">
-            Demo Signals: {requests.filter(r => r.source_origin !== 'CIVICPULSE_USER').length}
+          <span className="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200 font-bold">
+            Demo baseline: {requests.filter(r => r.source_origin !== 'CIVICPULSE_USER').length}
           </span>
-          <span className="px-2 py-0.5 rounded bg-white text-stone-900 border border-stone-300 font-bold">
-            Total Analysed: {requests.length}
+          <span className="px-2.5 py-1 rounded-full bg-white text-slate-900 border border-slate-200 font-bold shadow-sm">
+            Total analyzed: {requests.length}
           </span>
         </div>
       </div>
@@ -579,14 +579,14 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
       </div>
 
       {/* Main Content: Clean Table/List */}
-      <div className="bg-white border border-[#171717]/15 rounded-sm overflow-hidden shadow-xs">
-        <div className="px-4 py-3 bg-[#FAF8F5] border-b border-[#171717]/10 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-[#57534E]">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+        <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm text-slate-500">
           <div className="flex items-center gap-2">
-            <span className="font-medium">
-              {t('filter.showing')} <strong className="text-[#171717] font-mono">{filteredRequests.length}</strong> {t('metric.demand_signals')}
+            <span className="font-medium text-slate-700">
+              Showing <strong className="text-slate-900 font-bold">{filteredRequests.length}</strong> citizen signals
             </span>
             {(selectedState !== 'ALL' || selectedDistrict !== 'ALL' || selectedCategory !== 'ALL') && (
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded bg-stone-200/70 text-stone-700">
+              <span className="text-[11px] font-sans px-2.5 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">
                 {[
                   selectedState !== 'ALL' ? selectedState : null,
                   selectedDistrict !== 'ALL' ? selectedDistrict : null,
@@ -596,23 +596,23 @@ export const CitizenSignalsView: React.FC<CitizenSignalsViewProps> = ({
               </span>
             )}
           </div>
-          <span className="text-[11px] text-[#78716C]">
+          <span className="text-xs text-slate-400 italic">
             {t('signals.click_row_telemetry')}
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full text-left text-sm border-collapse">
             <thead>
-              <tr className="border-b border-[#171717]/10 bg-[#FAF8F5] text-[#78716C] font-mono text-[10px] uppercase tracking-wider">
-                <th className="py-2.5 px-4 font-semibold">{t('table.issue')}</th>
-                <th className="py-2.5 px-3 font-semibold">{t('table.location')}</th>
-                <th className="py-2.5 px-3 font-semibold">{t('table.category')}</th>
-                <th className="py-2.5 px-3 font-semibold">Origin</th>
-                <th className="py-2.5 px-3 font-semibold">{t('metric.priority_score') || 'Priority Score'}</th>
-                <th className="py-2.5 px-3 font-semibold">{t('table.source')}</th>
-                <th className="py-2.5 px-3 font-semibold">{t('table.date')}</th>
-                <th className="py-2.5 px-4 font-semibold text-right">{t('table.status')}</th>
+              <tr className="border-b border-slate-100 bg-white text-slate-400 font-sans text-[10px] font-bold uppercase tracking-widest">
+                <th className="py-4 px-5 font-bold">{t('table.issue')}</th>
+                <th className="py-4 px-4 font-bold">{t('table.location')}</th>
+                <th className="py-4 px-4 font-bold">{t('table.category')}</th>
+                <th className="py-4 px-4 font-bold">Origin</th>
+                <th className="py-4 px-4 font-bold">Priority</th>
+                <th className="py-4 px-4 font-bold">{t('table.source')}</th>
+                <th className="py-4 px-4 font-bold">{t('table.date')}</th>
+                <th className="py-4 px-5 font-bold text-right">{t('table.status')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#171717]/10">

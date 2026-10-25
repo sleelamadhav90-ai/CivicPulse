@@ -635,10 +635,10 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-[#171717]/10 pb-6">
           <div className="space-y-2 max-w-3xl">
             <div className="flex items-center gap-2">
-              <span className="px-2.5 py-0.5 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-[10px] font-mono font-bold tracking-wider uppercase rounded-xs">
+              <span className="px-2.5 py-1 bg-[#FAF8F5] text-[#D65A3A] border border-[#D65A3A]/30 text-xs font-semibold rounded-sm">
                 {t('investment.page_label') || 'Government Investment'}
               </span>
-              <span className="text-xs font-mono text-[#171717]/60 uppercase tracking-wider">
+              <span className="text-xs font-medium text-[#171717]/60">
                 {t('workflow.step_4')}
               </span>
             </div>
@@ -655,10 +655,10 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
               <button
                 id="btn-navigate-priority-engine"
                 onClick={onNavigateToEngine}
-                className="w-full sm:w-auto px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-xs font-mono font-bold uppercase transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer rounded-xs"
+                className="w-full sm:w-auto px-4 py-2.5 bg-[#D65A3A] hover:bg-[#c24a2c] text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer rounded-sm"
               >
                 <Sparkles className="w-4 h-4" />
-                <span>Prioritize Interventions</span>
+                <span>Prioritize interventions</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -668,15 +668,15 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
         {/* Narrative Context Banner */}
         <div className="bg-[#FAF8F5] border border-[#171717]/15 p-4 rounded-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
           <div className="space-y-0.5">
-            <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-[#D65A3A] block">
-              Why Investment Audits Matter
+            <span className="text-[11px] font-bold text-[#D65A3A] block">
+              Investment audit context
             </span>
             <p className="text-[#34322D] leading-relaxed">
               <strong className="text-[#171717]">HIGH NEED + LOW INVESTMENT = FUNDING DEFICIT.</strong>{' '}
               High Need + High Incomplete Investment = Execution Bottleneck. Comparing expenditure records with ground reality ensures that civic leaders can direct capital where it resolves verified community distress.
             </p>
           </div>
-          <span className="text-[11px] font-mono px-2.5 py-1 bg-white border border-[#171717]/15 rounded-xs shrink-0 text-[#171717] font-semibold">
+          <span className="text-[11px] px-2.5 py-1 bg-white border border-[#171717]/15 rounded-sm shrink-0 text-[#171717] font-semibold">
             {totalProjects} Tracked Projects
           </span>
         </div>
@@ -685,7 +685,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
         <div id="investment-filter-controls" className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-1">
           {/* State Filter */}
           <div className="space-y-1">
-            <label htmlFor="filter-select-state" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+            <label htmlFor="filter-select-state" className="text-[11px] font-bold text-[#171717]/70 block">
               {t('investment.filter_state')}
             </label>
             <select
@@ -708,7 +708,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
 
           {/* District Filter */}
           <div className="space-y-1">
-            <label htmlFor="filter-select-district" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+            <label htmlFor="filter-select-district" className="text-[11px] font-bold text-[#171717]/70 block">
               {t('investment.filter_district')}
             </label>
             <select
@@ -728,7 +728,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
 
           {/* Sector Filter */}
           <div className="space-y-1">
-            <label htmlFor="filter-select-sector" className="text-[11px] font-mono font-bold uppercase text-[#171717]/70 block">
+            <label htmlFor="filter-select-sector" className="text-[11px] font-bold text-[#171717]/70 block">
               {t('investment.filter_sector')}
             </label>
             <select
@@ -751,7 +751,7 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
       {/* 2. INVESTMENT SNAPSHOT (HERO METRICS) */}
       <div id="investment-snapshot-section" className="bg-[#FFFFFF] border border-[#171717]/15 p-6 space-y-4">
         <div className="border-b border-[#171717]/10 pb-2">
-          <span className="text-[10px] font-mono font-bold tracking-widest uppercase text-[#D65A3A] block">
+          <span className="text-[10px] font-bold text-[#D65A3A] block">
             EXECUTIVE AUDIT SUMMARY
           </span>
           <h2 className="text-lg font-serif font-bold text-[#171717]">
@@ -761,11 +761,11 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
           {/* Total Investment */}
-          <div id="metric-total-investment" className="bg-[#F7F5EF] p-4 border border-[#171717]/15 space-y-1">
-            <span className="text-[10px] text-[#171717]/70 uppercase tracking-wider block font-bold">
+          <div id="metric-total-investment" className="bg-[#F7F5EF] p-5 border border-[#171717]/15 space-y-2">
+            <span className="text-[11px] text-[#171717]/70 block font-bold">
               {t('investment.total_investment')}
             </span>
-            <div className="text-2xl lg:text-3xl font-bold text-[#171717] tracking-tight">
+            <div className="text-3xl font-bold text-[#171717] tracking-tight">
               {formatCr(totalAllocated)}
             </div>
             <p className="text-[11px] text-[#171717]/70 leading-normal">
@@ -838,12 +838,12 @@ export const InvestmentIntelligence: React.FC<InvestmentIntelligenceProps> = ({
           <div className="lg:col-span-7 bg-[#121417] border border-[#171717]/20 relative h-[420px] sm:h-[480px] flex flex-col overflow-hidden shadow-inner">
             
             {/* Top-Left Geographic Breadcrumb */}
-            <div className="absolute top-3 left-3 z-10 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-3 py-1.5 shadow-md flex items-center gap-2 font-mono text-[10px] text-white">
+            <div className="absolute top-3 left-3 z-10 bg-[#171717]/90 backdrop-blur-md border border-white/20 px-3 py-2 shadow-md flex items-center gap-2 text-[10px] text-white">
               <span className="text-xs">🇮🇳</span>
-              <span className="font-bold tracking-wider uppercase">INDIA</span>
+              <span className="font-bold">India</span>
               <span className="text-white/40">/</span>
-              <span className="font-semibold text-[#D65A3A] uppercase">
-                {selectedState !== 'ALL' ? selectedState : 'NATIONAL GIS'}
+              <span className="font-semibold text-[#D65A3A]">
+                {selectedState !== 'ALL' ? selectedState : 'National GIS'}
               </span>
               {selectedDistrictData && (
                 <>

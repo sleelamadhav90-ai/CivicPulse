@@ -110,39 +110,39 @@ export const GovernmentBriefing: React.FC<GovernmentBriefingProps> = ({
               CP
             </span>
             <div>
-              <span className="font-serif text-2xl font-bold tracking-tight uppercase block leading-none">
-                CIVICPULSE
+              <span className="font-serif text-2xl font-bold tracking-tight block leading-none">
+                CivicPulse
               </span>
-              <span className="font-mono text-xs uppercase tracking-widest text-[#171717]/70 block mt-1">
-                POLICY INTELLIGENCE BRIEFING
+              <span className="text-xs font-semibold text-[#171717]/70 block mt-1">
+                Executive policy briefing
               </span>
             </div>
           </div>
 
-          <div className="flex items-center space-x-3 font-mono text-xs bg-white border border-[#171717] px-3 py-1.5 shadow-[2px_2px_0px_#171717]">
+          <div className="flex items-center space-x-3 text-xs bg-white border border-[#171717] px-3 py-1.5 shadow-[2px_2px_0px_#171717]">
             <span>{countryConfig.flag}</span>
-            <span className="font-bold">{countryConfig.name.toUpperCase()}</span>
+            <span className="font-bold">{countryConfig.name}</span>
             <span className="text-[#171717]/40">•</span>
-            <span className="text-[#D65A3A] font-bold">{currentDateFormatted.toUpperCase()}</span>
+            <span className="text-[#D65A3A] font-bold">{currentDateFormatted}</span>
           </div>
         </div>
 
         <div className="pt-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="font-serif text-3xl font-bold text-[#171717]">
-              TODAY'S BRIEFING
+              Today's briefing
             </h1>
-            <p className="text-sm text-[#171717]/80 font-mono mt-1">
-              {briefingItems.length} priority intervention areas require immediate executive attention.
+            <p className="text-sm text-[#171717]/80 mt-1">
+              {briefingItems.length} priority intervention areas require executive attention.
             </p>
           </div>
 
           <button
             onClick={onNavigateToMap}
-            className="px-4 py-2 bg-[#171717] text-[#F7F5EF] font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#D65A3A] transition-colors flex items-center gap-2 cursor-pointer shadow-[2px_2px_0px_#D65A3A]"
+            className="px-4 py-2.5 bg-[#171717] text-[#F7F5EF] text-xs font-bold transition-colors flex items-center gap-2 cursor-pointer shadow-[2px_2px_0px_#D65A3A]"
           >
             <MapPin className="w-4 h-4" />
-            <span>Open Interactive Policy Map →</span>
+            <span>Interactive policy map →</span>
           </button>
         </div>
       </div>
@@ -156,22 +156,22 @@ export const GovernmentBriefing: React.FC<GovernmentBriefingProps> = ({
           >
             <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#171717]/10 pb-3">
               <div className="flex items-center space-x-3">
-                <span className="font-mono font-bold text-lg text-[#D65A3A] bg-[#D65A3A]/10 px-2 py-0.5 border border-[#D65A3A]/30">
+                <span className="font-bold text-lg text-[#D65A3A] bg-[#D65A3A]/10 px-2 py-0.5 border border-[#D65A3A]/30">
                   0{index + 1}
                 </span>
                 <div>
-                  <h2 className="font-serif text-xl font-bold uppercase text-[#171717] leading-none">
-                    {item.category} ACCESS
+                  <h2 className="font-serif text-xl font-bold text-[#171717] leading-none">
+                    {item.category} access
                   </h2>
-                  <span className="font-mono text-xs text-[#171717]/70 font-semibold block mt-1">
+                  <span className="text-xs text-[#171717]/70 font-semibold block mt-1">
                     📍 {item.districtName} District
                   </span>
                 </div>
               </div>
 
               <div className="flex items-center space-x-3">
-                <div className="text-right font-mono">
-                  <span className="text-[10px] text-[#171717]/60 block uppercase font-bold">
+                <div className="text-right">
+                  <span className="text-[10px] text-[#171717]/60 block font-bold">
                     PRIORITY SCORE
                   </span>
                   <span className="text-2xl font-serif font-extrabold text-[#D65A3A]">
@@ -181,7 +181,7 @@ export const GovernmentBriefing: React.FC<GovernmentBriefingProps> = ({
 
                 <button
                   onClick={() => onInvestigateDistrict(item.districtId, item.category)}
-                  className="px-4 py-2.5 bg-[#D65A3A] text-white font-mono text-xs font-bold uppercase tracking-wider hover:bg-[#171717] transition-all flex items-center gap-2 cursor-pointer border border-[#171717] shadow-[2px_2px_0px_#171717]"
+                  className="px-4 py-2.5 bg-[#D65A3A] text-white text-xs font-bold transition-all flex items-center gap-2 cursor-pointer border border-[#171717] shadow-[2px_2px_0px_#171717]"
                 >
                   <span>Investigate</span>
                   <ArrowRight className="w-4 h-4" />
@@ -192,8 +192,8 @@ export const GovernmentBriefing: React.FC<GovernmentBriefingProps> = ({
             {/* Briefing Content */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
               <div className="md:col-span-2 space-y-2">
-                <div className="text-xs font-mono font-bold uppercase text-[#171717]/60 tracking-wider">
-                  BRIEFING EXECUTIVE SUMMARY
+                <div className="text-xs font-bold text-[#171717]/60">
+                  Executive summary
                 </div>
                 <p className="text-base text-[#171717] font-sans leading-relaxed font-medium">
                   {item.insight}
