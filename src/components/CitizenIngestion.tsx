@@ -43,6 +43,7 @@ import {
   Landmark,
   ClipboardList,
   Copy,
+  LogIn,
   type LucideIcon
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
