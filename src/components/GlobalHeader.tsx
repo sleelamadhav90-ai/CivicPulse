@@ -253,8 +253,8 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                   aria-expanded={accountMenuOpen}
                 >
                   <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
-                  <span className="text-[10px] font-sans font-medium text-[#E8E6DF] max-w-[48px] sm:max-w-[70px] truncate">
-                    {user.displayName ? user.displayName.split(' ')[0] : 'Citizen'}
+                  <span className="text-[10px] font-sans font-medium text-[#E8E6DF] max-w-[80px] sm:max-w-[120px] truncate">
+                    {user.email ? user.email.split('@')[0] : (user.displayName ? user.displayName.split(' ')[0] : 'Citizen')}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5 text-slate-400 shrink-0" />
                 </button>
@@ -282,12 +282,10 @@ export const GlobalHeader: React.FC<GlobalHeaderProps> = ({
                     </div>
 
                     <div className="space-y-1.5 mb-3 text-[11px] min-w-0">
-                      {user.displayName && (
-                        <div className="font-semibold text-white break-words overflow-hidden line-clamp-2 leading-snug">
-                          {user.displayName}
-                        </div>
-                      )}
-                      {user.email && (
+                      <div className="font-semibold text-white break-words overflow-hidden line-clamp-2 leading-snug">
+                        {user.displayName || user.email || 'Authenticated Citizen'}
+                      </div>
+                      {user.email && user.displayName && (
                         <div 
                           className="text-[10px] text-slate-300 font-mono break-all leading-tight text-slate-300/90"
                           title={user.email}
