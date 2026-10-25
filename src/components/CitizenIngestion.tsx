@@ -42,6 +42,7 @@ import {
   Trees,
   Landmark,
   ClipboardList,
+  Copy,
   type LucideIcon
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown } from '../types';
@@ -120,6 +121,7 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     severity: number;
     scoreBreakdown?: ScoreBreakdown;
   } | null>(null);
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'copied'>('idle');
 
   // Multilingual Assistant State
   const [selectedLanguage, setSelectedLanguage] = useState<string>('Telugu');
@@ -1224,95 +1226,110 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
 
           {/* STEP 5: SUBMISSION CONFIRMATION RECEIPT */}
           {step === 5 && submissionReceipt && (
-            <div className="space-y-6">
-              <div className="bg-white border-2 border-[#171717] p-8 shadow-[6px_6px_0px_#285943] text-center space-y-6">
-                <div className="w-16 h-16 bg-emerald-100 text-emerald-800 border-2 border-emerald-600 rounded-full flex items-center justify-center mx-auto">
+                        <div className="space-y-6">
+              <div className="bg-white border border-slate-200 p-8 shadow-sm text-center space-y-6 rounded-2xl">
+                <div className="w-16 h-16 bg-emerald-50 text-emerald-600 border border-emerald-100 rounded-full flex items-center justify-center mx-auto">
                   <CheckCircle2 className="w-10 h-10" />
                 </div>
 
                 <div className="space-y-2">
-                  <span className="px-3 py-1 bg-[#285943] text-white font-mono text-xs font-bold uppercase tracking-widest">
-                    OFFICIAL SUBMISSION RECEIPT
+                  <span className="px-3 py-1 bg-emerald-600 text-white font-sans text-[10px] font-bold uppercase tracking-widest rounded-full">
+                    Official Receipt
                   </span>
-                  <h2 className="text-3xl font-serif font-bold text-[#171717]">
+                  <h2 className="text-3xl font-sans font-bold text-slate-900">
                     Request Submitted Successfully
                   </h2>
-                  <p className="text-xs text-[#171717]/70">
+                  <p className="text-sm text-slate-500">
                     Your civic request has been logged on the Digital Public Infrastructure registry.
                   </p>
                 </div>
 
-                <div className="p-4 bg-[#F7F5EF] border border-[#171717] max-w-md mx-auto space-y-2 font-mono text-left text-xs">
-                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
-                    <span className="text-slate-500">Tracking Code:</span>
-                    <span className="font-bold text-[#D65A3A]">{submissionReceipt.id}</span>
+                <div className="p-6 bg-slate-50 border border-slate-100 rounded-xl max-w-md mx-auto space-y-3 font-sans text-left text-sm">
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="font-sans text-slate-500 font-medium">Tracking Code:</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-bold text-[#D65A3A]">{submissionReceipt.id}</span>
+                      <button onClick={() => {
+                        navigator.clipboard.writeText(submissionReceipt.id).then(() => {
+                          setCopyStatus('copied');
+                          setTimeout(() => setCopyStatus('idle'), 2000);
+                        });
+                      }} title="Copy tracking code">
+                        <Copy className="w-4 h-4 text-slate-400 hover:text-slate-900" />
+                      </button>
+                      {copyStatus === 'copied' && <span className="text-[10px] text-emerald-600 font-bold">Copied!</span>}
+                    </div>
                   </div>
-                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
-                    <span className="text-slate-500">Service Category:</span>
-                    <span className="font-bold">{submissionReceipt.category}</span>
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="font-sans text-slate-500 font-medium">Service Category:</span>
+                    <span className="font-sans text-slate-900 font-medium">{submissionReceipt.category}</span>
                   </div>
-                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
-                    <span className="text-slate-500">Location:</span>
-                    <span className="font-bold">{submissionReceipt.location}</span>
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="font-sans text-slate-500 font-medium">Location:</span>
+                    <span className="font-sans text-slate-900 font-medium">{submissionReceipt.location}</span>
                   </div>
-                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
-                    <span className="text-slate-500">Priority Score:</span>
-                    <span className="font-bold text-[#D65A3A]">
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="font-sans text-slate-500 font-medium">Priority Score:</span>
+                    <span className="font-sans text-[#D65A3A] font-semibold">
                       {submissionReceipt.priorityScore} / 100 ({submissionReceipt.priorityTier} Priority)
                     </span>
                   </div>
-                  <div className="flex justify-between border-b border-[#171717]/20 pb-1">
-                    <span className="text-slate-500">Hazard Severity:</span>
-                    <span className="font-bold">{submissionReceipt.severity} / 10</span>
+                  <div className="flex justify-between border-b border-slate-200 pb-2">
+                    <span className="font-sans text-slate-500 font-medium">Hazard Severity:</span>
+                    <span className="font-sans text-slate-900 font-medium">{submissionReceipt.severity} / 10</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-500">Status:</span>
-                    <span className="font-bold text-emerald-700">Submitted to District Collector</span>
+                    <span className="font-sans text-slate-500 font-medium">Status:</span>
+                    <span className="font-sans text-emerald-700 font-semibold">Submitted</span>
                   </div>
                 </div>
 
-                {/* Status Timeline */}
+                {/* Status Pipeline */}
                 <div className="pt-2">
-                  <span className="text-[10px] font-mono font-bold text-slate-500 uppercase block mb-2">
-                    Request Progress Pipeline
+                  <span className="text-[10px] font-sans font-bold text-slate-500 uppercase block mb-3">
+                    Request Progress
                   </span>
-                  <div className="grid grid-cols-5 text-[10px] font-mono text-center font-bold gap-1 mb-2">
-                    <span className="text-emerald-700">Submitted ✓</span>
-                    <span className="text-blue-700 animate-pulse">Under Review</span>
-                    <span className="text-slate-400 font-normal">Prioritized</span>
-                    <span className="text-slate-400 font-normal">Action Initiated</span>
-                    <span className="text-slate-400 font-normal">Resolved</span>
+                  <div className="grid grid-cols-5 text-[10px] font-sans font-semibold text-slate-500 text-center gap-1 mb-2">
+                    <span className="text-emerald-700">Submitted</span>
+                    <span className="text-slate-900 animate-pulse">Under Review</span>
+                    <span className="text-slate-400">Prioritized</span>
+                    <span className="text-slate-400">Action Initiated</span>
+                    <span className="text-slate-400">Resolved</span>
                   </div>
-                  <div className="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden flex border border-[#171717]/20">
-                    <div className="bg-emerald-600 h-full w-[20%]"></div>
-                    <div className="bg-blue-600 h-full w-[20%] animate-pulse"></div>
-                    <div className="bg-slate-200 h-full w-[60%]"></div>
+                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden flex">
+                    <div className="bg-emerald-500 h-full w-[20%]"></div>
+                    <div className="bg-slate-900 h-full w-[20%] animate-pulse"></div>
+                    <div className="bg-slate-100 h-full w-[60%]"></div>
                   </div>
                 </div>
 
-                <div className="pt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+                <div className="pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
                   {onNavigateToSignals && (
                     <button
                       type="button"
                       onClick={() => onNavigateToSignals(submissionReceipt.id)}
-                      className="w-full sm:w-auto px-7 py-3.5 bg-[#D65A3A] hover:bg-[#c24e2f] text-white font-bold text-xs uppercase tracking-wider border-2 border-[#171717] shadow-[3px_3px_0px_#171717] hover:shadow-[1px_1px_0px_#171717] hover:translate-x-[2px] hover:translate-y-[2px] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      className="w-full sm:w-auto bg-orange-600 hover:bg-orange-700 text-white font-semibold rounded-xl px-5 py-3 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <span>View Citizen Signals</span>
-                      <ArrowRight className="w-4 h-4 text-white" />
+                      <ArrowRight className="w-4 h-4" />
                     </button>
                   )}
                   <button
                     type="button"
                     onClick={handleResetForm}
-                    className="w-full sm:w-auto px-6 py-3.5 bg-[#171717] hover:bg-[#333333] text-white font-bold text-xs uppercase tracking-wider border-2 border-[#171717] shadow-[2px_2px_0px_#171717] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full sm:w-auto bg-slate-900 hover:bg-slate-800 text-white font-semibold rounded-xl px-5 py-3 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <RotateCcw className="w-4 h-4" />
                     <span>Submit Another Request</span>
                   </button>
                   <button
                     type="button"
-                    onClick={onNavigateToHotspots}
-                    className="w-full sm:w-auto px-5 py-3.5 bg-white hover:bg-slate-50 text-[#171717] font-bold text-xs uppercase tracking-wider border-2 border-[#171717] shadow-[2px_2px_0px_#171717] transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    onClick={() => {
+                        const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(submissionReceipt.location)}`;
+                        window.open(mapsUrl, '_blank', 'noopener,noreferrer');
+                        if (onNavigateToHotspots) onNavigateToHotspots();
+                    }}
+                    className="w-full sm:w-auto border border-slate-300 hover:border-slate-400 bg-white text-slate-800 font-semibold rounded-xl px-5 py-3 shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                   >
                     <MapPin className="w-4 h-4 text-[#D65A3A]" />
                     <span>View Locality Map</span>

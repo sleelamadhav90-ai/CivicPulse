@@ -45,7 +45,7 @@ interface DemographicsViewProps {
 function MapFocusController({ center, zoom }: { center: [number, number]; zoom: number }) {
   const map = useMap();
   useEffect(() => {
-    if (center && isValidCoordinate(center[0], center[1])) {
+    if (center && isValidCoordinate(center[0], center[1]) && typeof zoom === 'number' && !isNaN(zoom)) {
       map.flyTo(center, zoom, { duration: 0.9 });
     }
   }, [center, zoom, map]);

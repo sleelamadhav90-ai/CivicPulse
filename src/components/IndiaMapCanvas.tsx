@@ -3,7 +3,7 @@ import { MapContainer, TileLayer, Marker, Circle, Tooltip, Popup, useMap, ZoomCo
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { 
-  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Info, Flame, Eye, ExternalLink, ShieldAlert
+  Building2, Stethoscope, GraduationCap, Bus, Wifi, Users, Activity, Flame, Eye, ExternalLink, ShieldAlert, Info
 } from 'lucide-react';
 import { District, CitizenRequest, InfrastructureCategory, ScoreBreakdown, CountryCode } from '../types';
 import { CityDemandHotspot } from '../utils/demandAggregation';
@@ -19,7 +19,8 @@ import {
   REFERENCE_PLACES_TILE_URL,
   REFERENCE_PLACES_ATTRIBUTION,
   INDIA_STATES_GEOJSON_PATH,
-  getIndiaStateBoundaryStyle
+  getIndiaStateBoundaryStyle,
+  isValidCoordinate
 } from '../utils/mapStandards';
 
 export interface EvaluatedDistrict {
@@ -71,9 +72,6 @@ interface IndiaMapCanvasProps {
   onOpenEvidenceModal?: (district: District, category: string, hotspot: CityDemandHotspot) => void;
 }
 
-const isValidCoord = (lat?: number, lon?: number): boolean => {
-  return typeof lat === 'number' && typeof lon === 'number' && !isNaN(lat) && !isNaN(lon) && isFinite(lat) && isFinite(lon);
-};
 
 export const getReportEvidence = (district: District, category: string, hotspot: CityDemandHotspot): ReportEvidence => {
   const reports: Record<string, {
@@ -149,7 +147,7 @@ export const getReportEvidence = (district: District, category: string, hotspot:
   };
 
   const defaultEvidence = reports[category] || reports.Water;
-  const safeLatVal = isValidCoord(district.lat, district.lon) ? district.lat : 16.5;
+  const safeLatVal = isValidCoordinate(district.lat, district.lon) ? district.lat : 16.5;
   const code = (district.name || 'IND').substring(0, 3).toUpperCase();
   const idNum = Math.floor(1000 + (Math.abs(safeLatVal) * 137) % 8999);
 
@@ -164,7 +162,7 @@ export const getReportEvidence = (district: District, category: string, hotspot:
 const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ center, zoom }) => {
   const map = useMap();
   useEffect(() => {
-    if (isValidCoord(center[0], center[1])) {
+    if (isValidCoordinate(center[0], center[1]) && typeof zoom === 'number' && !isNaN(zoom)) {
       map.flyTo(center, zoom, { duration: 1.2, easeLinearity: 0.25 });
     }
   }, [center, zoom, map]);
@@ -206,7 +204,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
   // Filter evaluations to only those with valid numeric coordinates
   const validEvaluations = useMemo(() => {
-    return evaluations.filter(e => e.district && isValidCoord(e.district.lat, e.district.lon));
+    return evaluations.filter(e => e.district && isValidCoordinate(e.district.lat, e.district.lon));
   }, [evaluations]);
 
   // CRITICAL REALISM FILTER:
@@ -228,14 +226,14 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
   // Calculate map center based on active district, first displayed evaluation, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
-    if (activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon)) {
+    if (activeEvaluation && isValidCoordinate(activeEvaluation.district.lat, activeEvaluation.district.lon)) {
       return [activeEvaluation.district.lat, activeEvaluation.district.lon];
     }
     const firstEval = displayedEvaluations[0];
-    if (firstEval && isValidCoord(firstEval.district.lat, firstEval.district.lon)) {
+    if (firstEval && isValidCoordinate(firstEval.district.lat, firstEval.district.lon)) {
       return [firstEval.district.lat, firstEval.district.lon];
     }
-    if (countryConfig?.coordinates && isValidCoord(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
+    if (countryConfig?.coordinates && isValidCoordinate(countryConfig.coordinates.lat, countryConfig.coordinates.lng)) {
       return [countryConfig.coordinates.lat, countryConfig.coordinates.lng];
     }
     return INDIA_MAP_CENTER;
@@ -402,7 +400,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
         )}
 
         {/* SUBTLE FOCUS RING ON SELECTED DISTRICT ONLY — NO HUGE OVERLAPPING CIRCLES */}
-        {activeEvaluation && isValidCoord(activeEvaluation.district.lat, activeEvaluation.district.lon) && (
+        {activeEvaluation && isValidCoordinate(activeEvaluation.district.lat, activeEvaluation.district.lon) && (
           <Circle
             center={[activeEvaluation.district.lat, activeEvaluation.district.lon]}
             radius={11000}
@@ -443,7 +441,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* CIVICPULSE CITIZEN DEMAND HOTSPOT PINS */}
         {layers.citizen_demand && displayedEvaluations.map((item) => {
-          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
           const isSelected = item.district.id === activeDistrictId;
           const evidence = getReportEvidence(item.district, item.category, item.demandHotspot);
           const score = item.breakdown.total_score;
@@ -540,7 +538,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* HEALTHCARE CLINICS LAYER */}
         {layers.healthcare && displayedEvaluations.map((item) => {
-          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
           return (
             <Marker
               key={`hc-${item.district.id}`}
@@ -556,7 +554,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* EDUCATION INSTITUTIONS LAYER */}
         {layers.education && displayedEvaluations.map((item) => {
-          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
           return (
             <Marker
               key={`edu-${item.district.id}`}
@@ -572,7 +570,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* GOVERNMENT SANCTIONED PROJECTS LAYER */}
         {layers.projects && displayedEvaluations.map((item) => {
-          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
           return (
             <Marker
               key={`proj-${item.district.id}`}
@@ -588,7 +586,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
         {/* DIGITAL CONNECTIVITY TOWERS LAYER */}
         {layers.digital && displayedEvaluations.map((item) => {
-          if (!item.district || !isValidCoord(item.district.lat, item.district.lon)) return null;
+          if (!item.district || !isValidCoordinate(item.district.lat, item.district.lon)) return null;
           return (
             <Marker
               key={`dig-${item.district.id}`}
