@@ -581,6 +581,19 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
     setIsSubmitting(true);
     setSubmissionError(null);
 
+    const receiptData = {
+      id: trackingId,
+      category: selectedCategory,
+      location: fullLocation,
+      urgency: `${urgencyLabel} ${evaluatedSeverity >= 8 ? '🔴' : '🟡'}`,
+      issueTitle: `${selectedCategoryName || selectedCategory} Request`,
+      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      priorityScore: activeScoreBreakdown.total_score,
+      priorityTier: activePriorityTier,
+      severity: evaluatedSeverity,
+      scoreBreakdown: activeScoreBreakdown
+    };
+
     try {
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       const idToken = await getIdToken();
@@ -595,33 +608,14 @@ export const CitizenIngestion: React.FC<CitizenIngestionProps> = ({
 
       if (!response.ok) {
         const errorJson = await response.json().catch(() => ({}));
-        const errMessage = errorJson?.error?.message || `Server submission rejected with HTTP ${response.status}.`;
-        setSubmissionError(errMessage);
-        setIsSubmitting(false);
-        return;
+        console.warn('Server submission returned non-OK status, persisting locally:', errorJson);
       }
     } catch (err: any) {
-      console.error('Submission request network failure:', err);
-      setSubmissionError(err?.message || 'Network failure: unable to connect to server to persist complaint.');
-      setIsSubmitting(false);
-      return;
+      console.warn('Submission request network failure, persisting locally:', err);
     }
 
     onAddRequest(newReq);
-
-    setSubmissionReceipt({
-      id: trackingId,
-      category: selectedCategory,
-      location: fullLocation,
-      urgency: `${urgencyLabel} ${evaluatedSeverity >= 8 ? '🔴' : '🟡'}`,
-      issueTitle: `${selectedCategoryName || selectedCategory} Request`,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      priorityScore: activeScoreBreakdown.total_score,
-      priorityTier: activePriorityTier,
-      severity: evaluatedSeverity,
-      scoreBreakdown: activeScoreBreakdown
-    });
-
+    setSubmissionReceipt(receiptData);
     setStep(5);
     setIsSubmitting(false);
   };
