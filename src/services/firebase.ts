@@ -121,5 +121,8 @@ export function onAuthChange(callback: (user: User | null) => void): () => void 
     callback(null);
     return () => {};
   }
-  return onAuthStateChanged(auth, callback);
+  return onAuthStateChanged(auth, callback, (error) => {
+    console.error('[CivicPulse Auth] onAuthStateChanged error:', error);
+    callback(null);
+  });
 }

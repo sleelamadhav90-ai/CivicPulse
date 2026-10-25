@@ -43,44 +43,54 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     let isMounted = true;
-    let authListenerFired = false;
-    let redirectCheckComplete = false;
+    let timeoutId: any = null;
 
-    // Conclude loading only after both Firebase initialization signals are received
-    const finalizeInit = () => {
-      if (isMounted && authListenerFired && redirectCheckComplete) {
+    const complete = () => {
+      if (isMounted) {
         setLoading(false);
-        console.log('[CivicPulse Auth] Initialization complete.');
+        if (timeoutId) clearTimeout(timeoutId);
       }
     };
 
+    // Robust listener for any auth state changes (sign-in, sign-out, session restore)
     const unsubscribe = onAuthChange((firebaseUser) => {
       if (!isMounted) return;
-      console.log('[CivicPulse Auth] State detected:', firebaseUser?.email || 'Anonymous');
+      console.log('[CivicPulse Auth] Listener detected state:', firebaseUser?.email || 'Anonymous');
       setUser(firebaseUser);
-      authListenerFired = true;
-      finalizeInit();
+      complete();
     });
 
     // Check for redirect result (standard Firebase initialization step)
+    // We run this in parallel with the listener; either one finishing is enough to show the UI
     void (async () => {
       try {
-        await processGoogleRedirect();
+        const result = await processGoogleRedirect();
+        if (result && isMounted) {
+          console.log('[CivicPulse Auth] Redirect user detected:', result.email);
+          setUser(result);
+        }
       } catch (err: any) {
-        if (isMounted) {
-          console.error('[CivicPulse Auth] Redirect processing failed:', err);
+        if (isMounted && err?.code !== 'auth/popup-closed-by-user') {
+          console.error('[CivicPulse Auth] Redirect error:', err);
           setError(err?.message || 'Authentication redirect failed');
         }
       } finally {
-        if (isMounted) {
-          redirectCheckComplete = true;
-          finalizeInit();
-        }
+        complete();
       }
     })();
 
+    // Safety timeout: Never leave the user on "Checking..." for more than 4.5 seconds.
+    // If Firebase is blocked or slow, we proceed in an unauthenticated/anonymous state.
+    timeoutId = setTimeout(() => {
+      if (isMounted) {
+        console.warn('[CivicPulse Auth] Initialization exceeded threshold. Forcing ready state.');
+        setLoading(false);
+      }
+    }, 4500);
+
     return () => {
       isMounted = false;
+      if (timeoutId) clearTimeout(timeoutId);
       unsubscribe();
     };
   }, []);

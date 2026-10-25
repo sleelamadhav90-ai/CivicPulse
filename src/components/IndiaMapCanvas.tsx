@@ -191,6 +191,27 @@ const MapController: React.FC<{ center: [number, number]; zoom: number }> = ({ c
   return null;
 };
 
+// Component to handle fitting bounds when a state is selected
+const StateFocuser: React.FC<{ activeState?: string; geoJsonData: any }> = ({ activeState, geoJsonData }) => {
+  const map = useMap();
+  useEffect(() => {
+    if (!geoJsonData || !activeState || activeState === 'ALL') return;
+
+    const stateFeature = geoJsonData.features.find((f: any) => {
+      const name = f?.properties?.NAME_1 || f?.properties?.st_nm || '';
+      return name.toLowerCase().includes(activeState.toLowerCase());
+    });
+
+    if (stateFeature) {
+      const bounds = L.geoJSON(stateFeature).getBounds();
+      if (bounds.isValid()) {
+        map.flyToBounds(bounds, { padding: [40, 40], duration: 1.5 });
+      }
+    }
+  }, [activeState, geoJsonData, map]);
+  return null;
+};
+
 export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   evaluations,
   activeDistrictId,
@@ -245,10 +266,10 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
 
   const activeEvaluation = useMemo(() => {
     if (!activeDistrictId) return null;
-    return displayedEvaluations.find(e => e.district.id === activeDistrictId) || 
-           validEvaluations.find(e => e.district.id === activeDistrictId) || 
-           null;
-  }, [displayedEvaluations, validEvaluations, activeDistrictId]);
+    // We check validEvaluations (the unfiltered list) to ensure we find the active district
+    // even if it's currently hidden by a category filter.
+    return validEvaluations.find(e => e.district.id === activeDistrictId) || null;
+  }, [validEvaluations, activeDistrictId]);
 
   // Calculate map center based on focused coordinate, active district, or country center coordinates
   const mapCenter = useMemo<[number, number]>(() => {
@@ -265,15 +286,18 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
   }, [focusedCoordinate, activeEvaluation, countryConfig]);
 
   const defaultZoom = countryConfig?.coordinates?.zoom || INDIA_MAP_DEFAULT_ZOOM;
+  
+  // Calculate target zoom based on state or district selection
   const targetZoom = useMemo(() => {
     if (focusedCoordinate && isValidCoordinate(focusedCoordinate[0], focusedCoordinate[1])) {
       return 11;
     }
-    if (activeDistrictId) {
+    if (activeEvaluation) {
+      // If we have an active district, zoom in to show context
       return 8;
     }
     return defaultZoom;
-  }, [focusedCoordinate, activeDistrictId, defaultZoom]);
+  }, [focusedCoordinate, activeEvaluation, defaultZoom]);
 
   const stateStyle = useMemo(() => {
     return getIndiaStateBoundaryStyle(activeEvaluation?.district?.state);
@@ -340,7 +364,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
           <>
             <span className="text-white/30 shrink-0">/</span>
             <span className="font-semibold text-orange-400 truncate">
-              India overview
+              India Overview
             </span>
           </>
         )}
@@ -439,6 +463,7 @@ export const IndiaMapCanvas: React.FC<IndiaMapCanvasProps> = ({
       >
         <ZoomControl position="bottomright" />
         <MapController center={mapCenter} zoom={targetZoom} />
+        <StateFocuser activeState={activeEvaluation?.district?.state} geoJsonData={geoJsonData} />
         
         {/* BASE SATELLITE TILE LAYERS: WORLD IMAGERY & PLACE LABELS */}
         <TileLayer

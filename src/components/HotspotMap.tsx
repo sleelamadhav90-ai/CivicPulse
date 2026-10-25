@@ -363,10 +363,10 @@ export const HotspotMap: React.FC<HotspotMapProps> = ({
         <div className="flex flex-wrap items-center gap-2 sm:gap-3 min-w-0 flex-1 py-0.5">
           <div className="flex items-center gap-2 shrink-0">
             <span className="px-2.5 py-1 bg-slate-100 text-slate-600 border border-slate-200 text-[10px] font-bold tracking-tight rounded">
-              {t('map.page_label') || 'Civic Map'}
+              {t('map.page_label') || 'India Overview'}
             </span>
             <span className="font-bold text-sm sm:text-base tracking-tight text-slate-900 whitespace-nowrap hidden xs:inline">
-              {t('map.question_title') || 'Where is the need concentrated?'}
+              {t('map.question_title') || 'Where is development needed?'}
             </span>
           </div>
 
