@@ -3,6 +3,8 @@ import {
   getAuth, 
   signInWithPopup,
   signInWithRedirect,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   GoogleAuthProvider, 
   signOut, 
   onAuthStateChanged,
@@ -40,7 +42,7 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Ensure persistence is set immediately
+    // Ensure persistence is set immediately on initialization
     void setPersistence(auth, browserLocalPersistence);
   } catch (err) {
     console.warn('[CivicPulse Firebase] Initialization notice:', err);
@@ -50,9 +52,33 @@ if (isFirebaseConfigured) {
 export { auth };
 
 /**
- * Sign in with Google.
- * Uses Popup by default for smoother UX on Vercel/Desktop.
- * Falls back to Redirect only if explicitly required or if popup is blocked (handled in UI).
+ * Sign in with Email and Password using Firebase Auth.
+ */
+export async function signInWithEmail(email: string, pass: string): Promise<User | null> {
+  if (!auth) {
+    throw new Error('FIREBASE_NOT_CONFIGURED: Missing client credentials.');
+  }
+  console.log('[CivicPulse Auth] Initiating Email Sign-In...');
+  const result = await signInWithEmailAndPassword(auth, email, pass);
+  console.log('[CivicPulse Auth] Email sign-in successful:', result.user.email);
+  return result.user;
+}
+
+/**
+ * Create a new account with Email and Password using Firebase Auth.
+ */
+export async function signUpWithEmail(email: string, pass: string): Promise<User | null> {
+  if (!auth) {
+    throw new Error('FIREBASE_NOT_CONFIGURED: Missing client credentials.');
+  }
+  console.log('[CivicPulse Auth] Initiating Email Sign-Up...');
+  const result = await createUserWithEmailAndPassword(auth, email, pass);
+  console.log('[CivicPulse Auth] Email sign-up successful:', result.user.email);
+  return result.user;
+}
+
+/**
+ * Sign in with Google using Firebase Auth.
  */
 export async function signInWithGoogle(): Promise<User | null> {
   if (!auth) {
@@ -61,7 +87,6 @@ export async function signInWithGoogle(): Promise<User | null> {
 
   console.log('[CivicPulse Auth] Initiating Google Sign-In (Popup)...');
   try {
-    await setPersistence(auth, browserLocalPersistence);
     const result = await signInWithPopup(auth, googleProvider);
     console.log('[CivicPulse Auth] Popup sign-in successful:', result.user.email);
     return result.user;
@@ -69,12 +94,11 @@ export async function signInWithGoogle(): Promise<User | null> {
     const code = err?.code || '';
     console.warn('[CivicPulse Auth] Popup sign-in failed/blocked:', code, err.message);
     
-    // If popup is blocked or closed, or we are in a restrictive environment, fallback to redirect
+    // If popup is blocked or closed, fallback to redirect
     if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
       console.log('[CivicPulse Auth] Falling back to Redirect mode...');
       try {
         await signInWithRedirect(auth, googleProvider);
-        // Execution stops here as the page redirects
         return null;
       } catch (redirectErr: any) {
         console.error('[CivicPulse Auth] Redirect initiation failed:', redirectErr.code, redirectErr.message);

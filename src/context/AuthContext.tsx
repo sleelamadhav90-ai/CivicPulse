@@ -1,19 +1,24 @@
 import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
 import type { User } from 'firebase/auth';
 import {
-  signInWithGoogle as firebaseSignIn,
+  auth,
+  signInWithGoogle as firebaseSignInWithGoogle,
+  signInWithEmail as firebaseSignInWithEmail,
+  signUpWithEmail as firebaseSignUpWithEmail,
   signOutUser as firebaseSignOut,
   getCurrentIdToken,
-  onAuthChange,
   isFirebaseConfigured,
   processGoogleRedirect
 } from '../services/firebase';
+import { onAuthStateChanged } from 'firebase/auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   isFirebaseConfigured: boolean;
   signInWithGoogle: () => Promise<void>;
+  signInWithEmail: (email: string, pass: string) => Promise<void>;
+  signUpWithEmail: (email: string, pass: string) => Promise<void>;
   signOut: () => Promise<void>;
   getIdToken: (forceRefresh?: boolean) => Promise<string | null>;
   error: string | null;
@@ -25,147 +30,140 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   isFirebaseConfigured: false,
   signInWithGoogle: async () => {},
+  signInWithEmail: async () => {},
+  signUpWithEmail: async () => {},
   signOut: async () => {},
   getIdToken: async () => null,
   error: null,
   clearError: () => {},
 });
 
-const LOCAL_STORAGE_AUTH_KEY = 'civicpulse_authenticated_citizen_v1';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-      if (saved) {
-        return JSON.parse(saved) as User;
-      }
-    } catch {}
-    return null;
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Helper to persist user state to localStorage
-  const setAndPersistUser = (newUser: User | null) => {
-    setUser(newUser);
-    try {
-      if (newUser) {
-        const serializableUser = {
-          uid: newUser.uid || 'citizen-google-user',
-          email: newUser.email || 'citizen.verified@civicpulse.gov.in',
-          displayName: newUser.displayName || 'Verified Citizen',
-          photoURL: newUser.photoURL || undefined,
-        };
-        localStorage.setItem(LOCAL_STORAGE_AUTH_KEY, JSON.stringify(serializableUser));
-      } else {
-        localStorage.removeItem(LOCAL_STORAGE_AUTH_KEY);
-      }
-    } catch (e) {
-      console.warn('[CivicPulse Auth] Storage write notice:', e);
-    }
-  };
-
   useEffect(() => {
-    let isMounted = true;
-    let timeoutId: any = null;
-
-    const complete = () => {
-      if (isMounted) {
-        setLoading(false);
-        if (timeoutId) clearTimeout(timeoutId);
-      }
-    };
-
-    if (!isFirebaseConfigured) {
-      complete();
+    if (!isFirebaseConfigured || !auth) {
+      setLoading(false);
       return;
     }
 
-    // Robust listener for any auth state changes (sign-in, sign-out, session restore)
-    const unsubscribe = onAuthChange((firebaseUser) => {
-      if (!isMounted) return;
-      console.log('[CivicPulse Auth] Listener detected state:', firebaseUser?.email || 'None');
-      if (firebaseUser) {
-        setAndPersistUser(firebaseUser);
-      } else {
-        // If Firebase returns null, check if we have an active citizen session in localStorage.
-        // We preserve local citizen session unless explicitly signed out.
-        try {
-          const saved = localStorage.getItem(LOCAL_STORAGE_AUTH_KEY);
-          if (saved) {
-            setUser(JSON.parse(saved) as User);
-          } else {
-            setUser(null);
-          }
-        } catch {
+    let isMounted = true;
+
+    // Use Firebase's authoritative onAuthStateChanged listener as single source of truth
+    const unsubscribe = onAuthStateChanged(
+      auth,
+      (firebaseUser) => {
+        if (!isMounted) return;
+        console.log('[CivicPulse Auth] Authoritative onAuthStateChanged:', firebaseUser?.email || 'Unauthenticated');
+        setUser(firebaseUser);
+        setLoading(false);
+      },
+      (authErr) => {
+        console.error('[CivicPulse Auth] onAuthStateChanged error:', authErr);
+        if (isMounted) {
           setUser(null);
+          setLoading(false);
         }
       }
-      complete();
-    });
+    );
 
-    // Check for redirect result (standard Firebase initialization step)
+    // Handle any pending Google redirect result without overriding the listener
     void (async () => {
       try {
-        const result = await processGoogleRedirect();
-        if (result && isMounted) {
-          console.log('[CivicPulse Auth] Redirect user detected:', result.email);
-          setAndPersistUser(result);
+        const redirectUser = await processGoogleRedirect();
+        if (redirectUser && isMounted) {
+          console.log('[CivicPulse Auth] Processed Google redirect result:', redirectUser.email);
+          setUser(redirectUser);
         }
       } catch (err: any) {
         if (isMounted && err?.code !== 'auth/popup-closed-by-user') {
-          console.error('[CivicPulse Auth] Redirect error:', err);
+          console.warn('[CivicPulse Auth] Redirect result notice:', err?.message || err);
         }
-      } finally {
-        complete();
       }
     })();
 
-    // Safety timeout: Never leave the user on "Checking..." for more than 2 seconds.
-    timeoutId = setTimeout(() => {
-      if (isMounted) {
-        console.warn('[CivicPulse Auth] Auth initialization ready.');
-        setLoading(false);
-      }
-    }, 2000);
-
     return () => {
       isMounted = false;
-      if (timeoutId) clearTimeout(timeoutId);
       unsubscribe();
     };
   }, []);
 
-  const handleSignIn = async () => {
+  const handleSignInWithEmail = async (email: string, pass: string) => {
     setError(null);
-    console.log('[CivicPulse Auth] Sign-in requested');
+    setLoading(true);
     try {
-      const resUser = await firebaseSignIn();
-      if (resUser) {
-        setAndPersistUser(resUser);
-        return;
-      }
+      await firebaseSignInWithEmail(email, pass);
     } catch (err: any) {
-      console.warn('[CivicPulse Auth] Firebase sign-in notice, activating verified citizen session:', err?.message || err);
+      setLoading(false);
+      let msg = err?.message || 'Email sign-in failed.';
+      const code = err?.code || '';
+      if (code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found') {
+        msg = 'Invalid email or password. Please check your credentials.';
+      } else if (code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      } else if (code === 'auth/too-many-requests') {
+        msg = 'Too many failed login attempts. Please try again later.';
+      }
+      console.warn('[CivicPulse Auth] Email sign-in failed:', code, msg);
+      setError(msg);
+      throw err;
     }
-    // Verified citizen fallback so user is immediately signed in and persists
-    const demoUser = {
-      uid: 'citizen-google-user',
-      email: 'citizen.verified@civicpulse.gov.in',
-      displayName: 'Verified Citizen',
-    } as User;
-    setAndPersistUser(demoUser);
+  };
+
+  const handleSignUpWithEmail = async (email: string, pass: string) => {
+    setError(null);
+    setLoading(true);
+    try {
+      await firebaseSignUpWithEmail(email, pass);
+    } catch (err: any) {
+      setLoading(false);
+      let msg = err?.message || 'Account creation failed.';
+      const code = err?.code || '';
+      if (code === 'auth/email-already-in-use') {
+        msg = 'An account with this email address already exists. Please sign in instead.';
+      } else if (code === 'auth/weak-password') {
+        msg = 'Password should be at least 6 characters long.';
+      } else if (code === 'auth/invalid-email') {
+        msg = 'Please enter a valid email address.';
+      }
+      console.warn('[CivicPulse Auth] Email sign-up failed:', code, msg);
+      setError(msg);
+      throw err;
+    }
+  };
+
+  const handleSignInWithGoogle = async () => {
+    setError(null);
+    setLoading(true);
+    try {
+      await firebaseSignInWithGoogle();
+    } catch (err: any) {
+      setLoading(false);
+      let msg = err?.message || 'Google sign-in failed.';
+      const code = err?.code || '';
+      if (code === 'auth/unauthorized-domain') {
+        msg = `Domain Unauthorized: Please add "${window.location.hostname}" to Firebase Console → Authentication → Settings → Authorized domains.`;
+      } else if (code === 'auth/popup-closed-by-user') {
+        msg = 'Sign-in window was closed before completing authentication.';
+      } else if (code === 'auth/popup-blocked') {
+        msg = 'The sign-in popup was blocked by your browser. Please allow popups and try again.';
+      }
+      console.warn('[CivicPulse Auth] Google sign-in failed:', code, msg);
+      setError(msg);
+      throw err;
+    }
   };
 
   const handleSignOut = async () => {
     setError(null);
     try {
       await firebaseSignOut();
+      setUser(null);
     } catch (err: any) {
-      console.warn('[CivicPulse Auth] Firebase sign-out notice:', err);
+      console.warn('[CivicPulse Auth] Sign out notice:', err);
     }
-    setAndPersistUser(null);
   };
 
   const clearError = () => setError(null);
@@ -174,14 +172,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     user,
     loading,
     isFirebaseConfigured,
-    signInWithGoogle: handleSignIn,
+    signInWithGoogle: handleSignInWithGoogle,
+    signInWithEmail: handleSignInWithEmail,
+    signUpWithEmail: handleSignUpWithEmail,
     signOut: handleSignOut,
-    getIdToken: async (forceRefresh?: boolean) => {
-      const token = await getCurrentIdToken(forceRefresh);
-      if (token) return token;
-      if (user) return 'verified-citizen-session-token';
-      return null;
-    },
+    getIdToken: getCurrentIdToken,
     error,
     clearError,
   }), [user, loading, error]);
